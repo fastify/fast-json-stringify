@@ -1,6 +1,7 @@
 'use strict'
 
 function build (schema) {
+  /*eslint no-new-func: "off"*/
 
   let code = `
     'use strict'
@@ -8,7 +9,6 @@ function build (schema) {
   `
 
   Object.keys(schema.properties).forEach((key, i, a) => {
-
     const type = schema.properties[key].type
 
     code += `
@@ -20,16 +20,15 @@ function build (schema) {
         code += `
           json += '"' + obj.${key} + '"'
         `
-        break;
+        break
       case 'integer':
         code += `
           json += '' + obj.${key}
         `
-        break;
+        break
       default:
         throw new Error(`${type} unsupported`)
     }
-
 
     if (i < a.length - 1) {
       code += 'json += \',\''
