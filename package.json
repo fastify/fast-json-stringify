@@ -1,0 +1,31 @@
+{
+  "name": "fast-json-stringify",
+  "version": "0.0.1",
+  "description": "Stringify your JSON at max speed",
+  "main": "index.js",
+  "scripts": {
+    "test": "standard && tap test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcollina/fast-json-stringify.git"
+  },
+  "keywords": [
+    "json",
+    "stringify",
+    "schema",
+    "fast"
+  ],
+  "author": "Matteo Collina <hello@matteocollina.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mcollina/fast-json-stringify/issues"
+  },
+  "homepage": "https://github.com/mcollina/fast-json-stringify#readme",
+  "devDependencies": {
+    "benchmark": "^2.1.1",
+    "is-my-json-valid": "^2.13.1",
+    "standard": "^7.1.2",
+    "tap": "^6.2.0"
+  }
+}
