@@ -26,6 +26,10 @@ function build (schema) {
     case 'null':
       main = $asNull.name
       break
+    case 'array':
+      main = '$main'
+      code = buildArray(schema, code, main)
+      break
     default:
       throw new Error(`${schema.type} unsupported`)
   }
@@ -34,6 +38,8 @@ function build (schema) {
     ;
     return ${main}
   `
+
+  // console.log(code)
 
   return (new Function(code))()
 }
@@ -79,39 +85,14 @@ function buildObject (schema, code, name) {
   var laterCode = ''
 
   Object.keys(schema.properties).forEach((key, i, a) => {
-    const type = schema.properties[key].type
-
     code += `
       json += '${$asString(key)}:'
     `
 
-    switch (type) {
-      case 'null':
-        code += `
-          json += $asNull()
-        `
-        break
-      case 'string':
-        code += `
-          json += $asString(obj.${key})
-        `
-        break
-      case 'number':
-      case 'integer':
-        code += `
-          json += $asNumber(obj.${key})
-        `
-        break
-      case 'object':
-        let funcName = name + key
-        laterCode = buildObject(schema.properties[key], laterCode, funcName)
-        code += `
-          json += ${funcName}(obj.${key})
-        `
-        break
-      default:
-        throw new Error(`${type} unsupported`)
-    }
+    const result = nested(laterCode, name, '.' + key, schema.properties[key])
+
+    code += result.code
+    laterCode = result.laterCode
 
     if (i < a.length - 1) {
       code += 'json += \',\''
@@ -127,6 +108,83 @@ function buildObject (schema, code, name) {
   code += laterCode
 
   return code
+}
+
+function buildArray (schema, code, name) {
+  code += `
+    function ${name} (obj) {
+      var json = '['
+  `
+
+  var laterCode = ''
+
+  const result = nested(laterCode, name, '[i]', schema.items)
+
+  code += `
+    for (var i = 0; i < obj.length; i++) {
+      ${result.code}
+      if (i < obj.length - 1) {
+        json += ','
+      }
+    }
+  `
+
+  laterCode = result.laterCode
+
+  code += `
+      json += ']'
+      return json
+    }
+  `
+
+  code += laterCode
+
+  return code
+}
+
+function nested (laterCode, name, key, schema) {
+  var code = ''
+  var funcName
+  const type = schema.type
+  switch (type) {
+    case 'null':
+      code += `
+        json += $asNull()
+      `
+      break
+    case 'string':
+      code += `
+        json += $asString(obj${key})
+      `
+      break
+    case 'number':
+    case 'integer':
+      code += `
+        json += $asNumber(obj${key})
+      `
+      break
+    case 'object':
+      funcName = (name + key).replace(/[-.\[\]]/g, '')
+      laterCode = buildObject(schema, laterCode, funcName)
+      code += `
+        json += ${funcName}(obj${key})
+      `
+      break
+    case 'array':
+      funcName = (name + key).replace(/[-.\[\]]/g, '')
+      laterCode = buildArray(schema, laterCode, funcName)
+      code += `
+        json += ${funcName}(obj${key})
+      `
+      break
+    default:
+      throw new Error(`${type} unsupported`)
+  }
+
+  return {
+    code,
+    laterCode
+  }
 }
 
 module.exports = build

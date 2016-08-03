@@ -104,3 +104,77 @@ buildTest({
 }, {
   firstName: null
 })
+
+buildTest({
+  'title': 'array with objects',
+  'type': 'array',
+  'items': {
+    'type': 'object',
+    'properties': {
+      'name': {
+        'type': 'string'
+      }
+    }
+  }
+}, [{
+  name: 'Matteo'
+}, {
+  name: 'Dave'
+}])
+
+buildTest({
+  'title': 'array with strings',
+  'type': 'array',
+  'items': {
+    'type': 'string'
+  }
+}, [
+  'Matteo',
+  'Dave'
+])
+
+buildTest({
+  'title': 'array with numbers',
+  'type': 'array',
+  'items': {
+    'type': 'number'
+  }
+}, [
+  42.42,
+  24
+])
+
+buildTest({
+  'title': 'array with integers',
+  'type': 'array',
+  'items': {
+    'type': 'number'
+  }
+}, [
+  42,
+  24
+])
+
+buildTest({
+  'title': 'nested array with objects',
+  'type': 'object',
+  'properties': {
+    'data': {
+      'type': 'array',
+      'items': {
+        'type': 'object',
+        'properties': {
+          'name': {
+            'type': 'string'
+          }
+        }
+      }
+    }
+  }
+}, {
+  data: [{
+    name: 'Matteo'
+  }, {
+    name: 'Dave'
+  }]
+})
