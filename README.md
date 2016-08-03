@@ -46,11 +46,11 @@ Build a `stringify()` function based on
 
 Supported types:
 
- * `integer'
- * `number'
- * `array'
- * `object'
- * `null'
+ * `'integer'`
+ * `'number'`
+ * `'array'`
+ * `'object'`
+ * `'null'`
 
 And nested ones, too.
 `Date` instances are serialized with `toISOString()`.
