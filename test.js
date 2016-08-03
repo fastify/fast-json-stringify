@@ -56,3 +56,31 @@ buildTest({
   title: 'a number',
   type: 'number'
 }, 42.42)
+
+buildTest({
+  'title': 'deep',
+  'type': 'object',
+  'properties': {
+    'firstName': {
+      'type': 'string'
+    },
+    'lastName': {
+      'type': 'string'
+    },
+    'more': {
+      'description': 'more properties',
+      'type': 'object',
+      'properties': {
+        'something': {
+          'type': 'string'
+        }
+      }
+    }
+  }
+}, {
+  firstName: 'Matteo',
+  lastName: 'Collina',
+  more: {
+    something: 'else'
+  }
+})

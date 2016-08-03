@@ -68,6 +68,8 @@ function buildObject (schema, code, name) {
       var json = '{'
   `
 
+  var laterCode = ''
+
   Object.keys(schema.properties).forEach((key, i, a) => {
     const type = schema.properties[key].type
 
@@ -87,6 +89,13 @@ function buildObject (schema, code, name) {
           json += $asNumber(obj.${key})
         `
         break
+      case 'object':
+        let funcName = name + key
+        laterCode = buildObject(schema.properties[key], laterCode, funcName)
+        code += `
+          json += ${funcName}(obj.${key})
+        `
+        break
       default:
         throw new Error(`${type} unsupported`)
     }
@@ -101,6 +110,8 @@ function buildObject (schema, code, name) {
       return json
     }
   `
+
+  code += laterCode
 
   return code
 }
