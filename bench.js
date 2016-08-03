@@ -1,6 +1,7 @@
 'use strict'
 
 const benchmark = require('benchmark')
+const safeStringify = require('fast-safe-stringify')
 const suite = new benchmark.Suite()
 
 const schema = {
@@ -18,8 +19,7 @@ const schema = {
       'type': 'integer',
       'minimum': 0
     }
-  },
-  'required': ['firstName', 'lastName']
+  }
 }
 
 const obj = {
@@ -36,6 +36,10 @@ suite.add('JSON.stringify', function () {
 
 suite.add('fast-json-stringify', function () {
   stringify(obj)
+})
+
+suite.add('fast-safe-stringify', function () {
+  safeStringify(obj)
 })
 
 suite.on('complete', print)

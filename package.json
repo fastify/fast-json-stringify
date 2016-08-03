@@ -25,6 +25,7 @@
   "homepage": "https://github.com/mcollina/fast-json-stringify#readme",
   "devDependencies": {
     "benchmark": "^2.1.1",
+    "fast-safe-stringify": "^1.0.9",
     "is-my-json-valid": "^2.13.1",
     "pre-commit": "^1.1.3",
     "standard": "^7.1.2",
