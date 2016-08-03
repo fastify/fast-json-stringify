@@ -1,4 +1,4 @@
-# fast-json-stringify
+# fast-json-stringify&nbsp;&nbsp;[![Build Status](https://travis-ci.org/mcollina/fast-json-stringify.svg)](https://travis-ci.org/mcollina/fast-json-stringify)
 
 __fast-json-stringify__ is x5 faster than `JSON.stringify()`.
 
