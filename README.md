@@ -55,6 +55,10 @@ Supported types:
 And nested ones, too.
 `Date` instances are serialized with `toISOString()`.
 
+## Acknowledgements
+
+This project was kindly sponsored by [nearForm](http://nearform.com).
+
 ## License
 
 MIT
