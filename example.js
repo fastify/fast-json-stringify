@@ -14,6 +14,9 @@ const stringify = fastJson({
     age: {
       description: 'Age in years',
       type: 'integer'
+    },
+    now: {
+      type: 'string'
     }
   }
 })
@@ -21,5 +24,6 @@ const stringify = fastJson({
 console.log(stringify({
   firstName: 'Matteo',
   lastName: 'Collina',
-  age: 32
+  age: 32,
+  now: new Date()
 }))

@@ -52,6 +52,9 @@ Supported types:
  * `object'
  * `null'
 
+And nested ones, too.
+`Date` instances are serialized with `toISOString()`.
+
 ## License
 
 MIT

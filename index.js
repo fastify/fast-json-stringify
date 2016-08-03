@@ -57,8 +57,13 @@ function $asNumber (i) {
   }
 }
 
-function $asString (s) {
-  var str = s.toString()
+function $asString (str) {
+  if (str instanceof Date) {
+    str = str.toISOString()
+  } else {
+    str = str.toString()
+  }
+
   var result = ''
   var last = 0
   var l = str.length
