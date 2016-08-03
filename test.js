@@ -84,3 +84,20 @@ buildTest({
     something: 'else'
   }
 })
+
+buildTest({
+  'title': 'null',
+  'type': 'null'
+}, null)
+
+buildTest({
+  'title': 'with null',
+  'type': 'object',
+  'properties': {
+    'firstName': {
+      'type': 'null'
+    }
+  }
+}, {
+  firstName: null
+})

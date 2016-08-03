@@ -7,6 +7,7 @@ function build (schema) {
 
     ${$asString.toString()}
     ${$asNumber.toString()}
+    ${$asNull.toString()}
   `
   var main
 
@@ -22,6 +23,9 @@ function build (schema) {
     case 'number':
       main = $asNumber.name
       break
+    case 'null':
+      main = $asNull.name
+      break
     default:
       throw new Error(`${schema.type} unsupported`)
   }
@@ -32,6 +36,10 @@ function build (schema) {
   `
 
   return (new Function(code))()
+}
+
+function $asNull (i) {
+  return 'null'
 }
 
 function $asNumber (i) {
@@ -78,6 +86,11 @@ function buildObject (schema, code, name) {
     `
 
     switch (type) {
+      case 'null':
+        code += `
+          json += $asNull()
+        `
+        break
       case 'string':
         code += `
           json += $asString(obj.${key})
