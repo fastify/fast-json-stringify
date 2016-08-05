@@ -43,8 +43,6 @@ function build (schema) {
     return ${main}
   `
 
-  // console.log(code)
-
   return (new Function(code))()
 }
 
@@ -75,17 +73,19 @@ function $asString (str) {
   var result = ''
   var last = 0
   var l = str.length
-  for (var i = 0; i < l; i++) {
-    if (str[i] === '"') {
-      result += str.slice(last, i) + '\\"'
-      last = i + 1
-    }
+  var i
+
+  while ((i = str.indexOf('"')) >= 0 && i < l) {
+    result += str.slice(last, i) + '\\"'
+    last = i + 1
   }
+
   if (last === 0) {
     result = str
   } else {
     result += str.slice(last)
   }
+
   return '"' + result + '"'
 }
 

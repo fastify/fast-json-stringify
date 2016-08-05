@@ -22,13 +22,36 @@ const schema = {
   }
 }
 
+const arraySchema = {
+  title: 'array schema',
+  type: 'array',
+  items: schema
+}
+
 const obj = {
   firstName: 'Matteo',
   lastName: 'Collina',
   age: 32
 }
 
+const multiArray = [
+  obj,
+  obj,
+  obj,
+  obj,
+  obj,
+  obj,
+  obj,
+  obj,
+  obj,
+  obj,
+  obj,
+  obj,
+  obj
+]
+
 const stringify = require('.')(schema)
+const stringifyArray = require('.')(arraySchema)
 
 suite.add('JSON.stringify', function () {
   JSON.stringify(obj)
@@ -40,6 +63,18 @@ suite.add('fast-json-stringify', function () {
 
 suite.add('fast-safe-stringify', function () {
   safeStringify(obj)
+})
+
+suite.add('JSON.stringify array', function () {
+  JSON.stringify(multiArray)
+})
+
+suite.add('fast-json-stringify array', function () {
+  stringifyArray(multiArray)
+})
+
+suite.add('fast-safe-stringify array', function () {
+  safeStringify(multiArray)
 })
 
 suite.on('complete', print)
