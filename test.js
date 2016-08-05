@@ -51,6 +51,16 @@ buildTest({
 }, 'hello world')
 
 buildTest({
+  title: 'boolean true',
+  type: 'boolean'
+}, true)
+
+buildTest({
+  title: 'boolean false',
+  type: 'boolean'
+}, false)
+
+buildTest({
   title: 'an integer',
   type: 'integer'
 }, 42)
@@ -194,4 +204,16 @@ test('render a a date in a string as JSON', (t) => {
 
   t.equal(output, JSON.stringify(toStringify))
   t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+buildTest({
+  'title': 'object with boolean',
+  'type': 'object',
+  'properties': {
+    'readonly': {
+      'type': 'boolean'
+    }
+  }
+}, {
+  readonly: true
 })

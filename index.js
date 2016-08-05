@@ -8,6 +8,7 @@ function build (schema) {
     ${$asString.toString()}
     ${$asNumber.toString()}
     ${$asNull.toString()}
+    ${$asBoolean.toString()}
   `
   var main
 
@@ -22,6 +23,9 @@ function build (schema) {
     case 'integer':
     case 'number':
       main = $asNumber.name
+      break
+    case 'boolean':
+      main = $asBoolean.name
       break
     case 'null':
       main = $asNull.name
@@ -44,7 +48,7 @@ function build (schema) {
   return (new Function(code))()
 }
 
-function $asNull (i) {
+function $asNull () {
   return 'null'
 }
 
@@ -55,6 +59,10 @@ function $asNumber (i) {
   } else {
     return '' + i
   }
+}
+
+function $asBoolean (bool) {
+  return bool && 'true' || 'false'
 }
 
 function $asString (str) {
@@ -166,6 +174,11 @@ function nested (laterCode, name, key, schema) {
     case 'integer':
       code += `
         json += $asNumber(obj${key})
+      `
+      break
+    case 'boolean':
+      code += `
+        json += $asBoolean(obj${key})
       `
       break
     case 'object':
