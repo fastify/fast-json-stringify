@@ -50,6 +50,7 @@ Supported types:
  * `'number'`
  * `'array'`
  * `'object'`
+ * `'boolean'`
  * `'null'`
 
 And nested ones, too.
