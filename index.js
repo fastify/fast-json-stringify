@@ -6,6 +6,8 @@ function build (schema) {
     'use strict'
 
     ${$asString.toString()}
+    ${$asStringSmall.toString()}
+    ${$asStringLong.toString()}
     ${$asNumber.toString()}
     ${$asNull.toString()}
     ${$asBoolean.toString()}
@@ -65,27 +67,51 @@ function $asBoolean (bool) {
 
 function $asString (str) {
   if (str instanceof Date) {
-    str = str.toISOString()
-  } else {
+    return '"' + str.toISOString() + '"'
+  } else if (typeof str !== 'string') {
     str = str.toString()
   }
 
+  if (str.length < 42) {
+    return $asStringSmall(str)
+  } else {
+    return $asStringLong(str)
+  }
+}
+
+function $asStringLong (str) {
   var result = ''
-  var last = 0
   var l = str.length
   var i
 
-  while ((i = str.indexOf('"')) >= 0 && i < l) {
-    result += str.slice(last, i) + '\\"'
-    last = i + 1
+  for (;(i = str.indexOf('"')) >= 0 && i < l;) {
+    result += str.slice(0, i) + '\\"'
+    str = str.slice(i + 1)
+    l = str.length
   }
 
+  if (l > 0) {
+    result += str
+  }
+
+  return '"' + result + '"'
+}
+
+function $asStringSmall (str) {
+  var result = ''
+  var last = 0
+  var l = str.length
+  for (var i = 0; i < l; i++) {
+    if (str[i] === '"') {
+      result += str.slice(last, i) + '\\"'
+      last = i + 1
+    }
+  }
   if (last === 0) {
     result = str
   } else {
     result += str.slice(last)
   }
-
   return '"' + result + '"'
 }
 
@@ -134,9 +160,11 @@ function buildArray (schema, code, name) {
   const result = nested(laterCode, name, '[i]', schema.items)
 
   code += `
-    for (var i = 0; i < obj.length; i++) {
+    const l = obj.length
+    const w = l - 1
+    for (var i = 0; i < l; i++) {
       ${result.code}
-      if (i < obj.length - 1) {
+      if (i < w) {
         json += ','
       }
     }

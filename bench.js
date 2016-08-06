@@ -1,7 +1,6 @@
 'use strict'
 
 const benchmark = require('benchmark')
-const safeStringify = require('fast-safe-stringify')
 const suite = new benchmark.Suite()
 
 const schema = {
@@ -34,36 +33,25 @@ const obj = {
   age: 32
 }
 
-const multiArray = [
-  obj,
-  obj,
-  obj,
-  obj,
-  obj,
-  obj,
-  obj,
-  obj,
-  obj,
-  obj,
-  obj,
-  obj,
-  obj
-]
+const multiArray = []
 
 const stringify = require('.')(schema)
 const stringifyArray = require('.')(arraySchema)
+const stringifyString = require('.')({ type: 'string' })
+var str = ''
 
-suite.add('JSON.stringify', function () {
-  JSON.stringify(obj)
-})
+for (var i = 0; i < 10000; i++) {
+  str += i
+  if (i % 100 === 0) {
+    str += '"'
+  }
+}
 
-suite.add('fast-json-stringify', function () {
-  stringify(obj)
-})
+Number(str)
 
-suite.add('fast-safe-stringify', function () {
-  safeStringify(obj)
-})
+for (i = 0; i < 1000; i++) {
+  multiArray.push(obj)
+}
 
 suite.add('JSON.stringify array', function () {
   JSON.stringify(multiArray)
@@ -73,18 +61,34 @@ suite.add('fast-json-stringify array', function () {
   stringifyArray(multiArray)
 })
 
-suite.add('fast-safe-stringify array', function () {
-  safeStringify(multiArray)
+suite.add('JSON.stringify long string', function () {
+  JSON.stringify(str)
 })
 
-suite.on('complete', print)
+suite.add('fast-json-stringify long string', function () {
+  stringifyString(str)
+})
+
+suite.add('JSON.stringify short string', function () {
+  JSON.stringify('hello world')
+})
+
+suite.add('fast-json-stringify short string', function () {
+  stringifyString('hello world')
+})
+
+suite.add('JSON.stringify obj', function () {
+  JSON.stringify(obj)
+})
+
+suite.add('fast-json-stringify obj', function () {
+  stringify(obj)
+})
+
+suite.on('cycle', cycle)
 
 suite.run()
 
-function print () {
-  for (var i = 0; i < this.length; i++) {
-    console.log(this[i].toString())
-  }
-
-  console.log('Fastest is', this.filter('fastest').map('name')[0])
+function cycle (e) {
+  console.log(e.target.toString())
 }
