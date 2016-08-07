@@ -11,6 +11,7 @@ function build (schema) {
     ${$asNumber.toString()}
     ${$asNull.toString()}
     ${$asBoolean.toString()}
+    ${$asRegExp.toString()}
   `
   var main
 
@@ -35,6 +36,9 @@ function build (schema) {
     case 'array':
       main = '$main'
       code = buildArray(schema, code, main)
+      break
+    case 'RegExp':
+      main = $asRegExp.name
       break
     default:
       throw new Error(`${schema.type} unsupported`)
@@ -113,6 +117,19 @@ function $asStringSmall (str) {
     result += str.slice(last)
   }
   return '"' + result + '"'
+}
+
+function $asRegExp (reg) {
+  reg = reg instanceof RegExp ? reg.source : reg
+
+  for (var i = 0, len = reg.length; i < len; i++) {
+    if (reg[i] === '\\' || reg[i] === '"') {
+      reg = reg.substring(0, i) + '\\' + reg.substring(i++)
+      len += 2
+    }
+  }
+
+  return '"' + reg + '"'
 }
 
 function buildObject (schema, code, name) {
@@ -221,6 +238,11 @@ function nested (laterCode, name, key, schema) {
       laterCode = buildArray(schema, laterCode, funcName)
       code += `
         json += ${funcName}(obj${key})
+      `
+      break
+    case 'RegExp':
+      code += `
+        json += $asRegExp(obj${key})
       `
       break
     default:

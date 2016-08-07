@@ -222,3 +222,38 @@ buildTest({
 }, {
   readonly: true
 })
+
+test('object with RexExp', (t) => {
+  t.plan(3)
+
+  const schema = {
+    title: 'object with RegExp',
+    type: 'object',
+    properties: {
+      reg: {
+        type: 'RegExp'
+      },
+      streg: {
+        type: 'RegExp'
+      }
+    }
+  }
+
+  const obj = {
+    reg: /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+    streg: '^(([^<>()\\[\\]\\\\.,;:\\s@"]+(\\.[^<>()\\[\\]\\\\.,;:\\s@"]+)*)|(".+"))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$'
+  }
+
+  const stringify = build(schema)
+  const output = stringify(obj)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(obj.reg.source, new RegExp(JSON.parse(output).reg).source)
+  t.equal(obj.streg, JSON.parse(output).streg)
+})
