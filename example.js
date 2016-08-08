@@ -17,6 +17,9 @@ const stringify = fastJson({
     },
     now: {
       type: 'string'
+    },
+    reg: {
+      type: 'string'
     }
   }
 })
@@ -25,5 +28,6 @@ console.log(stringify({
   firstName: 'Matteo',
   lastName: 'Collina',
   age: 32,
-  now: new Date()
+  now: new Date(),
+  reg: /"([^"]|\\")*"/
 }))

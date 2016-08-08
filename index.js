@@ -37,9 +37,6 @@ function build (schema) {
       main = '$main'
       code = buildArray(schema, code, main)
       break
-    case 'RegExp':
-      main = $asRegExp.name
-      break
     default:
       throw new Error(`${schema.type} unsupported`)
   }
@@ -72,6 +69,8 @@ function $asBoolean (bool) {
 function $asString (str) {
   if (str instanceof Date) {
     return '"' + str.toISOString() + '"'
+  } else if (str instanceof RegExp) {
+    return $asRegExp(str)
   } else if (typeof str !== 'string') {
     str = str.toString()
   }
@@ -120,7 +119,7 @@ function $asStringSmall (str) {
 }
 
 function $asRegExp (reg) {
-  reg = reg instanceof RegExp ? reg.source : reg
+  reg = reg.source
 
   for (var i = 0, len = reg.length; i < len; i++) {
     if (reg[i] === '\\' || reg[i] === '"') {
@@ -238,11 +237,6 @@ function nested (laterCode, name, key, schema) {
       laterCode = buildArray(schema, laterCode, funcName)
       code += `
         json += ${funcName}(obj${key})
-      `
-      break
-    case 'RegExp':
-      code += `
-        json += $asRegExp(obj${key})
       `
       break
     default:

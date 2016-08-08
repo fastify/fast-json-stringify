@@ -231,20 +231,17 @@ test('object with RexExp', (t) => {
     type: 'object',
     properties: {
       reg: {
-        type: 'RegExp'
-      },
-      streg: {
-        type: 'RegExp'
+        type: 'string'
       }
     }
   }
 
   const obj = {
-    reg: /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
-    streg: '^(([^<>()\\[\\]\\\\.,;:\\s@"]+(\\.[^<>()\\[\\]\\\\.,;:\\s@"]+)*)|(".+"))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$'
+    reg: /"([^"]|\\")*"/
   }
 
   const stringify = build(schema)
+  const validate = validator(schema)
   const output = stringify(obj)
 
   try {
@@ -255,5 +252,5 @@ test('object with RexExp', (t) => {
   }
 
   t.equal(obj.reg.source, new RegExp(JSON.parse(output).reg).source)
-  t.equal(obj.streg, JSON.parse(output).streg)
+  t.ok(validate(JSON.parse(output)), 'valid schema')
 })
