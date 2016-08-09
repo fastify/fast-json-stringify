@@ -34,6 +34,9 @@ const stringify = fastJson({
     age: {
       description: 'Age in years',
       type: 'integer'
+    },
+    reg: {
+      type: 'string'
     }
   }
 })
@@ -41,7 +44,8 @@ const stringify = fastJson({
 console.log(stringify({
   firstName: 'Matteo',
   lastName: 'Collina',
-  age: 32
+  age: 32,
+  reg: /"([^"]|\\")*"/
 }))
 ```
 
@@ -61,8 +65,15 @@ Supported types:
  * `'boolean'`
  * `'null'`
 
-And nested ones, too.
-`Date` instances are serialized with `toISOString()`.
+And nested ones, too.  
+
+*Specific use cases:*
+
+| Instance   | Serialized as                               |
+| -----------|---------------------------------------------|
+| `Date`     | `string` <small>via `toISOString()`</small> |
+| `RegExp`   | `string`                                    |
+
 
 ## Acknowledgements
 
