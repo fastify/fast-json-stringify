@@ -11,6 +11,7 @@ function build (schema) {
     ${$asNumber.toString()}
     ${$asNull.toString()}
     ${$asBoolean.toString()}
+    ${$asRegExp.toString()}
   `
   var main
 
@@ -68,6 +69,8 @@ function $asBoolean (bool) {
 function $asString (str) {
   if (str instanceof Date) {
     return '"' + str.toISOString() + '"'
+  } else if (str instanceof RegExp) {
+    return $asRegExp(str)
   } else if (typeof str !== 'string') {
     str = str.toString()
   }
@@ -113,6 +116,19 @@ function $asStringSmall (str) {
     result += str.slice(last)
   }
   return '"' + result + '"'
+}
+
+function $asRegExp (reg) {
+  reg = reg.source
+
+  for (var i = 0, len = reg.length; i < len; i++) {
+    if (reg[i] === '\\' || reg[i] === '"') {
+      reg = reg.substring(0, i) + '\\' + reg.substring(i++)
+      len += 2
+    }
+  }
+
+  return '"' + reg + '"'
 }
 
 function buildObject (schema, code, name) {
