@@ -16,7 +16,8 @@ const stringify = fastJson({
       type: 'integer'
     },
     now: {
-      type: 'string'
+      type: 'string',
+      required: true
     },
     reg: {
       type: 'string'

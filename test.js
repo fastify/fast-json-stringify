@@ -254,3 +254,41 @@ test('object with RexExp', (t) => {
   t.equal(obj.reg.source, new RegExp(JSON.parse(output).reg).source)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
+
+test('object with required field', (t) => {
+  t.plan(3)
+
+  const schema = {
+    title: 'object with required field',
+    type: 'object',
+    properties: {
+      str: {
+        type: 'string',
+        required: true
+      },
+      num: {
+        type: 'integer'
+      }
+    }
+  }
+  const stringify = build(schema)
+
+  try {
+    stringify({
+      str: 'string'
+    })
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  try {
+    stringify({
+      num: 42
+    })
+    t.fail()
+  } catch (e) {
+    t.is(e.message, '.str is required!')
+    t.pass()
+  }
+})
