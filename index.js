@@ -202,6 +202,12 @@ function buildArray (schema, code, name) {
 function nested (laterCode, name, key, schema) {
   var code = ''
   var funcName
+  if (schema.required) {
+    code += `
+      if (!obj.hasOwnProperty('${key.slice(1)}')) {
+        throw new Error('${key} is required!')
+      }`
+  }
   const type = schema.type
   switch (type) {
     case 'null':
