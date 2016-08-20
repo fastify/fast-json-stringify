@@ -67,13 +67,32 @@ Supported types:
 
 And nested ones, too.  
 
-*Specific use cases:*
+#### Specific use cases
 
 | Instance   | Serialized as                               |
 | -----------|---------------------------------------------|
-| `Date`     | `string` <small>via `toISOString()`</small> |
+| `Date`     | `string` via `toISOString()` |
 | `RegExp`   | `string`                                    |
 
+#### Required 
+You can set specific fields of an object as `required` in your schema, by adding `required: true` inside the key properties.  
+Example:
+```javascript
+const schema = {
+  title: 'Example Schema with required field',
+  type: 'object',
+  properties: {
+    nickname: {
+      type: 'string'
+    },
+    mail: {
+      type: 'string',
+      required: true
+    }
+  }
+}
+```
+If the object to stringify has not the required field(s), `fast-json-stringify` will throw an error.
 
 ## Acknowledgements
 
