@@ -74,7 +74,7 @@ And nested ones, too.
 | `Date`     | `string` via `toISOString()` |
 | `RegExp`   | `string`                                    |
 
-#### Required 
+#### Required
 You can set specific fields of an object as `required` in your schema, by adding `required: true` inside the key properties.  
 Example:
 ```javascript
@@ -93,6 +93,31 @@ const schema = {
 }
 ```
 If the object to stringify has not the required field(s), `fast-json-stringify` will throw an error.
+
+#### Missing fields
+If a field *is present* in the schema (and is not required) but it *is not present* in the object to stringify, `fast-json-stringify` will not write it in the final string.  
+Example:
+```javascript
+const stringify = fastJson({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    nickname: {
+      type: 'string'
+    },
+    mail: {
+      type: 'string',
+      required: true
+    }
+  }
+})
+
+const obj = {
+  mail: 'mail@example.com'
+}
+
+console.log(stringify(obj)) // '{"mail":"mail@example.com"}'
+```
 
 ## Acknowledgements
 

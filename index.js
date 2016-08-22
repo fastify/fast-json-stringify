@@ -140,9 +140,12 @@ function buildObject (schema, code, name) {
   var laterCode = ''
 
   Object.keys(schema.properties).forEach((key, i, a) => {
+    // Using obj.key !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
+    // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
     code += `
-      json += '${$asString(key)}:'
-    `
+      if (obj.${key} !== undefined) {
+        json += '${$asString(key)}:'
+      `
 
     const result = nested(laterCode, name, '.' + key, schema.properties[key])
 
@@ -150,8 +153,21 @@ function buildObject (schema, code, name) {
     laterCode = result.laterCode
 
     if (i < a.length - 1) {
-      code += 'json += \',\''
+      code += `
+        json += \',\'
+      `
     }
+
+    if (schema.properties[key].required) {
+      code += `
+      } else {
+        throw new Error('${key} is required!')
+      `
+    }
+
+    code += `
+      }
+    `
   })
 
   code += `
@@ -202,12 +218,6 @@ function buildArray (schema, code, name) {
 function nested (laterCode, name, key, schema) {
   var code = ''
   var funcName
-  if (schema.required) {
-    code += `
-      if (!obj.hasOwnProperty('${key.slice(1)}')) {
-        throw new Error('${key} is required!')
-      }`
-  }
   const type = schema.type
   switch (type) {
     case 'null':
