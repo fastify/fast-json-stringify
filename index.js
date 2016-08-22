@@ -140,12 +140,12 @@ function buildObject (schema, code, name) {
   var laterCode = ''
 
   Object.keys(schema.properties).forEach((key, i, a) => {
-    /* code += `
-      if (obj.hasOwnProperty('${key}')) {
-        json += '${$asString(key)}:'`*/
+    // Using obj.key !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
+    // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
     code += `
       if (obj.${key} !== undefined) {
-        json += '${$asString(key)}:'`
+        json += '${$asString(key)}:'
+      `
 
     const result = nested(laterCode, name, '.' + key, schema.properties[key])
 
@@ -154,20 +154,20 @@ function buildObject (schema, code, name) {
 
     if (i < a.length - 1) {
       code += `
-        json += \',\'`
+        json += \',\'
+      `
     }
 
     if (schema.properties[key].required) {
       code += `
       } else {
         throw new Error('${key} is required!')
-      }
-      `
-    } else {
-      code += `
-      }
       `
     }
+
+    code += `
+      }
+    `
   })
 
   code += `
@@ -222,32 +222,38 @@ function nested (laterCode, name, key, schema) {
   switch (type) {
     case 'null':
       code += `
-        json += $asNull()`
+        json += $asNull()
+      `
       break
     case 'string':
       code += `
-        json += $asString(obj${key})`
+        json += $asString(obj${key})
+      `
       break
     case 'number':
     case 'integer':
       code += `
-        json += $asNumber(obj${key})`
+        json += $asNumber(obj${key})
+      `
       break
     case 'boolean':
       code += `
-        json += $asBoolean(obj${key})`
+        json += $asBoolean(obj${key})
+      `
       break
     case 'object':
       funcName = (name + key).replace(/[-.\[\]]/g, '')
       laterCode = buildObject(schema, laterCode, funcName)
       code += `
-        json += ${funcName}(obj${key})`
+        json += ${funcName}(obj${key})
+      `
       break
     case 'array':
       funcName = (name + key).replace(/[-.\[\]]/g, '')
       laterCode = buildArray(schema, laterCode, funcName)
       code += `
-        json += ${funcName}(obj${key})`
+        json += ${funcName}(obj${key})
+      `
       break
     default:
       throw new Error(`${type} unsupported`)
