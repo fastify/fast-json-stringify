@@ -140,9 +140,12 @@ function buildObject (schema, code, name) {
   var laterCode = ''
 
   Object.keys(schema.properties).forEach((key, i, a) => {
+    /* code += `
+      if (obj.hasOwnProperty('${key}')) {
+        json += '${$asString(key)}:'`*/
     code += `
-      json += '${$asString(key)}:'
-    `
+      if (obj.${key} !== undefined) {
+        json += '${$asString(key)}:'`
 
     const result = nested(laterCode, name, '.' + key, schema.properties[key])
 
@@ -150,7 +153,20 @@ function buildObject (schema, code, name) {
     laterCode = result.laterCode
 
     if (i < a.length - 1) {
-      code += 'json += \',\''
+      code += `
+        json += \',\'`
+    }
+
+    if (schema.properties[key].required) {
+      code += `
+      } else {
+        throw new Error('${key} is required!')
+      }
+      `
+    } else {
+      code += `
+      }
+      `
     }
   })
 
@@ -202,48 +218,36 @@ function buildArray (schema, code, name) {
 function nested (laterCode, name, key, schema) {
   var code = ''
   var funcName
-  if (schema.required) {
-    code += `
-      if (!obj.hasOwnProperty('${key.slice(1)}')) {
-        throw new Error('${key} is required!')
-      }`
-  }
   const type = schema.type
   switch (type) {
     case 'null':
       code += `
-        json += $asNull()
-      `
+        json += $asNull()`
       break
     case 'string':
       code += `
-        json += $asString(obj${key})
-      `
+        json += $asString(obj${key})`
       break
     case 'number':
     case 'integer':
       code += `
-        json += $asNumber(obj${key})
-      `
+        json += $asNumber(obj${key})`
       break
     case 'boolean':
       code += `
-        json += $asBoolean(obj${key})
-      `
+        json += $asBoolean(obj${key})`
       break
     case 'object':
       funcName = (name + key).replace(/[-.\[\]]/g, '')
       laterCode = buildObject(schema, laterCode, funcName)
       code += `
-        json += ${funcName}(obj${key})
-      `
+        json += ${funcName}(obj${key})`
       break
     case 'array':
       funcName = (name + key).replace(/[-.\[\]]/g, '')
       laterCode = buildArray(schema, laterCode, funcName)
       code += `
-        json += ${funcName}(obj${key})
-      `
+        json += ${funcName}(obj${key})`
       break
     default:
       throw new Error(`${type} unsupported`)
