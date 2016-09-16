@@ -158,7 +158,7 @@ function buildObject (schema, code, name) {
       `
     }
 
-    if (schema.properties[key].required) {
+    if (schema.required && schema.required.indexOf(key) !== -1) {
       code += `
       } else {
         throw new Error('${key} is required!')
