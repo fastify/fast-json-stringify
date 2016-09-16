@@ -16,13 +16,13 @@ const stringify = fastJson({
       type: 'integer'
     },
     now: {
-      type: 'string',
-      required: true
+      type: 'string'
     },
     reg: {
       type: 'string'
     }
-  }
+  },
+  required: ['now']
 })
 
 console.log(stringify({
