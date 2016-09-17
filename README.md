@@ -69,13 +69,13 @@ And nested ones, too.
 
 #### Specific use cases
 
-| Instance   | Serialized as                               |
-| -----------|---------------------------------------------|
+| Instance   | Serialized as                |
+| -----------|------------------------------|
 | `Date`     | `string` via `toISOString()` |
-| `RegExp`   | `string`                                    |
+| `RegExp`   | `string`                     |
 
 #### Required
-You can set specific fields of an object as `required` in your schema, by adding `required: true` inside the key properties.  
+You can set specific fields of an object as required in your schema, by adding the field name inside the `required` array in your schema.  
 Example:
 ```javascript
 const schema = {
@@ -86,10 +86,10 @@ const schema = {
       type: 'string'
     },
     mail: {
-      type: 'string',
-      required: true
+      type: 'string'
     }
-  }
+  },
+  required: ['mail']
 }
 ```
 If the object to stringify has not the required field(s), `fast-json-stringify` will throw an error.

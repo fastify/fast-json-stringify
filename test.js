@@ -263,13 +263,13 @@ test('object with required field', (t) => {
     type: 'object',
     properties: {
       str: {
-        type: 'string',
-        required: true
+        type: 'string'
       },
       num: {
         type: 'integer'
       }
-    }
+    },
+    required: ['str']
   }
   const stringify = build(schema)
 
