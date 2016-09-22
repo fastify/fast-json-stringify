@@ -4,7 +4,7 @@ function build (schema) {
   /*eslint no-new-func: "off"*/
   var code = `
     'use strict'
-
+    const properties = ${JSON.stringify(schema.properties)}
     ${$asString.toString()}
     ${$asStringSmall.toString()}
     ${$asStringLong.toString()}
@@ -12,6 +12,7 @@ function build (schema) {
     ${$asNull.toString()}
     ${$asBoolean.toString()}
     ${$asRegExp.toString()}
+    ${$coerce.toString()}
   `
   var main
 
@@ -131,11 +132,66 @@ function $asRegExp (reg) {
   return '"' + reg + '"'
 }
 
+function $coerce (value, type) {
+  if (type === 'string') {
+    return String(value)
+  } else if (type === 'number') {
+    return Number(value)
+  } else if (type === 'boolean') {
+    return Boolean(value)
+  } else if (type === 'object') {
+    return {}
+  } else if (type === 'array') {
+    return []
+  } else {
+    throw new Error('Cannot coerce ' + value + ' to ' + type)
+  }
+}
+
+function addPatternProperties (pp) {
+  let code = `
+      var keys = Object.keys(obj)
+      for (var i = 0; i < keys.length; i++) {
+        if (properties[keys[i]]) continue
+  `
+  Object.keys(pp).forEach(regex => {
+    var type = pp[regex].type
+    if (type === 'integer') type = 'number'
+    code += `
+        if (/${regex}/.test(keys[i])) {
+    `
+    if (type === 'object') {
+      code += `
+          json += $asString(keys[i]) + ':{},'
+      `
+    } else if (type === 'array') {
+      code += `
+          json += $asString(keys[i]) + ':[],'
+      `
+    } else {
+      code += `
+            json += $asString(keys[i]) + ':' + $as${type[0].toUpperCase() + type.slice(1)}($coerce(obj[keys[i]], '${type}')) + ','
+      `
+    }
+    code += `
+        }
+    `
+  })
+  code += `
+      }
+      if (Object.keys(properties).length === 0) json = json.substring(0, json.length - 1)
+  `
+  return code
+}
+
 function buildObject (schema, code, name) {
   code += `
     function ${name} (obj) {
       var json = '{'
   `
+  if (schema.patternProperties) {
+    code += addPatternProperties(schema.patternProperties)
+  }
 
   var laterCode = ''
 
