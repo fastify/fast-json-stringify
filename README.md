@@ -58,6 +58,7 @@ Build a `stringify()` function based on
 
 Supported types:
 
+ * `'string'`
  * `'integer'`
  * `'number'`
  * `'array'`
@@ -106,10 +107,10 @@ const stringify = fastJson({
       type: 'string'
     },
     mail: {
-      type: 'string',
-      required: true
+      type: 'string'
     }
-  }
+  },
+  required: ['mail']
 })
 
 const obj = {
@@ -117,6 +118,74 @@ const obj = {
 }
 
 console.log(stringify(obj)) // '{"mail":"mail@example.com"}'
+```
+
+#### Pattern properties
+`fast-json-stringify` supports pattern properties as defined inside JSON schema.  
+*patternProperties* must be an object, where the key is a valid regex and the value is an object, declared in this way: `{ type: 'type' }`.  
+*patternProperties* will work only for the properties that are not explicitly listed in the properties object.  
+Example:
+```javascript
+const stringify = fastJson({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    nickname: {
+      type: 'string'
+    }
+  },
+  patternProperties: {
+    'num': {
+      type: 'number'
+    },
+    '.*foo$': {
+      type: 'string'
+    }
+  }
+})
+
+const obj = {
+  nickname: 'nick',
+  matchfoo: 42,
+  otherfoo: 'str'
+  matchnum: 3
+}
+
+console.log(stringify(obj)) // '{"nickname":"nick","matchfoo":"42","otherfoo":"str","matchnum":3}'
+```
+`Object` and `Array` will be stringified as `{}` and `[]`.  
+Since `fast-json-stringify` is faster than `JSON.stringify` because works on a **fixed schema**, we strongly advice you to not pass complex objects or array as object values, but decompose them in their individual properties and stringify them.  
+```javascript
+const stringifyMe = {
+  obj: {
+    filed1: 'str',
+    field2: 42
+  }
+}
+// Not correct
+const stringify = fastJson({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    obj: {
+      type: 'object'
+    }
+  }
+})
+
+// Correct
+const stringify = fastJson({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    field1: {
+      type: 'string'
+    },
+    field2: {
+      type: 'number'
+    }
+  }
+})
 ```
 
 ## Acknowledgements

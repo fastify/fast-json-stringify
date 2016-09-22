@@ -22,7 +22,15 @@ const stringify = fastJson({
       type: 'string'
     }
   },
-  required: ['now']
+  required: ['now'],
+  patternProperties: {
+    '.*foo$': {
+      type: 'string'
+    },
+    'test': {
+      type: 'number'
+    }
+  }
 })
 
 console.log(stringify({
@@ -30,5 +38,9 @@ console.log(stringify({
   lastName: 'Collina',
   age: 32,
   now: new Date(),
-  reg: /"([^"]|\\")*"/
+  reg: /"([^"]|\\")*"/,
+  foo: 'hello',
+  numfoo: 42,
+  test: 42,
+  strtest: '23'
 }))
