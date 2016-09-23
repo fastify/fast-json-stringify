@@ -12,7 +12,6 @@ function build (schema) {
     ${$asNull.toString()}
     ${$asBoolean.toString()}
     ${$asRegExp.toString()}
-    ${$coerce.toString()}
   `
   var main
 
@@ -59,7 +58,7 @@ function $asNumber (i) {
   if (isNaN(num)) {
     return 'null'
   } else {
-    return '' + i
+    return '' + num
   }
 }
 
@@ -132,22 +131,6 @@ function $asRegExp (reg) {
   return '"' + reg + '"'
 }
 
-function $coerce (value, type) {
-  if (type === 'string') {
-    return String(value)
-  } else if (type === 'number') {
-    return Number(value)
-  } else if (type === 'boolean') {
-    return Boolean(value)
-  } else if (type === 'object') {
-    return {}
-  } else if (type === 'array') {
-    return []
-  } else {
-    throw new Error('Cannot coerce ' + value + ' to ' + type)
-  }
-}
-
 function addPatternProperties (pp) {
   let code = `
       var keys = Object.keys(obj)
@@ -168,9 +151,25 @@ function addPatternProperties (pp) {
       code += `
           json += $asString(keys[i]) + ':[],'
       `
+    } else if (type === 'null') {
+      code += `
+          json += $asString(keys[i]) +':null,'
+      `
+    } else if (type === 'string') {
+      code += `
+          json += $asString(keys[i]) + ':' + $asString(obj[keys[i]]) + ','
+      `
+    } else if (type === 'number' || type === 'integer') {
+      code += `
+          json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]]) + ','
+      `
+    } else if (type === 'boolean') {
+      code += `
+          json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]]) + ','
+      `
     } else {
       code += `
-            json += $asString(keys[i]) + ':' + $as${type[0].toUpperCase() + type.slice(1)}($coerce(obj[keys[i]], '${type}')) + ','
+          throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ${type}')
       `
     }
     code += `
