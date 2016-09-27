@@ -4,7 +4,13 @@ function build (schema) {
   /*eslint no-new-func: "off"*/
   var code = `
     'use strict'
+  `
+  // used to support patternProperties and additionalProperties
+  // they need to check if a field belongs to the properties in the schema
+  code += `
     const properties = ${JSON.stringify(schema.properties)}
+  `
+  code += `
     ${$asString.toString()}
     ${$asStringSmall.toString()}
     ${$asStringLong.toString()}
