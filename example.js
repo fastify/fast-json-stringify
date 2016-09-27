@@ -20,6 +20,25 @@ const stringify = fastJson({
     },
     reg: {
       type: 'string'
+    },
+    obj: {
+      type: 'object',
+      properties: {
+        bool: {
+          type: 'boolean'
+        }
+      }
+    },
+    arr: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          str: {
+            type: 'string'
+          }
+        }
+      }
     }
   },
   required: ['now'],
@@ -42,5 +61,7 @@ console.log(stringify({
   foo: 'hello',
   numfoo: 42,
   test: 42,
-  strtest: '23'
+  strtest: '23',
+  arr: [{ str: 'stark' }, { str: 'lannister' }],
+  obj: { bool: true }
 }))

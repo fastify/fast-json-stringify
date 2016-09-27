@@ -153,40 +153,6 @@ const obj = {
 
 console.log(stringify(obj)) // '{"nickname":"nick","matchfoo":"42","otherfoo":"str","matchnum":3}'
 ```
-`Object` and `Array` will be stringified as `{}` and `[]`.  
-Since `fast-json-stringify` is faster than `JSON.stringify` because works on a **fixed schema**, we strongly advice you to not pass complex objects or array as object values, but decompose them in their individual properties and stringify them.  
-```javascript
-const stringifyMe = {
-  obj: {
-    filed1: 'str',
-    field2: 42
-  }
-}
-// Not correct
-const stringify = fastJson({
-  title: 'Example Schema',
-  type: 'object',
-  properties: {
-    obj: {
-      type: 'object'
-    }
-  }
-})
-
-// Correct
-const stringify = fastJson({
-  title: 'Example Schema',
-  type: 'object',
-  properties: {
-    field1: {
-      type: 'string'
-    },
-    field2: {
-      type: 'number'
-    }
-  }
-})
-```
 
 ## Acknowledgements
 
