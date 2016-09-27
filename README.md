@@ -58,6 +58,7 @@ Build a `stringify()` function based on
 
 Supported types:
 
+ * `'string'`
  * `'integer'`
  * `'number'`
  * `'array'`
@@ -106,10 +107,10 @@ const stringify = fastJson({
       type: 'string'
     },
     mail: {
-      type: 'string',
-      required: true
+      type: 'string'
     }
-  }
+  },
+  required: ['mail']
 })
 
 const obj = {
@@ -117,6 +118,40 @@ const obj = {
 }
 
 console.log(stringify(obj)) // '{"mail":"mail@example.com"}'
+```
+
+#### Pattern properties
+`fast-json-stringify` supports pattern properties as defined inside JSON schema.  
+*patternProperties* must be an object, where the key is a valid regex and the value is an object, declared in this way: `{ type: 'type' }`.  
+*patternProperties* will work only for the properties that are not explicitly listed in the properties object.  
+Example:
+```javascript
+const stringify = fastJson({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    nickname: {
+      type: 'string'
+    }
+  },
+  patternProperties: {
+    'num': {
+      type: 'number'
+    },
+    '.*foo$': {
+      type: 'string'
+    }
+  }
+})
+
+const obj = {
+  nickname: 'nick',
+  matchfoo: 42,
+  otherfoo: 'str'
+  matchnum: 3
+}
+
+console.log(stringify(obj)) // '{"nickname":"nick","matchfoo":"42","otherfoo":"str","matchnum":3}'
 ```
 
 ## Acknowledgements

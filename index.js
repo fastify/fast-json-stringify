@@ -4,7 +4,13 @@ function build (schema) {
   /*eslint no-new-func: "off"*/
   var code = `
     'use strict'
-
+  `
+  // used to support patternProperties and additionalProperties
+  // they need to check if a field belongs to the properties in the schema
+  code += `
+    const properties = ${JSON.stringify(schema.properties)}
+  `
+  code += `
     ${$asString.toString()}
     ${$asStringSmall.toString()}
     ${$asStringLong.toString()}
@@ -58,7 +64,7 @@ function $asNumber (i) {
   if (isNaN(num)) {
     return 'null'
   } else {
-    return '' + i
+    return '' + num
   }
 }
 
@@ -131,11 +137,67 @@ function $asRegExp (reg) {
   return '"' + reg + '"'
 }
 
+function addPatternProperties (pp) {
+  let code = `
+      var keys = Object.keys(obj)
+      for (var i = 0; i < keys.length; i++) {
+        if (properties[keys[i]]) continue
+  `
+  Object.keys(pp).forEach((regex, index) => {
+    var type = pp[regex].type
+    code += `
+        if (/${regex}/.test(keys[i])) {
+    `
+    if (type === 'object') {
+      code += buildObject(pp[regex], '', 'buildObjectPP' + index)
+      code += `
+          json += $asString(keys[i]) + ':' + buildObjectPP${index}(obj[keys[i]]) + ','
+      `
+    } else if (type === 'array') {
+      code += buildArray(pp[regex], '', 'buildArrayPP' + index)
+      code += `
+          json += $asString(keys[i]) + ':' + buildArrayPP${index}(obj[keys[i]]) + ','
+      `
+    } else if (type === 'null') {
+      code += `
+          json += $asString(keys[i]) +':null,'
+      `
+    } else if (type === 'string') {
+      code += `
+          json += $asString(keys[i]) + ':' + $asString(obj[keys[i]]) + ','
+      `
+    } else if (type === 'number' || type === 'integer') {
+      code += `
+          json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]]) + ','
+      `
+    } else if (type === 'boolean') {
+      code += `
+          json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]]) + ','
+      `
+    } else {
+      code += `
+          throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ${type}')
+      `
+    }
+    code += `
+        }
+    `
+  })
+  code += `
+      }
+      if (Object.keys(properties).length === 0) json = json.substring(0, json.length - 1)
+  `
+  return code
+}
+
 function buildObject (schema, code, name) {
   code += `
     function ${name} (obj) {
       var json = '{'
   `
+  if (schema.patternProperties) {
+    code += addPatternProperties(schema.patternProperties)
+  }
 
   var laterCode = ''
 
@@ -177,7 +239,6 @@ function buildObject (schema, code, name) {
   `
 
   code += laterCode
-
   return code
 }
 
