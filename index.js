@@ -137,19 +137,20 @@ function addPatternProperties (pp) {
       for (var i = 0; i < keys.length; i++) {
         if (properties[keys[i]]) continue
   `
-  Object.keys(pp).forEach(regex => {
+  Object.keys(pp).forEach((regex, index) => {
     var type = pp[regex].type
-    if (type === 'integer') type = 'number'
     code += `
         if (/${regex}/.test(keys[i])) {
     `
     if (type === 'object') {
+      code += buildObject(pp[regex], '', 'buildObjectPP' + index)
       code += `
-          json += $asString(keys[i]) + ':{},'
+          json += $asString(keys[i]) + ':' + buildObjectPP${index}(obj[keys[i]]) + ','
       `
     } else if (type === 'array') {
+      code += buildArray(pp[regex], '', 'buildArrayPP' + index)
       code += `
-          json += $asString(keys[i]) + ':[],'
+          json += $asString(keys[i]) + ':' + buildArrayPP${index}(obj[keys[i]]) + ','
       `
     } else if (type === 'null') {
       code += `
@@ -232,7 +233,6 @@ function buildObject (schema, code, name) {
   `
 
   code += laterCode
-
   return code
 }
 
