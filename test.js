@@ -418,13 +418,18 @@ test('patternProperties - object coerce', (t) => {
     properties: {},
     patternProperties: {
       foo: {
-        type: 'object'
+        type: 'object',
+        properties: {
+          answer: {
+            type: 'number'
+          }
+        }
       }
     }
   })
 
-  const obj = { foo: true, ofoo: '42', arrfoo: [1, 2], objfoo: { answer: 42 } }
-  t.equal('{"foo":{},"ofoo":{},"arrfoo":{},"objfoo":{}}', stringify(obj))
+  const obj = { objfoo: { answer: 42 } }
+  t.equal('{"objfoo":{"answer":42}}', stringify(obj))
 })
 
 test('patternProperties - array coerce', (t) => {
@@ -435,13 +440,16 @@ test('patternProperties - array coerce', (t) => {
     properties: {},
     patternProperties: {
       foo: {
-        type: 'array'
+        type: 'array',
+        items: {
+          type: 'string'
+        }
       }
     }
   })
 
   const obj = { foo: 'true', ofoo: 0, arrfoo: [1, 2], objfoo: { tyrion: 'lannister' } }
-  t.equal('{"foo":[],"ofoo":[],"arrfoo":[],"objfoo":[]}', stringify(obj))
+  t.equal('{"foo":["t","r","u","e"],"ofoo":[],"arrfoo":["1","2"],"objfoo":[]}', stringify(obj))
 })
 
 test('patternProperties - throw on unknown type', (t) => {
