@@ -1,7 +1,7 @@
 'use strict'
 
 function build (schema) {
-  /*eslint no-new-func: "off"*/
+  /* eslint no-new-func: "off" */
   var code = `
     'use strict'
   `
