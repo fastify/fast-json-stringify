@@ -65,6 +65,19 @@ test('additionalProperties should not change properties and patternProperties', 
   t.equal('{"ofoo":"42","test":42,"foo":"42"}', stringify(obj))
 })
 
+test('additionalProperties set to true, use of fast-safe-stringify', (t) => {
+  t.plan(1)
+  const stringify = build({
+    title: 'check string coerce',
+    type: 'object',
+    properties: {},
+    additionalProperties: true
+  })
+
+  const obj = { foo: true, ofoo: 42, arrfoo: ['array', 'test'], objfoo: { a: 'world' } }
+  t.equal('{"foo":true,"ofoo":42,"arrfoo":["array","test"],"objfoo":{"a":"world"}}', stringify(obj))
+})
+
 test('additionalProperties - string coerce', (t) => {
   t.plan(1)
   const stringify = build({
