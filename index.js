@@ -137,7 +137,7 @@ function $asRegExp (reg) {
   return '"' + reg + '"'
 }
 
-function addPatternProperties (pp) {
+function addPatternProperties (pp, ap) {
   let code = `
       var keys = Object.keys(obj)
       for (var i = 0; i < keys.length; i++) {
@@ -176,18 +176,70 @@ function addPatternProperties (pp) {
       `
     } else {
       code += `
-          throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ${type}')
+        throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ${type}')
       `
     }
+
     code += `
+          continue
         }
     `
   })
+  if (ap) {
+    code += additionalProperty(ap)
+  }
+
   code += `
       }
-      if (Object.keys(properties).length === 0) json = json.substring(0, json.length - 1)
   `
   return code
+}
+
+function additionalProperty (ap) {
+  let code = ''
+  let type = ap.type
+  if (type === 'object') {
+    code += buildObject(ap, '', 'buildObjectAP')
+    code += `
+        json += $asString(keys[i]) + ':' + buildObjectAP(obj[keys[i]]) + ','
+    `
+  } else if (type === 'array') {
+    code += buildArray(ap, '', 'buildArrayAP')
+    code += `
+        json += $asString(keys[i]) + ':' + buildArrayAP(obj[keys[i]]) + ','
+    `
+  } else if (type === 'null') {
+    code += `
+        json += $asString(keys[i]) +':null,'
+    `
+  } else if (type === 'string') {
+    code += `
+        json += $asString(keys[i]) + ':' + $asString(obj[keys[i]]) + ','
+    `
+  } else if (type === 'number' || type === 'integer') {
+    code += `
+        json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]]) + ','
+    `
+  } else if (type === 'boolean') {
+    code += `
+        json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]]) + ','
+    `
+  } else {
+    code += `
+        throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ${type}')
+    `
+  }
+  return code
+}
+
+function addAdditionalProperties (ap) {
+  return `
+      var keys = Object.keys(obj)
+      for (var i = 0; i < keys.length; i++) {
+        if (properties[keys[i]]) continue
+        ${additionalProperty(ap)}
+      }
+  `
 }
 
 function buildObject (schema, code, name) {
@@ -195,8 +247,14 @@ function buildObject (schema, code, name) {
     function ${name} (obj) {
       var json = '{'
   `
+
   if (schema.patternProperties) {
-    code += addPatternProperties(schema.patternProperties)
+    code += addPatternProperties(schema.patternProperties, schema.additionalProperties)
+  } else if (schema.additionalProperties && !schema.patternProperties) {
+    if (schema.additionalProperties === true) {
+      throw new TypeError('additionalProperties must be an object, see the docs for more info')
+    }
+    code += addAdditionalProperties(schema.additionalProperties)
   }
 
   var laterCode = ''
@@ -232,7 +290,9 @@ function buildObject (schema, code, name) {
     `
   })
 
+  // Removes the comma if is the last element of the string (in case there are not properties)
   code += `
+      if (json[json.length - 1] === ',') json = json.substring(0, json.length - 1)
       json += '}'
       return json
     }
