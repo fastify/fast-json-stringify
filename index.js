@@ -1,5 +1,7 @@
 'use strict'
 
+const fastSafeStringify = require('fast-safe-stringify')
+
 function build (schema) {
   /* eslint no-new-func: "off" */
   var code = `
@@ -51,7 +53,9 @@ function build (schema) {
     ;
     return ${main}
   `
-
+  if (schema.additionalProperties === true) {
+    return (new Function('fastSafeStringify', code))(fastSafeStringify)
+  }
   return (new Function(code))()
 }
 
@@ -197,6 +201,11 @@ function addPatternProperties (pp, ap) {
 
 function additionalProperty (ap) {
   let code = ''
+  if (ap === true) {
+    return `
+        json += $asString(keys[i]) + ':' + fastSafeStringify(obj[keys[i]]) + ','
+    `
+  }
   let type = ap.type
   if (type === 'object') {
     code += buildObject(ap, '', 'buildObjectAP')
@@ -251,9 +260,6 @@ function buildObject (schema, code, name) {
   if (schema.patternProperties) {
     code += addPatternProperties(schema.patternProperties, schema.additionalProperties)
   } else if (schema.additionalProperties && !schema.patternProperties) {
-    if (schema.additionalProperties === true) {
-      throw new TypeError('additionalProperties must be an object, see the docs for more info')
-    }
     code += addAdditionalProperties(schema.additionalProperties)
   }
 
