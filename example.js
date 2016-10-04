@@ -49,6 +49,9 @@ const stringify = fastJson({
     'test': {
       type: 'number'
     }
+  },
+  additionalProperties: {
+    type: 'string'
   }
 })
 
@@ -63,5 +66,8 @@ console.log(stringify({
   test: 42,
   strtest: '23',
   arr: [{ str: 'stark' }, { str: 'lannister' }],
-  obj: { bool: true }
+  obj: { bool: true },
+  notmatch: 'valar morghulis',
+  notmatchobj: { a: true },
+  notmatchnum: 42
 }))
