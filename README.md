@@ -175,8 +175,10 @@ console.log(stringify(obj)) // '{"matchfoo":"42","otherfoo":"str","matchnum":3,"
 #### Additional properties
 `fast-json-stringify` supports additional properties as defined inside JSON schema.  
 *additionalProperties* must be an object or a boolean, declared in this way: `{ type: 'type' }`.  
-*additionalProperties* will work only for the properties that are not explicitly listed in the *properties* and *patternProperties* objects.  
-If *additionalProperties* is not present or is setted to false, every property that is not explicitly listed in the *properties* and *patternProperties* objects, will be ignored, as said in <a href="missingFields">Missing fields</a>.  
+*additionalProperties* will work only for the properties that are not explicitly listed in the *properties* and *patternProperties* objects.
+
+If *additionalProperties* is not present or is setted to false, every property that is not explicitly listed in the *properties* and *patternProperties* objects, will be ignored, as said in <a href="#missingFields">Missing fields</a>.  
+If *additionalProperties* is setted to *true*, it will be used `fast-safe-stringify` to stringify the additional properties. If you want to achieve maximum performances we strongly encourage you to use a fixed schema where possible.  
 Example:
 ```javascript
 const stringify = fastJson({
