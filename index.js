@@ -141,13 +141,17 @@ function $asRegExp (reg) {
   return '"' + reg + '"'
 }
 
-function addPatternProperties (pp, ap) {
+function addPatternProperties (schema) {
+  var pp = schema.patternProperties
   let code = `
       var keys = Object.keys(obj)
       for (var i = 0; i < keys.length; i++) {
         if (properties[keys[i]]) continue
   `
   Object.keys(pp).forEach((regex, index) => {
+    if (pp[regex]['$ref']) {
+      pp[regex] = refFinder(pp[regex]['$ref'], schema)
+    }
     var type = pp[regex].type
     code += `
         if (/${regex}/.test(keys[i])) {
@@ -189,8 +193,8 @@ function addPatternProperties (pp, ap) {
         }
     `
   })
-  if (ap) {
-    code += additionalProperty(ap)
+  if (schema.additionalProperties) {
+    code += additionalProperty(schema)
   }
 
   code += `
@@ -199,13 +203,18 @@ function addPatternProperties (pp, ap) {
   return code
 }
 
-function additionalProperty (ap) {
+function additionalProperty (schema) {
+  var ap = schema.additionalProperties
   let code = ''
   if (ap === true) {
     return `
         json += $asString(keys[i]) + ':' + fastSafeStringify(obj[keys[i]]) + ','
     `
   }
+  if (ap['$ref']) {
+    ap = refFinder(ap['$ref'], schema)
+  }
+
   let type = ap.type
   if (type === 'object') {
     code += buildObject(ap, '', 'buildObjectAP')
@@ -241,14 +250,29 @@ function additionalProperty (ap) {
   return code
 }
 
-function addAdditionalProperties (ap) {
+function addAdditionalProperties (schema) {
   return `
       var keys = Object.keys(obj)
       for (var i = 0; i < keys.length; i++) {
         if (properties[keys[i]]) continue
-        ${additionalProperty(ap)}
+        ${additionalProperty(schema)}
       }
   `
+}
+
+function refFinder (ref, schema) {
+  // Split file from walk
+  ref = ref.split('#')
+  // If external file
+  if (ref[0]) {
+    schema = require(ref[0])
+  }
+  const walk = ref[1].split('/')
+  let code = 'return schema'
+  for (let i = 1; i < walk.length; i++) {
+    code += `['${walk[i]}']`
+  }
+  return (new Function('schema', code))(schema)
 }
 
 function buildObject (schema, code, name) {
@@ -258,9 +282,9 @@ function buildObject (schema, code, name) {
   `
 
   if (schema.patternProperties) {
-    code += addPatternProperties(schema.patternProperties, schema.additionalProperties)
+    code += addPatternProperties(schema)
   } else if (schema.additionalProperties && !schema.patternProperties) {
-    code += addAdditionalProperties(schema.additionalProperties)
+    code += addAdditionalProperties(schema)
   }
 
   var laterCode = ''
@@ -272,6 +296,10 @@ function buildObject (schema, code, name) {
       if (obj.${key} !== undefined) {
         json += '${$asString(key)}:'
       `
+
+    if (schema.properties[key]['$ref']) {
+      schema.properties[key] = refFinder(schema.properties[key]['$ref'], schema)
+    }
 
     const result = nested(laterCode, name, '.' + key, schema.properties[key])
 
