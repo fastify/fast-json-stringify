@@ -26,6 +26,7 @@ fast-json-stringify obj x 5,085,148 ops/sec ±1.56% (89 runs sampled)
  - <a href="#missingFields">`Missing fields`</a>
  - <a href="#patternProperties">`Pattern Properties`</a>
  - <a href="#additionalProperties">`Additional Properties`</a>
+ - <a href="#ref">`Reuse - $ref`</a>
 - <a href="#acknowledgements">`Acknowledgements`</a>
 - <a href="#license">`License`</a>
 
@@ -212,6 +213,85 @@ const obj = {
 }
 
 console.log(stringify(obj)) // '{"matchfoo":"42","otherfoo":"str","matchnum":3,"nomatchstr":"valar morghulis",nomatchint:"313","nickname":"nick"}'
+```
+
+<a name="ref"></a>
+#### Reuse - $ref
+If you want to reuse a definition of a value, you can use the property `$ref`.  
+The value of `$ref` must be a string in [JSON Pointer](https://tools.ietf.org/html/rfc6901) format.  
+Example:
+```javascript
+const schema = {
+  title: 'Example Schema',
+  definitions: {
+    num: {
+      type: 'object',
+      properties: {
+        int: {
+          type: 'integer'
+        }
+      }
+    },
+    str: {
+      type: 'string'
+    }
+  },
+  type: 'object',
+  properties: {
+    nickname: {
+      $ref: '#/definitions/str'
+    }
+  },
+  patternProperties: {
+    'num': {
+      $ref: '#/definitions/num'
+    }
+  },
+  additionalProperties: {
+    $ref: '#/definitions/def'
+  }
+}
+
+const stringify = fastJson(schema)
+```
+If you need to use an external definition, you can pass it as an option to `fast-json-stringify`.  
+Example:
+```javascript
+const schema = {
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    nickname: {
+      $ref: 'strings#/definitions/str'
+    }
+  },
+  patternProperties: {
+    'num': {
+      $ref: 'numbers#/definitions/num'
+    }
+  },
+  additionalProperties: {
+    $ref: 'strings#/definitions/def'
+  }
+}
+
+const externalSchema = {
+  numbers: {
+    definitions: {
+      num: {
+        type: 'object',
+        properties: {
+          int: {
+            type: 'integer'
+          }
+        }
+      }
+    }
+  },
+  strings: require('./string-def.json')
+}
+
+const stringify = fastJson(schema, { schema: externalSchema })
 ```
 
 <a name="acknowledgements"></a>
