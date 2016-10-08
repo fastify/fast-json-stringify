@@ -2,7 +2,8 @@
 
 const fastSafeStringify = require('fast-safe-stringify')
 
-function build (schema) {
+function build (schema, options) {
+  options = options || {}
   /* eslint no-new-func: "off" */
   var code = `
     'use strict'
@@ -26,7 +27,7 @@ function build (schema) {
   switch (schema.type) {
     case 'object':
       main = '$main'
-      code = buildObject(schema, code, main)
+      code = buildObject(schema, code, main, options.schema)
       break
     case 'string':
       main = $asString.name
@@ -43,7 +44,7 @@ function build (schema) {
       break
     case 'array':
       main = '$main'
-      code = buildArray(schema, code, main)
+      code = buildArray(schema, code, main, options.schema)
       break
     default:
       throw new Error(`${schema.type} unsupported`)
@@ -141,7 +142,7 @@ function $asRegExp (reg) {
   return '"' + reg + '"'
 }
 
-function addPatternProperties (schema) {
+function addPatternProperties (schema, externalSchema) {
   var pp = schema.patternProperties
   let code = `
       var keys = Object.keys(obj)
@@ -150,19 +151,19 @@ function addPatternProperties (schema) {
   `
   Object.keys(pp).forEach((regex, index) => {
     if (pp[regex]['$ref']) {
-      pp[regex] = refFinder(pp[regex]['$ref'], schema)
+      pp[regex] = refFinder(pp[regex]['$ref'], schema, externalSchema)
     }
     var type = pp[regex].type
     code += `
         if (/${regex}/.test(keys[i])) {
     `
     if (type === 'object') {
-      code += buildObject(pp[regex], '', 'buildObjectPP' + index)
+      code += buildObject(pp[regex], '', 'buildObjectPP' + index, externalSchema)
       code += `
           json += $asString(keys[i]) + ':' + buildObjectPP${index}(obj[keys[i]]) + ','
       `
     } else if (type === 'array') {
-      code += buildArray(pp[regex], '', 'buildArrayPP' + index)
+      code += buildArray(pp[regex], '', 'buildArrayPP' + index, externalSchema)
       code += `
           json += $asString(keys[i]) + ':' + buildArrayPP${index}(obj[keys[i]]) + ','
       `
@@ -194,7 +195,7 @@ function addPatternProperties (schema) {
     `
   })
   if (schema.additionalProperties) {
-    code += additionalProperty(schema)
+    code += additionalProperty(schema, externalSchema)
   }
 
   code += `
@@ -203,7 +204,7 @@ function addPatternProperties (schema) {
   return code
 }
 
-function additionalProperty (schema) {
+function additionalProperty (schema, externalSchema) {
   var ap = schema.additionalProperties
   let code = ''
   if (ap === true) {
@@ -212,17 +213,17 @@ function additionalProperty (schema) {
     `
   }
   if (ap['$ref']) {
-    ap = refFinder(ap['$ref'], schema)
+    ap = refFinder(ap['$ref'], schema, externalSchema)
   }
 
   let type = ap.type
   if (type === 'object') {
-    code += buildObject(ap, '', 'buildObjectAP')
+    code += buildObject(ap, '', 'buildObjectAP', externalSchema)
     code += `
         json += $asString(keys[i]) + ':' + buildObjectAP(obj[keys[i]]) + ','
     `
   } else if (type === 'array') {
-    code += buildArray(ap, '', 'buildArrayAP')
+    code += buildArray(ap, '', 'buildArrayAP', externalSchema)
     code += `
         json += $asString(keys[i]) + ':' + buildArrayAP(obj[keys[i]]) + ','
     `
@@ -250,22 +251,22 @@ function additionalProperty (schema) {
   return code
 }
 
-function addAdditionalProperties (schema) {
+function addAdditionalProperties (schema, externalSchema) {
   return `
       var keys = Object.keys(obj)
       for (var i = 0; i < keys.length; i++) {
         if (properties[keys[i]]) continue
-        ${additionalProperty(schema)}
+        ${additionalProperty(schema, externalSchema)}
       }
   `
 }
 
-function refFinder (ref, schema) {
+function refFinder (ref, schema, externalSchema) {
   // Split file from walk
   ref = ref.split('#')
   // If external file
   if (ref[0]) {
-    schema = require(ref[0])
+    schema = externalSchema[ref[0]]
   }
   const walk = ref[1].split('/')
   let code = 'return schema'
@@ -275,16 +276,16 @@ function refFinder (ref, schema) {
   return (new Function('schema', code))(schema)
 }
 
-function buildObject (schema, code, name) {
+function buildObject (schema, code, name, externalSchema) {
   code += `
     function ${name} (obj) {
       var json = '{'
   `
 
   if (schema.patternProperties) {
-    code += addPatternProperties(schema)
+    code += addPatternProperties(schema, externalSchema)
   } else if (schema.additionalProperties && !schema.patternProperties) {
-    code += addAdditionalProperties(schema)
+    code += addAdditionalProperties(schema, externalSchema)
   }
 
   var laterCode = ''
@@ -298,10 +299,10 @@ function buildObject (schema, code, name) {
       `
 
     if (schema.properties[key]['$ref']) {
-      schema.properties[key] = refFinder(schema.properties[key]['$ref'], schema)
+      schema.properties[key] = refFinder(schema.properties[key]['$ref'], schema, externalSchema)
     }
 
-    const result = nested(laterCode, name, '.' + key, schema.properties[key])
+    const result = nested(laterCode, name, '.' + key, schema.properties[key], externalSchema)
 
     code += result.code
     laterCode = result.laterCode
@@ -336,7 +337,7 @@ function buildObject (schema, code, name) {
   return code
 }
 
-function buildArray (schema, code, name) {
+function buildArray (schema, code, name, externalSchema) {
   code += `
     function ${name} (obj) {
       var json = '['
@@ -344,7 +345,7 @@ function buildArray (schema, code, name) {
 
   var laterCode = ''
 
-  const result = nested(laterCode, name, '[i]', schema.items)
+  const result = nested(laterCode, name, '[i]', schema.items, externalSchema)
 
   code += `
     const l = obj.length
@@ -370,7 +371,7 @@ function buildArray (schema, code, name) {
   return code
 }
 
-function nested (laterCode, name, key, schema) {
+function nested (laterCode, name, key, schema, externalSchema) {
   var code = ''
   var funcName
   const type = schema.type
@@ -398,14 +399,14 @@ function nested (laterCode, name, key, schema) {
       break
     case 'object':
       funcName = (name + key).replace(/[-.\[\]]/g, '')
-      laterCode = buildObject(schema, laterCode, funcName)
+      laterCode = buildObject(schema, laterCode, funcName, externalSchema)
       code += `
         json += ${funcName}(obj${key})
       `
       break
     case 'array':
       funcName = (name + key).replace(/[-.\[\]]/g, '')
-      laterCode = buildArray(schema, laterCode, funcName)
+      laterCode = buildArray(schema, laterCode, funcName, externalSchema)
       code += `
         json += ${funcName}(obj${key})
       `
