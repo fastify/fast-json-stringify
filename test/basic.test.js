@@ -51,6 +51,11 @@ buildTest({
 }, 'hello world')
 
 buildTest({
+  title: 'string',
+  type: 'string'
+}, 'hello\nworld')
+
+buildTest({
   title: 'string with quotes',
   type: 'string'
 }, 'hello """" world')
