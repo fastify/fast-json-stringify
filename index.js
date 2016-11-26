@@ -264,12 +264,13 @@ function buildObject (schema, code, name, externalSchema) {
 
     code += result.code
     laterCode = result.laterCode
-
+    /* eslint-disable no-useless-escape */
     if (i < a.length - 1) {
       code += `
         json += \',\'
       `
     }
+    /* eslint-enable no-useless-escape */
 
     if (schema.required && schema.required.indexOf(key) !== -1) {
       code += `
@@ -356,14 +357,14 @@ function nested (laterCode, name, key, schema, externalSchema) {
       `
       break
     case 'object':
-      funcName = (name + key).replace(/[-.\[\]]/g, '')
+      funcName = (name + key).replace(/[-.\[\]]/g, '') // eslint-disable-line
       laterCode = buildObject(schema, laterCode, funcName, externalSchema)
       code += `
         json += ${funcName}(obj${key})
       `
       break
     case 'array':
-      funcName = (name + key).replace(/[-.\[\]]/g, '')
+      funcName = (name + key).replace(/[-.\[\]]/g, '') // eslint-disable-line
       laterCode = buildArray(schema, laterCode, funcName, externalSchema)
       code += `
         json += ${funcName}(obj${key})
