@@ -1,20 +1,20 @@
 # fast-json-stringify&nbsp;&nbsp;[![Build Status](https://travis-ci.org/mcollina/fast-json-stringify.svg)](https://travis-ci.org/mcollina/fast-json-stringify)
 
-__fast-json-stringify__ is x1-5 times faster than `JSON.stringify()`.
+__fast-json-stringify__ is x1-4 times faster than `JSON.stringify()`.
 It is particularly suited if you are sending small JSON payloads, the
 advantages reduces on large payloads.
 
 Benchmarks:
 
 ```
-JSON.stringify array x 3,500 ops/sec ±0.91% (85 runs sampled)
-fast-json-stringify array x 4,456 ops/sec ±1.68% (87 runs sampled)
-JSON.stringify long string x 13,395 ops/sec ±0.88% (91 runs sampled)
-fast-json-stringify long string x 95,488 ops/sec ±1.04% (90 runs sampled)
-JSON.stringify short string x 5,059,316 ops/sec ±0.86% (92 runs sampled)
-fast-json-stringify short string x 12,219,967 ops/sec ±1.16% (91 runs sampled)
-JSON.stringify obj x 1,763,980 ops/sec ±1.30% (88 runs sampled)
-fast-json-stringify obj x 5,085,148 ops/sec ±1.56% (89 runs sampled)
+JSON.stringify array x 3,679 ops/sec ±1.01% (85 runs sampled)
+fast-json-stringify array x 4,618 ops/sec ±1.64% (87 runs sampled)
+JSON.stringify long string x 13,303 ops/sec ±1.01% (89 runs sampled)
+fast-json-stringify long string x 13,489 ops/sec ±0.88% (90 runs sampled)
+JSON.stringify short string x 4,974,749 ops/sec ±1.14% (86 runs sampled)
+fast-json-stringify short string x 11,030,700 ops/sec ±0.82% (89 runs sampled)
+JSON.stringify obj x 1,774,593 ops/sec ±1.07% (90 runs sampled)
+fast-json-stringify obj x 4,976,369 ops/sec ±1.00% (89 runs sampled)
 ```
 
 #### Table of contents:

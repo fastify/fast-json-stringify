@@ -15,8 +15,6 @@ function build (schema, options) {
   `
   code += `
     ${$asString.toString()}
-    ${$asStringSmall.toString()}
-    ${$asStringLong.toString()}
     ${$asNumber.toString()}
     ${$asNull.toString()}
     ${$asBoolean.toString()}
@@ -86,47 +84,7 @@ function $asString (str) {
     str = str.toString()
   }
 
-  if (str.length < 42) {
-    return $asStringSmall(str)
-  } else {
-    return $asStringLong(str)
-  }
-}
-
-function $asStringLong (str) {
-  var result = ''
-  var l = str.length
-  var i
-
-  for (;(i = str.indexOf('"')) >= 0 && i < l;) {
-    result += str.slice(0, i) + '\\"'
-    str = str.slice(i + 1)
-    l = str.length
-  }
-
-  if (l > 0) {
-    result += str
-  }
-
-  return '"' + result + '"'
-}
-
-function $asStringSmall (str) {
-  var result = ''
-  var last = 0
-  var l = str.length
-  for (var i = 0; i < l; i++) {
-    if (str[i] === '"') {
-      result += str.slice(last, i) + '\\"'
-      last = i + 1
-    }
-  }
-  if (last === 0) {
-    result = str
-  } else {
-    result += str.slice(last)
-  }
-  return '"' + result + '"'
+  return JSON.stringify(str)
 }
 
 function $asRegExp (reg) {
@@ -306,12 +264,13 @@ function buildObject (schema, code, name, externalSchema) {
 
     code += result.code
     laterCode = result.laterCode
-
+    /* eslint-disable no-useless-escape */
     if (i < a.length - 1) {
       code += `
         json += \',\'
       `
     }
+    /* eslint-enable no-useless-escape */
 
     if (schema.required && schema.required.indexOf(key) !== -1) {
       code += `
@@ -398,14 +357,14 @@ function nested (laterCode, name, key, schema, externalSchema) {
       `
       break
     case 'object':
-      funcName = (name + key).replace(/[-.\[\]]/g, '')
+      funcName = (name + key).replace(/[-.\[\]]/g, '') // eslint-disable-line
       laterCode = buildObject(schema, laterCode, funcName, externalSchema)
       code += `
         json += ${funcName}(obj${key})
       `
       break
     case 'array':
-      funcName = (name + key).replace(/[-.\[\]]/g, '')
+      funcName = (name + key).replace(/[-.\[\]]/g, '') // eslint-disable-line
       laterCode = buildArray(schema, laterCode, funcName, externalSchema)
       code += `
         json += ${funcName}(obj${key})
