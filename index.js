@@ -18,7 +18,6 @@ function build (schema, options) {
     ${$asNumber.toString()}
     ${$asNull.toString()}
     ${$asBoolean.toString()}
-    ${$asRegExp.toString()}
   `
   var main
 
@@ -79,25 +78,12 @@ function $asString (str) {
   if (str instanceof Date) {
     return '"' + str.toISOString() + '"'
   } else if (str instanceof RegExp) {
-    return $asRegExp(str)
+    str = str.source
   } else if (typeof str !== 'string') {
     str = str.toString()
   }
 
   return JSON.stringify(str)
-}
-
-function $asRegExp (reg) {
-  reg = reg.source
-
-  for (var i = 0, len = reg.length; i < len; i++) {
-    if (reg[i] === '\\' || reg[i] === '"') {
-      reg = reg.substring(0, i) + '\\' + reg.substring(i++)
-      len += 2
-    }
-  }
-
-  return '"' + reg + '"'
 }
 
 function addPatternProperties (schema, externalSchema) {
