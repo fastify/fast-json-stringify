@@ -15,6 +15,7 @@ function build (schema, options) {
   `
   code += `
     ${$asString.toString()}
+    ${$asStringSmall.toString()}
     ${$asNumber.toString()}
     ${$asNull.toString()}
     ${$asBoolean.toString()}
@@ -83,7 +84,36 @@ function $asString (str) {
     str = str.toString()
   }
 
-  return JSON.stringify(str)
+  if (str.length < 42) {
+    return $asStringSmall(str)
+  } else {
+    return JSON.stringify(str)
+  }
+}
+
+// magically escape strings for json
+// relying on their charCodeAt
+// everything below 32 needs JSON.stringify()
+// 34 and 92 happens all the time, so we
+// have a fast case for them
+function $asStringSmall (str) {
+  var result = ''
+  var last = 0
+  var l = str.length
+  var point = 255
+  for (var i = 0; i < l && point >= 32; i++) {
+    point = str.charCodeAt(i)
+    if (point === 34 || point === 92) {
+      result += str.slice(last, i) + '\\' + str[i]
+      last = i + 1
+    }
+  }
+  if (last === 0) {
+    result = str
+  } else {
+    result += str.slice(last)
+  }
+  return point < 32 ? JSON.stringify(str) : '"' + result + '"'
 }
 
 function addPatternProperties (schema, externalSchema) {
