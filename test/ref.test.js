@@ -45,6 +45,42 @@ test('ref internal - properties', (t) => {
   t.equal('{"obj":{"str":"test"}}', output)
 })
 
+test('ref internal - items', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'array with $ref',
+    definitions: {
+      def: {
+        type: 'object',
+        properties: {
+          str: {
+            type: 'string'
+          }
+        }
+      }
+    },
+    type: 'array',
+    items: { $ref: '#/definitions/def' }
+  }
+
+  const array = [{
+    str: 'test'
+  }]
+
+  const stringify = build(schema)
+  const output = stringify(array)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal('[{"str":"test"}]', output)
+})
+
 test('ref external - properties', (t) => {
   t.plan(2)
 
@@ -285,4 +321,60 @@ test('ref external - pattern-additional Properties', (t) => {
   }
 
   t.equal('{"reg":{"str":"test"},"obj":{"int":42}}', output)
+})
+
+test('ref internal - deepObject schema', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'object with $ref',
+    definitions: {
+      def: {
+        type: 'object',
+        properties: {
+          coming: {
+            type: 'object',
+            properties: {
+              where: {
+                type: 'string'
+              }
+            }
+          }
+        }
+      }
+    },
+    type: 'object',
+    properties: {
+      winter: {
+        type: 'object',
+        properties: {
+          is: {
+            $ref: '#/definitions/def'
+          }
+        }
+      }
+    }
+  }
+
+  const object = {
+    winter: {
+      is: {
+        coming: {
+          where: 'to town'
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal('{"winter":{"is":{"coming":{"where":"to town"}}}}', output)
 })
