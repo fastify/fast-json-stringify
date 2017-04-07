@@ -45,7 +45,7 @@ function build (schema, options) {
       code = buildArray(schema, code, main, options.schema, schema)
       break
     default:
-      throw new Error(`${schema.type} unsupported`)
+      throw new Error(`${schema.type} unsupported in schema:\n${JSON.stringify(schema, null, 2)}`)
   }
 
   code += `
@@ -391,7 +391,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema) {
       `
       break
     default:
-      throw new Error(`${type} unsupported`)
+      throw new Error(`${type} unsupported in schema:\n${JSON.stringify(fullSchema, null, 2)}`)
   }
 
   return {
