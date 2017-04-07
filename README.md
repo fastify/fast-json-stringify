@@ -1,4 +1,7 @@
-# fast-json-stringify&nbsp;&nbsp;[![Build Status](https://travis-ci.org/fastify/fast-json-stringify.svg?branch=master)](https://travis-ci.org/fastify/fast-json-stringify)
+# fast-json-stringify
+
+[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](http://standardjs.com/)
+  [![Build Status](https://travis-ci.org/fastify/fast-json-stringify.svg?branch=master)](https://travis-ci.org/fastify/fast-json-stringify)
 
 __fast-json-stringify__ is x1-4 times faster than `JSON.stringify()`.
 It is particularly suited if you are sending small JSON payloads, the
@@ -297,7 +300,9 @@ const stringify = fastJson(schema, { schema: externalSchema })
 <a name="acknowledgements"></a>
 ## Acknowledgements
 
-This project was kindly sponsored by [nearForm](http://nearform.com).
+This project is kindly sponsored by:
+- [nearForm](http://nearform.com)
+- [LetzDoIt](http://www.letzdoitapp.com/)
 
 <a name="license"></a>
 ## License
