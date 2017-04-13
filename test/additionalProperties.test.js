@@ -180,3 +180,60 @@ test('additionalProperties - throw on unknown type', (t) => {
     t.pass()
   }
 })
+
+test('nested additionalProperties', (t) => {
+  t.plan(1)
+  const stringify = build({
+    title: 'additionalProperties',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        ap: {
+          type: 'object',
+          additionalProperties: { type: 'string' }
+        }
+      }
+    }
+  })
+
+  let obj = [{ ap: { value: 'string' } }]
+  t.equal('[{"ap":{"value":"string"}}]', stringify(obj))
+})
+
+test('very nested additionalProperties', (t) => {
+  t.plan(1)
+  const stringify = build({
+    title: 'additionalProperties',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        ap: {
+          type: 'object',
+          properties: {
+            nested: {
+              type: 'object',
+              properties: {
+                moarNested: {
+                  type: 'object',
+                  properties: {
+                    finally: {
+                      type: 'object',
+                      additionalProperties: {
+                        type: 'string'
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  let obj = [{ ap: { nested: { moarNested: { finally: { value: 'str' } } } } }]
+  t.equal('[{"ap":{"nested":{"moarNested":{"finally":{"value":"str"}}}}}]', stringify(obj))
+})
