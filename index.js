@@ -11,7 +11,7 @@ function build (schema, options) {
   // used to support patternProperties and additionalProperties
   // they need to check if a field belongs to the properties in the schema
   code += `
-    const properties = ${JSON.stringify(schema.properties)}
+    const properties = ${JSON.stringify(schema.properties)} || {}
   `
   code += `
     ${$asString.toString()}
@@ -264,7 +264,7 @@ function buildObject (schema, code, name, externalSchema, fullSchema) {
 
   var laterCode = ''
 
-  Object.keys(schema.properties).forEach((key, i, a) => {
+  Object.keys(schema.properties || {}).forEach((key, i, a) => {
     // Using obj.key !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
     // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
     code += `
