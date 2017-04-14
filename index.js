@@ -104,8 +104,8 @@ function $asStringSmall (str) {
   for (var i = 0; i < l && point >= 32; i++) {
     point = str.charCodeAt(i)
     if (point === 34 || point === 92) {
-      result += str.slice(last, i) + '\\' + str[i]
-      last = i + 1
+      result += str.slice(last, i) + '\\'
+      last = i
     }
   }
   if (last === 0) {
