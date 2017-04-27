@@ -26,6 +26,7 @@
   "devDependencies": {
     "benchmark": "^2.1.1",
     "is-my-json-valid": "^2.16.0",
+    "long": "^3.2.0",
     "pre-commit": "^1.1.3",
     "standard": "^10.0.0",
     "tap": "^10.3.0"

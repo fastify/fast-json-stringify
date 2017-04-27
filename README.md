@@ -27,6 +27,7 @@ fast-json-stringify obj x 4,976,369 ops/sec ±1.00% (89 runs sampled)
  - <a href="#patternProperties">`Pattern Properties`</a>
  - <a href="#additionalProperties">`Additional Properties`</a>
  - <a href="#ref">`Reuse - $ref`</a>
+ - <a href="#long">`Long integers`</a>
 - <a href="#acknowledgements">`Acknowledgements`</a>
 - <a href="#license">`License`</a>
 
@@ -292,6 +293,30 @@ const externalSchema = {
 }
 
 const stringify = fastJson(schema, { schema: externalSchema })
+```
+
+<a name="long"></a>
+#### Long integers
+Long integers (64-bit) are supported using the [long](https://github.com/dcodeIO/long.js) module.
+Example:
+```javascript
+const Long = require('long')
+
+const stringify = fastJson({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    id: {
+      type: 'integer'
+    }
+  }
+})
+
+const obj = {
+  id: Long.fromString('18446744073709551615', true)
+}
+
+console.log(stringify(obj)) // '{"id":18446744073709551615}'
 ```
 
 <a name="acknowledgements"></a>

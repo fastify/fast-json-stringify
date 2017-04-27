@@ -2,6 +2,13 @@
 
 const fastSafeStringify = require('fast-safe-stringify')
 
+let isLong
+try {
+  isLong = require('long').isLong
+} catch (e) {
+  isLong = null
+}
+
 function build (schema, options) {
   options = options || {}
   /* eslint no-new-func: "off" */
@@ -20,6 +27,19 @@ function build (schema, options) {
     ${$asNull.toString()}
     ${$asBoolean.toString()}
   `
+
+  // only handle longs if the module is used
+  if (isLong) {
+    code += `
+      const isLong = ${isLong.toString()}
+      ${$asInteger.toString()}
+    `
+  } else {
+    code += `
+      const $asInteger = $asNumber
+    `
+  }
+
   var main
 
   switch (schema.type) {
@@ -31,6 +51,8 @@ function build (schema, options) {
       main = $asString.name
       break
     case 'integer':
+      main = $asInteger.name
+      break
     case 'number':
       main = $asNumber.name
       break
@@ -60,6 +82,14 @@ function build (schema, options) {
 
 function $asNull () {
   return 'null'
+}
+
+function $asInteger (i) {
+  if (isLong && isLong(i)) {
+    return i.toString()
+  } else {
+    return $asNumber(i)
+  }
 }
 
 function $asNumber (i) {
@@ -149,7 +179,11 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
       code += `
           json += $asString(keys[i]) + ':' + $asString(obj[keys[i]]) + ','
       `
-    } else if (type === 'number' || type === 'integer') {
+    } else if (type === 'integer') {
+      code += `
+          json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]]) + ','
+      `
+    } else if (type === 'number') {
       code += `
           json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]]) + ','
       `
@@ -209,7 +243,11 @@ function additionalProperty (schema, externalSchema, fullSchema) {
     code += `
         json += $asString(keys[i]) + ':' + $asString(obj[keys[i]]) + ','
     `
-  } else if (type === 'number' || type === 'integer') {
+  } else if (type === 'integer') {
+    code += `
+        json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]]) + ','
+    `
+  } else if (type === 'number') {
     code += `
         json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]]) + ','
     `
@@ -365,8 +403,12 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema) {
         json += $asString(obj${key})
       `
       break
-    case 'number':
     case 'integer':
+      code += `
+        json += $asInteger(obj${key})
+      `
+      break
+    case 'number':
       code += `
         json += $asNumber(obj${key})
       `
