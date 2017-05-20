@@ -36,8 +36,11 @@ const obj = {
 const multiArray = []
 
 const stringify = require('.')(schema)
+const stringifyUgly = require('.')(schema, { uglify: true })
 const stringifyArray = require('.')(arraySchema)
+const stringifyArrayUgly = require('.')(arraySchema, { uglify: true })
 const stringifyString = require('.')({ type: 'string' })
+const stringifyStringUgly = require('.')({ type: 'string', uglify: true })
 var str = ''
 
 for (var i = 0; i < 10000; i++) {
@@ -61,12 +64,20 @@ suite.add('fast-json-stringify array', function () {
   stringifyArray(multiArray)
 })
 
+suite.add('fast-json-stringify-uglified array', function () {
+  stringifyArrayUgly(multiArray)
+})
+
 suite.add('JSON.stringify long string', function () {
   JSON.stringify(str)
 })
 
 suite.add('fast-json-stringify long string', function () {
   stringifyString(str)
+})
+
+suite.add('fast-json-stringify-uglified long string', function () {
+  stringifyStringUgly(str)
 })
 
 suite.add('JSON.stringify short string', function () {
@@ -77,12 +88,20 @@ suite.add('fast-json-stringify short string', function () {
   stringifyString('hello world')
 })
 
+suite.add('fast-json-stringify-uglified short string', function () {
+  stringifyStringUgly('hello world')
+})
+
 suite.add('JSON.stringify obj', function () {
   JSON.stringify(obj)
 })
 
 suite.add('fast-json-stringify obj', function () {
   stringify(obj)
+})
+
+suite.add('fast-json-stringify-uglified obj', function () {
+  stringifyUgly(obj)
 })
 
 suite.on('cycle', cycle)
