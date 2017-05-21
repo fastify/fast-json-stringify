@@ -74,10 +74,24 @@ function build (schema, options) {
     ;
     return ${main}
   `
-  if (schema.additionalProperties === true) {
+  if (hasAdditionalPropertiesTrue(schema)) {
     return (new Function('fastSafeStringify', code))(fastSafeStringify)
   }
   return (new Function(code))()
+}
+
+function hasAdditionalPropertiesTrue (schema) {
+  if (schema.additionalProperties === true) { return true }
+
+  var objectKeys = Object.keys(schema)
+  for (var i = 0; i < objectKeys.length; i++) {
+    var value = schema[objectKeys[i]]
+    if (typeof value === 'object') {
+      if (hasAdditionalPropertiesTrue(value)) { return true }
+    }
+  }
+
+  return false
 }
 
 function $asNull () {

@@ -237,3 +237,20 @@ test('very nested additionalProperties', (t) => {
   let obj = [{ ap: { nested: { moarNested: { finally: { value: 'str' } } } } }]
   t.equal('[{"ap":{"nested":{"moarNested":{"finally":{"value":"str"}}}}}]', stringify(obj))
 })
+
+test('nested additionalProperties set to true', (t) => {
+  t.plan(1)
+  const stringify = build({
+    title: 'nested additionalProperties=true',
+    type: 'object',
+    properties: {
+      ap: {
+        type: 'object',
+        additionalProperties: true
+      }
+    }
+  })
+
+  let obj = { ap: { value: 'string', someNumber: 42 } }
+  t.equal('{"ap":{"value":"string","someNumber":42}}', stringify(obj))
+})
