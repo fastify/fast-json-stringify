@@ -114,6 +114,18 @@ buildTest({
 }, null)
 
 buildTest({
+  'title': 'deep object with weird keys',
+  'type': 'object',
+  'properties': {
+    '@version': {
+      'type': 'integer'
+    }
+  }
+}, {
+  '@version': 1
+})
+
+buildTest({
   'title': 'with null',
   'type': 'object',
   'properties': {

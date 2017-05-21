@@ -317,10 +317,10 @@ function buildObject (schema, code, name, externalSchema, fullSchema) {
   var laterCode = ''
 
   Object.keys(schema.properties || {}).forEach((key, i, a) => {
-    // Using obj.key !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
+    // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
     // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
     code += `
-      if (obj.${key} !== undefined) {
+      if (obj['${key}'] !== undefined) {
         json += '${$asString(key)}:'
       `
 
@@ -328,7 +328,7 @@ function buildObject (schema, code, name, externalSchema, fullSchema) {
       schema.properties[key] = refFinder(schema.properties[key]['$ref'], fullSchema, externalSchema)
     }
 
-    const result = nested(laterCode, name, '.' + key, schema.properties[key], externalSchema, fullSchema)
+    const result = nested(laterCode, name, key, schema.properties[key], externalSchema, fullSchema)
 
     code += result.code
     laterCode = result.laterCode
@@ -406,6 +406,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema) {
   var code = ''
   var funcName
   const type = schema.type
+  const accessor = key.indexOf('[') === 0 ? key : `['${key}']`
   switch (type) {
     case 'null':
       code += `
@@ -414,36 +415,36 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema) {
       break
     case 'string':
       code += `
-        json += $asString(obj${key})
+        json += $asString(obj${accessor})
       `
       break
     case 'integer':
       code += `
-        json += $asInteger(obj${key})
+        json += $asInteger(obj${accessor})
       `
       break
     case 'number':
       code += `
-        json += $asNumber(obj${key})
+        json += $asNumber(obj${accessor})
       `
       break
     case 'boolean':
       code += `
-        json += $asBoolean(obj${key})
+        json += $asBoolean(obj${accessor})
       `
       break
     case 'object':
       funcName = (name + key).replace(/[-.\[\]]/g, '') // eslint-disable-line
       laterCode = buildObject(schema, laterCode, funcName, externalSchema, fullSchema)
       code += `
-        json += ${funcName}(obj${key})
+        json += ${funcName}(obj${accessor})
       `
       break
     case 'array':
       funcName = (name + key).replace(/[-.\[\]]/g, '') // eslint-disable-line
       laterCode = buildArray(schema, laterCode, funcName, externalSchema, fullSchema)
       code += `
-        json += ${funcName}(obj${key})
+        json += ${funcName}(obj${accessor})
       `
       break
     default:
