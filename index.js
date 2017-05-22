@@ -2,6 +2,7 @@
 
 const fastSafeStringify = require('fast-safe-stringify')
 
+var uglify = null
 let isLong
 try {
   isLong = require('long').isLong
@@ -74,6 +75,11 @@ function build (schema, options) {
     ;
     return ${main}
   `
+
+  if (options.uglify) {
+    code = uglifyCode(code)
+  }
+
   if (hasAdditionalPropertiesTrue(schema)) {
     return (new Function('fastSafeStringify', code))(fastSafeStringify)
   }
@@ -454,6 +460,38 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema) {
   return {
     code,
     laterCode
+  }
+}
+
+function uglifyCode (code) {
+  if (!uglify) {
+    loadUglify()
+  }
+
+  const uglified = uglify.minify(code, { parse: { bare_returns: true } })
+
+  if (uglified.error) {
+    throw uglified.error
+  }
+
+  return uglified.code
+}
+
+function loadUglify () {
+  try {
+    uglify = require('uglify-es')
+    const uglifyVersion = require('uglify-es/package.json').version
+
+    if (uglifyVersion[0] !== '3') {
+      throw new Error('Only version 3 of uglify-es is supported')
+    }
+  } catch (e) {
+    uglify = null
+    if (e.code === 'MODULE_NOT_FOUND') {
+      throw new Error('In order to use uglify, you have to manually install `uglify-es`')
+    }
+
+    throw e
   }
 }
 

@@ -7,14 +7,18 @@ advantages reduces on large payloads.
 Benchmarks:
 
 ```
-JSON.stringify array x 3,679 ops/sec ±1.01% (85 runs sampled)
-fast-json-stringify array x 4,618 ops/sec ±1.64% (87 runs sampled)
-JSON.stringify long string x 13,303 ops/sec ±1.01% (89 runs sampled)
-fast-json-stringify long string x 13,489 ops/sec ±0.88% (90 runs sampled)
-JSON.stringify short string x 4,974,749 ops/sec ±1.14% (86 runs sampled)
-fast-json-stringify short string x 11,030,700 ops/sec ±0.82% (89 runs sampled)
-JSON.stringify obj x 1,774,593 ops/sec ±1.07% (90 runs sampled)
-fast-json-stringify obj x 4,976,369 ops/sec ±1.00% (89 runs sampled)
+JSON.stringify array x 3,288 ops/sec ±5.18% (82 runs sampled)
+fast-json-stringify array x 1,813 ops/sec ±10.21% (71 runs sampled)
+fast-json-stringify-uglified array x 2,106 ops/sec ±3.23% (83 runs sampled)
+JSON.stringify long string x 12,933 ops/sec ±1.27% (87 runs sampled)
+fast-json-stringify long string x 12,221 ops/sec ±3.31% (84 runs sampled)
+fast-json-stringify-uglified long string x 13,256 ops/sec ±0.95% (92 runs sampled)
+JSON.stringify short string x 4,878,641 ops/sec ±1.14% (90 runs sampled)
+fast-json-stringify short string x 11,649,100 ops/sec ±0.98% (91 runs sampled)
+fast-json-stringify-uglified short string x 11,877,661 ops/sec ±0.91% (90 runs sampled)
+JSON.stringify obj x 1,705,377 ops/sec ±2.61% (87 runs sampled)
+fast-json-stringify obj x 2,268,915 ops/sec ±1.39% (90 runs sampled)
+fast-json-stringify-uglified obj x 2,243,341 ops/sec ±1.11% (89 runs sampled)
 ```
 
 #### Table of contents:
@@ -28,6 +32,7 @@ fast-json-stringify obj x 4,976,369 ops/sec ±1.00% (89 runs sampled)
  - <a href="#additionalProperties">`Additional Properties`</a>
  - <a href="#ref">`Reuse - $ref`</a>
  - <a href="#long">`Long integers`</a>
+ - <a href="#uglify">`Uglify`</a>
 - <a href="#acknowledgements">`Acknowledgements`</a>
 - <a href="#license">`License`</a>
 
@@ -317,6 +322,27 @@ const obj = {
 }
 
 console.log(stringify(obj)) // '{"id":18446744073709551615}'
+```
+
+<a name="uglify"></a>
+#### Uglify
+If you want to squeeze a little bit more performance out of the serialisation, at the cost of readability in the generated code, you can pass `uglify: true` as an option.
+Note that you have to manually install `uglify-es` in order for it to work. Only version 3 is supported.
+Example:
+```javascript
+
+const stringify = fastJson({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    id: {
+      type: 'integer'
+    }
+  }
+}, { uglify: true })
+
+// stringify is now minified code
+console.log(stringify({ some: 'object' })) // '{"some":"object"}'
 ```
 
 <a name="acknowledgements"></a>
