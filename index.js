@@ -231,7 +231,8 @@ function additionalProperty (schema, externalSchema, fullSchema) {
   let code = ''
   if (ap === true) {
     return `
-        json += $asString(keys[i]) + ':' + fastSafeStringify(obj[keys[i]]) + ','
+        if (obj[keys[i]] !== undefined)
+          json += $asString(keys[i]) + ':' + fastSafeStringify(obj[keys[i]]) + ','
     `
   }
   if (ap['$ref']) {
