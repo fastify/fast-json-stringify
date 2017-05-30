@@ -254,3 +254,20 @@ test('nested additionalProperties set to true', (t) => {
   let obj = { ap: { value: 'string', someNumber: 42 } }
   t.equal('{"ap":{"value":"string","someNumber":42}}', stringify(obj))
 })
+
+test('field passed to fastSafeStringify as undefined should be removed', (t) => {
+  t.plan(1)
+  const stringify = build({
+    title: 'nested additionalProperties=true',
+    type: 'object',
+    properties: {
+      ap: {
+        type: 'object',
+        additionalProperties: true
+      }
+    }
+  })
+
+  let obj = { ap: { value: 'string', someNumber: undefined } }
+  t.equal('{"ap":{"value":"string"}}', stringify(obj))
+})
