@@ -21,7 +21,7 @@ test('patternProperties', (t) => {
   })
 
   let obj = { str: 'test', foo: 42, ofoo: true, foof: 'string', objfoo: {a: true}, notMe: false }
-  t.equal('{"foo":"42","ofoo":"true","foof":"string","objfoo":"[object Object]","str":"test"}', stringify(obj))
+  t.equal(stringify(obj), '{"foo":"42","ofoo":"true","foof":"string","objfoo":"[object Object]","str":"test"}')
 })
 
 test('patternProperties should not change properties', (t) => {
@@ -42,7 +42,7 @@ test('patternProperties should not change properties', (t) => {
   })
 
   const obj = { foo: '42', ofoo: 42 }
-  t.equal('{"ofoo":42,"foo":"42"}', stringify(obj))
+  t.equal(stringify(obj), '{"ofoo":42,"foo":"42"}')
 })
 
 test('patternProperties - string coerce', (t) => {
@@ -59,7 +59,7 @@ test('patternProperties - string coerce', (t) => {
   })
 
   const obj = { foo: true, ofoo: 42, arrfoo: ['array', 'test'], objfoo: { a: 'world' } }
-  t.equal('{"foo":"true","ofoo":"42","arrfoo":"array,test","objfoo":"[object Object]"}', stringify(obj))
+  t.equal(stringify(obj), '{"foo":"true","ofoo":"42","arrfoo":"array,test","objfoo":"[object Object]"}')
 })
 
 test('patternProperties - number coerce', (t) => {
@@ -76,7 +76,7 @@ test('patternProperties - number coerce', (t) => {
   })
 
   const obj = { foo: true, ofoo: '42', xfoo: 'string', arrfoo: [1, 2], objfoo: { num: 42 } }
-  t.equal('{"foo":1,"ofoo":42,"xfoo":null,"arrfoo":null,"objfoo":null}', stringify(obj))
+  t.equal(stringify(obj), '{"foo":1,"ofoo":42,"xfoo":null,"arrfoo":null,"objfoo":null}')
 })
 
 test('patternProperties - boolean coerce', (t) => {
@@ -93,7 +93,7 @@ test('patternProperties - boolean coerce', (t) => {
   })
 
   const obj = { foo: 'true', ofoo: 0, arrfoo: [1, 2], objfoo: { a: true } }
-  t.equal('{"foo":true,"ofoo":false,"arrfoo":true,"objfoo":true}', stringify(obj))
+  t.equal(stringify(obj), '{"foo":true,"ofoo":false,"arrfoo":true,"objfoo":true}')
 })
 
 test('patternProperties - object coerce', (t) => {
@@ -115,7 +115,7 @@ test('patternProperties - object coerce', (t) => {
   })
 
   const obj = { objfoo: { answer: 42 } }
-  t.equal('{"objfoo":{"answer":42}}', stringify(obj))
+  t.equal(stringify(obj), '{"objfoo":{"answer":42}}')
 })
 
 test('patternProperties - array coerce', (t) => {
@@ -135,7 +135,7 @@ test('patternProperties - array coerce', (t) => {
   })
 
   const obj = { foo: 'true', ofoo: 0, arrfoo: [1, 2], objfoo: { tyrion: 'lannister' } }
-  t.equal('{"foo":["t","r","u","e"],"ofoo":[],"arrfoo":["1","2"],"objfoo":[]}', stringify(obj))
+  t.equal(stringify(obj), '{"foo":["t","r","u","e"],"ofoo":[],"arrfoo":["1","2"],"objfoo":[]}')
 })
 
 test('patternProperties - throw on unknown type', (t) => {

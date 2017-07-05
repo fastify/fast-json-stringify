@@ -42,7 +42,7 @@ test('ref internal - properties', (t) => {
     t.fail()
   }
 
-  t.equal('{"obj":{"str":"test"}}', output)
+  t.equal(output, '{"obj":{"str":"test"}}')
 })
 
 test('ref internal - items', (t) => {
@@ -78,7 +78,7 @@ test('ref internal - items', (t) => {
     t.fail()
   }
 
-  t.equal('[{"str":"test"}]', output)
+  t.equal(output, '[{"str":"test"}]')
 })
 
 test('ref external - properties', (t) => {
@@ -132,7 +132,7 @@ test('ref external - properties', (t) => {
     t.fail()
   }
 
-  t.equal('{"obj":{"str":"test"},"num":{"int":42}}', output)
+  t.equal(output, '{"obj":{"str":"test"},"num":{"int":42}}')
 })
 
 test('ref internal - patternProperties', (t) => {
@@ -175,7 +175,7 @@ test('ref internal - patternProperties', (t) => {
     t.fail()
   }
 
-  t.equal('{"obj":{"str":"test"}}', output)
+  t.equal(output, '{"obj":{"str":"test"}}')
 })
 
 test('ref internal - additionalProperties', (t) => {
@@ -216,7 +216,7 @@ test('ref internal - additionalProperties', (t) => {
     t.fail()
   }
 
-  t.equal('{"obj":{"str":"test"}}', output)
+  t.equal(output, '{"obj":{"str":"test"}}')
 })
 
 test('ref internal - pattern-additional Properties', (t) => {
@@ -265,7 +265,7 @@ test('ref internal - pattern-additional Properties', (t) => {
     t.fail()
   }
 
-  t.equal('{"reg":{"str":"test"},"obj":{"str":"test"}}', output)
+  t.equal(output, '{"reg":{"str":"test"},"obj":{"str":"test"}}')
 })
 
 test('ref external - pattern-additional Properties', (t) => {
@@ -320,7 +320,7 @@ test('ref external - pattern-additional Properties', (t) => {
     t.fail()
   }
 
-  t.equal('{"reg":{"str":"test"},"obj":{"int":42}}', output)
+  t.equal(output, '{"reg":{"str":"test"},"obj":{"int":42}}')
 })
 
 test('ref internal - deepObject schema', (t) => {
@@ -376,5 +376,5 @@ test('ref internal - deepObject schema', (t) => {
     t.fail()
   }
 
-  t.equal('{"winter":{"is":{"coming":{"where":"to town"}}}}', output)
+  t.equal(output, '{"winter":{"is":{"coming":{"where":"to town"}}}}')
 })
