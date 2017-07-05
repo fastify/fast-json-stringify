@@ -1,14 +1,21 @@
 'use strict'
 
-const fastSafeStringify = require('fast-safe-stringify')
+var fastSafeStringify = require('fast-safe-stringify')
 
 var uglify = null
-let isLong
+var isLong
 try {
   isLong = require('long').isLong
 } catch (e) {
   isLong = null
 }
+
+var addComma = `
+  if (addComma) {
+    json += ','
+  }
+  addComma = true
+`
 
 function build (schema, options) {
   options = options || {}
@@ -19,7 +26,7 @@ function build (schema, options) {
   // used to support patternProperties and additionalProperties
   // they need to check if a field belongs to the properties in the schema
   code += `
-    const properties = ${JSON.stringify(schema.properties)} || {}
+    var properties = ${JSON.stringify(schema.properties)} || {}
   `
   code += `
     ${$asString.toString()}
@@ -32,12 +39,12 @@ function build (schema, options) {
   // only handle longs if the module is used
   if (isLong) {
     code += `
-      const isLong = ${isLong.toString()}
+      var isLong = ${isLong.toString()}
       ${$asInteger.toString()}
     `
   } else {
     code += `
-      const $asInteger = $asNumber
+      var $asInteger = $asNumber
     `
   }
 
@@ -168,7 +175,7 @@ function $asStringSmall (str) {
 
 function addPatternProperties (schema, externalSchema, fullSchema) {
   var pp = schema.patternProperties
-  let code = `
+  var code = `
       var keys = Object.keys(obj)
       for (var i = 0; i < keys.length; i++) {
         if (properties[keys[i]]) continue
@@ -184,32 +191,39 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
     if (type === 'object') {
       code += buildObject(pp[regex], '', 'buildObjectPP' + index, externalSchema, fullSchema)
       code += `
-          json += $asString(keys[i]) + ':' + buildObjectPP${index}(obj[keys[i]]) + ','
+          ${addComma}
+          json += $asString(keys[i]) + ':' + buildObjectPP${index}(obj[keys[i]])
       `
     } else if (type === 'array') {
       code += buildArray(pp[regex], '', 'buildArrayPP' + index, externalSchema, fullSchema)
       code += `
-          json += $asString(keys[i]) + ':' + buildArrayPP${index}(obj[keys[i]]) + ','
+          ${addComma}
+          json += $asString(keys[i]) + ':' + buildArrayPP${index}(obj[keys[i]])
       `
     } else if (type === 'null') {
       code += `
-          json += $asString(keys[i]) +':null,'
+          ${addComma}
+          json += $asString(keys[i]) +':null'
       `
     } else if (type === 'string') {
       code += `
-          json += $asString(keys[i]) + ':' + $asString(obj[keys[i]]) + ','
+          ${addComma}
+          json += $asString(keys[i]) + ':' + $asString(obj[keys[i]])
       `
     } else if (type === 'integer') {
       code += `
-          json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]]) + ','
+          ${addComma}
+          json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
       `
     } else if (type === 'number') {
       code += `
-          json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]]) + ','
+          ${addComma}
+          json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]])
       `
     } else if (type === 'boolean') {
       code += `
-          json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]]) + ','
+          ${addComma}
+          json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]])
       `
     } else {
       code += `
@@ -234,47 +248,56 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
 
 function additionalProperty (schema, externalSchema, fullSchema) {
   var ap = schema.additionalProperties
-  let code = ''
+  var code = ''
   if (ap === true) {
     return `
-        if (obj[keys[i]] !== undefined)
-          json += $asString(keys[i]) + ':' + fastSafeStringify(obj[keys[i]]) + ','
+        if (obj[keys[i]] !== undefined) {
+          ${addComma}
+          json += $asString(keys[i]) + ':' + fastSafeStringify(obj[keys[i]])
+        }
     `
   }
   if (ap['$ref']) {
     ap = refFinder(ap['$ref'], fullSchema, externalSchema)
   }
 
-  let type = ap.type
+  var type = ap.type
   if (type === 'object') {
     code += buildObject(ap, '', 'buildObjectAP', externalSchema)
     code += `
-        json += $asString(keys[i]) + ':' + buildObjectAP(obj[keys[i]]) + ','
+        ${addComma}
+        json += $asString(keys[i]) + ':' + buildObjectAP(obj[keys[i]])
     `
   } else if (type === 'array') {
     code += buildArray(ap, '', 'buildArrayAP', externalSchema, fullSchema)
     code += `
-        json += $asString(keys[i]) + ':' + buildArrayAP(obj[keys[i]]) + ','
+        ${addComma}
+        json += $asString(keys[i]) + ':' + buildArrayAP(obj[keys[i]])
     `
   } else if (type === 'null') {
     code += `
-        json += $asString(keys[i]) +':null,'
+        ${addComma}
+        json += $asString(keys[i]) +':null'
     `
   } else if (type === 'string') {
     code += `
-        json += $asString(keys[i]) + ':' + $asString(obj[keys[i]]) + ','
+        ${addComma}
+        json += $asString(keys[i]) + ':' + $asString(obj[keys[i]])
     `
   } else if (type === 'integer') {
     code += `
-        json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]]) + ','
+        ${addComma}
+        json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
     `
   } else if (type === 'number') {
     code += `
-        json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]]) + ','
+        ${addComma}
+        json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]])
     `
   } else if (type === 'boolean') {
     code += `
-        json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]]) + ','
+        ${addComma}
+        json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]])
     `
   } else {
     code += `
@@ -301,9 +324,9 @@ function refFinder (ref, schema, externalSchema) {
   if (ref[0]) {
     schema = externalSchema[ref[0]]
   }
-  const walk = ref[1].split('/')
-  let code = 'return schema'
-  for (let i = 1; i < walk.length; i++) {
+  var walk = ref[1].split('/')
+  var code = 'return schema'
+  for (var i = 1; i < walk.length; i++) {
     code += `['${walk[i]}']`
   }
   return (new Function('schema', code))(schema)
@@ -313,6 +336,7 @@ function buildObject (schema, code, name, externalSchema, fullSchema) {
   code += `
     function ${name} (obj) {
       var json = '{'
+      var addComma = false
   `
 
   if (schema.patternProperties) {
@@ -328,6 +352,7 @@ function buildObject (schema, code, name, externalSchema, fullSchema) {
     // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
     code += `
       if (obj['${key}'] !== undefined) {
+        ${addComma}
         json += '${$asString(key)}:'
       `
 
@@ -335,17 +360,10 @@ function buildObject (schema, code, name, externalSchema, fullSchema) {
       schema.properties[key] = refFinder(schema.properties[key]['$ref'], fullSchema, externalSchema)
     }
 
-    const result = nested(laterCode, name, key, schema.properties[key], externalSchema, fullSchema)
+    var result = nested(laterCode, name, key, schema.properties[key], externalSchema, fullSchema)
 
     code += result.code
     laterCode = result.laterCode
-    /* eslint-disable no-useless-escape */
-    if (i < a.length - 1) {
-      code += `
-        json += \',\'
-      `
-    }
-    /* eslint-enable no-useless-escape */
 
     if (schema.required && schema.required.indexOf(key) !== -1) {
       code += `
@@ -361,7 +379,6 @@ function buildObject (schema, code, name, externalSchema, fullSchema) {
 
   // Removes the comma if is the last element of the string (in case there are not properties)
   code += `
-      if (json[json.length - 1] === ',') json = json.substring(0, json.length - 1)
       json += '}'
       return json
     }
@@ -383,16 +400,16 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
     schema.items = refFinder(schema.items['$ref'], fullSchema, externalSchema)
   }
 
-  const result = nested(laterCode, name, '[i]', schema.items, externalSchema, fullSchema)
+  var result = nested(laterCode, name, '[i]', schema.items, externalSchema, fullSchema)
 
   code += `
-    const l = obj.length
-    const w = l - 1
+    var l = obj.length
+    var w = l - 1
     for (var i = 0; i < l; i++) {
-      ${result.code}
-      if (i < w) {
+      if (i > 0) {
         json += ','
       }
+      ${result.code}
     }
   `
 
@@ -412,8 +429,8 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
 function nested (laterCode, name, key, schema, externalSchema, fullSchema) {
   var code = ''
   var funcName
-  const type = schema.type
-  const accessor = key.indexOf('[') === 0 ? key : `['${key}']`
+  var type = schema.type
+  var accessor = key.indexOf('[') === 0 ? key : `['${key}']`
   switch (type) {
     case 'null':
       code += `
@@ -469,7 +486,7 @@ function uglifyCode (code) {
     loadUglify()
   }
 
-  const uglified = uglify.minify(code, { parse: { bare_returns: true } })
+  var uglified = uglify.minify(code, { parse: { bare_returns: true } })
 
   if (uglified.error) {
     throw uglified.error
@@ -481,7 +498,7 @@ function uglifyCode (code) {
 function loadUglify () {
   try {
     uglify = require('uglify-es')
-    const uglifyVersion = require('uglify-es/package.json').version
+    var uglifyVersion = require('uglify-es/package.json').version
 
     if (uglifyVersion[0] !== '3') {
       throw new Error('Only version 3 of uglify-es is supported')
