@@ -1,6 +1,6 @@
 # fast-json-stringify&nbsp;&nbsp;[![Build Status](https://travis-ci.org/fastify/fast-json-stringify.svg?branch=master)](https://travis-ci.org/fastify/fast-json-stringify)
 
-__fast-json-stringify__ is x1-4 times faster than `JSON.stringify()`.
+__fast-json-stringify__ is two times faster than `JSON.stringify()`.
 It is particularly suited if you are sending small JSON payloads, the
 advantages reduces on large payloads.
 
