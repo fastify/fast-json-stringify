@@ -30,7 +30,7 @@
     "pre-commit": "^1.2.2",
     "standard": "^10.0.0",
     "tap": "^10.3.0",
-    "uglify-es": "^3.0.13"
+    "uglify-es": "^3.0.26"
   },
   "dependencies": {
     "fast-safe-stringify": "^1.2.0"
