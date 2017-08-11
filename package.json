@@ -1,6 +1,6 @@
 {
   "name": "fast-json-stringify",
-  "version": "0.12.2",
+  "version": "0.12.3",
   "description": "Stringify your JSON at max speed",
   "main": "index.js",
   "scripts": {
