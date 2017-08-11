@@ -135,6 +135,8 @@ function $asBoolean (bool) {
 function $asString (str) {
   if (str instanceof Date) {
     return '"' + str.toISOString() + '"'
+  } else if (str === null) {
+    return '""'
   } else if (str instanceof RegExp) {
     str = str.source
   } else if (typeof str !== 'string') {
