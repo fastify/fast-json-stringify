@@ -6,22 +6,39 @@ advantages reduces on large payloads.
 
 Benchmarks:
 
+Node 6.11.2:
+
 ```
-JSON.stringify array x 3,343 ops/sec ±1.28% (86 runs sampled)
-fast-json-stringify array x 3,031 ops/sec ±1.38% (88 runs sampled)
-fast-json-stringify-uglified array x 3,222 ops/sec ±1.12% (87 runs sampled)
-JSON.stringify long string x 12,400 ops/sec ±1.25% (88 runs sampled)
-fast-json-stringify long string x 12,151 ops/sec ±1.16% (84 runs sampled)
-fast-json-stringify-uglified long string x 12,304 ops/sec ±1.00% (87 runs sampled)
-JSON.stringify short string x 4,384,078 ops/sec ±1.53% (88 runs sampled)
-fast-json-stringify short string x 11,062,569 ops/sec ±1.10% (85 runs sampled)
-fast-json-stringify-uglified short string x 10,642,943 ops/sec ±3.01% (86 runs sampled)
-JSON.stringify obj x 1,612,312 ops/sec ±1.40% (87 runs sampled)
-fast-json-stringify obj x 3,149,885 ops/sec ±1.46% (85 runs sampled)
-fast-json-stringify-uglified obj x 3,374,838 ops/sec ±1.35% (87 runs sampled)
+JSON.stringify array x 3,944 ops/sec ±1.13% (83 runs sampled)
+fast-json-stringify array x 3,638 ops/sec ±2.56% (83 runs sampled)
+fast-json-stringify-uglified array x 3,693 ops/sec ±1.75% (82 runs sampled)
+JSON.stringify long string x 15,007 ops/sec ±1.13% (90 runs sampled)
+fast-json-stringify long string x 14,480 ops/sec ±1.06% (87 runs sampled)
+fast-json-stringify-uglified long string x 14,065 ops/sec ±1.22% (87 runs sampled)
+JSON.stringify short string x 5,213,486 ops/sec ±1.35% (84 runs sampled)
+fast-json-stringify short string x 12,314,153 ops/sec ±1.54% (83 runs sampled)
+fast-json-stringify-uglified short string x 11,801,080 ops/sec ±6.65% (83 runs sampled)
+JSON.stringify obj x 1,131,672 ops/sec ±16.67% (61 runs sampled)
+fast-json-stringify obj x 3,500,095 ops/sec ±5.50% (80 runs sampled)
+fast-json-stringify-uglified obj x 4,091,347 ops/sec ±1.33% (89 runs sampled)
 ```
 
-Benchmarks taken on Node 6.11.0.
+Node 8.3.0:
+
+```
+JSON.stringify array x 4,025 ops/sec ±0.99% (90 runs sampled)
+fast-json-stringify array x 6,463 ops/sec ±0.99% (90 runs sampled)
+fast-json-stringify-uglified array x 6,314 ops/sec ±1.15% (92 runs sampled)
+JSON.stringify long string x 14,648 ops/sec ±1.64% (88 runs sampled)
+fast-json-stringify long string x 14,822 ops/sec ±1.09% (88 runs sampled)
+fast-json-stringify-uglified long string x 14,963 ops/sec ±0.86% (89 runs sampled)
+JSON.stringify short string x 4,724,477 ops/sec ±1.03% (89 runs sampled)
+fast-json-stringify short string x 12,484,378 ops/sec ±0.92% (88 runs sampled)
+fast-json-stringify-uglified short string x 12,218,181 ops/sec ±1.24% (90 runs sampled)
+JSON.stringify obj x 1,898,648 ops/sec ±2.15% (85 runs sampled)
+fast-json-stringify obj x 5,714,557 ops/sec ±1.45% (90 runs sampled)
+fast-json-stringify-uglified obj x 5,902,021 ops/sec ±1.06% (91 runs sampled)
+```
 
 #### Table of contents:
 - <a href="#example">`Example`</a>
@@ -331,6 +348,9 @@ console.log(stringify(obj)) // '{"id":18446744073709551615}'
 If you want to squeeze a little bit more performance out of the serialisation, at the cost of readability in the generated code, you can pass `uglify: true` as an option.
 Note that you have to manually install `uglify-es` in order for it to work. Only version 3 is supported.
 Example:
+
+Note that if you are using Node 8.3.0 or newer, there are no performance gains from using Uglify. See https://www.nearform.com/blog/node-js-is-getting-a-new-v8-with-turbofan/
+
 ```javascript
 
 const stringify = fastJson({
