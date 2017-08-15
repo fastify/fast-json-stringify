@@ -1,6 +1,6 @@
 {
   "name": "fast-json-stringify",
-  "version": "0.12.3",
+  "version": "0.12.4",
   "description": "Stringify your JSON at max speed",
   "main": "index.js",
   "scripts": {
@@ -28,9 +28,9 @@
     "is-my-json-valid": "^2.16.0",
     "long": "^3.2.0",
     "pre-commit": "^1.2.2",
-    "standard": "^10.0.0",
-    "tap": "^10.3.0",
-    "uglify-es": "^3.0.26"
+    "standard": "^10.0.3",
+    "tap": "^10.7.2",
+    "uglify-es": "^3.0.27"
   },
   "dependencies": {
     "fast-safe-stringify": "^1.2.0"
