@@ -402,7 +402,49 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
     schema.items = refFinder(schema.items['$ref'], fullSchema, externalSchema)
   }
 
-  var result = nested(laterCode, name, '[i]', schema.items, externalSchema, fullSchema)
+  var result = {code: '', laterCode: ''}
+  if (Array.isArray(schema.items)) {
+    result = schema.items.reduce((res, item, i) => {
+      var accessor = '[i]'
+      const tmpRes = nested(laterCode, name, accessor, item, externalSchema, fullSchema, i)
+      var condition
+      switch (item.type) {
+        case 'null':
+          condition = `obj${accessor} === null`
+          break
+        case 'string':
+          condition = `typeof obj${accessor} === 'string'`
+          break
+        case 'integer':
+          condition = `Number.isInteger(obj${accessor})`
+          break
+        case 'number':
+          condition = `!Number.isInteger(obj${accessor}) && Number.isFinite(obj${accessor})`
+          break
+        case 'boolean':
+          condition = `typeof obj${accessor} === 'boolean'`
+          break
+        case 'object':
+          condition = `obj${accessor} && typeof obj${accessor} === 'object' && obj${accessor}.constructor === Object`
+          break
+        case 'array':
+          condition = `Array.isArray(obj${accessor})`
+          break
+        default:
+          throw new Error(`${item.type} unsupported`)
+      }
+      return {
+        code: `${res.code}
+        if (${condition}) {
+          ${tmpRes.code}
+        }`,
+        laterCode: `${res.laterCode}
+        ${tmpRes.laterCode}`
+      }
+    }, result)
+  } else {
+    result = nested(laterCode, name, '[i]', schema.items, externalSchema, fullSchema)
+  }
 
   code += `
     var l = obj.length
@@ -428,7 +470,7 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
   return code
 }
 
-function nested (laterCode, name, key, schema, externalSchema, fullSchema) {
+function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKey) {
   var code = ''
   var funcName
   var type = schema.type
@@ -460,14 +502,14 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema) {
       `
       break
     case 'object':
-      funcName = (name + key).replace(/[-.\[\]]/g, '') // eslint-disable-line
+      funcName = (name + key + subKey).replace(/[-.\[\]]/g, '') // eslint-disable-line
       laterCode = buildObject(schema, laterCode, funcName, externalSchema, fullSchema)
       code += `
         json += ${funcName}(obj${accessor})
       `
       break
     case 'array':
-      funcName = (name + key).replace(/[-.\[\]]/g, '') // eslint-disable-line
+      funcName = (name + key + subKey).replace(/[-.\[\]]/g, '') // eslint-disable-line
       laterCode = buildArray(schema, laterCode, funcName, externalSchema, fullSchema)
       code += `
         json += ${funcName}(obj${accessor})
