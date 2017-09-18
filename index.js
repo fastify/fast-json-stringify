@@ -20,15 +20,19 @@ var addComma = `
 function build (schema, options) {
   options = options || {}
   /* eslint no-new-func: "off" */
-  var code = `
-    'use strict'
-  `
+
   // used to support patternProperties and additionalProperties
   // they need to check if a field belongs to the properties in the schema
-  code += `
-    var properties = ${JSON.stringify(schema.properties)} || {}
-  `
-  code += `
+  var code = `
+    'use strict';
+    var typeFuncNameMap = {
+        boolean: $asBoolean.name,
+        integer: $asInteger.name,
+        null: $asNull.name,
+        number: $asNumber.name,
+        string: $asString.name,
+    };
+    var properties = ${JSON.stringify(schema.properties)} || {};
     ${$asString.toString()}
     ${$asStringSmall.toString()}
     ${$asNumber.toString()}
@@ -75,7 +79,9 @@ function build (schema, options) {
       code = buildArray(schema, code, main, options.schema, schema)
       break
     default:
-      throw new Error(`${schema.type} unsupported`)
+      if (!Array.isArray(schema.type)) {
+        handleUnsupportedTypeIdentifier(schema.type)
+      }
   }
 
   code += `
@@ -301,6 +307,8 @@ function additionalProperty (schema, externalSchema, fullSchema) {
         ${addComma}
         json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]])
     `
+
+  // TODO:
   } else {
     code += `
         throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ${type}')
@@ -431,7 +439,13 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
           condition = `Array.isArray(obj${accessor})`
           break
         default:
-          throw new Error(`${item.type} unsupported`)
+
+            // TODO:
+            // if (Array.isArray(item.type)) {
+            //   code += buildMultiTypeValue(item.type, `obj${accessor}`);
+            // } else {
+            //   handleUnsupportedTypeIdentifier(item.type);
+            // }
       }
       return {
         code: `${res.code}
@@ -516,7 +530,11 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       `
       break
     default:
-      throw new Error(`${type} unsupported`)
+      if (Array.isArray(type)) {
+        code += buildMultiTypeValue(type, `obj${accessor}`)
+      } else {
+        handleUnsupportedTypeIdentifier(type)
+      }
   }
 
   return {
@@ -555,6 +573,70 @@ function loadUglify () {
 
     throw e
   }
+}
+
+function handleUnsupportedTypeIdentifier (type) {
+  throw new Error(`${type} unsupported`)
+}
+
+function buildMultiTypeValue (types, valueIdentifier) {
+  return types.map(function (type, i) {
+    var code = ''
+
+    if (i !== 0) code += 'else'
+
+        // TODO: Switch
+        // TODO: Perhaps commonize these conditions with the above
+    if (type === 'string') {
+      code += `
+                if (typeof ${valueIdentifier} === 'string') {
+                    json += $asString(${valueIdentifier});
+                }
+            `
+    } else if (type === 'boolean') {
+      code += `
+                if (typeof ${valueIdentifier} === 'boolean') {
+                    json += $asBoolean(${valueIdentifier});
+                }
+            `
+    } else if (type === 'number') {
+      code += `
+                if (typeof ${valueIdentifier} === 'number') {
+                    json += $asNumber(${valueIdentifier});
+                }
+            `
+    } else if (type === 'integer') {
+      code += `
+                if (Number.isInteger(${valueIdentifier}) {
+                    json += $asInteger(${valueIdentifier});
+                }
+            `
+    } else if (type === 'null') {
+      code += `
+                if (${valueIdentifier} === null) {
+                    json += 'null';
+                }
+            `
+        // TODO: Needs work
+    } else if (type === 'object') {
+      code += `
+                if (${valueIdentifier} && typeof ${valueIdentifier} === 'object') {
+                    json += ${buildObject()}(${valueIdentifier});
+                }
+            `
+        // TODO: Needs work
+    } else if (type === 'array') {
+      code += `
+                if (Array.isArray(${valueIdentifier})) {
+                    json += ${buildArray()}(${valueIdentifier});
+                }
+            `
+    } else {
+      handleUnsupportedTypeIdentifier(type)
+    }
+
+    return code
+  }).join('')
 }
 
 module.exports = build
