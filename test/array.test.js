@@ -94,3 +94,73 @@ buildTest({
 }, {
   ids: [null, 'test', 1, 1.1, true, {a: 'test'}, ['test']]
 })
+
+buildTest({
+  'title': 'repeated types',
+  'type': 'object',
+  'properties': {
+    'ids': {
+      'type': 'array',
+      'items': [
+        {
+          type: 'number'
+        },
+        {
+          type: 'number'
+        }
+      ]
+    }
+  }
+}, {ids: [1, 2]})
+
+buildTest({
+  'title': 'pattern properties array',
+  'type': 'object',
+  'properties': {
+    'args': {
+      'type': 'array',
+      'items': [
+        {
+          'type': 'object',
+          'patternProperties': {
+            '.*': {
+              'type': 'string'
+            }
+          }
+        },
+        {
+          'type': 'object',
+          'patternProperties': {
+            '.*': {
+              'type': 'number'
+            }
+          }
+        }
+      ]
+    }
+  }
+}, {args: [{a: 'test'}, {b: 1}]})
+
+test('invalid items throw', (t) => {
+  t.plan(1)
+  const schema = {
+    'type': 'object',
+    'properties': {
+      'args': {
+        'type': 'array',
+        'items': [
+          {
+            'type': 'object',
+            'patternProperties': {
+              '.*': {
+                'type': 'string'
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+  const stringify = build(schema)
+  t.throws(() => stringify({args: ['invalid']}))
+})
