@@ -94,3 +94,21 @@ buildTest({
 }, {
   ids: [null, 'test', 1, 1.1, true, {a: 'test'}, ['test']]
 })
+
+buildTest({
+  'title': 'repeated types',
+  'type': 'object',
+  'properties': {
+    'ids': {
+      'type': 'array',
+      'items': [
+        {
+          type: 'number'
+        },
+        {
+          type: 'number'
+        }
+      ]
+    }
+  }
+}, {ids: [1, 2]})
