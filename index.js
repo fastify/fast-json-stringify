@@ -442,6 +442,11 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
         ${tmpRes.laterCode}`
       }
     }, result)
+    result.code += `
+    else {
+      throw new Error(\`Item at $\{i} does not match schema definition.\`)
+    }
+    `
   } else {
     result = nested(laterCode, name, '[i]', schema.items, externalSchema, fullSchema)
   }

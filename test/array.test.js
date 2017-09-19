@@ -140,3 +140,27 @@ buildTest({
     }
   }
 }, {args: [{a: 'test'}, {b: 1}]})
+
+test('invalid items throw', (t) => {
+  t.plan(1)
+  const schema = {
+    'type': 'object',
+    'properties': {
+      'args': {
+        'type': 'array',
+        'items': [
+          {
+            'type': 'object',
+            'patternProperties': {
+              '.*': {
+                'type': 'string'
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+  const stringify = build(schema)
+  t.throws(() => stringify({args: ['invalid']}))
+})
