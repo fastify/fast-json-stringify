@@ -112,3 +112,31 @@ buildTest({
     }
   }
 }, {ids: [1, 2]})
+
+buildTest({
+  'title': 'pattern properties array',
+  'type': 'object',
+  'properties': {
+    'args': {
+      'type': 'array',
+      'items': [
+        {
+          'type': 'object',
+          'patternProperties': {
+            '.*': {
+              'type': 'string'
+            }
+          }
+        },
+        {
+          'type': 'object',
+          'patternProperties': {
+            '.*': {
+              'type': 'number'
+            }
+          }
+        }
+      ]
+    }
+  }
+}, {args: [{a: 'test'}, {b: 1}]})
