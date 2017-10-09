@@ -1,6 +1,7 @@
 'use strict'
 
 var fastSafeStringify = require('fast-safe-stringify')
+var Ajv = require('ajv')
 
 var uglify = null
 var isLong
@@ -87,8 +88,18 @@ function build (schema, options) {
     code = uglifyCode(code)
   }
 
+  var dependencies = []
+  var dependenciesName = []
   if (hasAdditionalPropertiesTrue(schema)) {
-    return (new Function('fastSafeStringify', code))(fastSafeStringify)
+    dependencies.push(fastSafeStringify)
+    dependenciesName.push('fastSafeStringify')
+  }
+  if (hasAnyOf(schema)) {
+    dependencies.push(new Ajv())
+    dependenciesName.push('ajv')
+  }
+  if (dependencies.length > 0) {
+    return (new Function(...dependenciesName, code))(...dependencies)
   }
   return (new Function(code))()
 }
@@ -101,6 +112,20 @@ function hasAdditionalPropertiesTrue (schema) {
     var value = schema[objectKeys[i]]
     if (typeof value === 'object') {
       if (hasAdditionalPropertiesTrue(value)) { return true }
+    }
+  }
+
+  return false
+}
+
+function hasAnyOf (schema) {
+  if ('anyOf' in schema) { return true }
+
+  var objectKeys = Object.keys(schema)
+  for (var i = 0; i < objectKeys.length; i++) {
+    var value = schema[objectKeys[i]]
+    if (typeof value === 'object') {
+      if (hasAnyOf(value)) { return true }
     }
   }
 
@@ -517,8 +542,22 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       funcName = (name + key + subKey).replace(/[-.\[\]]/g, '') // eslint-disable-line
       laterCode = buildArray(schema, laterCode, funcName, externalSchema, fullSchema)
       code += `
-        json += ${funcName}(obj${accessor})
-      `
+json += ${funcName}(obj${accessor})
+    `
+      break
+
+    case undefined:
+      if ('anyOf' in schema) {
+        schema.anyOf.forEach((s, index) => {
+          code += `
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, {depth: null})}, obj${accessor}))
+              ${nested(laterCode, name, key, s, externalSchema, fullSchema, subKey).code}
+          `
+        })
+        code += `
+          else json+= null
+        `
+      } else throw new Error(`${schema} unsupported`)
       break
     default:
       throw new Error(`${type} unsupported`)
