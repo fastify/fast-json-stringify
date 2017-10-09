@@ -99,7 +99,8 @@ function build (schema, options) {
     dependenciesName.push('ajv')
   }
   if (dependencies.length > 0) {
-    return (new Function(...dependenciesName, code))(...dependencies)
+    dependenciesName.push(code)
+    return (Function.apply(null, dependenciesName).apply(null, dependencies))
   }
   return (new Function(code))()
 }
