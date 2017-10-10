@@ -98,11 +98,9 @@ function build (schema, options) {
     dependencies.push(new Ajv())
     dependenciesName.push('ajv')
   }
-  if (dependencies.length > 0) {
-    dependenciesName.push(code)
-    return (Function.apply(null, dependenciesName).apply(null, dependencies))
-  }
-  return (new Function(code))()
+
+  dependenciesName.push(code)
+  return (Function.apply(null, dependenciesName).apply(null, dependencies))
 }
 
 function hasAdditionalPropertiesTrue (schema) {

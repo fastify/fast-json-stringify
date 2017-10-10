@@ -4,6 +4,7 @@
   "description": "Stringify your JSON at max speed",
   "main": "index.js",
   "scripts": {
+    "benchmark": "node bench.js",
     "test": "standard && tap test/*.test.js"
   },
   "precommit": "test",
