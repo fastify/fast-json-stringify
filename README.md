@@ -49,6 +49,7 @@ fast-json-stringify-uglified obj x 5,902,021 ops/sec ±1.06% (91 runs sampled)
  - <a href="#missingFields">`Missing fields`</a>
  - <a href="#patternProperties">`Pattern Properties`</a>
  - <a href="#additionalProperties">`Additional Properties`</a>
+ - <a href="#anyof">`AnyOf`</a>
  - <a href="#ref">`Reuse - $ref`</a>
  - <a href="#long">`Long integers`</a>
  - <a href="#uglify">`Uglify`</a>
@@ -239,6 +240,31 @@ const obj = {
 
 console.log(stringify(obj)) // '{"matchfoo":"42","otherfoo":"str","matchnum":3,"nomatchstr":"valar morghulis",nomatchint:"313","nickname":"nick"}'
 ```
+
+#### AnyOf
+
+`fast-json-stringify` supports anyOf keyword as defined inside JSON schema. *anyOf* must be an array of valid JSON schemas. The differents schemas will be tried in this order so `stringify` will be slower the farest the right type is from the start of the array.
+
+*anyOf* uses [ajv](https://www.npmjs.com/package/ajv) as a JSON schema validator to find the schema that match the data and this has an impact on performances. Use it only as a last resort.
+
+Example:
+```javascript
+const stringify = fastJson({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    'undecidedType': {
+      'anyOf': [{
+	type: 'string'
+      }, {
+	type: 'boolean'
+      }]
+    }
+  }
+}
+```
+
+This schema will accept a string or a boolean for the property `undecidedType`. If no schema match the data, it will be stringified as `null`.
 
 <a name="ref"></a>
 #### Reuse - $ref
