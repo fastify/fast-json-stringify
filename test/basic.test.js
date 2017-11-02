@@ -130,6 +130,25 @@ buildTest({
 })
 
 buildTest({
+  'title': 'deep object with spaces in key',
+  'type': 'object',
+  'properties': {
+    'spaces in key': {
+      'type': 'object',
+      'properties': {
+        'something': {
+          'type': 'integer'
+        }
+      }
+    }
+  }
+}, {
+  'spaces in key': {
+    'something': 1
+  }
+})
+
+buildTest({
   'title': 'with null',
   'type': 'object',
   'properties': {
