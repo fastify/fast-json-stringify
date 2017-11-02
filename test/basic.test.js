@@ -226,3 +226,56 @@ buildTest({
 }, {
   readonly: true
 })
+
+test('Should throw on invalid schema', t => {
+  t.plan(1)
+  try {
+    build({
+      type: 'Dinosaur',
+      properties: {
+        claws: { type: 'sharp' }
+      }
+    })
+    t.fail('should be an invalid schema')
+  } catch (err) {
+    t.ok(err)
+  }
+})
+
+test('additionalProperties - throw on unknown type', (t) => {
+  t.plan(1)
+
+  try {
+    build({
+      title: 'check array coerce',
+      type: 'object',
+      properties: {},
+      additionalProperties: {
+        type: 'strangetype'
+      }
+    })
+    t.fail('should be an invalid schema')
+  } catch (err) {
+    t.ok(err)
+  }
+})
+
+test('patternProperties - throw on unknown type', (t) => {
+  t.plan(1)
+
+  try {
+    build({
+      title: 'check array coerce',
+      type: 'object',
+      properties: {},
+      patternProperties: {
+        foo: {
+          type: 'strangetype'
+        }
+      }
+    })
+    t.fail('should be an invalid schema')
+  } catch (err) {
+    t.ok(err)
+  }
+})
