@@ -20,6 +20,7 @@ var addComma = `
 
 function build (schema, options) {
   options = options || {}
+  isValidSchema(schema, options.schema)
   /* eslint no-new-func: "off" */
   var code = `
     'use strict'
@@ -597,6 +598,16 @@ function loadUglify () {
 
     throw e
   }
+}
+
+function isValidSchema (schema, externalSchema) {
+  const ajv = new Ajv()
+  if (externalSchema) {
+    Object.keys(externalSchema).forEach(key => {
+      ajv.addSchema(externalSchema[key], key)
+    })
+  }
+  ajv.compile(schema)
 }
 
 module.exports = build

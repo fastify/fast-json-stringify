@@ -161,26 +161,6 @@ test('additionalProperties - array coerce', (t) => {
   t.equal('{"foo":["t","r","u","e"],"ofoo":[],"arrfoo":["1","2"],"objfoo":[]}', stringify(obj))
 })
 
-test('additionalProperties - throw on unknown type', (t) => {
-  t.plan(1)
-  const stringify = build({
-    title: 'check array coerce',
-    type: 'object',
-    properties: {},
-    additionalProperties: {
-      type: 'strangetype'
-    }
-  })
-
-  const obj = { foo: 'true', ofoo: 0, arrfoo: [1, 2], objfoo: { tyrion: 'lannister' } }
-  try {
-    stringify(obj)
-    t.fail()
-  } catch (e) {
-    t.pass()
-  }
-})
-
 test('nested additionalProperties', (t) => {
   t.plan(1)
   const stringify = build({

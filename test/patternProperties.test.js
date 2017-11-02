@@ -137,25 +137,3 @@ test('patternProperties - array coerce', (t) => {
   const obj = { foo: 'true', ofoo: 0, arrfoo: [1, 2], objfoo: { tyrion: 'lannister' } }
   t.equal(stringify(obj), '{"foo":["t","r","u","e"],"ofoo":[],"arrfoo":["1","2"],"objfoo":[]}')
 })
-
-test('patternProperties - throw on unknown type', (t) => {
-  t.plan(1)
-  const stringify = build({
-    title: 'check array coerce',
-    type: 'object',
-    properties: {},
-    patternProperties: {
-      foo: {
-        type: 'strangetype'
-      }
-    }
-  })
-
-  const obj = { foo: 'true', ofoo: 0, arrfoo: [1, 2], objfoo: { tyrion: 'lannister' } }
-  try {
-    stringify(obj)
-    t.fail()
-  } catch (e) {
-    t.pass()
-  }
-})
