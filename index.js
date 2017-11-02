@@ -541,10 +541,9 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       funcName = (name + key + subKey).replace(/[-.\[\]]/g, '') // eslint-disable-line
       laterCode = buildArray(schema, laterCode, funcName, externalSchema, fullSchema)
       code += `
-json += ${funcName}(obj${accessor})
-    `
+        json += ${funcName}(obj${accessor})
+      `
       break
-
     case undefined:
       if ('anyOf' in schema) {
         schema.anyOf.forEach((s, index) => {
