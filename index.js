@@ -532,14 +532,14 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       `
       break
     case 'object':
-      funcName = (name + key + subKey).replace(/[-.\[\]]/g, '') // eslint-disable-line
+      funcName = (name + key + subKey).replace(/[-.\[\] ]/g, '') // eslint-disable-line
       laterCode = buildObject(schema, laterCode, funcName, externalSchema, fullSchema)
       code += `
         json += ${funcName}(obj${accessor})
       `
       break
     case 'array':
-      funcName = (name + key + subKey).replace(/[-.\[\]]/g, '') // eslint-disable-line
+      funcName = (name + key + subKey).replace(/[-.\[\] ]/g, '') // eslint-disable-line
       laterCode = buildArray(schema, laterCode, funcName, externalSchema, fullSchema)
       code += `
         json += ${funcName}(obj${accessor})
