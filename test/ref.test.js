@@ -97,6 +97,9 @@ test('ref external - properties', (t) => {
           }
         }
       }
+    },
+    third: {
+      type: 'string'
     }
   }
 
@@ -109,6 +112,12 @@ test('ref external - properties', (t) => {
       },
       num: {
         $ref: 'second#/definitions/num'
+      },
+      strPlain: {
+        $ref: 'third'
+      },
+      strHash: {
+        $ref: 'third#'
       }
     }
   }
@@ -119,7 +128,9 @@ test('ref external - properties', (t) => {
     },
     num: {
       int: 42
-    }
+    },
+    strPlain: 'test',
+    strHash: 'test'
   }
 
   const stringify = build(schema, { schema: externalSchema })
@@ -132,7 +143,7 @@ test('ref external - properties', (t) => {
     t.fail()
   }
 
-  t.equal(output, '{"obj":{"str":"test"},"num":{"int":42}}')
+  t.equal(output, '{"obj":{"str":"test"},"num":{"int":42},"strPlain":"test","strHash":"test"}')
 })
 
 test('ref internal - patternProperties', (t) => {
