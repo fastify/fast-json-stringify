@@ -1,8 +1,6 @@
 # fast-json-stringify&nbsp;&nbsp;[![Build Status](https://travis-ci.org/fastify/fast-json-stringify.svg?branch=master)](https://travis-ci.org/fastify/fast-json-stringify)
 
-__fast-json-stringify__ is two times faster than `JSON.stringify()`.
-It is particularly suited if you are sending small JSON payloads, the
-advantages reduces on large payloads.
+__fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads. Its performance advantage shrinks as your payload grows.
 
 Benchmarks:
 
@@ -119,7 +117,7 @@ And nested ones, too.
 
 <a name="required"></a>
 #### Required
-You can set specific fields of an object as required in your schema, by adding the field name inside the `required` array in your schema.  
+You can set specific fields of an object as required in your schema by adding the field name inside the `required` array in your schema.  
 Example:
 ```javascript
 const schema = {
@@ -136,7 +134,7 @@ const schema = {
   required: ['mail']
 }
 ```
-If the object to stringify has not the required field(s), `fast-json-stringify` will throw an error.
+If the object to stringify is missing the required field(s), `fast-json-stringify` will throw an error.
 
 <a name="missingFields"></a>
 #### Missing fields
@@ -165,7 +163,7 @@ console.log(stringify(obj)) // '{"mail":"mail@example.com"}'
 
 <a name="patternProperties"></a>
 #### Pattern properties
-`fast-json-stringify` supports pattern properties as defined inside JSON schema.  
+`fast-json-stringify` supports pattern properties as defined by JSON schema.  
 *patternProperties* must be an object, where the key is a valid regex and the value is an object, declared in this way: `{ type: 'type' }`.  
 *patternProperties* will work only for the properties that are not explicitly listed in the properties object.  
 Example:
@@ -200,12 +198,12 @@ console.log(stringify(obj)) // '{"matchfoo":"42","otherfoo":"str","matchnum":3,"
 
 <a name="additionalProperties"></a>
 #### Additional properties
-`fast-json-stringify` supports additional properties as defined inside JSON schema.  
+`fast-json-stringify` supports additional properties as defined by JSON schema.  
 *additionalProperties* must be an object or a boolean, declared in this way: `{ type: 'type' }`.  
 *additionalProperties* will work only for the properties that are not explicitly listed in the *properties* and *patternProperties* objects.
 
-If *additionalProperties* is not present or is setted to false, every property that is not explicitly listed in the *properties* and *patternProperties* objects, will be ignored, as said in <a href="#missingFields">Missing fields</a>.  
-If *additionalProperties* is setted to *true*, it will be used `fast-safe-stringify` to stringify the additional properties. If you want to achieve maximum performances we strongly encourage you to use a fixed schema where possible.  
+If *additionalProperties* is not present or is set to `false`, every property that is not explicitly listed in the *properties* and *patternProperties* objects,will be ignored, as described in <a href="#missingFields">Missing fields</a>.  
+If *additionalProperties* is set to `true`, it will be used by `fast-safe-stringify` to stringify the additional properties. If you want to achieve maximum performance, we strongly encourage you to use a fixed schema where possible.  
 Example:
 ```javascript
 const stringify = fastJson({
@@ -243,9 +241,9 @@ console.log(stringify(obj)) // '{"matchfoo":"42","otherfoo":"str","matchnum":3,"
 
 #### AnyOf
 
-`fast-json-stringify` supports anyOf keyword as defined inside JSON schema. *anyOf* must be an array of valid JSON schemas. The differents schemas will be tried in this order so `stringify` will be slower the farest the right type is from the start of the array.
+`fast-json-stringify` supports the anyOf keyword as defined by JSON schema. *anyOf* must be an array of valid JSON schemas. The different schemas will be tested in the specified order. The more schemas `stringify` has to try before finding a match, the slower it will be.
 
-*anyOf* uses [ajv](https://www.npmjs.com/package/ajv) as a JSON schema validator to find the schema that match the data and this has an impact on performances. Use it only as a last resort.
+*anyOf* uses [ajv](https://www.npmjs.com/package/ajv) as a JSON schema validator to find the schema that matches the data. This has an impact on performance—only use it as a last resort.
 
 Example:
 ```javascript
@@ -264,7 +262,7 @@ const stringify = fastJson({
 }
 ```
 
-This schema will accept a string or a boolean for the property `undecidedType`. If no schema match the data, it will be stringified as `null`.
+This schema will accept a string or a boolean for the property `undecidedType`. If no schema matches the data, it will be stringified as `null`.
 
 <a name="ref"></a>
 #### Reuse - $ref
@@ -371,8 +369,8 @@ console.log(stringify(obj)) // '{"id":18446744073709551615}'
 
 <a name="uglify"></a>
 #### Uglify
-If you want to squeeze a little bit more performance out of the serialisation, at the cost of readability in the generated code, you can pass `uglify: true` as an option.
-Note that you have to manually install `uglify-es` in order for it to work. Only version 3 is supported.
+If you want to squeeze a little bit more performance out of the serialization at the cost of readability in the generated code, you can pass `uglify: true` as an option.
+Note that you have to manually install `uglify-es` in order for this to work. Only version 3 is supported.
 Example:
 
 Note that if you are using Node 8.3.0 or newer, there are no performance gains from using Uglify. See https://www.nearform.com/blog/node-js-is-getting-a-new-v8-with-turbofan/
