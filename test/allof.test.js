@@ -44,7 +44,7 @@ test('object with multiple types field', (t) => {
       id: 1,
       name: 'string'
     })
-    t.is(value, '{"id":1,"name":"string"}')
+    t.is(value, '{"name":"string","id":1}')
   } catch (e) {
     t.fail()
   }
@@ -55,7 +55,7 @@ test('object with multiple types field', (t) => {
       name: 'string',
       tag: 'otherString'
     })
-    t.is(value, '{"id":1,"name":"string","tag":"otherString"}')
+    t.is(value, '{"name":"string","tag":"otherString","id":1}')
   } catch (e) {
     t.fail()
   }

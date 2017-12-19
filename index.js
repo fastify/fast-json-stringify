@@ -359,21 +359,7 @@ function refFinder (ref, schema, externalSchema) {
   return (new Function('schema', code))(schema)
 }
 
-function buildObject (schema, code, name, externalSchema, fullSchema) {
-  code += `
-    function ${name} (obj) {
-      var json = '{'
-      var addComma = false
-  `
-
-  if (schema.patternProperties) {
-    code += addPatternProperties(schema, externalSchema, fullSchema)
-  } else if (schema.additionalProperties && !schema.patternProperties) {
-    code += addAdditionalProperties(schema, externalSchema, fullSchema)
-  }
-
-  var laterCode = ''
-
+function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
   Object.keys(schema.properties || {}).forEach((key, i, a) => {
     // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
     // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
@@ -403,6 +389,38 @@ function buildObject (schema, code, name, externalSchema, fullSchema) {
       }
     `
   })
+
+  return { code: code, laterCode: laterCode }
+}
+
+function buildObject (schema, code, name, externalSchema, fullSchema) {
+  code += `
+    function ${name} (obj) {
+      var json = '{'
+      var addComma = false
+  `
+
+  if (schema.patternProperties) {
+    code += addPatternProperties(schema, externalSchema, fullSchema)
+  } else if (schema.additionalProperties && !schema.patternProperties) {
+    code += addAdditionalProperties(schema, externalSchema, fullSchema)
+  }
+
+  var laterCode = ''
+
+  if (schema.allOf) {
+    schema.allOf.forEach((ss) => {
+      var builtCode = buildCode(ss, code, laterCode, name, externalSchema, fullSchema)
+
+      code = builtCode.code
+      laterCode = builtCode.laterCode
+    })
+  } else {
+    var builtCode = buildCode(schema, code, laterCode, name, externalSchema, fullSchema)
+
+    code = builtCode.code
+    laterCode = builtCode.laterCode
+  }
 
   // Removes the comma if is the last element of the string (in case there are not properties)
   code += `
