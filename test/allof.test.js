@@ -3,11 +3,11 @@
 const test = require('tap').test
 const build = require('..')
 
-test('object with multiple types field', (t) => {
+test('object with allOf and multiple schema on the allOf', (t) => {
   t.plan(2)
 
   const schema = {
-    title: 'object with multiple types field',
+    title: 'object with allOf and multiple schema on the allOf',
     type: 'object',
     allOf: [
       {
@@ -58,5 +58,54 @@ test('object with multiple types field', (t) => {
     t.is(value, '{"name":"string","tag":"otherString","id":1}')
   } catch (e) {
     t.fail()
+  }
+})
+
+test('object with allOf and one schema on the allOf', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'object with allOf and one schema on the allOf',
+    type: 'object',
+    allOf: [
+      {
+        required: [
+          'id'
+        ],
+        type: 'object',
+        properties: {
+          id: {
+            type: 'integer'
+          }
+        }
+      }
+    ]
+  }
+  const stringify = build(schema)
+
+  try {
+    const value = stringify({
+      id: 1
+    })
+    t.is(value, '{"id":1}')
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('object with allOf and no schema on the allOf', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'object with allOf and no schema on the allOf',
+    type: 'object',
+    allOf: []
+  }
+
+  try {
+    build(schema)
+    t.fail()
+  } catch (e) {
+    t.is(e.message, 'schema is invalid: data.allOf should NOT have less than 1 items')
   }
 })
