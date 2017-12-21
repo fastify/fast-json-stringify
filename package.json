@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "benchmark": "node bench.js",
-    "test": "standard && tap test/*.test.js"
+    "test": "standard && tap -j4 test/*.test.js"
   },
   "precommit": "test",
   "repository": {
@@ -26,15 +26,15 @@
   "homepage": "https://github.com/mcollina/fast-json-stringify#readme",
   "devDependencies": {
     "benchmark": "^2.1.4",
-    "is-my-json-valid": "^2.16.1",
+    "is-my-json-valid": "^2.17.1",
     "long": "^3.2.0",
     "pre-commit": "^1.2.2",
     "standard": "^10.0.3",
     "tap": "^11.0.0",
-    "uglify-es": "^3.1.1"
+    "uglify-es": "^3.2.2"
   },
   "dependencies": {
-    "ajv": "^5.2.3",
-    "fast-safe-stringify": "^1.2.0"
+    "ajv": "^5.5.2",
+    "fast-safe-stringify": "^1.2.1"
   }
 }
