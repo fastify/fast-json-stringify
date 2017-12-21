@@ -351,10 +351,13 @@ function refFinder (ref, schema, externalSchema) {
   if (ref[0]) {
     schema = externalSchema[ref[0]]
   }
-  var walk = ref[1].split('/')
   var code = 'return schema'
-  for (var i = 1; i < walk.length; i++) {
-    code += `['${walk[i]}']`
+  // If it has a path
+  if (ref[1]) {
+    var walk = ref[1].split('/')
+    for (var i = 1; i < walk.length; i++) {
+      code += `['${walk[i]}']`
+    }
   }
   return (new Function('schema', code))(schema)
 }
