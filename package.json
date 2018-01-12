@@ -35,6 +35,6 @@
   },
   "dependencies": {
     "ajv": "^6.0.0",
-    "fast-safe-stringify": "^1.2.1"
+    "fast-safe-stringify": "^2.0.0"
   }
 }
