@@ -93,10 +93,25 @@ test('additionalProperties - string coerce', (t) => {
   t.equal('{"foo":"true","ofoo":"42","arrfoo":"array,test","objfoo":"[object Object]"}', stringify(obj))
 })
 
-test('additionalProperties - number coerce', (t) => {
+test('additionalProperties - number coerce ok', (t) => {
   t.plan(1)
   const stringify = build({
-    title: 'check number coerce',
+    title: 'check number coerce ok',
+    type: 'object',
+    properties: {},
+    additionalProperties: {
+      type: 'number'
+    }
+  })
+
+  const obj = { foo: '22', ofoo: '42.5' }
+  t.equal('{"foo":22,"ofoo":42.5}', stringify(obj))
+})
+
+test('additionalProperties - number coerce fails', (t) => {
+  t.plan(1)
+  const stringify = build({
+    title: 'check number coerce fails',
     type: 'object',
     properties: {},
     additionalProperties: {
@@ -105,7 +120,12 @@ test('additionalProperties - number coerce', (t) => {
   })
 
   const obj = { foo: true, ofoo: '42', xfoo: 'string', arrfoo: [1, 2], objfoo: { num: 42 } }
-  t.equal('{"foo":1,"ofoo":42,"xfoo":null,"arrfoo":null,"objfoo":null}', stringify(obj))
+  try {
+    stringify(obj)
+    t.fail()
+  } catch (err) {
+    t.equal(err.message, 'Cannot coerce to number')
+  }
 })
 
 test('additionalProperties - boolean coerce', (t) => {

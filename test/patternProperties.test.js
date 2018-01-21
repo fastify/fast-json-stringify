@@ -62,10 +62,27 @@ test('patternProperties - string coerce', (t) => {
   t.equal(stringify(obj), '{"foo":"true","ofoo":"42","arrfoo":"array,test","objfoo":"[object Object]"}')
 })
 
-test('patternProperties - number coerce', (t) => {
+test('patternProperties - number coerce ok', (t) => {
   t.plan(1)
   const stringify = build({
-    title: 'check number coerce',
+    title: 'check number coerce ok',
+    type: 'object',
+    properties: {},
+    patternProperties: {
+      foo: {
+        type: 'number'
+      }
+    }
+  })
+
+  const obj = { foo: 42, ofoo: '42', xfoo: '42.4', arrfoo: 43.2 }
+  t.equal(stringify(obj), '{"foo":42,"ofoo":42,"xfoo":42.4,"arrfoo":43.2}')
+})
+
+test('patternProperties - number coerce fails', (t) => {
+  t.plan(2)
+  const stringify = build({
+    title: 'check number coerce fails',
     type: 'object',
     properties: {},
     patternProperties: {
@@ -76,7 +93,12 @@ test('patternProperties - number coerce', (t) => {
   })
 
   const obj = { foo: true, ofoo: '42', xfoo: 'string', arrfoo: [1, 2], objfoo: { num: 42 } }
-  t.equal(stringify(obj), '{"foo":1,"ofoo":42,"xfoo":null,"arrfoo":null,"objfoo":null}')
+  try {
+    stringify(obj)
+  } catch (err) {
+    t.ok(err)
+    t.ok(err.message, 'Cannot coerce to number')
+  }
 })
 
 test('patternProperties - boolean coerce', (t) => {

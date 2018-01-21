@@ -147,7 +147,7 @@ function $asInteger (i) {
 function $asNumber (i) {
   var num = Number(i)
   if (isNaN(num)) {
-    return 'null'
+    throw new Error('Cannot coerce to number')
   } else {
     return '' + num
   }
