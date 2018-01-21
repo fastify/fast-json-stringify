@@ -146,7 +146,7 @@ function $asInteger (i) {
 
 function $asNumber (i) {
   var num = Number(i)
-  if (isNaN(num)) {
+  if (!isFinite(num)) {
     throw new Error('Cannot coerce to number')
   } else {
     return '' + num
