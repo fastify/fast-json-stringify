@@ -146,25 +146,13 @@ function $asInteger (i) {
 
 function $asNumber (i) {
   if (i === 0) return '0'
-  if (!i || i === true) {
-    throw new Error('Cannot coerce to number')
-  }
-  if (i.constructor === Number) {
-    if (!isFinite(i)) {
-      throw new Error('Cannot coerce to number')
-    } else {
-      return '' + i
+  if (i !== '' && i !== null && i !== undefined && i !== true && i !== false && (i.constructor === Number || typeof i !== 'object')) {
+    var num = Number(i)
+    if (isFinite(num)) {
+      return '' + num
     }
   }
-  if (typeof i === 'object') {
-    throw new Error('Cannot coerce to number')
-  }
-  var num = Number(i)
-  if (!isFinite(num)) {
-    throw new Error('Cannot coerce to number')
-  } else {
-    return '' + num
-  }
+  throw new Error('Cannot coerce to number')
 }
 
 function $asBoolean (bool) {
