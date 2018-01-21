@@ -398,11 +398,11 @@ console.log(stringify({ some: 'object' })) // '{"some":"object"}'
 When the object you're serializing does not strictly match the given schema,
 `fast-json-stringify` applies a type coercion as describe below:
 
-- if the schema describes an integer and a Infinity, NaN, null or a boolean was given,
+- if the schema describes a number and a Infinity, NaN, null or a boolean was given,
 the serialization fails throwing an error
-- if the schema describes an integer and a string that contains a integer was given,
+- if the schema describes a number and a string that contains a number was given,
 the serialization is successfully made
-- if the schema describes an integer and a non-numeric string or integer was given,
+- if the schema describes a number and a non-numeric string or number was given,
 the serialization fails throwing an error
 
 <a name="acknowledgements"></a>
