@@ -145,7 +145,18 @@ function $asInteger (i) {
 }
 
 function $asNumber (i) {
-  if (i === null || i === true || i === false) {
+  if (i === 0) return '0'
+  if (!i || i === true) {
+    throw new Error('Cannot coerce to number')
+  }
+  if (i.constructor === Number) {
+    if (!isFinite(i)) {
+      throw new Error('Cannot coerce to number')
+    } else {
+      return '' + i
+    }
+  }
+  if (typeof i === 'object') {
     throw new Error('Cannot coerce to number')
   }
   var num = Number(i)
@@ -157,7 +168,11 @@ function $asNumber (i) {
 }
 
 function $asBoolean (bool) {
-  return bool && 'true' || 'false' // eslint-disable-line
+  if (bool === true) return 'true'
+  if (bool === false) return 'false'
+  if (bool === 'true') return 'true'
+  if (bool === 'false') return 'false'
+  throw new Error('Cannot coerce to boolean')
 }
 
 function $asString (str) {

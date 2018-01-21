@@ -128,7 +128,7 @@ test('additionalProperties - number coerce fails', (t) => {
   }
 })
 
-test('additionalProperties - boolean coerce', (t) => {
+test('additionalProperties', (t) => {
   t.plan(1)
   const stringify = build({
     title: 'check boolean coerce',
@@ -139,8 +139,8 @@ test('additionalProperties - boolean coerce', (t) => {
     }
   })
 
-  const obj = { foo: 'true', ofoo: 0, arrfoo: [1, 2], objfoo: { a: true } }
-  t.equal('{"foo":true,"ofoo":false,"arrfoo":true,"objfoo":true}', stringify(obj))
+  const obj = { foo: 'true', ofoo: true, arrfoo: false, objfoo: 'false' }
+  t.equal('{"foo":true,"ofoo":true,"arrfoo":false,"objfoo":false}', stringify(obj))
 })
 
 test('additionalProperties - object coerce', (t) => {

@@ -114,8 +114,8 @@ test('patternProperties - boolean coerce', (t) => {
     }
   })
 
-  const obj = { foo: 'true', ofoo: 0, arrfoo: [1, 2], objfoo: { a: true } }
-  t.equal(stringify(obj), '{"foo":true,"ofoo":false,"arrfoo":true,"objfoo":true}')
+  const obj = { foo: 'true', ofoo: true, arrfoo: 'false', objfoo: false }
+  t.equal(stringify(obj), '{"foo":true,"ofoo":true,"arrfoo":false,"objfoo":false}')
 })
 
 test('patternProperties - object coerce', (t) => {
