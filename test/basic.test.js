@@ -246,6 +246,21 @@ buildTest({
   readonly: true
 })
 
+test('booleans are coerced to integer', t => {
+  t.plan(2)
+  const serializer = build({
+    type: 'object',
+    properties: {
+      claws: { type: 'integer' }
+    }
+  })
+  const s1 = serializer({ claws: true })
+  t.equal(s1, '{"claws":1}')
+
+  const s2 = serializer({ claws: false })
+  t.equal(s2, '{"claws":0}')
+})
+
 test('Should throw on invalid schema', t => {
   t.plan(1)
   try {
