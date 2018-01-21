@@ -246,19 +246,84 @@ buildTest({
   readonly: true
 })
 
-test('booleans are coerced to integer', t => {
+test('booleans cannot be coerced to integer', t => {
   t.plan(2)
   const serializer = build({
     type: 'object',
     properties: {
-      claws: { type: 'integer' }
+      my_int: { type: 'integer' }
     }
   })
-  const s1 = serializer({ claws: true })
-  t.equal(s1, '{"claws":1}')
+  try {
+    serializer({ my_int: true })
+    t.fail()
+  } catch (e) {
+    t.equal(e.message, 'Cannot coerce to number')
+  }
+  try {
+    serializer({ my_int: false })
+    t.fail()
+  } catch (e) {
+    t.equal(e.message, 'Cannot coerce to number')
+  }
+})
 
-  const s2 = serializer({ claws: false })
-  t.equal(s2, '{"claws":0}')
+test('null cannot be coerced to integer', t => {
+  t.plan(1)
+  const serializer = build({
+    type: 'object',
+    properties: {
+      my_int: { type: 'integer' }
+    }
+  })
+
+  try {
+    serializer({ my_int: null })
+    t.fail()
+  } catch (e) {
+    t.equal(e.message, 'Cannot coerce to number')
+  }
+})
+
+test('NaN cannot be coerced to integer', t => {
+  t.plan(1)
+  const serializer = build({
+    type: 'object',
+    properties: {
+      my_int: { type: 'integer' }
+    }
+  })
+
+  try {
+    serializer({ my_int: NaN })
+    t.fail()
+  } catch (e) {
+    t.equal(e.message, 'Cannot coerce to number')
+  }
+})
+
+test('Infinity cannot be coerced to integer', t => {
+  t.plan(2)
+  const serializer = build({
+    type: 'object',
+    properties: {
+      my_int: { type: 'integer' }
+    }
+  })
+
+  try {
+    serializer({ my_int: Infinity })
+    t.fail()
+  } catch (e) {
+    t.equal(e.message, 'Cannot coerce to number')
+  }
+
+  try {
+    serializer({ my_int: -Infinity })
+    t.fail()
+  } catch (e) {
+    t.equal(e.message, 'Cannot coerce to number')
+  }
 })
 
 test('Should throw on invalid schema', t => {

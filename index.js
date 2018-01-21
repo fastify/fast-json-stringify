@@ -145,6 +145,9 @@ function $asInteger (i) {
 }
 
 function $asNumber (i) {
+  if (i === null || i === true || i === false) {
+    throw new Error('Cannot coerce to number')
+  }
   var num = Number(i)
   if (!isFinite(num)) {
     throw new Error('Cannot coerce to number')

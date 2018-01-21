@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "ajv": "^6.0.0",
-    "fast-safe-stringify": "^1.2.1"
+    "fast-safe-stringify": "^1.2.1",
+    "microtime": "^2.1.7"
   }
 }
