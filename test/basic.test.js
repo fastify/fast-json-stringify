@@ -262,22 +262,17 @@ test('Should throw on invalid schema', t => {
 })
 
 test('Should throw if no integer is provided', t => {
-  t.plan(2)
+  t.plan(1)
   const serializer = build({
     type: 'object',
     properties: {
       my_int: { type: 'integer' }
     }
   })
-  try {
-    serializer({
-      my_int: 'this is not an integer at all!'
-    })
-    t.fail('should be an invalid schema')
-  } catch (err) {
-    t.ok(err)
-    t.ok(err.message, 'Cannot coerce to number')
-  }
+  const err = serializer({
+    my_int: 'this is not an integer at all!'
+  })
+  t.ok(err.message, 'Cannot coerce to number')
 })
 
 test('additionalProperties - throw on unknown type', (t) => {

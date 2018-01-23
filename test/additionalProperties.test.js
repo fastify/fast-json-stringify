@@ -120,12 +120,8 @@ test('additionalProperties - number coerce fails', (t) => {
   })
 
   const obj = { foo: true, ofoo: '42', xfoo: 'string', arrfoo: [1, 2], objfoo: { num: 42 } }
-  try {
-    stringify(obj)
-    t.fail()
-  } catch (err) {
-    t.equal(err.message, 'Cannot coerce to number')
-  }
+  const err = stringify(obj)
+  t.equal(err.message, 'Cannot coerce to number')
 })
 
 test('additionalProperties', (t) => {

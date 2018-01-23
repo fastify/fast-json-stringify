@@ -162,5 +162,6 @@ test('invalid items throw', (t) => {
     }
   }
   const stringify = build(schema)
-  t.throws(() => stringify({args: ['invalid']}))
+  const err = stringify({args: ['invalid']})
+  t.equal(err.message, 'Item at 0 does not match schema definition.')
 })

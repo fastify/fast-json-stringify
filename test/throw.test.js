@@ -15,12 +15,8 @@ test('Cannot be coerced to integer / 1', t => {
   })
 
   values.forEach(function (v) {
-    try {
-      serializer({ my_int: v })
-      t.fail()
-    } catch (e) {
-      t.equal(e.message, 'Cannot coerce to number')
-    }
+    const e = serializer({ my_int: v })
+    t.equal(e.message, 'Cannot coerce to number')
   })
 })
 
@@ -33,12 +29,8 @@ test('Cannot be coerced to integer / 2', t => {
   })
 
   values.forEach(function (v) {
-    try {
-      serializer(v)
-      t.fail()
-    } catch (e) {
-      t.equal(e.message, 'Cannot coerce to number')
-    }
+    const e = serializer(v)
+    t.equal(e.message, 'Cannot coerce to number')
   })
 })
 
@@ -54,12 +46,8 @@ test('Cannot be coerced to boolean / 1', t => {
   })
 
   values.forEach(function (v) {
-    try {
-      serializer({ my_int: v })
-      t.fail()
-    } catch (e) {
-      t.equal(e.message, 'Cannot coerce to boolean')
-    }
+    const e = serializer({ my_int: v })
+    t.equal(e.message, 'Cannot coerce to boolean')
   })
 })
 
@@ -72,11 +60,7 @@ test('Cannot be coerced to boolean / 2', t => {
   })
 
   values.forEach(function (v) {
-    try {
-      serializer(v)
-      t.fail()
-    } catch (e) {
-      t.equal(e.message, 'Cannot coerce to boolean')
-    }
+    const e = serializer(v)
+    t.equal(e.message, 'Cannot coerce to boolean')
   })
 })

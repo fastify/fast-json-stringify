@@ -4,7 +4,8 @@ const test = require('tap').test
 const build = require('..')
 
 test('object with required field', (t) => {
-  t.plan(3)
+  t.plan(2
+  )
 
   const schema = {
     title: 'object with required field',
@@ -30,13 +31,8 @@ test('object with required field', (t) => {
     t.fail()
   }
 
-  try {
-    stringify({
-      num: 42
-    })
-    t.fail()
-  } catch (e) {
-    t.is(e.message, 'str is required!')
-    t.pass()
-  }
+  const e = stringify({
+    num: 42
+  })
+  t.is(e.message, 'str is required!')
 })

@@ -80,7 +80,7 @@ test('patternProperties - number coerce ok', (t) => {
 })
 
 test('patternProperties - number coerce fails', (t) => {
-  t.plan(2)
+  t.plan(1)
   const stringify = build({
     title: 'check number coerce fails',
     type: 'object',
@@ -93,12 +93,8 @@ test('patternProperties - number coerce fails', (t) => {
   })
 
   const obj = { foo: true, ofoo: '42', xfoo: 'string', arrfoo: [1, 2], objfoo: { num: 42 } }
-  try {
-    stringify(obj)
-  } catch (err) {
-    t.ok(err)
-    t.ok(err.message, 'Cannot coerce to number')
-  }
+  const err = stringify(obj)
+  t.ok(err.message, 'Cannot coerce to number')
 })
 
 test('patternProperties - boolean coerce', (t) => {
