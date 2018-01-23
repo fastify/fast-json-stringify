@@ -11,6 +11,9 @@ try {
   isLong = null
 }
 
+// This variable is not used in this scope
+var error
+
 var addComma = `
   if (addComma) {
     json += ','
@@ -26,6 +29,9 @@ function build (schema, options) {
     'use strict'
 
     var error, ret
+
+    var INVALID_INTERGER_COERCION = new Error('Cannot coerce to number')
+    var INVALID_BOOLEAN_COERCION = new Error('Cannot coerce to boolean')
   `
   // used to support patternProperties and additionalProperties
   // they need to check if a field belongs to the properties in the schema
@@ -146,7 +152,7 @@ function $asInteger (i) {
   }
 }
 
-var error
+var INVALID_INTERGER_COERCION = {}
 function $asNumber (i) {
   if (i === 0) return '0'
   if (i !== '' && i !== null && i !== undefined && i !== true && i !== false && (i.constructor === Number || typeof i !== 'object')) {
@@ -155,16 +161,17 @@ function $asNumber (i) {
       return '' + num
     }
   }
-  error = new Error('Cannot coerce to number')
+  error = INVALID_INTERGER_COERCION
   return error
 }
 
+var INVALID_BOOLEAN_COERCION = {}
 function $asBoolean (bool) {
   if (bool === true) return 'true'
   if (bool === false) return 'false'
   if (bool === 'true') return 'true'
   if (bool === 'false') return 'false'
-  error = new Error('Cannot coerce to boolean')
+  error = INVALID_BOOLEAN_COERCION
   return error
 }
 
