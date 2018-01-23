@@ -391,6 +391,20 @@ const stringify = fastJson({
 console.log(stringify({ some: 'object' })) // '{"some":"object"}'
 ```
 
+
+<a name="type-coerce"></a>
+## Type coerce
+
+When the object you're serializing does not strictly match the given schema,
+`fast-json-stringify` applies a type coercion as describe below:
+
+- if the schema describes a number but a Infinity, NaN, null or a boolean was given,
+the serialization fails throwing an error
+- if the schema describes a number and a string that contains a number was given,
+the serialization is successfully made
+- if the schema describes a number but a non-numeric string was given,
+the serialization fails throwing an error
+
 <a name="acknowledgements"></a>
 ## Acknowledgements
 

@@ -11,6 +11,9 @@ try {
   isLong = null
 }
 
+// This variable is not used in this scope
+var error
+
 var addComma = `
   if (addComma) {
     json += ','
@@ -24,6 +27,11 @@ function build (schema, options) {
   /* eslint no-new-func: "off" */
   var code = `
     'use strict'
+
+    var error, ret
+
+    var INVALID_INTERGER_COERCION = new Error('Cannot coerce to number')
+    var INVALID_BOOLEAN_COERCION = new Error('Cannot coerce to boolean')
   `
   // used to support patternProperties and additionalProperties
   // they need to check if a field belongs to the properties in the schema
@@ -144,17 +152,27 @@ function $asInteger (i) {
   }
 }
 
+var INVALID_INTERGER_COERCION = {}
 function $asNumber (i) {
-  var num = Number(i)
-  if (isNaN(num)) {
-    return 'null'
-  } else {
-    return '' + num
+  if (i === 0) return '0'
+  if (i !== '' && i !== null && i !== undefined && i !== true && i !== false && (i.constructor === Number || typeof i !== 'object')) {
+    var num = Number(i)
+    if (isFinite(num)) {
+      return '' + num
+    }
   }
+  error = INVALID_INTERGER_COERCION
+  return error
 }
 
+var INVALID_BOOLEAN_COERCION = {}
 function $asBoolean (bool) {
-  return bool && 'true' || 'false' // eslint-disable-line
+  if (bool === true) return 'true'
+  if (bool === false) return 'false'
+  if (bool === 'true') return 'true'
+  if (bool === 'false') return 'false'
+  error = INVALID_BOOLEAN_COERCION
+  return error
 }
 
 function $asString (str) {
@@ -219,13 +237,17 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
       code += buildObject(pp[regex], '', 'buildObjectPP' + index, externalSchema, fullSchema)
       code += `
           ${addComma}
-          json += $asString(keys[i]) + ':' + buildObjectPP${index}(obj[keys[i]])
+          ret = buildObjectPP${index}(obj[keys[i]])
+          if (ret === error) return ret
+          json += $asString(keys[i]) + ':' + ret
       `
     } else if (type === 'array') {
       code += buildArray(pp[regex], '', 'buildArrayPP' + index, externalSchema, fullSchema)
       code += `
           ${addComma}
-          json += $asString(keys[i]) + ':' + buildArrayPP${index}(obj[keys[i]])
+          ret = buildArrayPP${index}(obj[keys[i]])
+          if (ret === error) return ret
+          json += $asString(keys[i]) + ':' + ret
       `
     } else if (type === 'null') {
       code += `
@@ -235,26 +257,35 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
     } else if (type === 'string') {
       code += `
           ${addComma}
-          json += $asString(keys[i]) + ':' + $asString(obj[keys[i]])
+          ret = $asString(obj[keys[i]])
+          if (ret === error) return ret
+          json += $asString(keys[i]) + ':' + ret
       `
     } else if (type === 'integer') {
       code += `
           ${addComma}
-          json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
+          ret = $asInteger(obj[keys[i]])
+          if (ret === error) return ret
+          json += $asString(keys[i]) + ':' + ret
       `
     } else if (type === 'number') {
       code += `
           ${addComma}
-          json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]])
+          ret = $asNumber(obj[keys[i]])
+          if (ret === error) return ret
+          json += $asString(keys[i]) + ':' + ret
       `
     } else if (type === 'boolean') {
       code += `
           ${addComma}
-          json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]])
+          ret = $asBoolean(obj[keys[i]])
+          if (ret === error) return ret
+          json += $asString(keys[i]) + ':' + ret
       `
     } else {
       code += `
-        throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ${type}')
+        error = new Error('Cannot coerce ' + obj[keys[i]] + ' to ${type}')
+        return error
       `
     }
 
@@ -280,7 +311,9 @@ function additionalProperty (schema, externalSchema, fullSchema) {
     return `
         if (obj[keys[i]] !== undefined) {
           ${addComma}
-          json += $asString(keys[i]) + ':' + fastSafeStringify(obj[keys[i]])
+          ret = fastSafeStringify(obj[keys[i]])
+          if (ret === error) return ret
+          json += $asString(keys[i]) + ':' + ret
         }
     `
   }
@@ -293,42 +326,55 @@ function additionalProperty (schema, externalSchema, fullSchema) {
     code += buildObject(ap, '', 'buildObjectAP', externalSchema)
     code += `
         ${addComma}
-        json += $asString(keys[i]) + ':' + buildObjectAP(obj[keys[i]])
+        ret = buildObjectAP(obj[keys[i]])
+        if (ret === error) return ret
+        json += $asString(keys[i]) + ':' + ret
     `
   } else if (type === 'array') {
     code += buildArray(ap, '', 'buildArrayAP', externalSchema, fullSchema)
     code += `
         ${addComma}
-        json += $asString(keys[i]) + ':' + buildArrayAP(obj[keys[i]])
+        ret = buildArrayAP(obj[keys[i]])
+        if (ret === error) return ret
+        json += $asString(keys[i]) + ':' + ret
     `
   } else if (type === 'null') {
     code += `
         ${addComma}
-        json += $asString(keys[i]) +':null'
+        json += $asString(keys[i]) + ':null'
     `
   } else if (type === 'string') {
     code += `
         ${addComma}
-        json += $asString(keys[i]) + ':' + $asString(obj[keys[i]])
+        ret = $asString(obj[keys[i]])
+        if (ret === error) return ret
+        json += $asString(keys[i]) + ':' + ret
     `
   } else if (type === 'integer') {
     code += `
         ${addComma}
-        json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
+        ret = $asInteger(obj[keys[i]])
+        if (ret === error) return ret
+        json += $asString(keys[i]) + ':' + ret
     `
   } else if (type === 'number') {
     code += `
         ${addComma}
-        json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]])
+        ret = $asNumber(obj[keys[i]])
+        if (ret === error) return ret
+        json += $asString(keys[i]) + ':' + ret
     `
   } else if (type === 'boolean') {
     code += `
         ${addComma}
-        json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]])
+        ret = $asBoolean(obj[keys[i]])
+        if (ret === error) return ret
+        json += $asString(keys[i]) + ':' + ret
     `
   } else {
     code += `
-        throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ${type}')
+        error = new Error('Cannot coerce ' + obj[keys[i]] + ' to ${type}')
+        return
     `
   }
   return code
@@ -369,7 +415,9 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
     code += `
       if (obj['${key}'] !== undefined) {
         ${addComma}
-        json += '${$asString(key)}:'
+        ret = '${$asString(key)}:'
+        if (ret === error) return ret
+        json += ret
       `
 
     if (schema.properties[key]['$ref']) {
@@ -384,7 +432,8 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
     if (schema.required && schema.required.indexOf(key) !== -1) {
       code += `
       } else {
-        throw new Error('${key} is required!')
+        error = new Error('${key} is required!')
+        return error
       `
     }
 
@@ -490,7 +539,8 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
     }, result)
     result.code += `
     else {
-      throw new Error(\`Item at $\{i} does not match schema definition.\`)
+      error = new Error(\`Item at $\{i} does not match schema definition.\`)
+      return error
     }
     `
   } else {
@@ -534,44 +584,57 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       break
     case 'string':
       code += `
-        json += $asString(obj${accessor})
+        ret = $asString(obj${accessor})
+        if (ret === error) return ret
+        json += ret
       `
       break
     case 'integer':
       code += `
-        json += $asInteger(obj${accessor})
+        ret = $asInteger(obj${accessor})
+        if (ret === error) return ret
+        json += ret
       `
       break
     case 'number':
       code += `
-        json += $asNumber(obj${accessor})
+        ret = $asNumber(obj${accessor})
+        if (ret === error) return ret
+        json += ret
       `
       break
     case 'boolean':
       code += `
-        json += $asBoolean(obj${accessor})
+        ret = $asBoolean(obj${accessor})
+        if (ret === error) return ret
+        json += ret
       `
       break
     case 'object':
       funcName = (name + key + subKey).replace(/[-.\[\] ]/g, '') // eslint-disable-line
       laterCode = buildObject(schema, laterCode, funcName, externalSchema, fullSchema)
       code += `
-        json += ${funcName}(obj${accessor})
+        ret = ${funcName}(obj${accessor})
+        if (ret === error) return ret
+        json += ret
       `
       break
     case 'array':
       funcName = (name + key + subKey).replace(/[-.\[\] ]/g, '') // eslint-disable-line
       laterCode = buildArray(schema, laterCode, funcName, externalSchema, fullSchema)
       code += `
-        json += ${funcName}(obj${accessor})
+        ret = ${funcName}(obj${accessor})
+        if (ret === error) return ret
+        json += ret
       `
       break
     case undefined:
       if ('anyOf' in schema) {
         schema.anyOf.forEach((s, index) => {
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, {depth: null})}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, {depth: null})}, obj${accessor})) {
               ${nested(laterCode, name, key, s, externalSchema, fullSchema, subKey).code}
+            }
           `
         })
         code += `

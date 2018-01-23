@@ -39,21 +39,17 @@ test('object with allOf and multiple schema on the allOf', (t) => {
   }
   const stringify = build(schema)
 
-  try {
-    stringify({
-      id: 1
-    })
-  } catch (e) {
-    t.is(e.message, 'name is required!')
-  }
+  let e
 
-  try {
-    stringify({
-      name: 'string'
-    })
-  } catch (e) {
-    t.is(e.message, 'id is required!')
-  }
+  e = stringify({
+    id: 1
+  })
+  t.is(e.message, 'name is required!')
+
+  e = stringify({
+    name: 'string'
+  })
+  t.is(e.message, 'id is required!')
 
   try {
     const value = stringify({
