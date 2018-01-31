@@ -93,7 +93,7 @@ test('additionalProperties - string coerce', (t) => {
   t.equal('{"foo":"true","ofoo":"42","arrfoo":"array,test","objfoo":"[object Object]"}', stringify(obj))
 })
 
-test('additionalProperties - number coerce', (t) => {
+test('additionalProperties - number skip', (t) => {
   t.plan(1)
   const stringify = build({
     title: 'check number coerce',
@@ -105,7 +105,7 @@ test('additionalProperties - number coerce', (t) => {
   })
 
   const obj = { foo: true, ofoo: '42', xfoo: 'string', arrfoo: [1, 2], objfoo: { num: 42 } }
-  t.equal('{"foo":1,"ofoo":42,"xfoo":null,"arrfoo":null,"objfoo":null}', stringify(obj))
+  t.equal(stringify(obj), '{"foo":1,"ofoo":42}')
 })
 
 test('additionalProperties - boolean coerce', (t) => {
@@ -120,7 +120,7 @@ test('additionalProperties - boolean coerce', (t) => {
   })
 
   const obj = { foo: 'true', ofoo: 0, arrfoo: [1, 2], objfoo: { a: true } }
-  t.equal('{"foo":true,"ofoo":false,"arrfoo":true,"objfoo":true}', stringify(obj))
+  t.equal(stringify(obj), '{"foo":true,"ofoo":false,"arrfoo":true,"objfoo":true}')
 })
 
 test('additionalProperties - object coerce', (t) => {

@@ -314,12 +314,18 @@ function additionalProperty (schema, externalSchema, fullSchema) {
   } else if (type === 'integer') {
     code += `
         ${addComma}
-        json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
+        var t = Number(obj[keys[i]])
+        if (isLong && isLong(obj[keys[i]]) || !isNaN(t)) {
+          json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
+        }
     `
   } else if (type === 'number') {
     code += `
-        ${addComma}
-        json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]])
+        var t = Number(obj[keys[i]])
+        if (!isNaN(t)) {
+          ${addComma}
+          json += $asString(keys[i]) + ':' + t
+        }
     `
   } else if (type === 'boolean') {
     code += `
@@ -364,22 +370,50 @@ function refFinder (ref, schema, externalSchema) {
 
 function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
   Object.keys(schema.properties || {}).forEach((key, i, a) => {
-    // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
-    // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
-    code += `
-      if (obj['${key}'] !== undefined) {
-        ${addComma}
-        json += '${$asString(key)}:'
-      `
-
     if (schema.properties[key]['$ref']) {
       schema.properties[key] = refFinder(schema.properties[key]['$ref'], fullSchema, externalSchema)
     }
 
-    var result = nested(laterCode, name, key, schema.properties[key], externalSchema, fullSchema)
+    // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
+    // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
 
-    code += result.code
-    laterCode = result.laterCode
+    var type = schema.properties[key].type
+    if (type === 'number') {
+      code += `
+          var t = Number(obj['${key}'])
+          if (!isNaN(t)) {
+            ${addComma}
+            json += '${$asString(key)}:' + t
+      `
+    } else if (type === 'integer') {
+      code += `
+          var rendered = false
+          if (isLong && isLong(obj['${key}'])) {
+            ${addComma}
+            json += '${$asString(key)}:' + obj['${key}'].toString()
+            rendered = true
+          } else {
+            var t = Number(obj['${key}'])
+            if (!isNaN(t)) {
+              ${addComma}
+              json += '${$asString(key)}:' + t
+              rendered = true
+            }
+          }
+
+          if (rendered) {
+      `
+    } else {
+      code += `
+        if (obj['${key}'] !== undefined) {
+          ${addComma}
+          json += '${$asString(key)}:'
+        `
+
+      var result = nested(laterCode, name, key, schema.properties[key], externalSchema, fullSchema)
+      code += result.code
+      laterCode = result.laterCode
+    }
 
     if (schema.required && schema.required.indexOf(key) !== -1) {
       code += `

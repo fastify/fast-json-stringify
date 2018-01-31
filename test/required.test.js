@@ -40,3 +40,41 @@ test('object with required field', (t) => {
     t.pass()
   }
 })
+
+test('required numbers', (t) => {
+  t.plan(3)
+
+  const schema = {
+    title: 'object with required field',
+    type: 'object',
+    properties: {
+      str: {
+        type: 'string'
+      },
+      num: {
+        type: 'integer'
+      }
+    },
+    required: ['num']
+  }
+  const stringify = build(schema)
+
+  try {
+    stringify({
+      num: 42
+    })
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  try {
+    stringify({
+      num: 'aaa'
+    })
+    t.fail()
+  } catch (e) {
+    t.is(e.message, 'num is required!')
+    t.pass()
+  }
+})
