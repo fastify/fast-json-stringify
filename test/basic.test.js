@@ -246,6 +246,36 @@ buildTest({
   readonly: true
 })
 
+test('skip or coerce numbers and integers that are not numbers', (t) => {
+  const stringify = build({
+    'title': 'basic',
+    'type': 'object',
+    'properties': {
+      'age': {
+        'type': 'number'
+      },
+      'distance': {
+        'type': 'integer'
+      }
+    }
+  })
+
+  var result = stringify({
+    age: 'hello  ',
+    distance: 'long'
+  })
+
+  t.deepEqual(JSON.parse(result), {})
+
+  result = stringify({
+    age: '42',
+    distance: true
+  })
+
+  t.deepEqual(JSON.parse(result), { age: 42, distance: 1 })
+  t.end()
+})
+
 test('Should throw on invalid schema', t => {
   t.plan(1)
   try {

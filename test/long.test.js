@@ -44,7 +44,7 @@ test(`render an object with long as JSON`, (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test(`render aan array with long as JSON`, (t) => {
+test(`render an array with long as JSON`, (t) => {
   t.plan(2)
 
   const schema = {
@@ -60,5 +60,26 @@ test(`render aan array with long as JSON`, (t) => {
   const output = stringify([Long.fromString('18446744073709551615', true)])
 
   t.equal(output, '[18446744073709551615]')
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test(`render an object with a long additionalProperty as JSON`, (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'object with long',
+    type: 'object',
+    additionalProperties: {
+      type: 'integer'
+    }
+  }
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify({
+    num: Long.fromString('18446744073709551615', true)
+  })
+
+  t.equal(output, '{"num":18446744073709551615}')
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
