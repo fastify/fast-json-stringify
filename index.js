@@ -1,6 +1,5 @@
 'use strict'
 
-var fastSafeStringify = require('fast-safe-stringify')
 var Ajv = require('ajv')
 
 var uglify = null
@@ -91,10 +90,6 @@ function build (schema, options) {
 
   var dependencies = []
   var dependenciesName = []
-  if (hasAdditionalPropertiesTrue(schema)) {
-    dependencies.push(fastSafeStringify)
-    dependenciesName.push('fastSafeStringify')
-  }
   if (hasAnyOf(schema)) {
     dependencies.push(new Ajv())
     dependenciesName.push('ajv')
@@ -102,20 +97,6 @@ function build (schema, options) {
 
   dependenciesName.push(code)
   return (Function.apply(null, dependenciesName).apply(null, dependencies))
-}
-
-function hasAdditionalPropertiesTrue (schema) {
-  if (schema.additionalProperties === true) { return true }
-
-  var objectKeys = Object.keys(schema)
-  for (var i = 0; i < objectKeys.length; i++) {
-    var value = schema[objectKeys[i]]
-    if (typeof value === 'object') {
-      if (hasAdditionalPropertiesTrue(value)) { return true }
-    }
-  }
-
-  return false
 }
 
 function hasAnyOf (schema) {
@@ -280,7 +261,7 @@ function additionalProperty (schema, externalSchema, fullSchema) {
     return `
         if (obj[keys[i]] !== undefined) {
           ${addComma}
-          json += $asString(keys[i]) + ':' + fastSafeStringify(obj[keys[i]])
+          json += $asString(keys[i]) + ':' + JSON.stringify(obj[keys[i]])
         }
     `
   }

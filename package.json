@@ -34,7 +34,6 @@
     "uglify-es": "^3.2.2"
   },
   "dependencies": {
-    "ajv": "^6.0.0",
-    "fast-safe-stringify": "^1.2.1"
+    "ajv": "^6.0.0"
   }
 }
