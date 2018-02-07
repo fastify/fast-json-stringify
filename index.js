@@ -294,13 +294,20 @@ function additionalProperty (schema, externalSchema, fullSchema) {
     `
   } else if (type === 'integer') {
     code += `
-        ${addComma}
         var t = Number(obj[keys[i]])
     `
     if (isLong) {
       code += `
           if (isLong(obj[keys[i]]) || !isNaN(t)) {
+            ${addComma}
             json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
+          }
+      `
+    } else {
+      code += `
+          if (!isNaN(t)) {
+            ${addComma}
+            json += $asString(keys[i]) + ':' + t
           }
       `
     }
