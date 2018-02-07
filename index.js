@@ -296,10 +296,14 @@ function additionalProperty (schema, externalSchema, fullSchema) {
     code += `
         ${addComma}
         var t = Number(obj[keys[i]])
-        if (isLong && isLong(obj[keys[i]]) || !isNaN(t)) {
-          json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
-        }
     `
+    if (isLong) {
+      code += `
+          if (isLong(obj[keys[i]]) || !isNaN(t)) {
+            json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
+          }
+      `
+    }
   } else if (type === 'number') {
     code += `
         var t = Number(obj[keys[i]])
@@ -369,19 +373,33 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
     } else if (type === 'integer') {
       code += `
           var rendered = false
-          if (isLong && isLong(obj['${key}'])) {
-            ${addComma}
-            json += '${$asString(key)}:' + obj['${key}'].toString()
-            rendered = true
-          } else {
+      `
+      if (isLong) {
+        code += `
+            if (isLong(obj['${key}'])) {
+              ${addComma}
+              json += '${$asString(key)}:' + obj['${key}'].toString()
+              rendered = true
+            } else {
+              var t = Number(obj['${key}'])
+              if (!isNaN(t)) {
+                ${addComma}
+                json += '${$asString(key)}:' + t
+                rendered = true
+              }
+            }
+        `
+      } else {
+        code += `
             var t = Number(obj['${key}'])
             if (!isNaN(t)) {
               ${addComma}
               json += '${$asString(key)}:' + t
               rendered = true
             }
-          }
-
+        `
+      }
+      code += `
           if (rendered) {
       `
     } else {
