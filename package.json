@@ -1,6 +1,6 @@
 {
   "name": "fast-json-stringify",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Stringify your JSON at max speed",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,7 @@
   "precommit": "test",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mcollina/fast-json-stringify.git"
+    "url": "git+https://github.com/fastify/fast-json-stringify.git"
   },
   "keywords": [
     "json",
@@ -21,9 +21,9 @@
   "author": "Matteo Collina <hello@matteocollina.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mcollina/fast-json-stringify/issues"
+    "url": "https://github.com/fastify/fast-json-stringify/issues"
   },
-  "homepage": "https://github.com/mcollina/fast-json-stringify#readme",
+  "homepage": "https://github.com/fastify/fast-json-stringify#readme",
   "devDependencies": {
     "benchmark": "^2.1.4",
     "is-my-json-valid": "^2.17.1",
