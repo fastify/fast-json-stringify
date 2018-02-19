@@ -11,7 +11,7 @@ test('object with multiple types field', (t) => {
     type: 'object',
     properties: {
       str: {
-        'anyOf': [{
+        anyOf: [{
           type: 'string'
         }, {
           type: 'boolean'
@@ -35,6 +35,48 @@ test('object with multiple types field', (t) => {
       str: true
     })
     t.is(value, '{"str":true}')
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('object with field of type object or null', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'object with field of type object or null',
+    type: 'object',
+    properties: {
+      prop: {
+        anyOf: [{
+          type: 'object',
+          properties: {
+            str: {
+              type: 'string'
+            }
+          }
+        }, {
+          type: 'null'
+        }]
+      }
+    }
+  }
+  const stringify = build(schema)
+
+  try {
+    const value = stringify({
+      prop: null
+    })
+    t.is(value, '{"prop":null}')
+  } catch (e) {
+    t.fail()
+  }
+
+  try {
+    const value = stringify({
+      prop: {str: 'string'}
+    })
+    t.is(value, '{"prop":{"str":"string"}}')
   } catch (e) {
     t.fail()
   }
