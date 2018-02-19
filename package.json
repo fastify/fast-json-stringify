@@ -30,7 +30,7 @@
     "long": "^4.0.0",
     "pre-commit": "^1.2.2",
     "proxyquire": "^1.8.0",
-    "standard": "^10.0.3",
+    "standard": "^11.0.0",
     "tap": "^11.0.0",
     "uglify-es": "^3.2.2"
   },
