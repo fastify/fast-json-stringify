@@ -90,7 +90,7 @@ function build (schema, options) {
 
   var dependencies = []
   var dependenciesName = []
-  if (hasAnyOf(schema)) {
+  if (hasAnyOf(schema) || hasArrayOfTypes(schema)) {
     dependencies.push(new Ajv())
     dependenciesName.push('ajv')
   }
@@ -107,6 +107,40 @@ function hasAnyOf (schema) {
     var value = schema[objectKeys[i]]
     if (typeof value === 'object') {
       if (hasAnyOf(value)) { return true }
+    }
+  }
+
+  return false
+}
+
+function hasArrayOfTypes (schema) {
+  if (Array.isArray(schema.type)) { return true }
+  var i
+
+  if (schema.type === 'object') {
+    if (schema.properties) {
+      var propertyKeys = Object.keys(schema.properties)
+      for (i = 0; i < propertyKeys.length; i++) {
+        if (hasArrayOfTypes(schema.properties[propertyKeys[i]])) {
+          return true
+        }
+      }
+    }
+  } else if (schema.type === 'array') {
+    if (Array.isArray(schema.items)) {
+      for (i = 0; i < schema.items.length; i++) {
+        if (hasArrayOfTypes(schema.items[i])) {
+          return true
+        }
+      }
+    } else if (schema.items) {
+      return hasArrayOfTypes(schema.items)
+    }
+  } else if (Array.isArray(schema.anyOf)) {
+    for (i = 0; i < schema.anyOf.length; i++) {
+      if (hasArrayOfTypes(schema.anyOf[i])) {
+        return true
+      }
     }
   }
 
@@ -493,32 +527,7 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
     result = schema.items.reduce((res, item, i) => {
       var accessor = '[i]'
       const tmpRes = nested(laterCode, name, accessor, item, externalSchema, fullSchema, i)
-      var condition = `i === ${i} && `
-      switch (item.type) {
-        case 'null':
-          condition += `obj${accessor} === null`
-          break
-        case 'string':
-          condition += `typeof obj${accessor} === 'string'`
-          break
-        case 'integer':
-          condition += `Number.isInteger(obj${accessor})`
-          break
-        case 'number':
-          condition += `Number.isFinite(obj${accessor})`
-          break
-        case 'boolean':
-          condition += `typeof obj${accessor} === 'boolean'`
-          break
-        case 'object':
-          condition += `obj${accessor} && typeof obj${accessor} === 'object' && obj${accessor}.constructor === Object`
-          break
-        case 'array':
-          condition += `Array.isArray(obj${accessor})`
-          break
-        default:
-          throw new Error(`${item.type} unsupported`)
-      }
+      var condition = `i === ${i} && ${buildArrayTypeCondition(item.type, accessor)}`
       return {
         code: `${res.code}
         ${i > 0 ? 'else' : ''} if (${condition}) {
@@ -559,6 +568,43 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
   code += laterCode
 
   return code
+}
+
+function buildArrayTypeCondition (type, accessor) {
+  var condition
+  switch (type) {
+    case 'null':
+      condition = `obj${accessor} === null`
+      break
+    case 'string':
+      condition = `typeof obj${accessor} === 'string'`
+      break
+    case 'integer':
+      condition = `Number.isInteger(obj${accessor})`
+      break
+    case 'number':
+      condition = `Number.isFinite(obj${accessor})`
+      break
+    case 'boolean':
+      condition = `typeof obj${accessor} === 'boolean'`
+      break
+    case 'object':
+      condition = `obj${accessor} && typeof obj${accessor} === 'object' && obj${accessor}.constructor === Object`
+      break
+    case 'array':
+      condition = `Array.isArray(obj${accessor})`
+      break
+    default:
+      if (Array.isArray(type)) {
+        var conditions = type.map((subType) => {
+          return buildArrayTypeCondition(subType, accessor)
+        })
+        condition = `(${conditions.join(' || ')})`
+      } else {
+        throw new Error(`${type} unsupported`)
+      }
+  }
+  return condition
 }
 
 function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKey) {
@@ -622,7 +668,19 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       } else throw new Error(`${schema} unsupported`)
       break
     default:
-      throw new Error(`${type} unsupported`)
+      if (Array.isArray(type)) {
+        type.forEach((type, index) => {
+          var tempSchema = {type: type}
+          var nestedResult = nested(laterCode, name, key, tempSchema, externalSchema, fullSchema, subKey)
+          code += `
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(tempSchema, {depth: null})}, obj${accessor}))
+              ${nestedResult.code}
+          `
+          laterCode = nestedResult.laterCode
+        })
+      } else {
+        throw new Error(`${type} unsupported`)
+      }
   }
 
   return {
