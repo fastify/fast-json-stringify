@@ -29,7 +29,7 @@
     "is-my-json-valid": "^2.17.2",
     "long": "^4.0.0",
     "pre-commit": "^1.2.2",
-    "proxyquire": "^1.8.0",
+    "proxyquire": "^2.0.0",
     "standard": "^11.0.0",
     "tap": "^11.1.1",
     "uglify-es": "^3.3.10"
