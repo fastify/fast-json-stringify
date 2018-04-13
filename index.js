@@ -24,11 +24,7 @@ function build (schema, options) {
   var code = `
     'use strict'
   `
-  // used to support patternProperties and additionalProperties
-  // they need to check if a field belongs to the properties in the schema
-  code += `
-    var properties = ${JSON.stringify(schema.properties)} || {}
-  `
+
   code += `
     ${$asString.toString()}
     ${$asStringSmall.toString()}
@@ -218,6 +214,7 @@ function $asStringSmall (str) {
 function addPatternProperties (schema, externalSchema, fullSchema) {
   var pp = schema.patternProperties
   var code = `
+      var properties = ${JSON.stringify(schema.properties)} || {}
       var keys = Object.keys(obj)
       for (var i = 0; i < keys.length; i++) {
         if (properties[keys[i]]) continue
@@ -368,6 +365,7 @@ function additionalProperty (schema, externalSchema, fullSchema) {
 
 function addAdditionalProperties (schema, externalSchema, fullSchema) {
   return `
+      var properties = ${JSON.stringify(schema.properties)} || {}
       var keys = Object.keys(obj)
       for (var i = 0; i < keys.length; i++) {
         if (properties[keys[i]]) continue
