@@ -670,12 +670,22 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
         type.forEach((type, index) => {
           var tempSchema = {type: type}
           var nestedResult = nested(laterCode, name, key, tempSchema, externalSchema, fullSchema, subKey)
-          code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(tempSchema, {depth: null})}, obj${accessor}))
+          if (type === 'string') {
+            code += `
+              ${index === 0 ? 'if' : 'else if'}(obj${accessor} instanceof Date || ajv.validate(${require('util').inspect(tempSchema, {depth: null})}, obj${accessor}))
+                ${nestedResult.code}
+            `
+          } else {
+            code += `
+              ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(tempSchema, {depth: null})}, obj${accessor}))
               ${nestedResult.code}
-          `
+            `
+          }
           laterCode = nestedResult.laterCode
         })
+        code += `
+          else json+= null
+        `
       } else {
         throw new Error(`${type} unsupported`)
       }

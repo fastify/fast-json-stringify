@@ -182,3 +182,22 @@ test('object with anyOf and multiple types', (t) => {
     t.fail()
   }
 })
+
+test('string type array can handle dates', (t) => {
+  t.plan(1)
+  const schema = {
+    type: 'object',
+    properties: {
+      date: { type: ['string'] }
+    }
+  }
+  const stringify = build(schema)
+  try {
+    const value = stringify({
+      date: new Date('2018-04-20T07:52:31.017Z')
+    })
+    t.is(value, '{"date":"2018-04-20T07:52:31.017Z"}')
+  } catch (e) {
+    t.fail()
+  }
+})
