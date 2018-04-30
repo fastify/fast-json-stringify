@@ -453,7 +453,14 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
       laterCode = result.laterCode
     }
 
-    if (schema.required && schema.required.indexOf(key) !== -1) {
+    var defaultValue = schema.properties[key].default
+    if (defaultValue !== undefined) {
+      code += `
+      } else {
+        ${addComma}
+        json += '${$asString(key)}:${JSON.stringify(defaultValue).replace(/'/g, '\'')}'
+      `
+    } else if (schema.required && schema.required.indexOf(key) !== -1) {
       code += `
       } else {
         throw new Error('${key} is required!')
