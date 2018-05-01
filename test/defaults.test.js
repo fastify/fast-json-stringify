@@ -13,8 +13,8 @@ function buildTest (schema, toStringify, expected) {
     const output = stringify(toStringify)
     const outputUglify = stringifyUgly(toStringify)
 
-    t.deepEqual(output, JSON.stringify(expected))
-    t.deepEqual(outputUglify, JSON.stringify(expected))
+    t.strictEqual(output, JSON.stringify(expected))
+    t.strictEqual(outputUglify, JSON.stringify(expected))
   })
 }
 
