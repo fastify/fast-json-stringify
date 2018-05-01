@@ -163,6 +163,28 @@ const obj = {
 console.log(stringify(obj)) // '{"mail":"mail@example.com"}'
 ```
 
+<a name="defaults"></a>
+#### Defaults
+`fast-json-stringify` supports `default` jsonschema key in order to serialize a value
+if it is `undefined` or not present.
+
+Example:
+```javascript
+const stringify = fastJson({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    nickname: {
+      type: 'string',
+      default: 'the default string'
+    }
+  }
+})
+
+console.log(stringify({})) // '{"nickname":"the default string"}'
+console.log(stringify({nickname: 'my-nickname'})) // '{"nickname":"my-nickname"}'
+```
+
 <a name="patternProperties"></a>
 #### Pattern properties
 `fast-json-stringify` supports pattern properties as defined by JSON schema.  
