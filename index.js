@@ -1,6 +1,7 @@
 'use strict'
 
 var Ajv = require('ajv')
+var merge = require('deepmerge')
 
 var uglify = null
 var isLong
@@ -86,7 +87,7 @@ function build (schema, options) {
 
   var dependencies = []
   var dependenciesName = []
-  if (hasAnyOf(schema) || hasArrayOfTypes(schema)) {
+  if (hasAnyOf(schema) || hasArrayOfTypes(schema) || hasIf(schema)) {
     dependencies.push(new Ajv())
     dependenciesName.push('ajv')
   }
@@ -141,6 +142,11 @@ function hasArrayOfTypes (schema) {
   }
 
   return false
+}
+
+function hasIf (schema) {
+  const str = JSON.stringify(schema)
+  return /"if":{/.test(str) && /"then":{/.test(str)
 }
 
 function $asNull () {
@@ -475,20 +481,14 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
   return { code: code, laterCode: laterCode }
 }
 
-function buildObject (schema, code, name, externalSchema, fullSchema) {
-  code += `
-    function ${name} (obj) {
-      var json = '{'
-      var addComma = false
-  `
-
+function buildInnerObject (schema, name, externalSchema, fullSchema) {
+  var laterCode = ''
+  var code = ''
   if (schema.patternProperties) {
     code += addPatternProperties(schema, externalSchema, fullSchema)
   } else if (schema.additionalProperties && !schema.patternProperties) {
     code += addAdditionalProperties(schema, externalSchema, fullSchema)
   }
-
-  var laterCode = ''
 
   if (schema.allOf) {
     schema.allOf.forEach((ss) => {
@@ -502,6 +502,60 @@ function buildObject (schema, code, name, externalSchema, fullSchema) {
 
     code = builtCode.code
     laterCode = builtCode.laterCode
+  }
+
+  return { code: code, laterCode: laterCode }
+}
+
+function buildObject (schema, code, name, externalSchema, fullSchema) {
+  code += `
+    function ${name} (obj) {
+      var json = '{'
+      var addComma = false
+  `
+
+  var laterCode = ''
+  var r, merged
+  if (schema.if && schema.then) {
+    merged = merge(schema, schema.then)
+    delete merged.if
+    delete merged.then
+    delete merged.else
+
+    code += `
+      var valid = ajv.validate(${require('util').inspect(schema.if, {depth: null})}, obj)
+      if (valid) {
+    `
+
+    r = buildInnerObject(merged, name, externalSchema, fullSchema)
+    code += r.code
+    laterCode = r.laterCode
+
+    code += `
+      }
+    `
+    if (schema.else) {
+      merged = merge(schema, schema.else)
+      delete merged.if
+      delete merged.then
+      delete merged.else
+
+      code += `
+        else {
+      `
+
+      r = buildInnerObject(merged, name, externalSchema, fullSchema)
+      code += r.code
+      laterCode = r.laterCode
+
+      code += `
+        }
+      `
+    }
+  } else {
+    r = buildInnerObject(schema, name, externalSchema, fullSchema)
+    code += r.code
+    laterCode = r.laterCode
   }
 
   // Removes the comma if is the last element of the string (in case there are not properties)
