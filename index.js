@@ -802,11 +802,7 @@ function isValidSchema (schema, externalSchema) {
     })
   }
   ajv.compile(schema)
-  if (externalSchema) {
-    Object.keys(externalSchema).forEach(key => {
-      ajv.removeSchema(key)
-    })
-  }
+  ajv.removeSchema()
 }
 
 module.exports = build
