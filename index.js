@@ -3,6 +3,11 @@
 var Ajv = require('ajv')
 var merge = require('deepmerge')
 
+// This Ajv instance is used to validate that the passed schema
+// is valid json schema. We reuse the instance to avoid having to
+// pay the ajv creation cost more than once.
+var ajv = new Ajv()
+
 var uglify = null
 var isLong
 try {
@@ -791,13 +796,17 @@ function loadUglify () {
 }
 
 function isValidSchema (schema, externalSchema) {
-  const ajv = new Ajv()
   if (externalSchema) {
     Object.keys(externalSchema).forEach(key => {
       ajv.addSchema(externalSchema[key], key)
     })
   }
   ajv.compile(schema)
+  if (externalSchema) {
+    Object.keys(externalSchema).forEach(key => {
+      ajv.removeSchema(key)
+    })
+  }
 }
 
 module.exports = build
