@@ -286,7 +286,51 @@ const stringify = fastJson({
 }
 ```
 
-This schema will accept a string or a boolean for the property `undecidedType`. If no schema matches the data, it will be stringified as `null`.
+<a name="if-then-else"></a>
+#### If/then/else
+`fast-json-stringify` supports `if/then/else` jsonschema feature. See [ajv documentation](https://ajv.js.org/keywords.html#ifthenelse).
+
+Example:
+```javascript
+const stringify = fastJson({
+  'type': 'object',
+  'properties': {
+    'kind': { 'type': 'string', 'enum': ['foobar', 'greeting'] }
+  },
+  'if': {
+    'properties': {
+      'kind': { 'type': 'string', 'enum': ['foobar'] }
+    }
+  },
+  'then': {
+    'properties': {
+      'foo': { 'type': 'string' },
+      'bar': { 'type': 'number' }
+    }
+  },
+  'else': {
+    'properties': {
+      'hi': { 'type': 'string' },
+      'hello': { 'type': 'number' }
+    }
+  }
+})
+
+console.log(stringify({
+  kind: 'greeting',
+  foo: 'FOO',
+  bar: 42,
+  hi: 'HI',
+  hello: 45
+})) // {"kind":"greeting","hi":"HI","hello":45}
+console.log(stringify({
+  kind: 'foobar',
+  foo: 'FOO',
+  bar: 42,
+  hi: 'HI',
+  hello: 45
+})) // {"kind":"greeting","foo":"FOO","bar":42}
+```
 
 <a name="ref"></a>
 #### Reuse - $ref
