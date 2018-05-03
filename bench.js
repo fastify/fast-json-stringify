@@ -35,12 +35,13 @@ const obj = {
 
 const multiArray = []
 
-const stringify = require('.')(schema)
-const stringifyUgly = require('.')(schema, { uglify: true })
-const stringifyArray = require('.')(arraySchema)
-const stringifyArrayUgly = require('.')(arraySchema, { uglify: true })
-const stringifyString = require('.')({ type: 'string' })
-const stringifyStringUgly = require('.')({ type: 'string', uglify: true })
+const FJS = require('.')
+const stringify = FJS(schema)
+const stringifyUgly = FJS(schema, { uglify: true })
+const stringifyArray = FJS(arraySchema)
+const stringifyArrayUgly = FJS(arraySchema, { uglify: true })
+const stringifyString = FJS({ type: 'string' })
+const stringifyStringUgly = FJS({ type: 'string', uglify: true })
 var str = ''
 
 for (var i = 0; i < 10000; i++) {
@@ -55,6 +56,10 @@ Number(str)
 for (i = 0; i < 1000; i++) {
   multiArray.push(obj)
 }
+
+suite.add('FJS creation', function () {
+  FJS(schema)
+})
 
 suite.add('JSON.stringify array', function () {
   JSON.stringify(multiArray)
