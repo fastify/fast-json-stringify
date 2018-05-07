@@ -51,6 +51,8 @@ function build (schema, options) {
     `
   }
 
+  var hasShemaSomeIf = hasIf(schema)
+
   var main
 
   switch (schema.type) {
@@ -92,7 +94,7 @@ function build (schema, options) {
 
   var dependencies = []
   var dependenciesName = []
-  if (hasAnyOf(schema) || hasArrayOfTypes(schema) || hasIf(schema)) {
+  if (hasAnyOf(schema) || hasArrayOfTypes(schema) || hasShemaSomeIf) {
     dependencies.push(new Ajv())
     dependenciesName.push('ajv')
   }
@@ -512,25 +514,43 @@ function buildInnerObject (schema, name, externalSchema, fullSchema) {
   return { code: code, laterCode: laterCode }
 }
 
-function buildObject (schema, code, name, externalSchema, fullSchema) {
+function addIfThenElse (schema, name, externalSchema, fullSchema) {
+  var code = ''
+  var r
+  var laterCode = ''
+
+  const i = schema.if
+  const then = schema.then
+  const e = schema.else
+  delete schema.if
+  delete schema.then
+  delete schema.else
+  var merged = merge(schema, then)
+
   code += `
-    function ${name} (obj) {
-      var json = '{'
-      var addComma = false
+    valid = ajv.validate(${require('util').inspect(i, {depth: null})}, obj)
+    if (valid) {
   `
 
-  var laterCode = ''
-  var r, merged
-  if (schema.if && schema.then) {
-    merged = merge(schema, schema.then)
-    delete merged.if
-    delete merged.then
-    delete merged.else
+  r = buildInnerObject(merged, name, externalSchema, fullSchema)
+  code += r.code
+  laterCode = r.laterCode
+
+  code += `
+    }
+  `
+  if (e) {
+    merged = merge(schema, e)
 
     code += `
-      var valid = ajv.validate(${require('util').inspect(schema.if, {depth: null})}, obj)
-      if (valid) {
+      else {
     `
+
+    if (merged.if && merged.then) {
+      var innerR = addIfThenElse(merged, name, externalSchema, fullSchema)
+      code += innerR.code
+      laterCode = innerR.laterCode
+    }
 
     r = buildInnerObject(merged, name, externalSchema, fullSchema)
     code += r.code
@@ -539,29 +559,30 @@ function buildObject (schema, code, name, externalSchema, fullSchema) {
     code += `
       }
     `
-    if (schema.else) {
-      merged = merge(schema, schema.else)
-      delete merged.if
-      delete merged.then
-      delete merged.else
+  }
+  return { code: code, laterCode: laterCode }
+}
 
-      code += `
-        else {
-      `
+function buildObject (schema, code, name, externalSchema, fullSchema) {
+  code += `
+    function ${name} (obj) {
+      var json = '{'
+      var addComma = false
+  `
 
-      r = buildInnerObject(merged, name, externalSchema, fullSchema)
-      code += r.code
-      laterCode = r.laterCode
-
-      code += `
-        }
-      `
-    }
+  var laterCode = ''
+  var r
+  if (schema.if && schema.then) {
+    code += `
+      var valid
+    `
+    r = addIfThenElse(schema, name, externalSchema, fullSchema)
   } else {
     r = buildInnerObject(schema, name, externalSchema, fullSchema)
-    code += r.code
-    laterCode = r.laterCode
   }
+
+  code += r.code
+  laterCode = r.laterCode
 
   // Removes the comma if is the last element of the string (in case there are not properties)
   code += `

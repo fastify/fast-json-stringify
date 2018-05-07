@@ -6,7 +6,6 @@ const build = require('..')
 const schema = {
   'type': 'object',
   'properties': {
-    'kind': { 'type': 'string', 'enum': ['foobar', 'greeting'] }
   },
   'if': {
     'properties': {
@@ -15,14 +14,54 @@ const schema = {
   },
   'then': {
     'properties': {
+      'kind': { 'type': 'string', 'enum': ['foobar'] },
       'foo': { 'type': 'string' },
       'bar': { 'type': 'number' }
     }
   },
   'else': {
     'properties': {
+      'kind': { 'type': 'string', 'enum': ['greeting'] },
       'hi': { 'type': 'string' },
       'hello': { 'type': 'number' }
+    }
+  }
+}
+
+const nestedSchema = {
+  'type': 'object',
+  'properties': { },
+  'if': {
+    'properties': {
+      'kind': { 'type': 'string', 'enum': ['foobar'] }
+    }
+  },
+  'then': {
+    'properties': {
+      'kind': { 'type': 'string', 'enum': ['foobar'] },
+      'foo': { 'type': 'string' },
+      'bar': { 'type': 'number' }
+    }
+  },
+  'else': {
+    'if': {
+      'properties': {
+        'kind': { 'type': 'string', 'enum': ['greeting'] }
+      }
+    },
+    'then': {
+      'properties': {
+        'kind': { 'type': 'string', 'enum': ['greeting'] },
+        'hi': { 'type': 'string' },
+        'hello': { 'type': 'number' }
+      }
+    },
+    'else': {
+      'properties': {
+        'kind': { 'type': 'string', 'enum': ['alphabet'] },
+        'a': { 'type': 'string' },
+        'b': { 'type': 'number' }
+      }
     }
   }
 }
@@ -60,6 +99,24 @@ t.test('if-then-else', t => {
         hi: 'HI',
         hello: 45
       })
+    },
+    {
+      name: 'nested',
+      schema: nestedSchema,
+      input: {
+        kind: 'alphabet',
+        foo: 'FOO',
+        bar: 42,
+        hi: 'HI',
+        hello: 45,
+        a: 'A',
+        b: 35
+      },
+      expected: JSON.stringify({
+        kind: 'alphabet',
+        a: 'A',
+        b: 35
+      })
     }
   ]
 
@@ -67,7 +124,7 @@ t.test('if-then-else', t => {
     t.test(test.name + ' - normal', t => {
       t.plan(1)
 
-      const stringify = build(test.schema)
+      const stringify = build(JSON.parse(JSON.stringify(test.schema)))
       const serialized = stringify(test.input)
       t.equal(serialized, test.expected)
     })
@@ -75,7 +132,7 @@ t.test('if-then-else', t => {
     t.test(test.name + ' - uglify', t => {
       t.plan(1)
 
-      const stringify = build(test.schema, { uglify: true })
+      const stringify = build(JSON.parse(JSON.stringify(test.schema)), { uglify: true })
       const serialized = stringify(test.input)
       t.equal(serialized, test.expected)
     })

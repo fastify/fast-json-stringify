@@ -295,7 +295,6 @@ Example:
 const stringify = fastJson({
   'type': 'object',
   'properties': {
-    'kind': { 'type': 'string', 'enum': ['foobar', 'greeting'] }
   },
   'if': {
     'properties': {
@@ -304,12 +303,14 @@ const stringify = fastJson({
   },
   'then': {
     'properties': {
+      'kind': { 'type': 'string', 'enum': ['foobar'] },
       'foo': { 'type': 'string' },
       'bar': { 'type': 'number' }
     }
   },
   'else': {
     'properties': {
+      'kind': { 'type': 'string', 'enum': ['greeting'] },
       'hi': { 'type': 'string' },
       'hello': { 'type': 'number' }
     }
@@ -331,6 +332,8 @@ console.log(stringify({
   hello: 45
 })) // {"kind":"greeting","foo":"FOO","bar":42}
 ```
+
+**NB:** don't declare the properties twice or you'll print them twice!
 
 <a name="ref"></a>
 #### Reuse - $ref
