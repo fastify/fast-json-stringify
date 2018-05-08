@@ -518,6 +518,7 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
   var code = ''
   var r
   var laterCode = ''
+  var innerR
 
   const i = schema.if
   const then = schema.then
@@ -531,6 +532,11 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
     valid = ajv.validate(${require('util').inspect(i, {depth: null})}, obj)
     if (valid) {
   `
+  if (merged.if && merged.then) {
+    innerR = addIfThenElse(merged, name, externalSchema, fullSchema)
+    code += innerR.code
+    laterCode = innerR.laterCode
+  }
 
   r = buildInnerObject(merged, name, externalSchema, fullSchema)
   code += r.code
@@ -547,7 +553,7 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
     `
 
     if (merged.if && merged.then) {
-      var innerR = addIfThenElse(merged, name, externalSchema, fullSchema)
+      innerR = addIfThenElse(merged, name, externalSchema, fullSchema)
       code += innerR.code
       laterCode = innerR.laterCode
     }
