@@ -520,13 +520,14 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
   var laterCode = ''
   var innerR
 
-  const i = schema.if
-  const then = schema.then
-  const e = schema.else
-  delete schema.if
-  delete schema.then
-  delete schema.else
-  var merged = merge(schema, then)
+  const copy = merge({}, schema)
+  const i = copy.if
+  const then = copy.then
+  const e = copy.else
+  delete copy.if
+  delete copy.then
+  delete copy.else
+  var merged = merge(copy, then)
 
   code += `
     valid = ajv.validate(${require('util').inspect(i, {depth: null})}, obj)
@@ -546,7 +547,7 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
     }
   `
   if (e) {
-    merged = merge(schema, e)
+    merged = merge(copy, e)
 
     code += `
       else {
