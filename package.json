@@ -31,7 +31,7 @@
     "pre-commit": "^1.2.2",
     "proxyquire": "^2.0.0",
     "standard": "^11.0.1",
-    "tap": "^11.1.5",
+    "tap": "^12.0.0",
     "uglify-es": "^3.3.9"
   },
   "dependencies": {
