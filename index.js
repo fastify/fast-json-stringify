@@ -217,7 +217,7 @@ function $asStringSmall (str) {
     }
   }
   if (last === 0) {
-    result = str
+    result += str
   } else {
     result += str.slice(last)
   }
