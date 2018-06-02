@@ -207,6 +207,7 @@ function $asString (str) {
 function $asStringSmall (str) {
   var result = ''
   var last = 0
+  var found = false
   var l = str.length
   var point = 255
   for (var i = 0; i < l && point >= 32; i++) {
@@ -214,10 +215,12 @@ function $asStringSmall (str) {
     if (point === 34 || point === 92) {
       result += str.slice(last, i) + '\\'
       last = i
+      found = true
     }
   }
-  if (last === 0) {
-    result += str
+
+  if (!found) {
+    result = str
   } else {
     result += str.slice(last)
   }
