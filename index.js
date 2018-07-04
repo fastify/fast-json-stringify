@@ -94,7 +94,7 @@ function build (schema, options) {
 
   var dependencies = []
   var dependenciesName = []
-  if (hasAnyOf(schema) || hasArrayOfTypes(schema) || hasShemaSomeIf) {
+  if (hasAnyOf(schema) || hasShemaSomeIf) {
     dependencies.push(new Ajv())
     dependenciesName.push('ajv')
   }
@@ -111,40 +111,6 @@ function hasAnyOf (schema) {
     var value = schema[objectKeys[i]]
     if (typeof value === 'object') {
       if (hasAnyOf(value)) { return true }
-    }
-  }
-
-  return false
-}
-
-function hasArrayOfTypes (schema) {
-  if (Array.isArray(schema.type)) { return true }
-  var i
-
-  if (schema.type === 'object') {
-    if (schema.properties) {
-      var propertyKeys = Object.keys(schema.properties)
-      for (i = 0; i < propertyKeys.length; i++) {
-        if (hasArrayOfTypes(schema.properties[propertyKeys[i]])) {
-          return true
-        }
-      }
-    }
-  } else if (schema.type === 'array') {
-    if (Array.isArray(schema.items)) {
-      for (i = 0; i < schema.items.length; i++) {
-        if (hasArrayOfTypes(schema.items[i])) {
-          return true
-        }
-      }
-    } else if (schema.items) {
-      return hasArrayOfTypes(schema.items)
-    }
-  } else if (Array.isArray(schema.anyOf)) {
-    for (i = 0; i < schema.anyOf.length; i++) {
-      if (hasArrayOfTypes(schema.anyOf[i])) {
-        return true
-      }
     }
   }
 
@@ -764,17 +730,29 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       break
     default:
       if (Array.isArray(type)) {
-        type.forEach((type, index) => {
-          var tempSchema = {type: type}
+        const nullIndex = type.indexOf('null')
+        const sortedTypes = nullIndex !== -1 ? [type[nullIndex]].concat(type.slice(0, nullIndex)).concat(type.slice(nullIndex + 1)) : type
+        sortedTypes.forEach((type, index) => {
+          var tempSchema = {...schema, type}
           var nestedResult = nested(laterCode, name, key, tempSchema, externalSchema, fullSchema, subKey)
           if (type === 'string') {
             code += `
-              ${index === 0 ? 'if' : 'else if'}(obj${accessor} instanceof Date || ajv.validate(${require('util').inspect(tempSchema, {depth: null})}, obj${accessor}))
+              ${index === 0 ? 'if' : 'else if'}(typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || obj${accessor} instanceof RegExp)
                 ${nestedResult.code}
+            `
+          } else if (type === 'null') {
+            code += `
+              ${index === 0 ? 'if' : 'else if'}(obj${accessor} == null)
+              ${nestedResult.code}
+            `
+          } else if (type === 'array') {
+            code += `
+              ${index === 0 ? 'if' : 'else if'}(Array.isArray(obj${accessor}))
+              ${nestedResult.code}
             `
           } else {
             code += `
-              ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(tempSchema, {depth: null})}, obj${accessor}))
+              ${index === 0 ? 'if' : 'else if'}(typeof obj${accessor} === "${type}")
               ${nestedResult.code}
             `
           }

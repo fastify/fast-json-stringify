@@ -3,15 +3,20 @@
 const test = require('tap').test
 const build = require('..')
 
-test('simple object with multi-type property', (t) => {
-  t.plan(2)
+test('possibly null object with multi-type property', (t) => {
+  t.plan(3)
 
   const schema = {
     title: 'simple object with multi-type property',
     type: 'object',
     properties: {
-      stringOrNumber: {
-        type: ['string', 'number']
+      objectOrNull: {
+        type: ['object', 'null'],
+        properties: {
+          stringOrNumber: {
+            type: ['string', 'number']
+          }
+        }
       }
     }
   }
@@ -19,39 +24,61 @@ test('simple object with multi-type property', (t) => {
 
   try {
     const value = stringify({
-      stringOrNumber: 'string'
+      objectOrNull: {
+        stringOrNumber: 'string'
+      }
     })
-    t.is(value, '{"stringOrNumber":"string"}')
+    t.is(value, '{"objectOrNull":{"stringOrNumber":"string"}}')
   } catch (e) {
     t.fail()
   }
 
   try {
     const value = stringify({
-      stringOrNumber: 42
+      objectOrNull: {
+        stringOrNumber: 42
+      }
     })
-    t.is(value, '{"stringOrNumber":42}')
+    t.is(value, '{"objectOrNull":{"stringOrNumber":42}}')
+  } catch (e) {
+    t.fail()
+  }
+  try {
+    const value = stringify({
+      objectOrNull: null
+    })
+    t.is(value, '{"objectOrNull":null}')
   } catch (e) {
     t.fail()
   }
 })
 
-test('object with array of multiple types', (t) => {
-  t.plan(3)
+test('object with possibly null array of multiple types', (t) => {
+  t.plan(5)
 
   const schema = {
     title: 'object with array of multiple types',
     type: 'object',
     properties: {
       arrayOfStringsAndNumbers: {
-        type: 'array',
+        type: ['array', 'null'],
         items: {
-          type: ['string', 'number']
+          type: ['string', 'number', 'null']
         }
       }
     }
   }
   const stringify = build(schema)
+
+  try {
+    const value = stringify({
+      arrayOfStringsAndNumbers: null
+    })
+    t.is(value, '{"arrayOfStringsAndNumbers":null}')
+  } catch (e) {
+    console.log(e)
+    t.fail()
+  }
 
   try {
     const value = stringify({
@@ -77,6 +104,14 @@ test('object with array of multiple types', (t) => {
       arrayOfStringsAndNumbers: ['string1', 42, 7, 'string2']
     })
     t.is(value, '{"arrayOfStringsAndNumbers":["string1",42,7,"string2"]}')
+  } catch (e) {
+    t.fail()
+  }
+  try {
+    const value = stringify({
+      arrayOfStringsAndNumbers: ['string1', null, 42, 7, 'string2', null]
+    })
+    t.is(value, '{"arrayOfStringsAndNumbers":["string1",null,42,7,"string2",null]}')
   } catch (e) {
     t.fail()
   }
