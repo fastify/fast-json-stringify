@@ -733,7 +733,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
         const nullIndex = type.indexOf('null')
         const sortedTypes = nullIndex !== -1 ? [type[nullIndex]].concat(type.slice(0, nullIndex)).concat(type.slice(nullIndex + 1)) : type
         sortedTypes.forEach((type, index) => {
-          var tempSchema = {...schema, type}
+          var tempSchema = Object.assign({}, schema, {type})
           var nestedResult = nested(laterCode, name, key, tempSchema, externalSchema, fullSchema, subKey)
           if (type === 'string') {
             code += `
