@@ -11,7 +11,7 @@ const schema = {
       'type': 'string'
     },
     'lastName': {
-      'type': 'string'
+      'type': ['string', 'null']
     },
     'age': {
       'description': 'Age in years',
