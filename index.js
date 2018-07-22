@@ -726,7 +726,13 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
         code += `
           else json+= null
         `
-      } else throw new Error(`${schema} unsupported`)
+      } else if (isEmpty(schema)) {
+        code += `
+          json += JSON.stringify(obj${accessor})
+        `
+      } else {
+        throw new Error(`${schema} unsupported`)
+      }
       break
     default:
       if (Array.isArray(type)) {
@@ -812,6 +818,13 @@ function isValidSchema (schema, externalSchema) {
   }
   ajv.compile(schema)
   ajv.removeSchema()
+}
+
+function isEmpty (schema) {
+  for (var key in schema) {
+    if (schema.hasOwnProperty(key)) return false
+  }
+  return true
 }
 
 module.exports = build
