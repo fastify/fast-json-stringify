@@ -726,7 +726,11 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
         code += `
           else json+= null
         `
-      } else throw new Error(`${schema} unsupported`)
+      } else {
+        code += `
+          json += JSON.stringify(obj${accessor})
+        `
+      }
       break
     default:
       if (Array.isArray(type)) {
