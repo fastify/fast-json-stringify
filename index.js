@@ -457,18 +457,10 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
   return { code: code, laterCode: laterCode }
 }
 
-function buildInnerObject (schema, name, externalSchema, fullSchema) {
-  var laterCode = ''
-  var code = ''
-  if (schema.patternProperties) {
-    code += addPatternProperties(schema, externalSchema, fullSchema)
-  } else if (schema.additionalProperties && !schema.patternProperties) {
-    code += addAdditionalProperties(schema, externalSchema, fullSchema)
-  }
-
+function buildCodeWithAllOfs (schema, code, laterCode, name, externalSchema, fullSchema) {
   if (schema.allOf) {
     schema.allOf.forEach((ss) => {
-      var builtCode = buildCode(ss, code, laterCode, name, externalSchema, fullSchema)
+      var builtCode = buildCodeWithAllOfs(ss, code, laterCode, name, externalSchema, fullSchema)
 
       code = builtCode.code
       laterCode = builtCode.laterCode
@@ -481,6 +473,18 @@ function buildInnerObject (schema, name, externalSchema, fullSchema) {
   }
 
   return { code: code, laterCode: laterCode }
+}
+
+function buildInnerObject (schema, name, externalSchema, fullSchema) {
+  var laterCode = ''
+  var code = ''
+  if (schema.patternProperties) {
+    code += addPatternProperties(schema, externalSchema, fullSchema)
+  } else if (schema.additionalProperties && !schema.patternProperties) {
+    code += addAdditionalProperties(schema, externalSchema, fullSchema)
+  }
+
+  return buildCodeWithAllOfs(schema, code, laterCode, name, externalSchema, fullSchema)
 }
 
 function addIfThenElse (schema, name, externalSchema, fullSchema) {

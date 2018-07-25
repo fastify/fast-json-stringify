@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "benchmark": "node bench.js",
-    "test": "standard && tap -j4 test/*.test.js"
+    "lint": "standard",
+    "unit": "tap -j4 test/*.test.js",
+    "test": "npm run lint && npm run unit"
   },
   "precommit": "test",
   "repository": {

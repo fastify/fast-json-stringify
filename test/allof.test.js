@@ -125,3 +125,62 @@ test('object with allOf and no schema on the allOf', (t) => {
     t.is(e.message, 'schema is invalid: data.allOf should NOT have less than 1 items')
   }
 })
+
+test('object with nested allOfs', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'object with nested allOfs',
+    type: 'object',
+    allOf: [
+      {
+        required: [
+          'id'
+        ],
+        type: 'object',
+        properties: {
+          id1: {
+            type: 'integer'
+          }
+        }
+      },
+      {
+        allOf: [
+          {
+            type: 'object',
+            properties: {
+              id2: {
+                type: 'integer'
+              }
+            }
+          },
+          {
+            type: 'object',
+            properties: {
+              id3: {
+                type: 'integer'
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+
+  try {
+    const stringify = build(schema)
+    try {
+      const value = stringify({
+        id1: 1,
+        id2: 2,
+        id3: 3,
+        id4: 4 // extra prop shouldn't be in result
+      })
+      t.is(value, '{"id1":1,"id2":2,"id3":3}')
+    } catch (e) {
+      t.fail()
+    }
+  } catch (e) {
+    t.fail()
+  }
+})
