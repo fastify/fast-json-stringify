@@ -51,7 +51,7 @@ function build (schema, options) {
     `
   }
 
-  var hasShemaSomeIf = hasIf(schema)
+  var hasSchemaSomeIf = hasIf(schema)
 
   var main
 
@@ -94,7 +94,7 @@ function build (schema, options) {
 
   var dependencies = []
   var dependenciesName = []
-  if (hasAnyOf(schema) || hasShemaSomeIf) {
+  if (hasAnyOf(schema) || hasSchemaSomeIf) {
     dependencies.push(new Ajv())
     dependenciesName.push('ajv')
   }
@@ -514,7 +514,7 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
 
   r = buildInnerObject(merged, name, externalSchema, fullSchema)
   code += r.code
-  laterCode = r.laterCode
+  laterCode += r.laterCode
 
   code += `
     }
@@ -529,12 +529,12 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
     if (merged.if && merged.then) {
       innerR = addIfThenElse(merged, name, externalSchema, fullSchema)
       code += innerR.code
-      laterCode = innerR.laterCode
+      laterCode += innerR.laterCode
     }
 
     r = buildInnerObject(merged, name, externalSchema, fullSchema)
     code += r.code
-    laterCode = r.laterCode
+    laterCode += r.laterCode
 
     code += `
       }
