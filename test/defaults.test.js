@@ -9,7 +9,7 @@ function buildTest (schema, toStringify, expected) {
 
     const stringify = build(schema)
 
-    const stringifyUgly = build(schema, {uglify: true})
+    const stringifyUgly = build(schema, { uglify: true })
     const output = stringify(toStringify)
     const outputUglify = stringifyUgly(toStringify)
 

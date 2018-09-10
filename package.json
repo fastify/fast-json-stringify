@@ -28,16 +28,16 @@
   "homepage": "https://github.com/fastify/fast-json-stringify#readme",
   "devDependencies": {
     "benchmark": "^2.1.4",
-    "is-my-json-valid": "^2.17.2",
+    "is-my-json-valid": "^2.19.0",
     "long": "^4.0.0",
     "pre-commit": "^1.2.2",
-    "proxyquire": "^2.0.0",
-    "standard": "^11.0.1",
+    "proxyquire": "^2.1.0",
+    "standard": "^12.0.1",
     "tap": "^12.0.0",
     "uglify-es": "^3.3.9"
   },
   "dependencies": {
-    "ajv": "^6.5.1",
+    "ajv": "^6.5.3",
     "deepmerge": "^2.1.1"
   }
 }

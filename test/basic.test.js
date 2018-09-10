@@ -10,7 +10,7 @@ function buildTest (schema, toStringify) {
 
     const validate = validator(schema)
     const stringify = build(schema)
-    const stringifyUgly = build(schema, {uglify: true})
+    const stringifyUgly = build(schema, { uglify: true })
     const output = stringify(toStringify)
     const outputUglify = stringifyUgly(toStringify)
 

@@ -18,7 +18,7 @@ test('additionalProperties', (t) => {
     }
   })
 
-  let obj = { str: 'test', foo: 42, ofoo: true, foof: 'string', objfoo: {a: true} }
+  let obj = { str: 'test', foo: 42, ofoo: true, foof: 'string', objfoo: { a: true } }
   t.equal('{"foo":"42","ofoo":"true","foof":"string","objfoo":"[object Object]","str":"test"}', stringify(obj))
 })
 

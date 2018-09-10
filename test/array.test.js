@@ -10,7 +10,7 @@ function buildTest (schema, toStringify) {
 
     const validate = validator(schema)
     const stringify = build(schema)
-    const stringifyUgly = build(schema, {uglify: true})
+    const stringifyUgly = build(schema, { uglify: true })
     const output = stringify(toStringify)
     const outputUglify = stringifyUgly(toStringify)
 
@@ -92,7 +92,7 @@ buildTest({
     }
   }
 }, {
-  ids: [null, 'test', 1, 1.1, true, {a: 'test'}, ['test']]
+  ids: [null, 'test', 1, 1.1, true, { a: 'test' }, ['test']]
 })
 
 buildTest({
@@ -111,7 +111,7 @@ buildTest({
       ]
     }
   }
-}, {ids: [1, 2]})
+}, { ids: [1, 2] })
 
 buildTest({
   'title': 'pattern properties array',
@@ -139,7 +139,7 @@ buildTest({
       ]
     }
   }
-}, {args: [{a: 'test'}, {b: 1}]})
+}, { args: [{ a: 'test' }, { b: 1 }] })
 
 test('invalid items throw', (t) => {
   t.plan(1)
@@ -162,5 +162,5 @@ test('invalid items throw', (t) => {
     }
   }
   const stringify = build(schema)
-  t.throws(() => stringify({args: ['invalid']}))
+  t.throws(() => stringify({ args: ['invalid'] }))
 })

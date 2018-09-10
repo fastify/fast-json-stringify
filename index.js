@@ -503,7 +503,7 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
   var merged = merge(copy, then)
 
   code += `
-    valid = ajv.validate(${require('util').inspect(i, {depth: null})}, obj)
+    valid = ajv.validate(${require('util').inspect(i, { depth: null })}, obj)
     if (valid) {
   `
   if (merged.if && merged.then) {
@@ -587,7 +587,7 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
     schema.items = refFinder(schema.items['$ref'], fullSchema, externalSchema)
   }
 
-  var result = {code: '', laterCode: ''}
+  var result = { code: '', laterCode: '' }
   if (Array.isArray(schema.items)) {
     result = schema.items.reduce((res, item, i) => {
       var accessor = '[i]'
@@ -722,7 +722,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
         schema.anyOf.forEach((s, index) => {
           var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey)
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, {depth: null})}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null })}, obj${accessor}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
@@ -743,7 +743,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
         const nullIndex = type.indexOf('null')
         const sortedTypes = nullIndex !== -1 ? [type[nullIndex]].concat(type.slice(0, nullIndex)).concat(type.slice(nullIndex + 1)) : type
         sortedTypes.forEach((type, index) => {
-          var tempSchema = Object.assign({}, schema, {type})
+          var tempSchema = Object.assign({}, schema, { type })
           var nestedResult = nested(laterCode, name, key, tempSchema, externalSchema, fullSchema, subKey)
           if (type === 'string') {
             code += `

@@ -22,8 +22,8 @@ const schema = {
         'items': {
           'type': 'object',
           'properties': {
-            'name': {'type': 'string'},
-            'value': {'type': 'string'}
+            'name': { 'type': 'string' },
+            'value': { 'type': 'string' }
           }
         }
       }
@@ -62,8 +62,8 @@ const nestedIfSchema = {
           'items': {
             'type': 'object',
             'properties': {
-              'name': {'type': 'string'},
-              'value': {'type': 'string'}
+              'name': { 'type': 'string' },
+              'value': { 'type': 'string' }
             }
           }
         }
@@ -104,8 +104,8 @@ const nestedElseSchema = {
         'items': {
           'type': 'object',
           'properties': {
-            'name': {'type': 'string'},
-            'value': {'type': 'string'}
+            'name': { 'type': 'string' },
+            'value': { 'type': 'string' }
           }
         }
       }
