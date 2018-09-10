@@ -16,7 +16,17 @@ const schema = {
     'properties': {
       'kind': { 'type': 'string', 'enum': ['foobar'] },
       'foo': { 'type': 'string' },
-      'bar': { 'type': 'number' }
+      'bar': { 'type': 'number' },
+      'list': {
+        'type': 'array',
+        'items': {
+          'type': 'object',
+          'properties': {
+            'name': {'type': 'string'},
+            'value': {'type': 'string'}
+          }
+        }
+      }
     }
   },
   'else': {
@@ -46,7 +56,17 @@ const nestedIfSchema = {
       'properties': {
         'kind': { 'type': 'string', 'enum': ['foobar'] },
         'foo': { 'type': 'string' },
-        'bar': { 'type': 'number' }
+        'bar': { 'type': 'number' },
+        'list': {
+          'type': 'array',
+          'items': {
+            'type': 'object',
+            'properties': {
+              'name': {'type': 'string'},
+              'value': {'type': 'string'}
+            }
+          }
+        }
       }
     },
     'else': {
@@ -78,7 +98,17 @@ const nestedElseSchema = {
     'properties': {
       'kind': { 'type': 'string', 'enum': ['foobar'] },
       'foo': { 'type': 'string' },
-      'bar': { 'type': 'number' }
+      'bar': { 'type': 'number' },
+      'list': {
+        'type': 'array',
+        'items': {
+          'type': 'object',
+          'properties': {
+            'name': {'type': 'string'},
+            'value': {'type': 'string'}
+          }
+        }
+      }
     }
   },
   'else': {
@@ -107,6 +137,10 @@ const nestedElseSchema = {
 const fooBarInput = {
   kind: 'foobar',
   foo: 'FOO',
+  list: [{
+    name: 'name',
+    value: 'foo'
+  }],
   bar: 42,
   hi: 'HI',
   hello: 45,
@@ -134,7 +168,11 @@ const alphabetInput = {
 const foobarOutput = JSON.stringify({
   kind: 'foobar',
   foo: 'FOO',
-  bar: 42
+  bar: 42,
+  list: [{
+    name: 'name',
+    value: 'foo'
+  }]
 })
 const greetingOutput = JSON.stringify({
   kind: 'greeting',
