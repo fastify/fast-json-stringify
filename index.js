@@ -6,7 +6,18 @@ var merge = require('deepmerge')
 // This Ajv instance is used to validate that the passed schema
 // is valid json schema. We reuse the instance to avoid having to
 // pay the ajv creation cost more than once.
-var ajv = new Ajv()
+var ajv = new Ajv({
+  // Ignore any unknown formats as they aren't used.
+  unknownFormats: 'ignore',
+
+  // Ignoring unknown formats emits warnings, but we don't need to hear about
+  // them.
+  logger: {
+    log: console.log,
+    warn: function () {},
+    error: console.error
+  }
+})
 
 var uglify = null
 var isLong
