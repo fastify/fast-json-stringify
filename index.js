@@ -554,9 +554,17 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
   return { code: code, laterCode: laterCode }
 }
 
+function toJSON (variableName) {
+  return `typeof ${variableName}.toJSON === 'function' 
+    ? ${variableName}.toJSON() 
+    : ${variableName}
+  `
+}
+
 function buildObject (schema, code, name, externalSchema, fullSchema) {
   code += `
-    function ${name} (obj) {
+    function ${name} (input) {
+      var obj = ${toJSON('input')}
       var json = '{'
       var addComma = false
   `
