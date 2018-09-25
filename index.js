@@ -14,7 +14,7 @@ var ajv = new Ajv({
   // them.
   logger: {
     log: console.log,
-    warn: function () {},
+    warn: function () { },
     error: console.error
   }
 })
@@ -557,6 +557,7 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
 function buildObject (schema, code, name, externalSchema, fullSchema) {
   code += `
     function ${name} (obj) {
+      if (obj.toJSON) { return obj.toJSON() }
       var json = '{'
       var addComma = false
   `
