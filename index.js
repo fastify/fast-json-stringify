@@ -518,12 +518,12 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
     if (valid) {
   `
   if (merged.if && merged.then) {
-    innerR = addIfThenElse(merged, name, externalSchema, fullSchema)
+    innerR = addIfThenElse(merged, name + 'Then', externalSchema, fullSchema)
     code += innerR.code
     laterCode = innerR.laterCode
   }
 
-  r = buildInnerObject(merged, name, externalSchema, fullSchema)
+  r = buildInnerObject(merged, name + 'Then', externalSchema, fullSchema)
   code += r.code
   laterCode += r.laterCode
 
@@ -538,12 +538,12 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
     `
 
     if (merged.if && merged.then) {
-      innerR = addIfThenElse(merged, name, externalSchema, fullSchema)
+      innerR = addIfThenElse(merged, name + 'Else', externalSchema, fullSchema)
       code += innerR.code
       laterCode += innerR.laterCode
     }
 
-    r = buildInnerObject(merged, name, externalSchema, fullSchema)
+    r = buildInnerObject(merged, name + 'Else', externalSchema, fullSchema)
     code += r.code
     laterCode += r.laterCode
 
@@ -555,8 +555,8 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
 }
 
 function toJSON (variableName) {
-  return `typeof ${variableName}.toJSON === 'function' 
-    ? ${variableName}.toJSON() 
+  return `typeof ${variableName}.toJSON === 'function'
+    ? ${variableName}.toJSON()
     : ${variableName}
   `
 }
