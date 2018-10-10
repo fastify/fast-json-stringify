@@ -5,6 +5,7 @@ It contains a set of JSON objects that implementors of JSON Schema validation li
 
 # How to add another test case?
 
-* Navigate to [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite/tree/master/tests)
-* Choose a draft `draft4`, `draft6` or `draft7`
-* Copy & paste the `test-case.json` to the project and add a test like in the `draft4.test.js`
+1. Navigate to [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite/tree/master/tests)
+2. Choose a draft `draft4`, `draft6` or `draft7`
+3. Copy & paste the `test-case.json` to the project and add a test like in the `draft4.test.js`
+4. Ensure that in all test schemas the property `type` is set correctly. This is required in order to generate optimized code.
