@@ -118,7 +118,7 @@ function build (schema, options) {
   return (Function.apply(null, dependenciesName).apply(null, dependencies))
 }
 
-var objectKeywords = [
+const objectKeywords = [
   'maxProperties',
   'minProperties',
   'required',
@@ -128,7 +128,7 @@ var objectKeywords = [
   'dependencies'
 ]
 
-var arrayKeywords = [
+const arrayKeywords = [
   'items',
   'additionalItems',
   'maxItems',
@@ -137,13 +137,13 @@ var arrayKeywords = [
   'contains'
 ]
 
-var stringKeywords = [
+const stringKeywords = [
   'maxLength',
   'minLength',
   'pattern'
 ]
 
-var numberKeywords = [
+const numberKeywords = [
   'multipleOf',
   'maximum',
   'exclusiveMaximum',
