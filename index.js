@@ -62,6 +62,10 @@ function build (schema, options) {
     `
   }
 
+  if (schema.type === undefined) {
+    schema.type = inferTypeByKeyword(schema)
+  }
+
   var hasSchemaSomeIf = hasIf(schema)
 
   var main
@@ -112,6 +116,59 @@ function build (schema, options) {
 
   dependenciesName.push(code)
   return (Function.apply(null, dependenciesName).apply(null, dependencies))
+}
+
+const objectKeywords = [
+  'maxProperties',
+  'minProperties',
+  'required',
+  'properties',
+  'patternProperties',
+  'additionalProperties',
+  'dependencies'
+]
+
+const arrayKeywords = [
+  'items',
+  'additionalItems',
+  'maxItems',
+  'minItems',
+  'uniqueItems',
+  'contains'
+]
+
+const stringKeywords = [
+  'maxLength',
+  'minLength',
+  'pattern'
+]
+
+const numberKeywords = [
+  'multipleOf',
+  'maximum',
+  'exclusiveMaximum',
+  'minimum',
+  'exclusiveMinimum'
+]
+
+/**
+ * Infer type based on keyword in order to generate optimized code
+ * https://json-schema.org/latest/json-schema-validation.html#rfc.section.6
+ */
+function inferTypeByKeyword (schema) {
+  for (const keyword of objectKeywords) {
+    if (keyword in schema) return 'object'
+  }
+  for (const keyword of arrayKeywords) {
+    if (keyword in schema) return 'array'
+  }
+  for (const keyword of stringKeywords) {
+    if (keyword in schema) return 'string'
+  }
+  for (const keyword of numberKeywords) {
+    if (keyword in schema) return 'number'
+  }
+  return schema.type
 }
 
 function hasAnyOf (schema) {
@@ -694,7 +751,16 @@ function buildArrayTypeCondition (type, accessor) {
 function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKey) {
   var code = ''
   var funcName
+
+  if (schema.type === undefined) {
+    var inferedType = inferTypeByKeyword(schema)
+    if (inferedType) {
+      schema.type = inferedType
+    }
+  }
+
   var type = schema.type
+
   var accessor = key.indexOf('[') === 0 ? key : `['${key}']`
   switch (type) {
     case 'null':
@@ -754,7 +820,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
           json += JSON.stringify(obj${accessor})
         `
       } else {
-        throw new Error(`${schema} unsupported`)
+        throw new Error(`${schema.type} unsupported`)
       }
       break
     default:
