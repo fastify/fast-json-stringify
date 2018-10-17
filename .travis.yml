@@ -1,5 +1,8 @@
 language: node_js
 sudo: false
+os:
+  - windows
+  - linux
 node_js:
 - '6'
 - '8'
