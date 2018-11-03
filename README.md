@@ -330,7 +330,7 @@ console.log(stringify({
   bar: 42,
   hi: 'HI',
   hello: 45
-})) // {"kind":"greeting","foo":"FOO","bar":42}
+})) // {"kind":"foobar","foo":"FOO","bar":42}
 ```
 
 **NB:** don't declare the properties twice or you'll print them twice!
