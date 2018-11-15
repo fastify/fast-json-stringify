@@ -6,7 +6,7 @@
   "scripts": {
     "benchmark": "node bench.js",
     "lint": "standard",
-    "unit": "tap -j4 test/**/*.test.js",
+    "unit": "tap -j4 test/*.test.js test/**/*.test.js",
     "test": "npm run lint && npm run unit"
   },
   "precommit": "test",

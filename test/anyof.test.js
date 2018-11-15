@@ -81,3 +81,43 @@ test('object with field of type object or null', (t) => {
     t.fail()
   }
 })
+
+test('object with field of type object or array', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'object with field of type object or array',
+    type: 'object',
+    properties: {
+      prop: {
+        anyOf: [{
+          type: 'object',
+          properties: {},
+          additionalProperties: true
+        }, {
+          type: 'array',
+          items: { type: 'string' }
+        }]
+      }
+    }
+  }
+  const stringify = build(schema)
+
+  try {
+    const value = stringify({
+      prop: { str: 'string' }
+    })
+    t.is(value, '{"prop":{"str":"string"}}')
+  } catch (e) {
+    t.fail()
+  }
+
+  try {
+    const value = stringify({
+      prop: ['string']
+    })
+    t.is(value, '{"prop":["string"]}')
+  } catch (e) {
+    t.fail()
+  }
+})
