@@ -81,3 +81,94 @@ test('not use toJSON if does not exist', (t) => {
 
   t.equal('{"product":{"name":"cola"}}', stringify(object))
 })
+
+test('not fail on null object declared nullable', (t) => {
+  t.plan(1)
+
+  const stringify = build({
+    title: 'simple object',
+    type: 'object',
+    nullable: true,
+    properties: {
+      product: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string'
+          }
+        }
+      }
+    }
+  })
+  t.equal('null', stringify(null))
+})
+
+test('not fail on null sub-object declared nullable', (t) => {
+  t.plan(1)
+
+  const stringify = build({
+    title: 'simple object',
+    type: 'object',
+    properties: {
+      product: {
+        nullable: true,
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string'
+          }
+        }
+      }
+    }
+  })
+  const object = {
+    product: null
+  }
+  t.equal('{"product":null}', stringify(object))
+})
+
+test('throw an error on non nullable null sub-object', (t) => {
+  t.plan(1)
+
+  const stringify = build({
+    title: 'simple object',
+    type: 'object',
+    properties: {
+      product: {
+        nullable: false,
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string'
+          }
+        }
+      }
+    }
+  })
+  const object = {
+    product: null
+  }
+  t.throws(() => { stringify(object) })
+})
+
+test('throw an error on non nullable null object', (t) => {
+  t.plan(1)
+
+  const stringify = build({
+    title: 'simple object',
+    nullable: false,
+    type: 'object',
+    properties: {
+      product: {
+        nullable: false,
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string'
+          }
+        }
+      }
+    }
+  })
+  t.throws(() => { stringify(null) })
+})
