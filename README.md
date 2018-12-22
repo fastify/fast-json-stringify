@@ -53,6 +53,7 @@ fast-json-stringify-uglified obj x 5,331,581 ops/sec ±0.73% (91 runs sampled)
  - <a href="#ref">`Reuse - $ref`</a>
  - <a href="#long">`Long integers`</a>
  - <a href="#uglify">`Uglify`</a>
+ - <a href="#nullable">`Nullable`</a>
 - <a href="#acknowledgements">`Acknowledgements`</a>
 - <a href="#license">`License`</a>
 
@@ -460,6 +461,35 @@ const stringify = fastJson({
 
 // stringify is now minified code
 console.log(stringify({ some: 'object' })) // '{"some":"object"}'
+```
+
+<a name="nullable"></a>
+#### Nullable
+
+According to the [Open API 3.0 specification](https://swagger.io/docs/specification/data-models/data-types/#null), a value that can be null must be declared `nullable`.
+
+##### Nullable object
+```javascript
+const stringify = fastJson({
+  'title': 'Nullable schema',
+  'type': 'object',
+  'nullable': true,
+  'properties': {
+    'product': {
+      'nullable': true,
+      'type': 'object',
+      'properties': {
+        'name': {
+          'type': 'string'
+        }
+      }
+    }
+  }
+})
+
+console.log(stringify({product: {name: "hello"}})) // "{"product":{"name":"hello"}}"
+console.log(stringify({product: null})) // "{"product":null}"
+console.log(stringify(null)) // null
 ```
 
 <a name="acknowledgements"></a>

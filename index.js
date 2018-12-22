@@ -621,6 +621,15 @@ function toJSON (variableName) {
 function buildObject (schema, code, name, externalSchema, fullSchema) {
   code += `
     function ${name} (input) {
+  `
+  if (schema.nullable) {
+    code += `
+      if(input === null) {
+        return '${$asNull()}';
+      }
+  `
+  }
+  code += `
       var obj = ${toJSON('input')}
       var json = '{'
       var addComma = false
