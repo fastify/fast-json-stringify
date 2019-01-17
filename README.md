@@ -228,7 +228,7 @@ console.log(stringify(obj)) // '{"matchfoo":"42","otherfoo":"str","matchnum":3,"
 *additionalProperties* will work only for the properties that are not explicitly listed in the *properties* and *patternProperties* objects.
 
 If *additionalProperties* is not present or is set to `false`, every property that is not explicitly listed in the *properties* and *patternProperties* objects,will be ignored, as described in <a href="#missingFields">Missing fields</a>.
-Not that this is diffrent behavior from othere schema rules in that it will not throw, it will simply ignore missing fields.
+Note that this is unique compared to other schema rules in that it will not throw an error, it will simply ignore missing fields.
 If *additionalProperties* is set to `true`, it will be used by `JSON.stringify` to stringify the additional properties. If you want to achieve maximum performance, we strongly encourage you to use a fixed schema where possible.  
 Example:
 ```javascript
