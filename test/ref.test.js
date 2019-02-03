@@ -433,3 +433,54 @@ test('ref internal - plain name fragment', (t) => {
 
   t.equal(output, '{"obj":{"str":"test"}}')
 })
+
+test('ref internal - multiple $ref format', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    definitions: {
+      one: {
+        type: 'string',
+        definitions: {
+          two: {
+            $id: '#twos',
+            type: 'string'
+          }
+        }
+      }
+    },
+    properties: {
+      zero: {
+        $id: '#three',
+        type: 'string'
+      },
+      a: { $ref: '#/definitions/one' },
+      b: { $ref: '#three' },
+      c: { $ref: '#/properties/zero' },
+      d: { $ref: '#twos' },
+      e: { $ref: '#/definitions/one/definitions/two' }
+    }
+  }
+
+  const object = {
+    zero: 'test',
+    a: 'test',
+    b: 'test',
+    c: 'test',
+    d: 'test',
+    e: 'test'
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"zero":"test","a":"test","b":"test","c":"test","d":"test","e":"test"}')
+})
