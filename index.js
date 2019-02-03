@@ -427,15 +427,20 @@ function addAdditionalProperties (schema, externalSchema, fullSchema) {
 function refFinder (ref, schema, externalSchema) {
   // Split file from walk
   ref = ref.split('#')
-  const idMap = new Map()
-  const searchForIds = (o) => {
-    Object.keys(o || {}).forEach((key, i, a) => {
-      if (key === '$id') {
-        idMap.set(o[key], o)
-      } else if (typeof o[key] === 'object') {
-        searchForIds(o[key])
-      }
-    })
+
+  const searchForId = (schema, searchedId) => {
+    let objSchema
+    const explore = (schema, searchedId) => {
+      Object.keys(schema || {}).forEach((key, i, a) => {
+        if (key === '$id' && schema[key] === searchedId) {
+          objSchema = schema
+        } else if (typeof schema[key] === 'object') {
+          explore(schema[key], searchedId)
+        }
+      })
+    }
+    explore(schema, searchedId)
+    return objSchema
   }
 
   // If external file
@@ -443,15 +448,13 @@ function refFinder (ref, schema, externalSchema) {
     schema = externalSchema[ref[0]]
   }
 
-  searchForIds(schema)
-
   var code = 'return schema'
   // If it has a path
   if (ref[1]) {
     var walk = ref[1].split('/')
     var wl = walk.length
     if (wl === 1) {
-      return idMap.get(`#${ref[1]}`)
+      return searchForId(schema, `#${ref[1]}`)
     } else {
       for (var i = 1; i < wl; i++) {
         code += `['${walk[i]}']`
