@@ -389,3 +389,47 @@ test('ref internal - deepObject schema', (t) => {
 
   t.equal(output, '{"winter":{"is":{"coming":{"where":"to town"}}}}')
 })
+
+test('ref internal - plain name fragment', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'object with $ref',
+    definitions: {
+      def: {
+        $id: '#uri',
+        type: 'object',
+        properties: {
+          str: {
+            type: 'string'
+          }
+        },
+        required: ['str']
+      }
+    },
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: '#uri'
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      str: 'test'
+    }
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"obj":{"str":"test"}}')
+})
