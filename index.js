@@ -424,24 +424,24 @@ function addAdditionalProperties (schema, externalSchema, fullSchema) {
   `
 }
 
+function idFinder (schema, searchedId) {
+  let objSchema
+  const explore = (schema, searchedId) => {
+    Object.keys(schema || {}).forEach((key, i, a) => {
+      if (key === '$id' && schema[key] === searchedId) {
+        objSchema = schema
+      } else if (objSchema === undefined && typeof schema[key] === 'object') {
+        explore(schema[key], searchedId)
+      }
+    })
+  }
+  explore(schema, searchedId)
+  return objSchema
+}
+
 function refFinder (ref, schema, externalSchema) {
   // Split file from walk
   ref = ref.split('#')
-
-  const searchForId = (schema, searchedId) => {
-    let objSchema
-    const explore = (schema, searchedId) => {
-      Object.keys(schema || {}).forEach((key, i, a) => {
-        if (key === '$id' && schema[key] === searchedId) {
-          objSchema = schema
-        } else if (typeof schema[key] === 'object') {
-          explore(schema[key], searchedId)
-        }
-      })
-    }
-    explore(schema, searchedId)
-    return objSchema
-  }
 
   // If external file
   if (ref[0]) {
@@ -451,12 +451,13 @@ function refFinder (ref, schema, externalSchema) {
   var code = 'return schema'
   // If it has a path
   if (ref[1]) {
+    // ref[1] could contain a JSON pointer - ex: /definitions/num
+    // or plan name fragment id without suffix # - ex: customId
     var walk = ref[1].split('/')
-    var wl = walk.length
-    if (wl === 1) {
-      return searchForId(schema, `#${ref[1]}`)
+    if (walk.length === 1) {
+      return idFinder(schema, `#${ref[1]}`)
     } else {
-      for (var i = 1; i < wl; i++) {
+      for (var i = 1; i < walk.length; i++) {
         code += `['${walk[i]}']`
       }
     }
