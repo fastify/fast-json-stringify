@@ -934,7 +934,12 @@ function loadUglify () {
 function isValidSchema (schema, externalSchema) {
   if (externalSchema) {
     Object.keys(externalSchema).forEach(key => {
-      ajv.addSchema(externalSchema[key], key)
+      try {
+        ajv.addSchema(externalSchema[key], key)
+      } catch (err) {
+        err.message = '"' + key + '" ' + err.message
+        throw err
+      }
     })
   }
   ajv.compile(schema)
