@@ -3,7 +3,7 @@
 const test = require('tap').test
 const build = require('..')
 
-test('possibly nullable primitive alternative', (t) => {
+test('possibly nullable primitive alternative', t => {
   t.plan(1)
 
   const schema = {
@@ -28,7 +28,32 @@ test('possibly nullable primitive alternative', (t) => {
   }
 })
 
-test('possibly null object with multi-type property', (t) => {
+test('nullable primitive', t => {
+  t.plan(1)
+
+  const schema = {
+    title: 'simple object with nullable primitive',
+    type: 'object',
+    properties: {
+      data: {
+        type: ['integer', 'null']
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  try {
+    const value = stringify({
+      data: 4
+    })
+    t.is(value, '{"data":4}')
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('possibly null object with multi-type property', t => {
   t.plan(3)
 
   const schema = {
@@ -78,7 +103,7 @@ test('possibly null object with multi-type property', (t) => {
   }
 })
 
-test('object with possibly null array of multiple types', (t) => {
+test('object with possibly null array of multiple types', t => {
   t.plan(5)
 
   const schema = {
@@ -136,13 +161,16 @@ test('object with possibly null array of multiple types', (t) => {
     const value = stringify({
       arrayOfStringsAndNumbers: ['string1', null, 42, 7, 'string2', null]
     })
-    t.is(value, '{"arrayOfStringsAndNumbers":["string1",null,42,7,"string2",null]}')
+    t.is(
+      value,
+      '{"arrayOfStringsAndNumbers":["string1",null,42,7,"string2",null]}'
+    )
   } catch (e) {
     t.fail()
   }
 })
 
-test('object with tuple of multiple types', (t) => {
+test('object with tuple of multiple types', t => {
   t.plan(2)
 
   const schema = {
@@ -188,7 +216,7 @@ test('object with tuple of multiple types', (t) => {
   }
 })
 
-test('object with anyOf and multiple types', (t) => {
+test('object with anyOf and multiple types', t => {
   t.plan(3)
 
   const schema = {
@@ -243,7 +271,7 @@ test('object with anyOf and multiple types', (t) => {
   }
 })
 
-test('string type array can handle dates', (t) => {
+test('string type array can handle dates', t => {
   t.plan(1)
   const schema = {
     type: 'object',
