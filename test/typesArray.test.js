@@ -161,10 +161,7 @@ test('object with possibly null array of multiple types', (t) => {
     const value = stringify({
       arrayOfStringsAndNumbers: ['string1', null, 42, 7, 'string2', null]
     })
-    t.is(
-      value,
-      '{"arrayOfStringsAndNumbers":["string1",null,42,7,"string2",null]}'
-    )
+    t.is(value, '{"arrayOfStringsAndNumbers":["string1",null,42,7,"string2",null]}')
   } catch (e) {
     t.fail()
   }
