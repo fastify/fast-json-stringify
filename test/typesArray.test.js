@@ -3,7 +3,7 @@
 const test = require('tap').test
 const build = require('..')
 
-test('possibly nullable primitive alternative', t => {
+test('possibly nullable primitive alternative', (t) => {
   t.plan(1)
 
   const schema = {
@@ -28,7 +28,7 @@ test('possibly nullable primitive alternative', t => {
   }
 })
 
-test('nullable primitive', t => {
+test('nullable primitive', (t) => {
   t.plan(1)
 
   const schema = {
@@ -53,7 +53,7 @@ test('nullable primitive', t => {
   }
 })
 
-test('possibly null object with multi-type property', t => {
+test('possibly null object with multi-type property', (t) => {
   t.plan(3)
 
   const schema = {
@@ -103,7 +103,7 @@ test('possibly null object with multi-type property', t => {
   }
 })
 
-test('object with possibly null array of multiple types', t => {
+test('object with possibly null array of multiple types', (t) => {
   t.plan(5)
 
   const schema = {
@@ -170,7 +170,7 @@ test('object with possibly null array of multiple types', t => {
   }
 })
 
-test('object with tuple of multiple types', t => {
+test('object with tuple of multiple types', (t) => {
   t.plan(2)
 
   const schema = {
@@ -216,7 +216,7 @@ test('object with tuple of multiple types', t => {
   }
 })
 
-test('object with anyOf and multiple types', t => {
+test('object with anyOf and multiple types', (t) => {
   t.plan(3)
 
   const schema = {
@@ -271,7 +271,7 @@ test('object with anyOf and multiple types', t => {
   }
 })
 
-test('string type array can handle dates', t => {
+test('string type array can handle dates', (t) => {
   t.plan(1)
   const schema = {
     type: 'object',
