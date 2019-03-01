@@ -1,0 +1,35 @@
+pool:
+  vmImage: 'ubuntu-16.04'
+
+strategy:
+  matrix:
+    node_6_x:
+      node_version: 6.x
+    node_8_x:
+      node_version: 8.x
+    node_10_x:
+      node_version: 10.x
+    node_11_x:
+      node_version: 11.x
+
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: $(node_version)
+    displayName: Install Node.js
+
+  - bash: npm install
+    displayName: Install dependencies
+
+  - bash: npm run test:lint
+    displayName: Linter
+
+  - bash: npm run test:report && npm run test:reporter
+    displayName: Test
+
+  - task: PublishTestResults@2
+    displayName: "Publish Test Results"
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFiles: "**test/junit-testresults.xml"
+      testRunTitle: TestRun $(node_version)
