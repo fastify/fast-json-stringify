@@ -3,6 +3,56 @@
 const test = require('tap').test
 const build = require('..')
 
+test('possibly nullable primitive alternative', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'simple object with multi-type nullable primitive',
+    type: 'object',
+    properties: {
+      data: {
+        type: ['integer']
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  try {
+    const value = stringify({
+      data: 4
+    })
+    t.is(value, '{"data":4}')
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('nullable primitive', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'simple object with nullable primitive',
+    type: 'object',
+    properties: {
+      data: {
+        type: ['integer', 'null']
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  try {
+    const value = stringify({
+      data: 4
+    })
+    t.is(value, '{"data":4}')
+  } catch (e) {
+    t.fail()
+  }
+})
+
 test('possibly null object with multi-type property', (t) => {
   t.plan(3)
 

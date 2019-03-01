@@ -877,6 +877,11 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
               ${index === 0 ? 'if' : 'else if'}(Array.isArray(obj${accessor}))
               ${nestedResult.code}
             `
+          } else if (type === 'integer') {
+            code += `
+              ${index === 0 ? 'if' : 'else if'}(Number.isInteger(obj${accessor}))
+              ${nestedResult.code}
+            `
           } else {
             code += `
               ${index === 0 ? 'if' : 'else if'}(typeof obj${accessor} === "${type}")
