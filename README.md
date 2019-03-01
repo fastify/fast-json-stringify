@@ -4,40 +4,28 @@
 
 __fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads. Its performance advantage shrinks as your payload grows. It pairs well with [__flatstr__](https://www.npmjs.com/package/flatstr), which triggers a V8 optimization that improves performance when eventually converting the string to a `Buffer`.
 
-Benchmarks:
-
-Node 8.11.2:
-
-```
-JSON.stringify array x 3,602 ops/sec ±1.58% (92 runs sampled)
-fast-json-stringify array x 4,554 ops/sec ±1.42% (93 runs sampled)
-fast-json-stringify-uglified array x 4,505 ops/sec ±1.60% (92 runs sampled)
-JSON.stringify long string x 10,363 ops/sec ±2.00% (90 runs sampled)
-fast-json-stringify long string x 10,547 ops/sec ±1.63% (90 runs sampled)
-fast-json-stringify-uglified long string x 10,136 ops/sec ±2.27% (88 runs sampled)
-JSON.stringify short string x 4,392,858 ops/sec ±2.18% (87 runs sampled)
-fast-json-stringify short string x 9,363,875 ops/sec ±1.90% (90 runs sampled)
-fast-json-stringify-uglified short string x 9,541,809 ops/sec ±0.70% (95 runs sampled)
-JSON.stringify obj x 1,640,678 ops/sec ±1.94% (85 runs sampled)
-fast-json-stringify obj x 3,685,948 ops/sec ±0.98% (93 runs sampled)
-fast-json-stringify-uglified obj x 3,669,155 ops/sec ±1.19% (89 runs sampled)
-```
-
-Node 10.4.0:
+##### Benchmarks
+- Machine: `EX41S-SSD, Intel Core i7, 4Ghz, 64GB RAM, 4C/8T, SSD`.
+- Node.js `v10.15.2`
 
 ```
-JSON.stringify array x 3,269 ops/sec ±1.48% (86 runs sampled)
-fast-json-stringify array x 5,945 ops/sec ±1.51% (87 runs sampled)
-fast-json-stringify-uglified array x 5,720 ops/sec ±1.18% (89 runs sampled)
-JSON.stringify long string x 9,325 ops/sec ±1.22% (88 runs sampled)
-fast-json-stringify long string x 9,678 ops/sec ±0.99% (92 runs sampled)
-fast-json-stringify-uglified long string x 9,578 ops/sec ±1.12% (92 runs sampled)
-JSON.stringify short string x 3,307,218 ops/sec ±1.54% (92 runs sampled)
-fast-json-stringify short string x 28,213,341 ops/sec ±1.72% (83 runs sampled)
-fast-json-stringify-uglified short string x 29,130,846 ops/sec ±1.34% (87 runs sampled)
-JSON.stringify obj x 1,441,648 ops/sec ±2.14% (87 runs sampled)
-fast-json-stringify obj x 5,345,003 ops/sec ±1.02% (91 runs sampled)
-fast-json-stringify-uglified obj x 5,331,581 ops/sec ±0.73% (91 runs sampled)
+FJS creation x 8,951 ops/sec ±0.51% (92 runs sampled)
+
+JSON.stringify array x 5,146 ops/sec ±0.32% (97 runs sampled)
+fast-json-stringify array x 8,402 ops/sec ±0.62% (95 runs sampled)
+fast-json-stringify-uglified array x 8,474 ops/sec ±0.49% (93 runs sampled)
+
+JSON.stringify long string x 13,061 ops/sec ±0.25% (98 runs sampled)
+fast-json-stringify long string x 13,059 ops/sec ±0.21% (98 runs sampled)
+fast-json-stringify-uglified long string x 13,099 ops/sec ±0.14% (98 runs sampled)
+
+JSON.stringify short string x 6,295,988 ops/sec ±0.28% (98 runs sampled)
+fast-json-stringify short string x 43,335,575 ops/sec ±1.24% (86 runs sampled)
+fast-json-stringify-uglified short string x 40,042,871 ops/sec ±1.38% (93 runs sampled)
+
+JSON.stringify obj x 2,557,026 ops/sec ±0.20% (97 runs sampled)
+fast-json-stringify obj x 9,001,890 ops/sec ±0.48% (90 runs sampled)
+fast-json-stringify-uglified obj x 9,073,607 ops/sec ±0.41% (94 runs sampled)
 ```
 
 #### Table of contents:
