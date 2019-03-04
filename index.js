@@ -195,6 +195,8 @@ function $asNull () {
 }
 
 function $asInteger (i) {
+  if (i === null) return $asNull()
+
   if (isLong && isLong(i)) {
     return i.toString()
   } else {
@@ -203,6 +205,8 @@ function $asInteger (i) {
 }
 
 function $asNumber (i) {
+  if (i === null) return $asNull()
+
   var num = Number(i)
   if (isNaN(num)) {
     return 'null'
@@ -477,7 +481,7 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
     var type = schema.properties[key].type
     if (type === 'number') {
       code += `
-          var t = Number(obj['${key}'])
+          var t = obj['${key}'] !== null ? Number(obj['${key}']) : ${$asNull()}
           if (!isNaN(t)) {
             ${addComma}
             json += '${$asString(key)}:' + t
@@ -493,7 +497,7 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
               json += '${$asString(key)}:' + obj['${key}'].toString()
               rendered = true
             } else {
-              var t = Number(obj['${key}'])
+              var t = obj['${key}'] !== null ? Number(obj['${key}']) : ${$asNull()}
               if (!isNaN(t)) {
                 ${addComma}
                 json += '${$asString(key)}:' + t
@@ -503,7 +507,7 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
         `
       } else {
         code += `
-            var t = Number(obj['${key}'])
+            var t = obj['${key}'] !== null ? Number(obj['${key}']) : ${$asNull()}
             if (!isNaN(t)) {
               ${addComma}
               json += '${$asString(key)}:' + t

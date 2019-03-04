@@ -41,3 +41,33 @@ test('handle null when value should be string', (t) => {
 
   t.equal('{"str":""}', stringify({ str: null }))
 })
+
+test('handle null when value should be number', (t) => {
+  t.plan(1)
+
+  const stringify = build({
+    type: 'object',
+    properties: {
+      num: {
+        type: 'number'
+      }
+    }
+  })
+
+  t.equal('{"num":null}', stringify({ num: null }))
+})
+
+test('handle null when value should be integer', (t) => {
+  t.plan(1)
+
+  const stringify = build({
+    type: 'object',
+    properties: {
+      int: {
+        type: 'integer'
+      }
+    }
+  })
+
+  t.equal('{"int":null}', stringify({ int: null }))
+})
