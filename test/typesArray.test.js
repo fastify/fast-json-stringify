@@ -3,7 +3,7 @@
 const test = require('tap').test
 const build = require('..')
 
-test('possibly nullable primitive alternative', (t) => {
+test('possibly nullable integer primitive alternative', (t) => {
   t.plan(1)
 
   const schema = {
@@ -28,7 +28,32 @@ test('possibly nullable primitive alternative', (t) => {
   }
 })
 
-test('possibly nullable primitive alternative with null value', (t) => {
+test('possibly nullable number primitive alternative', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'simple object with multi-type nullable primitive',
+    type: 'object',
+    properties: {
+      data: {
+        type: ['number']
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  try {
+    const value = stringify({
+      data: 4
+    })
+    t.is(value, '{"data":4}')
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('possibly nullable integer primitive alternative with null value', (t) => {
   t.plan(1)
 
   const schema = {
@@ -47,13 +72,38 @@ test('possibly nullable primitive alternative with null value', (t) => {
     const value = stringify({
       data: null
     })
-    t.is(value, '{"data":null}')
+    t.is(value, '{"data":0}')
   } catch (e) {
     t.fail()
   }
 })
 
-test('nullable primitive', (t) => {
+test('possibly nullable number primitive alternative with null value', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'simple object with multi-type nullable primitive',
+    type: 'object',
+    properties: {
+      data: {
+        type: ['number']
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  try {
+    const value = stringify({
+      data: null
+    })
+    t.is(value, '{"data":0}')
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('nullable integer primitive', (t) => {
   t.plan(1)
 
   const schema = {
@@ -62,6 +112,31 @@ test('nullable primitive', (t) => {
     properties: {
       data: {
         type: ['integer', 'null']
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  try {
+    const value = stringify({
+      data: 4
+    })
+    t.is(value, '{"data":4}')
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('nullable number primitive', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'simple object with nullable primitive',
+    type: 'object',
+    properties: {
+      data: {
+        type: ['number', 'null']
       }
     }
   }
@@ -87,6 +162,31 @@ test('nullable primitive with null value', (t) => {
     properties: {
       data: {
         type: ['integer', 'null']
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  try {
+    const value = stringify({
+      data: null
+    })
+    t.is(value, '{"data":null}')
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('nullable number primitive with null value', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'simple object with nullable primitive',
+    type: 'object',
+    properties: {
+      data: {
+        type: ['number', 'null']
       }
     }
   }
