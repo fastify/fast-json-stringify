@@ -481,6 +481,13 @@ console.log(stringify({product: null})) // "{"product":null}"
 console.log(stringify(null)) // null
 ```
 
+Otherwise, instead of raising an error, null values will be coerced as follows:
+
+- `integer` -> `0`
+- `number` -> `0`
+- `string` -> `""`
+- `boolean` -> `false`
+
 <a name="acknowledgements"></a>
 ## Acknowledgements
 
