@@ -879,7 +879,12 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
             `
           } else if (type === 'integer') {
             code += `
-              ${index === 0 ? 'if' : 'else if'}(Number.isInteger(obj${accessor}))
+              ${index === 0 ? 'if' : 'else if'}(Number.isInteger(obj${accessor}) || obj${accessor} === null)
+              ${nestedResult.code}
+            `
+          } else if (type === 'number') {
+            code += `
+              ${index === 0 ? 'if' : 'else if'}(isNaN(obj${accessor}) === false)
               ${nestedResult.code}
             `
           } else {
