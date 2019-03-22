@@ -74,7 +74,9 @@ test('object with field of type object or null', (t) => {
 
   try {
     const value = stringify({
-      prop: { str: 'string' }
+      prop: {
+        str: 'string'
+      }
     })
     t.is(value, '{"prop":{"str":"string"}}')
   } catch (e) {
@@ -96,7 +98,9 @@ test('object with field of type object or array', (t) => {
           additionalProperties: true
         }, {
           type: 'array',
-          items: { type: 'string' }
+          items: {
+            type: 'string'
+          }
         }]
       }
     }
@@ -105,7 +109,9 @@ test('object with field of type object or array', (t) => {
 
   try {
     const value = stringify({
-      prop: { str: 'string' }
+      prop: {
+        str: 'string'
+      }
     })
     t.is(value, '{"prop":{"str":"string"}}')
   } catch (e) {
@@ -117,6 +123,64 @@ test('object with field of type object or array', (t) => {
       prop: ['string']
     })
     t.is(value, '{"prop":["string"]}')
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('object with field of type string and coercion disable ', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'object with field of type string',
+    type: 'object',
+    properties: {
+      str: {
+        anyOf: [{
+          type: 'string'
+        }]
+      }
+    }
+  }
+  const stringify = build(schema)
+
+  try {
+    const value = stringify({
+      str: 1
+    })
+    t.is(value, '{"str":null}')
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('object with field of type string and coercion enable ', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'object with field of type string',
+    type: 'object',
+    properties: {
+      str: {
+        anyOf: [{
+          type: 'string'
+        }]
+      }
+    }
+  }
+
+  const options = {
+    ajv: {
+      coerceTypes: true
+    }
+  }
+  const stringify = build(schema, options)
+
+  try {
+    const value = stringify({
+      str: 1
+    })
+    t.is(value, '{"str":"1"}')
   } catch (e) {
     t.fail()
   }

@@ -110,7 +110,7 @@ function build (schema, options) {
   var dependencies = []
   var dependenciesName = []
   if (hasAnyOf(schema) || hasSchemaSomeIf) {
-    dependencies.push(new Ajv())
+    dependencies.push(new Ajv(options.ajv))
     dependenciesName.push('ajv')
   }
 
