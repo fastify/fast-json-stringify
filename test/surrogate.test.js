@@ -37,7 +37,7 @@ test(`render a string with surrogate pairs as JSON: test 2`, (t) => {
 })
 
 test(`render a string with Unpaired surrogate code as JSON`, (t) => {
-  t.plan(1)
+  t.plan(2)
 
   const schema = {
     title: 'surrogate',
@@ -47,12 +47,12 @@ test(`render a string with Unpaired surrogate code as JSON`, (t) => {
   const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify('\uDF06\uD834')
-  // t.equal(output, '"\\udf06\\ud834"')
+  t.equal(output, JSON.stringify('\uDF06\uD834'))
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test(`render a string with lone surrogate code as JSON`, (t) => {
-  t.plan(1)
+  t.plan(2)
 
   const schema = {
     title: 'surrogate',
@@ -62,6 +62,6 @@ test(`render a string with lone surrogate code as JSON`, (t) => {
   const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify('\uDEAD')
-  // t.equal(output, '"\\udead"')
+  t.equal(output, JSON.stringify('\uDEAD'))
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
