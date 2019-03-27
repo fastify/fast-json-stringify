@@ -236,16 +236,22 @@ function $asString (str) {
 // magically escape strings for json
 // relying on their charCodeAt
 // everything below 32 needs JSON.stringify()
+// every string that contain surrogate needs JSON.stringify()
 // 34 and 92 happens all the time, so we
 // have a fast case for them
 function $asStringSmall (str) {
   var result = ''
   var last = 0
   var found = false
+  var surrogateFound = false
   var l = str.length
   var point = 255
   for (var i = 0; i < l && point >= 32; i++) {
     point = str.charCodeAt(i)
+    if (point >= 0xD800 && point <= 0xDFFF) {
+      // The current character is a surrogate.
+      surrogateFound = true
+    }
     if (point === 34 || point === 92) {
       result += str.slice(last, i) + '\\'
       last = i
@@ -258,7 +264,7 @@ function $asStringSmall (str) {
   } else {
     result += str.slice(last)
   }
-  return point < 32 ? JSON.stringify(str) : '"' + result + '"'
+  return ((point < 32) || (surrogateFound === true)) ? JSON.stringify(str) : '"' + result + '"'
 }
 
 function addPatternProperties (schema, externalSchema, fullSchema) {
