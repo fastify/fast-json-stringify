@@ -725,9 +725,7 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
       if(obj === null) {
         return '${$asNull()}';
       }
-    // }
-  `
-    // return code
+    `
   }
   code += `
       var json = '['
