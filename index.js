@@ -70,22 +70,40 @@ function build (schema, options) {
 
   var main
 
+  // wrapper function for processing nullable values
+  var processValue = (schema, code, name, nonNullHandler) => {
+    code += `
+      function ${name} (input) {
+        if(input === null && ${schema.nullable} === true) {
+          return null
+        } else {
+          return ${nonNullHandler}(input)
+        }
+      }
+    `
+    return code
+  }
+
   switch (schema.type) {
     case 'object':
       main = '$main'
       code = buildObject(schema, code, main, options.schema, schema)
       break
     case 'string':
-      main = $asString.name
+      main = '$main'
+      code = processValue(schema, code, main, $asString.name)
       break
     case 'integer':
-      main = $asInteger.name
+      main = '$main'
+      code = processValue(schema, code, main, $asInteger.name)
       break
     case 'number':
-      main = $asNumber.name
+      main = '$main'
+      code = processValue(schema, code, main, $asNumber.name)
       break
     case 'boolean':
-      main = $asBoolean.name
+      main = '$main'
+      code = processValue(schema, code, main, $asBoolean.name)
       break
     case 'null':
       main = $asNull.name
@@ -100,7 +118,7 @@ function build (schema, options) {
 
   code += `
     ;
-    return ${main}
+     return ${main}
   `
 
   if (options.uglify) {
@@ -481,6 +499,16 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
     // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
 
     var type = schema.properties[key].type
+    var nullable = schema.properties[key].nullable
+
+    code += `
+      if (obj['${key}'] === null && ${nullable}) {
+        ${addComma}
+        json += '${$asString(key)}:null'
+        var rendered = true
+      } else {
+    `
+
     if (type === 'number') {
       code += `
           var t = Number(obj['${key}'])
@@ -547,10 +575,9 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
     }
 
     code += `
-      }
+      }}
     `
   })
-
   return { code: code, laterCode: laterCode }
 }
 
@@ -692,9 +719,19 @@ function buildObject (schema, code, name, externalSchema, fullSchema) {
 function buildArray (schema, code, name, externalSchema, fullSchema) {
   code += `
     function ${name} (obj) {
+  `
+  if (schema.nullable) {
+    code += `
+      if(obj === null) {
+        return '${$asNull()}';
+      }
+    // }
+  `
+    // return code
+  }
+  code += `
       var json = '['
   `
-
   var laterCode = ''
 
   if (schema.items['$ref']) {
@@ -798,6 +835,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
   }
 
   var type = schema.type
+  var nullable = schema.nullable === true
 
   var accessor = key.indexOf('[') === 0 ? key : `['${key}']`
   switch (type) {
@@ -808,22 +846,22 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       break
     case 'string':
       code += `
-        json += $asString(obj${accessor})
+        json += ${nullable} && obj${accessor} === null ? null : $asString(obj${accessor})
       `
       break
     case 'integer':
       code += `
-        json += $asInteger(obj${accessor})
+        json += ${nullable} && obj${accessor} === null ? null : $asInteger(obj${accessor})
       `
       break
     case 'number':
       code += `
-        json += $asNumber(obj${accessor})
+        json += ${nullable} && obj${accessor} === null ? null : $asNumber(obj${accessor})
       `
       break
     case 'boolean':
       code += `
-        json += $asBoolean(obj${accessor})
+        json += ${nullable} && obj${accessor} === null ? null : $asBoolean(obj${accessor})
       `
       break
     case 'object':
