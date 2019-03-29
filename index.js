@@ -74,7 +74,7 @@ function build (schema, options) {
   var processValue = (schema, code, name, nonNullHandler) => {
     code += `
       function ${name} (input) {
-        if(input === null && ${schema.nullable} === true) {
+        if(input === null) {
           return null
         } else {
           return ${nonNullHandler}(input)
@@ -90,20 +90,20 @@ function build (schema, options) {
       code = buildObject(schema, code, main, options.schema, schema)
       break
     case 'string':
-      main = '$main'
-      code = processValue(schema, code, main, $asString.name)
+      main = schema.nullable ? '$main' : $asString.name
+      code = schema.nullable ? processValue(schema, code, main, $asString.name) : code
       break
     case 'integer':
-      main = '$main'
-      code = processValue(schema, code, main, $asInteger.name)
+      main = schema.nullable ? '$main' : $asInteger.name
+      code = schema.nullable ? processValue(schema, code, main, $asInteger.name) : code
       break
     case 'number':
-      main = '$main'
-      code = processValue(schema, code, main, $asNumber.name)
+      main = schema.nullable ? '$main' : $asNumber.name
+      code = schema.nullable ? processValue(schema, code, main, $asNumber.name) : code
       break
     case 'boolean':
-      main = '$main'
-      code = processValue(schema, code, main, $asBoolean.name)
+      main = schema.nullable ? '$main' : $asBoolean.name
+      code = schema.nullable ? processValue(schema, code, main, $asBoolean.name) : code
       break
     case 'null':
       main = $asNull.name
@@ -501,13 +501,15 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
     var type = schema.properties[key].type
     var nullable = schema.properties[key].nullable
 
-    code += `
-      if (obj['${key}'] === null && ${nullable}) {
-        ${addComma}
-        json += '${$asString(key)}:null'
-        var rendered = true
-      } else {
-    `
+    if (nullable) {
+      code += `
+        if (obj['${key}'] === null) {
+          ${addComma}
+          json += '${$asString(key)}:null'
+          var rendered = true
+        } else {
+      `
+    }
 
     if (type === 'number') {
       code += `
@@ -575,8 +577,14 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
     }
 
     code += `
-      }}
+      }
     `
+
+    if (nullable) {
+      code += `
+        }
+      `
+    }
   })
   return { code: code, laterCode: laterCode }
 }
@@ -843,24 +851,16 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       `
       break
     case 'string':
-      code += `
-        json += ${nullable} && obj${accessor} === null ? null : $asString(obj${accessor})
-      `
+      code += nullable ? `json += obj${accessor} === null ? null : $asString(obj${accessor})` : `json += $asString(obj${accessor})`
       break
     case 'integer':
-      code += `
-        json += ${nullable} && obj${accessor} === null ? null : $asInteger(obj${accessor})
-      `
+      code += nullable ? `json += obj${accessor} === null ? null : $asInteger(obj${accessor})` : `json += $asInteger(obj${accessor})`
       break
     case 'number':
-      code += `
-        json += ${nullable} && obj${accessor} === null ? null : $asNumber(obj${accessor})
-      `
+      code += nullable ? `json += obj${accessor} === null ? null : $asNumber(obj${accessor})` : `json += $asNumber(obj${accessor})`
       break
     case 'boolean':
-      code += `
-        json += ${nullable} && obj${accessor} === null ? null : $asBoolean(obj${accessor})
-      `
+      code += nullable ? `json += obj${accessor} === null ? null : $asBoolean(obj${accessor})` : `json += $asBoolean(obj${accessor})`
       break
     case 'object':
       funcName = (name + key + subKey).replace(/[-.\[\] ]/g, '') // eslint-disable-line
