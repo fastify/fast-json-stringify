@@ -44,10 +44,14 @@ function build (schema, options) {
 
   code += `
     ${$asString.toString()}
+    ${$asStringNullable.toString()}
     ${$asStringSmall.toString()}
     ${$asNumber.toString()}
+    ${$asNumberNullable.toString()}
+    ${$asIntegerNullable.toString()}
     ${$asNull.toString()}
     ${$asBoolean.toString()}
+    ${$asBooleanNullable.toString()}
   `
 
   // only handle longs if the module is used
@@ -70,40 +74,22 @@ function build (schema, options) {
 
   var main
 
-  // wrapper function for processing nullable values
-  var processValue = (schema, code, name, nonNullHandler) => {
-    code += `
-      function ${name} (input) {
-        if(input === null) {
-          return null
-        } else {
-          return ${nonNullHandler}(input)
-        }
-      }
-    `
-    return code
-  }
-
   switch (schema.type) {
     case 'object':
       main = '$main'
       code = buildObject(schema, code, main, options.schema, schema)
       break
     case 'string':
-      main = schema.nullable ? '$main' : $asString.name
-      code = schema.nullable ? processValue(schema, code, main, $asString.name) : code
+      main = schema.nullable ? $asStringNullable.name : $asString.name
       break
     case 'integer':
-      main = schema.nullable ? '$main' : $asInteger.name
-      code = schema.nullable ? processValue(schema, code, main, $asInteger.name) : code
+      main = schema.nullable ? $asIntegerNullable.name : $asInteger.name
       break
     case 'number':
-      main = schema.nullable ? '$main' : $asNumber.name
-      code = schema.nullable ? processValue(schema, code, main, $asNumber.name) : code
+      main = schema.nullable ? $asNumberNullable.name : $asNumber.name
       break
     case 'boolean':
-      main = schema.nullable ? '$main' : $asBoolean.name
-      code = schema.nullable ? processValue(schema, code, main, $asBoolean.name) : code
+      main = schema.nullable ? $asBooleanNullable.name : $asBoolean.name
       break
     case 'null':
       main = $asNull.name
@@ -220,6 +206,10 @@ function $asInteger (i) {
   }
 }
 
+function $asIntegerNullable (i) {
+  return i === null ? null : $asInteger(i)
+}
+
 function $asNumber (i) {
   var num = Number(i)
   if (isNaN(num)) {
@@ -229,8 +219,16 @@ function $asNumber (i) {
   }
 }
 
+function $asNumberNullable (i) {
+  return i === null ? null : $asNumber(i)
+}
+
 function $asBoolean (bool) {
   return bool && 'true' || 'false' // eslint-disable-line
+}
+
+function $asBooleanNullable (bool) {
+  return bool === null ? null : $asBoolean(bool)
 }
 
 function $asString (str) {
@@ -249,6 +247,10 @@ function $asString (str) {
   } else {
     return JSON.stringify(str)
   }
+}
+
+function $asStringNullable (str) {
+  return str === null ? null : $asString(str)
 }
 
 // magically escape strings for json
