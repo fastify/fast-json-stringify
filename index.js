@@ -44,10 +44,14 @@ function build (schema, options) {
 
   code += `
     ${$asString.toString()}
+    ${$asStringNullable.toString()}
     ${$asStringSmall.toString()}
     ${$asNumber.toString()}
+    ${$asNumberNullable.toString()}
+    ${$asIntegerNullable.toString()}
     ${$asNull.toString()}
     ${$asBoolean.toString()}
+    ${$asBooleanNullable.toString()}
   `
 
   // only handle longs if the module is used
@@ -76,16 +80,16 @@ function build (schema, options) {
       code = buildObject(schema, code, main, options.schema, schema)
       break
     case 'string':
-      main = $asString.name
+      main = schema.nullable ? $asStringNullable.name : $asString.name
       break
     case 'integer':
-      main = $asInteger.name
+      main = schema.nullable ? $asIntegerNullable.name : $asInteger.name
       break
     case 'number':
-      main = $asNumber.name
+      main = schema.nullable ? $asNumberNullable.name : $asNumber.name
       break
     case 'boolean':
-      main = $asBoolean.name
+      main = schema.nullable ? $asBooleanNullable.name : $asBoolean.name
       break
     case 'null':
       main = $asNull.name
@@ -100,7 +104,7 @@ function build (schema, options) {
 
   code += `
     ;
-    return ${main}
+     return ${main}
   `
 
   if (options.uglify) {
@@ -202,6 +206,10 @@ function $asInteger (i) {
   }
 }
 
+function $asIntegerNullable (i) {
+  return i === null ? null : $asInteger(i)
+}
+
 function $asNumber (i) {
   var num = Number(i)
   if (isNaN(num)) {
@@ -211,8 +219,16 @@ function $asNumber (i) {
   }
 }
 
+function $asNumberNullable (i) {
+  return i === null ? null : $asNumber(i)
+}
+
 function $asBoolean (bool) {
   return bool && 'true' || 'false' // eslint-disable-line
+}
+
+function $asBooleanNullable (bool) {
+  return bool === null ? null : $asBoolean(bool)
 }
 
 function $asString (str) {
@@ -231,6 +247,10 @@ function $asString (str) {
   } else {
     return JSON.stringify(str)
   }
+}
+
+function $asStringNullable (str) {
+  return str === null ? null : $asString(str)
 }
 
 // magically escape strings for json
@@ -481,6 +501,18 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
     // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
 
     var type = schema.properties[key].type
+    var nullable = schema.properties[key].nullable
+
+    if (nullable) {
+      code += `
+        if (obj['${key}'] === null) {
+          ${addComma}
+          json += '${$asString(key)}:null'
+          var rendered = true
+        } else {
+      `
+    }
+
     if (type === 'number') {
       code += `
           var t = Number(obj['${key}'])
@@ -549,8 +581,13 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
     code += `
       }
     `
-  })
 
+    if (nullable) {
+      code += `
+        }
+      `
+    }
+  })
   return { code: code, laterCode: laterCode }
 }
 
@@ -692,9 +729,17 @@ function buildObject (schema, code, name, externalSchema, fullSchema) {
 function buildArray (schema, code, name, externalSchema, fullSchema) {
   code += `
     function ${name} (obj) {
+  `
+  if (schema.nullable) {
+    code += `
+      if(obj === null) {
+        return '${$asNull()}';
+      }
+    `
+  }
+  code += `
       var json = '['
   `
-
   var laterCode = ''
 
   if (schema.items['$ref']) {
@@ -798,6 +843,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
   }
 
   var type = schema.type
+  var nullable = schema.nullable === true
 
   var accessor = key.indexOf('[') === 0 ? key : `['${key}']`
   switch (type) {
@@ -807,24 +853,16 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       `
       break
     case 'string':
-      code += `
-        json += $asString(obj${accessor})
-      `
+      code += nullable ? `json += obj${accessor} === null ? null : $asString(obj${accessor})` : `json += $asString(obj${accessor})`
       break
     case 'integer':
-      code += `
-        json += $asInteger(obj${accessor})
-      `
+      code += nullable ? `json += obj${accessor} === null ? null : $asInteger(obj${accessor})` : `json += $asInteger(obj${accessor})`
       break
     case 'number':
-      code += `
-        json += $asNumber(obj${accessor})
-      `
+      code += nullable ? `json += obj${accessor} === null ? null : $asNumber(obj${accessor})` : `json += $asNumber(obj${accessor})`
       break
     case 'boolean':
-      code += `
-        json += $asBoolean(obj${accessor})
-      `
+      code += nullable ? `json += obj${accessor} === null ? null : $asBoolean(obj${accessor})` : `json += $asBoolean(obj${accessor})`
       break
     case 'object':
       funcName = (name + key + subKey).replace(/[-.\[\] ]/g, '') // eslint-disable-line
