@@ -3,6 +3,7 @@
   "version": "1.13.0",
   "description": "Stringify your JSON at max speed",
   "main": "index.js",
+  "types": "fast-json-stringify.d.ts",
   "scripts": {
     "benchmark": "node bench.js",
     "test:lint": "standard",
