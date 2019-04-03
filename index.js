@@ -881,7 +881,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
     case undefined:
       if ('anyOf' in schema) {
         schema.anyOf.forEach((s, index) => {
-          var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey)
+          var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== undefined ? subKey : 'i' + index)
           code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null })}, obj${accessor}))
               ${nestedResult.code}
