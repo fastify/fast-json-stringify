@@ -185,3 +185,49 @@ test('object with field of type string and coercion enable ', (t) => {
     t.fail()
   }
 })
+
+test('object with field with type union of multiple objects', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'object with anyOf property value containing objects',
+    type: 'object',
+    properties: {
+      anyOfSchema: {
+        anyOf: [
+          {
+            type: 'object',
+            properties: {
+              baz: { type: 'number' }
+            },
+            required: ['baz']
+          },
+          {
+            type: 'object',
+            properties: {
+              bar: { type: 'string' }
+            },
+            required: ['bar']
+          }
+        ]
+      }
+    },
+    required: ['anyOfSchema']
+  }
+
+  const stringify = build(schema)
+
+  try {
+    const value = stringify({ anyOfSchema: { baz: 5 } })
+    t.is(value, '{"anyOfSchema":{"baz":5}}')
+  } catch (e) {
+    t.fail()
+  }
+
+  try {
+    const value = stringify({ anyOfSchema: { bar: 'foo' } })
+    t.is(value, '{"anyOfSchema":{"bar":"foo"}}')
+  } catch (e) {
+    t.fail()
+  }
+})
