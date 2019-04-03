@@ -1,3 +1,4 @@
+import { Options as AjvOptions } from "ajv"
 declare namespace build {
   interface BaseSchema {
     /**
@@ -44,6 +45,11 @@ declare namespace build {
      * A schema to apply if the conditional schema from `if` fails
      */
     else?: Partial<Schema>;
+    /**
+     * Open API 3.0 spec states that any value that can be null must be declared `nullable`
+     * @default false
+     */
+    nullable?: boolean;
   }
 
   export interface RefSchema {
@@ -129,18 +135,34 @@ declare namespace build {
     | ArraySchema
     | TupleSchema
     | ObjectSchema;
+
+  export interface Options {
+    /**
+     * Optionally add an external definition to reference from your schema
+     */
+    schema?: Record<string, Schema>
+    /**
+     * Uglify the generated serialization function to get a performance increase on Node.js versions lower than 8.3.0
+     */
+    uglify?: boolean
+    /**
+     * Configure Ajv, which is used to evaluate conditional schemas and combined (anyOf) schemas
+     */
+    ajv?: AjvOptions
+  }
 }
 
 /**
  * Build a stringify function using a schema of the documents that should be stringified
  * @param schema The schema used to stringify values
+ * @param options The options to use (optional)
  */
-declare function build(schema: build.StringSchema): (doc: string) => string;
-declare function build(schema: build.IntegerSchema | build.NumberSchema): (doc: number) => string;
-declare function build(schema: build.NullSchema): (doc: null) => 'null';
-declare function build(schema: build.BooleanSchema): (doc: boolean) => string;
-declare function build(schema: build.ArraySchema | build.TupleSchema): (doc: any[]) => string;
-declare function build(schema: build.ObjectSchema): (doc: object) => string;
-declare function build(schema: build.Schema): (doc: object | any[] | string | number | boolean | null) => string;
+declare function build(schema: build.StringSchema, options?: build.Options): (doc: string) => string;
+declare function build(schema: build.IntegerSchema | build.NumberSchema, options?: build.Options): (doc: number) => string;
+declare function build(schema: build.NullSchema, options?: build.Options): (doc: null) => "null";
+declare function build(schema: build.BooleanSchema, options?: build.Options): (doc: boolean) => string;
+declare function build(schema: build.ArraySchema | build.TupleSchema, options?: build.Options): (doc: any[]) => string;
+declare function build(schema: build.ObjectSchema, options?: build.Options): (doc: object) => string;
+declare function build(schema: build.Schema, options?: build.Options): (doc: object | any[] | string | number | boolean | null) => string;
 
 export = build;
