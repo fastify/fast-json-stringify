@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "noEmit": true,
+    "rootDir": "../..",
+    "strict": true
+  },
+  "include": [
+    "./test.ts"
+  ]
+}
