@@ -42,6 +42,7 @@ fast-json-stringify-uglified obj x 9,073,607 ops/sec ±0.41% (94 runs sampled)
  - <a href="#long">`Long integers`</a>
  - <a href="#uglify">`Uglify`</a>
  - <a href="#nullable">`Nullable`</a>
+- <a href="#caveat">`Caveat`</a>
 - <a href="#acknowledgements">`Acknowledgements`</a>
 - <a href="#license">`License`</a>
 
@@ -96,7 +97,7 @@ Supported types:
  * `'boolean'`
  * `'null'`
 
-And nested ones, too.  
+And nested ones, too.
 
 <a name="specific"></a>
 #### Specific use cases
@@ -108,7 +109,7 @@ And nested ones, too.
 
 <a name="required"></a>
 #### Required
-You can set specific fields of an object as required in your schema by adding the field name inside the `required` array in your schema.  
+You can set specific fields of an object as required in your schema by adding the field name inside the `required` array in your schema.
 Example:
 ```javascript
 const schema = {
@@ -129,7 +130,7 @@ If the object to stringify is missing the required field(s), `fast-json-stringif
 
 <a name="missingFields"></a>
 #### Missing fields
-If a field *is present* in the schema (and is not required) but it *is not present* in the object to stringify, `fast-json-stringify` will not write it in the final string.  
+If a field *is present* in the schema (and is not required) but it *is not present* in the object to stringify, `fast-json-stringify` will not write it in the final string.
 Example:
 ```javascript
 const stringify = fastJson({
@@ -176,9 +177,9 @@ console.log(stringify({nickname: 'my-nickname'})) // '{"nickname":"my-nickname"}
 
 <a name="patternProperties"></a>
 #### Pattern properties
-`fast-json-stringify` supports pattern properties as defined by JSON schema.  
-*patternProperties* must be an object, where the key is a valid regex and the value is an object, declared in this way: `{ type: 'type' }`.  
-*patternProperties* will work only for the properties that are not explicitly listed in the properties object.  
+`fast-json-stringify` supports pattern properties as defined by JSON schema.
+*patternProperties* must be an object, where the key is a valid regex and the value is an object, declared in this way: `{ type: 'type' }`.
+*patternProperties* will work only for the properties that are not explicitly listed in the properties object.
 Example:
 ```javascript
 const stringify = fastJson({
@@ -211,13 +212,13 @@ console.log(stringify(obj)) // '{"matchfoo":"42","otherfoo":"str","matchnum":3,"
 
 <a name="additionalProperties"></a>
 #### Additional properties
-`fast-json-stringify` supports additional properties as defined by JSON schema.  
-*additionalProperties* must be an object or a boolean, declared in this way: `{ type: 'type' }`.  
+`fast-json-stringify` supports additional properties as defined by JSON schema.
+*additionalProperties* must be an object or a boolean, declared in this way: `{ type: 'type' }`.
 *additionalProperties* will work only for the properties that are not explicitly listed in the *properties* and *patternProperties* objects.
 
 If *additionalProperties* is not present or is set to `false`, every property that is not explicitly listed in the *properties* and *patternProperties* objects,will be ignored, as described in <a href="#missingFields">Missing fields</a>.
 Missing fields are ignored to avoid having to rewrite objects before serializing. However, other schema rules would throw in similar situations.
-If *additionalProperties* is set to `true`, it will be used by `JSON.stringify` to stringify the additional properties. If you want to achieve maximum performance, we strongly encourage you to use a fixed schema where possible.  
+If *additionalProperties* is set to `true`, it will be used by `JSON.stringify` to stringify the additional properties. If you want to achieve maximum performance, we strongly encourage you to use a fixed schema where possible.
 Example:
 ```javascript
 const stringify = fastJson({
@@ -327,8 +328,8 @@ console.log(stringify({
 
 <a name="ref"></a>
 #### Reuse - $ref
-If you want to reuse a definition of a value, you can use the property `$ref`.  
-The value of `$ref` must be a string in [JSON Pointer](https://tools.ietf.org/html/rfc6901) format.  
+If you want to reuse a definition of a value, you can use the property `$ref`.
+The value of `$ref` must be a string in [JSON Pointer](https://tools.ietf.org/html/rfc6901) format.
 Example:
 ```javascript
 const schema = {
@@ -364,7 +365,7 @@ const schema = {
 
 const stringify = fastJson(schema)
 ```
-If you need to use an external definition, you can pass it as an option to `fast-json-stringify`.  
+If you need to use an external definition, you can pass it as an option to `fast-json-stringify`.
 Example:
 ```javascript
 const schema = {
@@ -487,6 +488,16 @@ Otherwise, instead of raising an error, null values will be coerced as follows:
 - `number` -> `0`
 - `string` -> `""`
 - `boolean` -> `false`
+
+<a name="caveat"></a>
+## Caveat
+
+In order to achieve lowest cost/highest performance redaction `fast-json-stringify`
+creates and compiles a function (using the `Function` constructor) on initialization.
+While the `schema` is currently validated for any developer errors, it's recommended against
+allowing user input to directly supply a schema.
+It can't be guaranteed that allowing user input for the schema couldn't feasibly expose an attack
+vector.
 
 <a name="acknowledgements"></a>
 ## Acknowledgements
