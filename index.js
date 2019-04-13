@@ -2,6 +2,7 @@
 
 var Ajv = require('ajv')
 var merge = require('deepmerge')
+var util = require('util')
 var validate = require('./schema-validator')
 
 var uglify = null
@@ -505,7 +506,7 @@ function refFinder (ref, schema, externalSchema) {
       return dereferenced
     } else {
       for (var i = 1; i < walk.length; i++) {
-        code += `['${walk[i]}']`
+        code += `['${sanitizeKey(walk[i])}']`
       }
     }
   }
@@ -664,7 +665,7 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
   var merged = merge(copy, then)
 
   code += `
-    valid = ajv.validate(${require('util').inspect(i, { depth: null })}, obj)
+    valid = ajv.validate(${util.inspect(i, { depth: null })}, obj)
     if (valid) {
   `
   if (merged.if && merged.then) {
