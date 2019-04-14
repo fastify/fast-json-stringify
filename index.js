@@ -311,7 +311,7 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
     }
     var type = pp[regex].type
     code += `
-        if (/${regex.replace(/([^\\]+\/)/g, '\\/')}/.test(keys[i])) {
+        if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
     `
     if (type === 'object') {
       code += buildObject(pp[regex], '', 'buildObjectPP' + index, externalSchema, fullSchema)

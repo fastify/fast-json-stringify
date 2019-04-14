@@ -62,6 +62,9 @@ const stringify = build({
     },
     'phra\'/ && process.exit(1) && /\'': {
       type: 'number'
+    },
+    '"\'w00t.*////': {
+      type: 'number'
     }
   },
   additionalProperties: {
@@ -89,6 +92,23 @@ const obj = {
 }
 
 // pass if it does not crash
-JSON.parse(stringify(obj))
+const json = stringify(obj)
+JSON.parse(json)
+
+const stringify2 = build({
+  title: 'Example Schema',
+  type: 'object',
+  patternProperties: {
+    '"\'w00t.*////': {
+      type: 'number'
+    }
+  }
+})
+
+t.deepEqual(JSON.parse(stringify2({
+  '"\'phra////': 42,
+  'asd': 42
+})), {
+})
 
 t.pass('no crashes')
