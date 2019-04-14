@@ -33,6 +33,10 @@ const stringify = build({
         }
       }
     },
+    '"\'w00t': {
+      type: 'string',
+      default: '"\'w00t'
+    },
     arr: {
       type: 'array',
       items: {

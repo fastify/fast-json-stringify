@@ -529,7 +529,7 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
     var type = schema.properties[key].type
     var nullable = schema.properties[key].nullable
     var sanitized = sanitizeKey(key)
-    var asString = sanitizeKey($asString(key))
+    var asString = sanitizeKey($asString(key).replace(/\\/g, '\\\\'))
 
     if (nullable) {
       code += `
@@ -597,7 +597,7 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
       code += `
       } else {
         ${addComma}
-        json += '${asString}:${sanitizeKey(JSON.stringify(defaultValue)).replace(/'/g, '\'')}'
+        json += '${asString}:${sanitizeKey(JSON.stringify(defaultValue).replace(/\\/g, '\\\\'))}'
       `
     } else if (schema.required && schema.required.indexOf(key) !== -1) {
       code += `
