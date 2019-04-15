@@ -438,7 +438,7 @@ test('ref external - plain name fragment', (t) => {
   t.plan(2)
 
   const externalSchema = {
-    '#first-schema': {
+    first: {
       $id: '#first-schema',
       type: 'object',
       properties: {
@@ -447,7 +447,7 @@ test('ref external - plain name fragment', (t) => {
         }
       }
     },
-    '#second-schema': {
+    second: {
       definitions: {
         second: {
           $id: '#second-schema',
