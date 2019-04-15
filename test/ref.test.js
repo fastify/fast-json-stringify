@@ -434,6 +434,42 @@ test('ref internal - plain name fragment', (t) => {
   t.equal(output, '{"obj":{"str":"test"}}')
 })
 
+test('ref external - plain name fragment', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    '#def': require('./ref.json').definitions.def
+  }
+
+  const schema = {
+    title: 'object with $ref to external plain name fragment',
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: '#def'
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      str: 'test'
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"obj":{"str":"test"}}')
+})
+
 test('ref internal - multiple $ref format', (t) => {
   t.plan(2)
 

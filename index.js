@@ -480,8 +480,8 @@ function refFinder (ref, schema, externalSchema) {
     // ref[1] could contain a JSON pointer - ex: /definitions/num
     // or plain name fragment id without suffix # - ex: customId
     // it could be located in the same schema, or defined in external schema
-    if (externalSchema && externalSchema.hasOwnProperty('#' + ref[1])) {
-      schema = externalSchema[ref[1]]
+    if (externalSchema && externalSchema['#' + ref[1]] !== undefined) {
+      schema = externalSchema['#' + ref[1]]
     } else {
       var walk = ref[1].split('/')
       if (walk.length === 1) {
