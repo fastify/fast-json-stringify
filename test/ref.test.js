@@ -438,7 +438,7 @@ test('ref external - plain name fragment', (t) => {
   t.plan(2)
 
   const externalSchema = {
-    '#def': require('./ref.json').definitions.def
+    '#def/some/thing': require('./ref.json').definitions.def
   }
 
   const schema = {
@@ -446,7 +446,7 @@ test('ref external - plain name fragment', (t) => {
     type: 'object',
     properties: {
       obj: {
-        $ref: '#def'
+        $ref: '#def/some/thing'
       }
     }
   }
