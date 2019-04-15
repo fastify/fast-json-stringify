@@ -479,17 +479,23 @@ function refFinder (ref, schema, externalSchema) {
   if (ref[1]) {
     // ref[1] could contain a JSON pointer - ex: /definitions/num
     // or plain name fragment id without suffix # - ex: customId
-    // it could be located in the same schema, or defined in external schema
-    if (externalSchema && externalSchema['#' + ref[1]] !== undefined) {
-      schema = externalSchema['#' + ref[1]]
-    } else {
-      var walk = ref[1].split('/')
-      if (walk.length === 1) {
-        return idFinder(schema, `#${ref[1]}`)
-      } else {
-        for (var i = 1; i < walk.length; i++) {
-          code += `['${walk[i]}']`
+    var walk = ref[1].split('/')
+    if (walk.length === 1) {
+      var targetId = `#${ref[1]}`
+      var dereferenced = idFinder(schema, targetId)
+      if (dereferenced === undefined) {
+        for (var key of Object.keys(externalSchema)) {
+          dereferenced = idFinder(externalSchema[key], targetId)
+          if (dereferenced !== undefined) break
         }
+      }
+      if (ajv.getSchema(targetId) === undefined) {
+        ajv.addSchema(dereferenced, targetId)
+      }
+      return dereferenced
+    } else {
+      for (var i = 1; i < walk.length; i++) {
+        code += `['${walk[i]}']`
       }
     }
   }

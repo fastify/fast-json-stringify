@@ -438,22 +438,49 @@ test('ref external - plain name fragment', (t) => {
   t.plan(2)
 
   const externalSchema = {
-    '#def/some/thing': require('./ref.json').definitions.def
+    '#first-schema': {
+      $id: '#first-schema',
+      type: 'object',
+      properties: {
+        str: {
+          type: 'string'
+        }
+      }
+    },
+    '#second-schema': {
+      definitions: {
+        second: {
+          $id: '#second-schema',
+          type: 'object',
+          properties: {
+            int: {
+              type: 'integer'
+            }
+          }
+        }
+      }
+    }
   }
 
   const schema = {
     title: 'object with $ref to external plain name fragment',
     type: 'object',
     properties: {
-      obj: {
-        $ref: '#def/some/thing'
+      first: {
+        $ref: '#first-schema'
+      },
+      second: {
+        $ref: '#second-schema'
       }
     }
   }
 
   const object = {
-    obj: {
+    first: {
       str: 'test'
+    },
+    second: {
+      int: 42
     }
   }
 
@@ -467,7 +494,7 @@ test('ref external - plain name fragment', (t) => {
     t.fail()
   }
 
-  t.equal(output, '{"obj":{"str":"test"}}')
+  t.equal(output, '{"first":{"str":"test"},"second":{"int":42}}')
 })
 
 test('ref internal - multiple $ref format', (t) => {
