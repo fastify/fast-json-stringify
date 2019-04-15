@@ -494,9 +494,6 @@ function refFinder (ref, schema, externalSchema) {
           if (dereferenced !== undefined) break
         }
       }
-      if (ajv.getSchema(targetId) === undefined) {
-        ajv.addSchema(dereferenced, targetId)
-      }
       return dereferenced
     } else {
       for (var i = 1; i < walk.length; i++) {
