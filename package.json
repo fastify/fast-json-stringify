@@ -1,6 +1,6 @@
 {
   "name": "fast-json-stringify",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "Stringify your JSON at max speed",
   "main": "index.js",
   "types": "index.d.ts",
@@ -31,6 +31,7 @@
   },
   "homepage": "https://github.com/fastify/fast-json-stringify#readme",
   "devDependencies": {
+    "ajv-pack": "^0.3.1",
     "benchmark": "^2.1.4",
     "is-my-json-valid": "^2.19.0",
     "long": "^4.0.0",
@@ -45,5 +46,10 @@
   "dependencies": {
     "ajv": "^6.8.1",
     "deepmerge": "^3.0.0"
+  },
+  "standard": {
+    "ignore": [
+      "schema-validator.js"
+    ]
   }
 }

@@ -2,22 +2,7 @@
 
 var Ajv = require('ajv')
 var merge = require('deepmerge')
-
-// This Ajv instance is used to validate that the passed schema
-// is valid json schema. We reuse the instance to avoid having to
-// pay the ajv creation cost more than once.
-var ajv = new Ajv({
-  // Ignore any unknown formats as they aren't used.
-  unknownFormats: 'ignore',
-
-  // Ignoring unknown formats emits warnings, but we don't need to hear about
-  // them.
-  logger: {
-    log: console.log,
-    warn: function () {},
-    error: console.error
-  }
-})
+var validate = require('./schema-validator')
 
 var uglify = null
 var isLong
@@ -34,9 +19,29 @@ var addComma = `
   addComma = true
 `
 
+function isValidSchema (schema, name) {
+  if (!validate(schema)) {
+    if (name) {
+      name = `"${name}" `
+    } else {
+      name = ''
+    }
+    const first = validate.errors[0]
+    const err = new Error(`${name}schema is invalid: data${first.dataPath} ${first.message}`)
+    err.errors = isValidSchema.errors
+    throw err
+  }
+}
+
 function build (schema, options) {
   options = options || {}
-  isValidSchema(schema, options.schema)
+  isValidSchema(schema)
+  if (options.schema) {
+    for (let key of Object.keys(options.schema)) {
+      isValidSchema(options.schema[key], key)
+    }
+  }
+
   /* eslint no-new-func: "off" */
   var code = `
     'use strict'
@@ -994,21 +999,6 @@ function loadUglify () {
 
     throw e
   }
-}
-
-function isValidSchema (schema, externalSchema) {
-  if (externalSchema) {
-    Object.keys(externalSchema).forEach(key => {
-      try {
-        ajv.addSchema(externalSchema[key], key)
-      } catch (err) {
-        err.message = '"' + key + '" ' + err.message
-        throw err
-      }
-    })
-  }
-  ajv.compile(schema)
-  ajv.removeSchema()
 }
 
 function isEmpty (schema) {
