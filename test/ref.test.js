@@ -434,6 +434,206 @@ test('ref internal - plain name fragment', (t) => {
   t.equal(output, '{"obj":{"str":"test"}}')
 })
 
+test('ref external - plain name fragment', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    first: {
+      $id: '#first-schema',
+      type: 'object',
+      properties: {
+        str: {
+          type: 'string'
+        }
+      }
+    },
+    second: {
+      definitions: {
+        second: {
+          $id: '#second-schema',
+          type: 'object',
+          properties: {
+            int: {
+              type: 'integer'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    title: 'object with $ref to external plain name fragment',
+    type: 'object',
+    properties: {
+      first: {
+        $ref: '#first-schema'
+      },
+      second: {
+        $ref: '#second-schema'
+      }
+    }
+  }
+
+  const object = {
+    first: {
+      str: 'test'
+    },
+    second: {
+      int: 42
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"first":{"str":"test"},"second":{"int":42}}')
+})
+
+test('ref external - duplicate plain name fragment', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    external: {
+      $id: '#duplicateSchema',
+      type: 'object',
+      properties: {
+        prop: {
+          type: 'boolean'
+        }
+      }
+    },
+    other: {
+      $id: '#otherSchema',
+      type: 'object',
+      properties: {
+        prop: {
+          type: 'integer'
+        }
+      }
+    }
+  }
+
+  const schema = {
+    title: 'object with $ref to plain name fragment',
+    type: 'object',
+    definitions: {
+      duplicate: {
+        $id: '#duplicateSchema',
+        type: 'object',
+        properties: {
+          prop: {
+            type: 'string'
+          }
+        }
+      }
+    },
+    properties: {
+      local: {
+        $ref: '#duplicateSchema'
+      },
+      external: {
+        $ref: 'external#duplicateSchema'
+      },
+      other: {
+        $ref: '#otherSchema'
+      }
+    }
+  }
+
+  const object = {
+    local: {
+      prop: 'test'
+    },
+    external: {
+      prop: true
+    },
+    other: {
+      prop: 42
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"local":{"prop":"test"},"external":{"prop":true},"other":{"prop":42}}')
+})
+
+test('ref external - explicit external plain name fragment must not fallback to other external schemas', (t) => {
+  t.plan(1)
+
+  const externalSchema = {
+    first: {
+      $id: '#target',
+      type: 'object',
+      properties: {
+        prop: {
+          type: 'string'
+        }
+      }
+    },
+    second: {
+      $id: '#wrong',
+      type: 'object',
+      properties: {
+        prop: {
+          type: 'integer'
+        }
+      }
+    }
+  }
+
+  const schema = {
+    title: 'object with $ref to plain name fragment',
+    type: 'object',
+    definitions: {
+      third: {
+        $id: '#wrong',
+        type: 'object',
+        properties: {
+          prop: {
+            type: 'boolean'
+          }
+        }
+      }
+    },
+    properties: {
+      target: {
+        $ref: 'first#wrong'
+      }
+    }
+  }
+
+  const object = {
+    target: {
+      prop: 'test'
+    }
+  }
+
+  try {
+    const stringify = build(schema, { schema: externalSchema })
+    const output = stringify(object)
+    JSON.parse(output)
+    t.fail()
+  } catch (e) {
+    t.pass()
+  }
+})
+
 test('ref internal - multiple $ref format', (t) => {
   t.plan(2)
 
