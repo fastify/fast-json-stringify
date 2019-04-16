@@ -497,6 +497,82 @@ test('ref external - plain name fragment', (t) => {
   t.equal(output, '{"first":{"str":"test"},"second":{"int":42}}')
 })
 
+test('ref external - duplicate plain name fragment', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    external: {
+      $id: '#duplicateSchema',
+      type: 'object',
+      properties: {
+        prop: {
+          type: 'boolean'
+        }
+      }
+    },
+    other: {
+      $id: '#otherSchema',
+      type: 'object',
+      properties: {
+        prop: {
+          type: 'integer'
+        }
+      }
+    }
+  }
+
+  const schema = {
+    title: 'object with $ref to plain name fragment',
+    type: 'object',
+    definitions: {
+      duplicate: {
+        $id: '#duplicateSchema',
+        type: 'object',
+        properties: {
+          prop: {
+            type: 'string'
+          }
+        }
+      }
+    },
+    properties: {
+      local: {
+        $ref: '#duplicateSchema'
+      },
+      external: {
+        $ref: 'external#duplicateSchema'
+      },
+      other: {
+        $ref: '#otherSchema'
+      }
+    }
+  }
+
+  const object = {
+    local: {
+      prop: 'test'
+    },
+    external: {
+      prop: true
+    },
+    other: {
+      prop: 42
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"local":{"prop":"test"},"external":{"prop":true},"other":{"prop":42}}')
+})
+
 test('ref internal - multiple $ref format', (t) => {
   t.plan(2)
 
