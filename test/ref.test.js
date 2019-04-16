@@ -578,7 +578,7 @@ test('ref external - explicit external plain name fragment must not fallback to 
 
   const externalSchema = {
     first: {
-      $id: '#wrong',
+      $id: '#target',
       type: 'object',
       properties: {
         prop: {
@@ -587,7 +587,7 @@ test('ref external - explicit external plain name fragment must not fallback to 
       }
     },
     second: {
-      $id: '#target',
+      $id: '#wrong',
       type: 'object',
       properties: {
         prop: {
@@ -602,7 +602,7 @@ test('ref external - explicit external plain name fragment must not fallback to 
     type: 'object',
     definitions: {
       third: {
-        $id: '#target',
+        $id: '#wrong',
         type: 'object',
         properties: {
           prop: {
@@ -613,7 +613,7 @@ test('ref external - explicit external plain name fragment must not fallback to 
     },
     properties: {
       target: {
-        $ref: 'first#target'
+        $ref: 'first#wrong'
       }
     }
   }
