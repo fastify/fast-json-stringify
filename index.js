@@ -488,7 +488,7 @@ function refFinder (ref, schema, externalSchema) {
     if (walk.length === 1) {
       var targetId = `#${ref[1]}`
       var dereferenced = idFinder(schema, targetId)
-      if (dereferenced === undefined) {
+      if (dereferenced === undefined && !ref[0]) {
         for (var key of Object.keys(externalSchema)) {
           dereferenced = idFinder(externalSchema[key], targetId)
           if (dereferenced !== undefined) break

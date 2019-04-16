@@ -573,6 +573,67 @@ test('ref external - duplicate plain name fragment', (t) => {
   t.equal(output, '{"local":{"prop":"test"},"external":{"prop":true},"other":{"prop":42}}')
 })
 
+test('ref external - explicit external plain name fragment must not fallback to other external schemas', (t) => {
+  t.plan(1)
+
+  const externalSchema = {
+    first: {
+      $id: '#targe',
+      type: 'object',
+      properties: {
+        prop: {
+          type: 'string'
+        }
+      }
+    },
+    second: {
+      $id: '#target',
+      type: 'object',
+      properties: {
+        prop: {
+          type: 'integer'
+        }
+      }
+    }
+  }
+
+  const schema = {
+    title: 'object with $ref to plain name fragment',
+    type: 'object',
+    definitions: {
+      third: {
+        $id: '#target',
+        type: 'object',
+        properties: {
+          prop: {
+            type: 'boolean'
+          }
+        }
+      }
+    },
+    properties: {
+      target: {
+        $ref: 'first#target'
+      }
+    }
+  }
+
+  const object = {
+    target: {
+      prop: 'test'
+    }
+  }
+
+  try {
+    const stringify = build(schema, { schema: externalSchema })
+    const output = stringify(object)
+    JSON.parse(output)
+    t.fail()
+  } catch (e) {
+    t.pass()
+  }
+})
+
 test('ref internal - multiple $ref format', (t) => {
   t.plan(2)
 
