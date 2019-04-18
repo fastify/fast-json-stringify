@@ -514,7 +514,7 @@ function refFinder (ref, schema, externalSchema) {
 }
 
 function sanitizeKey (key) {
-  return key.replace(/([^\\])\'/g, '$1\\\'') // eslint-disable-line
+  return key.replace(/\\*\'/g, '\\\'') // eslint-disable-line
 }
 
 function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {

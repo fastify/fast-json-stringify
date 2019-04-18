@@ -111,4 +111,17 @@ t.deepEqual(JSON.parse(stringify2({
 })), {
 })
 
+const stringify3 = build({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    "\"phra\\'&&(console.log(42))//||'phra": {}
+  }
+})
+
+// this verifies the escaping
+JSON.parse(stringify3({
+  '"phra\'&&(console.log(42))//||\'phra': 42
+}))
+
 t.pass('no crashes')
