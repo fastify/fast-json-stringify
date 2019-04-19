@@ -724,7 +724,7 @@ test('ref in root external', (t) => {
   t.equal(output, '{"int":42}')
 })
 
-test('ref in root external multiple times', { skip: true }, (t) => {
+test('ref in root external multiple times', (t) => {
   t.plan(2)
 
   const externalSchema = {

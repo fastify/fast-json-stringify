@@ -481,6 +481,10 @@ function refFinder (ref, schema, externalSchema) {
   // If external file
   if (ref[0]) {
     schema = externalSchema[ref[0]]
+
+    if (schema['$ref']) {
+      return refFinder(schema['$ref'], schema, externalSchema)
+    }
   }
 
   var code = 'return schema'
