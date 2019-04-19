@@ -71,6 +71,10 @@ function build (schema, options) {
     `
   }
 
+  if (schema['$ref']) {
+    schema = refFinder(schema['$ref'], schema, options.schema)
+  }
+
   if (schema.type === undefined) {
     schema.type = inferTypeByKeyword(schema)
   }
