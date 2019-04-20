@@ -71,6 +71,10 @@ function build (schema, options) {
     `
   }
 
+  if (schema['$ref']) {
+    schema = refFinder(schema['$ref'], schema, options.schema)
+  }
+
   if (schema.type === undefined) {
     schema.type = inferTypeByKeyword(schema)
   }
@@ -477,6 +481,10 @@ function refFinder (ref, schema, externalSchema) {
   // If external file
   if (ref[0]) {
     schema = externalSchema[ref[0]]
+
+    if (schema['$ref']) {
+      return refFinder(schema['$ref'], schema, externalSchema)
+    }
   }
 
   var code = 'return schema'
