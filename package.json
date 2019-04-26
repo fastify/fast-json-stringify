@@ -38,7 +38,7 @@
     "pre-commit": "^1.2.2",
     "proxyquire": "^2.1.0",
     "standard": "^12.0.1",
-    "tap": "^12.5.1",
+    "tap": "^13.0.0",
     "tap-mocha-reporter": "^3.0.9",
     "typescript": "^3.0.0",
     "uglify-es": "^3.3.9"
