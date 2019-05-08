@@ -134,14 +134,3 @@ const schema11: Schema = {
 }
 
 build(schema11)({ something: 'a string', somethingElse: 42 })
-
-// With options
-const schema12: Schema = {
-  title: 'Some Schema',
-  type: 'object',
-  properties: {
-    str: { $ref: '#/definitions/string' }
-  }
-}
-
-build(schema12, { schema: { string: { type: 'string' } }, uglify: true, ajv: { jsonPointers: true } })

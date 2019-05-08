@@ -272,14 +272,6 @@ t.test('if-then-else', t => {
       const serialized = stringify(test.input)
       t.equal(serialized, test.expected)
     })
-
-    t.test(test.name + ' - uglify', t => {
-      t.plan(1)
-
-      const stringify = build(JSON.parse(JSON.stringify(test.schema)), { uglify: true })
-      const serialized = stringify(test.input)
-      t.equal(serialized, test.expected)
-    })
   })
 
   t.end()

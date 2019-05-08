@@ -142,10 +142,6 @@ declare namespace build {
      */
     schema?: Record<string, Schema>
     /**
-     * Uglify the generated serialization function to get a performance increase on Node.js versions lower than 8.3.0
-     */
-    uglify?: boolean
-    /**
      * Configure Ajv, which is used to evaluate conditional schemas and combined (anyOf) schemas
      */
     ajv?: AjvOptions
