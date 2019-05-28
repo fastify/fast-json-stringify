@@ -4,19 +4,36 @@ const benchmark = require('benchmark')
 const suite = new benchmark.Suite()
 
 const schema = {
-  'title': 'Example Schema',
-  'type': 'object',
-  'properties': {
-    'firstName': {
-      'type': 'string'
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
     },
-    'lastName': {
-      'type': ['string', 'null']
+    lastName: {
+      type: ['string', 'null']
     },
-    'age': {
-      'description': 'Age in years',
-      'type': 'integer',
-      'minimum': 0
+    age: {
+      description: 'Age in years',
+      type: 'integer',
+      minimum: 0
+    }
+  }
+}
+const schemaCJS = {
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
+    },
+    lastName: {
+      type: ['string', 'null']
+    },
+    age: {
+      description: 'Age in years',
+      type: 'number',
+      minimum: 0
     }
   }
 }
@@ -27,6 +44,12 @@ const arraySchema = {
   items: schema
 }
 
+const arraySchemaCJS = {
+  title: 'array schema',
+  type: 'array',
+  items: schemaCJS
+}
+
 const obj = {
   firstName: 'Matteo',
   lastName: 'Collina',
@@ -34,6 +57,13 @@ const obj = {
 }
 
 const multiArray = []
+
+const JSONStrify = require('json-strify')
+
+const CJS = require('compile-json-stringify')
+const CJSStringify = CJS(schemaCJS)
+const CJSStringifyArray = CJS(arraySchemaCJS)
+const CJSStringifyString = CJS({ type: 'string' })
 
 const FJS = require('.')
 const stringify = FJS(schema)
@@ -60,6 +90,9 @@ for (i = 0; i < 1000; i++) {
 suite.add('FJS creation', function () {
   FJS(schema)
 })
+suite.add('CJS creation', function () {
+  CJS(schemaCJS)
+})
 
 suite.add('JSON.stringify array', function () {
   JSON.stringify(multiArray)
@@ -71,6 +104,14 @@ suite.add('fast-json-stringify array', function () {
 
 suite.add('fast-json-stringify-uglified array', function () {
   stringifyArrayUgly(multiArray)
+})
+
+suite.add('json-strify array', function () {
+  JSONStrify(multiArray)
+})
+
+suite.add('compile-json-stringify array', function () {
+  CJSStringifyArray(multiArray)
 })
 
 suite.add('JSON.stringify long string', function () {
@@ -85,6 +126,14 @@ suite.add('fast-json-stringify-uglified long string', function () {
   stringifyStringUgly(str)
 })
 
+suite.add('json-strify long string', function () {
+  JSONStrify(str)
+})
+
+suite.add('compile-json-stringify long string', function () {
+  CJSStringifyString(str)
+})
+
 suite.add('JSON.stringify short string', function () {
   JSON.stringify('hello world')
 })
@@ -97,6 +146,14 @@ suite.add('fast-json-stringify-uglified short string', function () {
   stringifyStringUgly('hello world')
 })
 
+suite.add('json-strify short string', function () {
+  JSONStrify('hello world')
+})
+
+suite.add('compile-json-stringify short string', function () {
+  CJSStringifyString('hello world')
+})
+
 suite.add('JSON.stringify obj', function () {
   JSON.stringify(obj)
 })
@@ -107,6 +164,14 @@ suite.add('fast-json-stringify obj', function () {
 
 suite.add('fast-json-stringify-uglified obj', function () {
   stringifyUgly(obj)
+})
+
+suite.add('json-strify obj', function () {
+  JSONStrify(obj)
+})
+
+suite.add('compile-json-stringify obj', function () {
+  CJSStringify(obj)
 })
 
 suite.on('cycle', cycle)
