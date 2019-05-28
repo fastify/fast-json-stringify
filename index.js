@@ -2,6 +2,7 @@
 
 var Ajv = require('ajv')
 var merge = require('deepmerge')
+var util = require('util')
 var validate = require('./schema-validator')
 
 var uglify = null
@@ -310,7 +311,7 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
     }
     var type = pp[regex].type
     code += `
-        if (/${regex}/.test(keys[i])) {
+        if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
     `
     if (type === 'object') {
       code += buildObject(pp[regex], '', 'buildObjectPP' + index, externalSchema, fullSchema)
@@ -505,11 +506,25 @@ function refFinder (ref, schema, externalSchema) {
       return dereferenced
     } else {
       for (var i = 1; i < walk.length; i++) {
-        code += `['${walk[i]}']`
+        code += `['${sanitizeKey(walk[i])}']`
       }
     }
   }
   return (new Function('schema', code))(schema)
+}
+
+function sanitizeKey (key) {
+  const rep = key.replace(/(\\*)'/g, function (match, p1) {
+    var base = ''
+    if (p1.length % 2 === 1) {
+      base = p1.slice(2)
+    } else {
+      base = p1
+    }
+    var rep = base + '\\\''
+    return rep
+  })
+  return rep
 }
 
 function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
@@ -523,12 +538,14 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
 
     var type = schema.properties[key].type
     var nullable = schema.properties[key].nullable
+    var sanitized = sanitizeKey(key)
+    var asString = sanitizeKey($asString(key).replace(/\\/g, '\\\\'))
 
     if (nullable) {
       code += `
-        if (obj['${key}'] === null) {
+        if (obj['${sanitized}'] === null) {
           ${addComma}
-          json += '${$asString(key)}:null'
+          json += '${asString}:null'
           var rendered = true
         } else {
       `
@@ -536,10 +553,10 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
 
     if (type === 'number') {
       code += `
-          var t = Number(obj['${key}'])
+          var t = Number(obj['${sanitized}'])
           if (!isNaN(t)) {
             ${addComma}
-            json += '${$asString(key)}:' + t
+            json += '${asString}:' + t
       `
     } else if (type === 'integer') {
       code += `
@@ -547,25 +564,25 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
       `
       if (isLong) {
         code += `
-            if (isLong(obj['${key}'])) {
+            if (isLong(obj['${sanitized}'])) {
               ${addComma}
-              json += '${$asString(key)}:' + obj['${key}'].toString()
+              json += '${asString}:' + obj['${sanitized}'].toString()
               rendered = true
             } else {
-              var t = Number(obj['${key}'])
+              var t = Number(obj['${sanitized}'])
               if (!isNaN(t)) {
                 ${addComma}
-                json += '${$asString(key)}:' + t
+                json += '${asString}:' + t
                 rendered = true
               }
             }
         `
       } else {
         code += `
-            var t = Number(obj['${key}'])
+            var t = Number(obj['${sanitized}'])
             if (!isNaN(t)) {
               ${addComma}
-              json += '${$asString(key)}:' + t
+              json += '${asString}:' + t
               rendered = true
             }
         `
@@ -575,9 +592,9 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
       `
     } else {
       code += `
-        if (obj['${key}'] !== undefined) {
+        if (obj['${sanitized}'] !== undefined) {
           ${addComma}
-          json += '${$asString(key)}:'
+          json += '${asString}:'
         `
 
       var result = nested(laterCode, name, key, schema.properties[key], externalSchema, fullSchema)
@@ -590,12 +607,12 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
       code += `
       } else {
         ${addComma}
-        json += '${$asString(key)}:${JSON.stringify(defaultValue).replace(/'/g, '\'')}'
+        json += '${asString}:${sanitizeKey(JSON.stringify(defaultValue).replace(/\\/g, '\\\\'))}'
       `
     } else if (schema.required && schema.required.indexOf(key) !== -1) {
       code += `
       } else {
-        throw new Error('${key} is required!')
+        throw new Error('${sanitized} is required!')
       `
     }
 
@@ -658,7 +675,7 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
   var merged = merge(copy, then)
 
   code += `
-    valid = ajv.validate(${require('util').inspect(i, { depth: null })}, obj)
+    valid = ajv.validate(${util.inspect(i, { depth: null })}, obj)
     if (valid) {
   `
   if (merged.if && merged.then) {
@@ -856,6 +873,8 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
   var code = ''
   var funcName
 
+  subKey = subKey || ''
+
   if (schema.type === undefined) {
     var inferedType = inferTypeByKeyword(schema)
     if (inferedType) {
@@ -866,7 +885,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
   var type = schema.type
   var nullable = schema.nullable === true
 
-  var accessor = key.indexOf('[') === 0 ? key : `['${key}']`
+  var accessor = key.indexOf('[') === 0 ? sanitizeKey(key) : `['${sanitizeKey(key)}']`
   switch (type) {
     case 'null':
       code += `
@@ -902,7 +921,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
     case undefined:
       if ('anyOf' in schema) {
         schema.anyOf.forEach((s, index) => {
-          var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== undefined ? subKey : 'i' + index)
+          var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index)
           code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null })}, obj${accessor}))
               ${nestedResult.code}

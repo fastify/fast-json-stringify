@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('tap')
 const build = require('..')
 
 test('object with multiple types field', (t) => {
