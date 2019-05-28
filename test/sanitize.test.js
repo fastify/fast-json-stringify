@@ -124,4 +124,19 @@ JSON.parse(stringify3({
   '"phra\'&&(console.log(42))//||\'phra': 42
 }))
 
+const stringify4 = build({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    '"\\\\\\\\\'w00t': {
+      type: 'string',
+      default: '"\'w00t'
+    }
+  }
+})
+
+t.deepEqual(JSON.parse(stringify4({})), {
+  '"\\\\\\\\\'w00t': '"\'w00t'
+})
+
 t.pass('no crashes')

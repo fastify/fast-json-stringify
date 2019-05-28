@@ -514,7 +514,17 @@ function refFinder (ref, schema, externalSchema) {
 }
 
 function sanitizeKey (key) {
-  return key.replace(/\\*\'/g, '\\\'') // eslint-disable-line
+  const rep = key.replace(/(\\*)'/g, function (match, p1) {
+    var base = ''
+    if (p1.length % 2 === 1) {
+      base = p1.slice(2)
+    } else {
+      base = p1
+    }
+    var rep = base + '\\\''
+    return rep
+  })
+  return rep
 }
 
 function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
