@@ -28,9 +28,7 @@ function isValidSchema (schema, name) {
       name = ''
     }
     const first = validate.errors[0]
-    const err = new Error(
-      `${name}schema is invalid: data${first.dataPath} ${first.message}`
-    )
+    const err = new Error(`${name}schema is invalid: data${first.dataPath} ${first.message}`)
     err.errors = isValidSchema.errors
     throw err
   }
@@ -144,24 +142,11 @@ const objectKeywords = [
   'dependencies'
 ]
 
-const arrayKeywords = [
-  'items',
-  'additionalItems',
-  'maxItems',
-  'minItems',
-  'uniqueItems',
-  'contains'
-]
+const arrayKeywords = ['items', 'additionalItems', 'maxItems', 'minItems', 'uniqueItems', 'contains']
 
 const stringKeywords = ['maxLength', 'minLength', 'pattern']
 
-const numberKeywords = [
-  'multipleOf',
-  'maximum',
-  'exclusiveMaximum',
-  'minimum',
-  'exclusiveMinimum'
-]
+const numberKeywords = ['multipleOf', 'maximum', 'exclusiveMaximum', 'minimum', 'exclusiveMinimum']
 
 /**
  * Infer type based on keyword in order to generate optimized code
@@ -236,7 +221,7 @@ function $asNumberNullable (i) {
 }
 
 function $asBoolean (bool) {
-  return (bool && "true") || "false"; // eslint-disable-line
+  return (bool && 'true') || 'false' // eslint-disable-line
 }
 
 function $asBooleanNullable (bool) {
@@ -296,9 +281,7 @@ function $asStringSmall (str) {
   } else {
     result += str.slice(last)
   }
-  return point < 32 || surrogateFound === true
-    ? JSON.stringify(str)
-    : '"' + result + '"'
+  return point < 32 || surrogateFound === true ? JSON.stringify(str) : '"' + result + '"'
 }
 
 function addPatternProperties (schema, externalSchema, fullSchema, options) {
@@ -311,39 +294,20 @@ function addPatternProperties (schema, externalSchema, fullSchema, options) {
   `
   Object.keys(pp).forEach((regex, index) => {
     if (pp[regex]['$ref']) {
-      pp[regex] = refFinder(
-        pp[regex]['$ref'],
-        fullSchema,
-        externalSchema,
-        fullSchema
-      )
+      pp[regex] = refFinder(pp[regex]['$ref'], fullSchema, externalSchema, fullSchema)
     }
     var type = pp[regex].type
     code += `
         if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
     `
     if (type === 'object') {
-      code += buildObject(
-        pp[regex],
-        '',
-        'buildObjectPP' + index,
-        externalSchema,
-        fullSchema,
-        options
-      )
+      code += buildObject(pp[regex], '', 'buildObjectPP' + index, externalSchema, fullSchema, options)
       code += `
           ${addComma}
           json += $asString(keys[i]) + ':' + buildObjectPP${index}(obj[keys[i]])
       `
     } else if (type === 'array') {
-      code += buildArray(
-        pp[regex],
-        '',
-        'buildArrayPP' + index,
-        externalSchema,
-        fullSchema,
-        options
-      )
+      code += buildArray(pp[regex], '', 'buildArrayPP' + index, externalSchema, fullSchema, options)
       code += `
           ${addComma}
           json += $asString(keys[i]) + ':' + buildArrayPP${index}(obj[keys[i]])
@@ -424,14 +388,7 @@ function additionalProperty (schema, externalSchema, fullSchema, options) {
         json += $asString(keys[i]) + ':' + buildObjectAP(obj[keys[i]])
     `
   } else if (type === 'array') {
-    code += buildArray(
-      ap,
-      '',
-      'buildArrayAP',
-      externalSchema,
-      fullSchema,
-      options
-    )
+    code += buildArray(ap, '', 'buildArrayAP', externalSchema, fullSchema, options)
     code += `
         ${addComma}
         json += $asString(keys[i]) + ':' + buildArrayAP(obj[keys[i]])
@@ -571,22 +528,10 @@ function sanitizeKey (key) {
   return rep
 }
 
-function buildCode (
-  schema,
-  code,
-  laterCode,
-  name,
-  externalSchema,
-  fullSchema,
-  options
-) {
+function buildCode (schema, code, laterCode, name, externalSchema, fullSchema, options) {
   Object.keys(schema.properties || {}).forEach((key, i, a) => {
     if (schema.properties[key]['$ref']) {
-      schema.properties[key] = refFinder(
-        schema.properties[key]['$ref'],
-        fullSchema,
-        externalSchema
-      )
+      schema.properties[key] = refFinder(schema.properties[key]['$ref'], fullSchema, externalSchema)
     }
 
     // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
@@ -653,16 +598,7 @@ function buildCode (
           json += '${asString}:'
         `
 
-      var result = nested(
-        laterCode,
-        name,
-        key,
-        schema.properties[key],
-        externalSchema,
-        fullSchema,
-        undefined,
-        options
-      )
+      var result = nested(laterCode, name, key, schema.properties[key], externalSchema, fullSchema, undefined, options)
       code += result.code
       laterCode = result.laterCode
     }
@@ -672,14 +608,9 @@ function buildCode (
       code += `
       } else {
         ${addComma}
-        json += '${asString}:${sanitizeKey(
-  JSON.stringify(defaultValue).replace(/\\/g, '\\\\')
-)}'
+        json += '${asString}:${sanitizeKey(JSON.stringify(defaultValue).replace(/\\/g, '\\\\'))}'
       `
-    } else if (
-      schema.required &&
-      schema.required.indexOf(key) !== -1
-    ) {
+    } else if (schema.required && schema.required.indexOf(key) !== -1) {
       if (options && options.noThrow) {
         code += `
       } else {
@@ -706,40 +637,16 @@ function buildCode (
   return { code: code, laterCode: laterCode }
 }
 
-function buildCodeWithAllOfs (
-  schema,
-  code,
-  laterCode,
-  name,
-  externalSchema,
-  fullSchema,
-  options
-) {
+function buildCodeWithAllOfs (schema, code, laterCode, name, externalSchema, fullSchema, options) {
   if (schema.allOf) {
     schema.allOf.forEach(ss => {
-      var builtCode = buildCodeWithAllOfs(
-        ss,
-        code,
-        laterCode,
-        name,
-        externalSchema,
-        fullSchema,
-        options
-      )
+      var builtCode = buildCodeWithAllOfs(ss, code, laterCode, name, externalSchema, fullSchema, options)
 
       code = builtCode.code
       laterCode = builtCode.laterCode
     })
   } else {
-    var builtCode = buildCode(
-      schema,
-      code,
-      laterCode,
-      name,
-      externalSchema,
-      fullSchema,
-      options
-    )
+    var builtCode = buildCode(schema, code, laterCode, name, externalSchema, fullSchema, options)
 
     code = builtCode.code
     laterCode = builtCode.laterCode
@@ -754,23 +661,10 @@ function buildInnerObject (schema, name, externalSchema, fullSchema, options) {
   if (schema.patternProperties) {
     code += addPatternProperties(schema, externalSchema, fullSchema, options)
   } else if (schema.additionalProperties && !schema.patternProperties) {
-    code += addAdditionalProperties(
-      schema,
-      externalSchema,
-      fullSchema,
-      options
-    )
+    code += addAdditionalProperties(schema, externalSchema, fullSchema, options)
   }
 
-  return buildCodeWithAllOfs(
-    schema,
-    code,
-    laterCode,
-    name,
-    externalSchema,
-    fullSchema,
-    options
-  )
+  return buildCodeWithAllOfs(schema, code, laterCode, name, externalSchema, fullSchema, options)
 }
 
 function addIfThenElse (schema, name, externalSchema, fullSchema, options) {
@@ -793,24 +687,12 @@ function addIfThenElse (schema, name, externalSchema, fullSchema, options) {
     if (valid) {
   `
   if (merged.if && merged.then) {
-    innerR = addIfThenElse(
-      merged,
-      name + 'Then',
-      externalSchema,
-      fullSchema,
-      options
-    )
+    innerR = addIfThenElse(merged, name + 'Then', externalSchema, fullSchema, options)
     code += innerR.code
     laterCode = innerR.laterCode
   }
 
-  r = buildInnerObject(
-    merged,
-    name + 'Then',
-    externalSchema,
-    fullSchema,
-    options
-  )
+  r = buildInnerObject(merged, name + 'Then', externalSchema, fullSchema, options)
   code += r.code
   laterCode += r.laterCode
 
@@ -825,24 +707,12 @@ function addIfThenElse (schema, name, externalSchema, fullSchema, options) {
     `
 
     if (merged.if && merged.then) {
-      innerR = addIfThenElse(
-        merged,
-        name + 'Else',
-        externalSchema,
-        fullSchema,
-        options
-      )
+      innerR = addIfThenElse(merged, name + 'Else', externalSchema, fullSchema, options)
       code += innerR.code
       laterCode += innerR.laterCode
     }
 
-    r = buildInnerObject(
-      merged,
-      name + 'Else',
-      externalSchema,
-      fullSchema,
-      options
-    )
+    r = buildInnerObject(merged, name + 'Else', externalSchema, fullSchema, options)
     code += r.code
     laterCode += r.laterCode
 
@@ -926,20 +796,8 @@ function buildArray (schema, code, name, externalSchema, fullSchema, options) {
   if (Array.isArray(schema.items)) {
     result = schema.items.reduce((res, item, i) => {
       var accessor = '[i]'
-      const tmpRes = nested(
-        laterCode,
-        name,
-        accessor,
-        item,
-        externalSchema,
-        fullSchema,
-        i,
-        options
-      )
-      var condition = `i === ${i} && ${buildArrayTypeCondition(
-        item.type,
-        accessor
-      )}`
+      const tmpRes = nested(laterCode, name, accessor, item, externalSchema, fullSchema, i, options)
+      var condition = `i === ${i} && ${buildArrayTypeCondition(item.type, accessor)}`
       return {
         code: `${res.code}
         ${i > 0 ? 'else' : ''} if (${condition}) {
@@ -955,15 +813,7 @@ function buildArray (schema, code, name, externalSchema, fullSchema, options) {
     }
     `
   } else {
-    result = nested(
-      laterCode,
-      name,
-      '[i]',
-      schema.items,
-      externalSchema,
-      fullSchema,
-      options
-    )
+    result = nested(laterCode, name, '[i]', schema.items, externalSchema, fullSchema, options)
   }
 
   code += `
@@ -1027,16 +877,7 @@ function buildArrayTypeCondition (type, accessor) {
   return condition
 }
 
-function nested (
-  laterCode,
-  name,
-  key,
-  schema,
-  externalSchema,
-  fullSchema,
-  subKey,
-  options
-) {
+function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKey, options) {
   var code = ''
   var funcName
 
@@ -1052,8 +893,7 @@ function nested (
   var type = schema.type
   var nullable = schema.nullable === true
 
-  var accessor =
-    key.indexOf('[') === 0 ? sanitizeKey(key) : `['${sanitizeKey(key)}']`
+  var accessor = key.indexOf('[') === 0 ? sanitizeKey(key) : `['${sanitizeKey(key)}']`
   switch (type) {
     case 'null':
       code += `
@@ -1081,29 +921,15 @@ function nested (
         : `json += $asBoolean(obj${accessor})`
       break
     case 'object':
-      funcName = (name + key + subKey).replace(/[-.\[\] ]/g, ""); // eslint-disable-line
-      laterCode = buildObject(
-        schema,
-        laterCode,
-        funcName,
-        externalSchema,
-        fullSchema,
-        options
-      )
+      funcName = (name + key + subKey).replace(/[-.\[\] ]/g, '') // eslint-disable-line
+      laterCode = buildObject(schema, laterCode, funcName, externalSchema, fullSchema, options)
       code += `
         json += ${funcName}(obj${accessor})
       `
       break
     case 'array':
-      funcName = "$arr" + (name + key + subKey).replace(/[-.\[\] ]/g, ""); // eslint-disable-line
-      laterCode = buildArray(
-        schema,
-        laterCode,
-        funcName,
-        externalSchema,
-        fullSchema,
-        options
-      )
+      funcName = '$arr' + (name + key + subKey).replace(/[-.\[\] ]/g, '') // eslint-disable-line
+      laterCode = buildArray(schema, laterCode, funcName, externalSchema, fullSchema, options)
       code += `
         json += ${funcName}(obj${accessor})
       `
@@ -1122,9 +948,7 @@ function nested (
             options
           )
           code += `
-            ${
-  index === 0 ? 'if' : 'else if'
-}(ajv.validate(${require('util').inspect(s, {
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, {
   depth: null
 })}, obj${accessor}))
               ${nestedResult.code}
@@ -1146,23 +970,10 @@ function nested (
       if (Array.isArray(type)) {
         const nullIndex = type.indexOf('null')
         const sortedTypes =
-          nullIndex !== -1
-            ? [type[nullIndex]]
-              .concat(type.slice(0, nullIndex))
-              .concat(type.slice(nullIndex + 1))
-            : type
+          nullIndex !== -1 ? [type[nullIndex]].concat(type.slice(0, nullIndex)).concat(type.slice(nullIndex + 1)) : type
         sortedTypes.forEach((type, index) => {
           var tempSchema = Object.assign({}, schema, { type })
-          var nestedResult = nested(
-            laterCode,
-            name,
-            key,
-            tempSchema,
-            externalSchema,
-            fullSchema,
-            subKey,
-            options
-          )
+          var nestedResult = nested(laterCode, name, key, tempSchema, externalSchema, fullSchema, subKey, options)
           if (type === 'string') {
             code += `
               ${
@@ -1182,9 +993,7 @@ function nested (
             `
           } else if (type === 'integer') {
             code += `
-              ${
-  index === 0 ? 'if' : 'else if'
-}(Number.isInteger(obj${accessor}) || obj${accessor} === null)
+              ${index === 0 ? 'if' : 'else if'}(Number.isInteger(obj${accessor}) || obj${accessor} === null)
               ${nestedResult.code}
             `
           } else if (type === 'number') {
@@ -1194,9 +1003,7 @@ function nested (
             `
           } else {
             code += `
-              ${
-  index === 0 ? 'if' : 'else if'
-}(typeof obj${accessor} === "${type}")
+              ${index === 0 ? 'if' : 'else if'}(typeof obj${accessor} === "${type}")
               ${nestedResult.code}
             `
           }
@@ -1241,9 +1048,7 @@ function loadUglify () {
   } catch (e) {
     uglify = null
     if (e.code === 'MODULE_NOT_FOUND') {
-      throw new Error(
-        'In order to use uglify, you have to manually install `uglify-es`'
-      )
+      throw new Error('In order to use uglify, you have to manually install `uglify-es`')
     }
 
     throw e
