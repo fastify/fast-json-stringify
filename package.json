@@ -59,6 +59,6 @@
   },
   "optionalDependencies": {
     "compile-json-stringify": "^0.1.2",
-    "json-strify": "0.0.2"
+    "json-strify": "^0.1.7"
   }
 }
