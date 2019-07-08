@@ -47,7 +47,7 @@
   },
   "dependencies": {
     "ajv": "^6.8.1",
-    "deepmerge": "^3.0.0"
+    "deepmerge": "^4.0.0"
   },
   "standard": {
     "ignore": [
