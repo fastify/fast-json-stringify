@@ -23,11 +23,11 @@ function buildTest (schema, toStringify) {
 }
 
 buildTest({
-  'title': 'infer type object by keyword',
+  title: 'infer type object by keyword',
   // 'type': 'object',
-  'properties': {
-    'name': {
-      'type': 'string'
+  properties: {
+    name: {
+      type: 'string'
     }
   }
 }, {
@@ -35,15 +35,15 @@ buildTest({
 })
 
 buildTest({
-  'title': 'infer type of nested object by keyword',
+  title: 'infer type of nested object by keyword',
   // 'type': 'object',
-  'properties': {
-    'more': {
-      'description': 'more properties',
+  properties: {
+    more: {
+      description: 'more properties',
       // 'type': 'object',
-      'properties': {
-        'something': {
-          'type': 'string'
+      properties: {
+        something: {
+          type: 'string'
         }
       }
     }
@@ -55,13 +55,13 @@ buildTest({
 })
 
 buildTest({
-  'title': 'infer type array by keyword',
-  'type': 'object',
-  'properties': {
-    'ids': {
+  title: 'infer type array by keyword',
+  type: 'object',
+  properties: {
+    ids: {
       // 'type': 'array',
-      'items': {
-        'type': 'string'
+      items: {
+        type: 'string'
       }
     }
   }
@@ -70,12 +70,12 @@ buildTest({
 })
 
 buildTest({
-  'title': 'infer type string by keyword',
-  'type': 'object',
-  'properties': {
-    'name': {
+  title: 'infer type string by keyword',
+  type: 'object',
+  properties: {
+    name: {
       // 'type': 'string',
-      'maxLength': 3
+      maxLength: 3
     }
   }
 }, {
@@ -83,12 +83,12 @@ buildTest({
 })
 
 buildTest({
-  'title': 'infer type number by keyword',
-  'type': 'object',
-  'properties': {
-    'age': {
+  title: 'infer type number by keyword',
+  type: 'object',
+  properties: {
+    age: {
       // 'type': 'number',
-      'maximum': 18
+      maximum: 18
     }
   }
 }, {

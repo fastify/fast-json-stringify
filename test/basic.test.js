@@ -23,25 +23,25 @@ function buildTest (schema, toStringify) {
 }
 
 buildTest({
-  'title': 'basic',
-  'type': 'object',
-  'properties': {
-    'firstName': {
-      'type': 'string'
+  title: 'basic',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
     },
-    'lastName': {
-      'type': 'string'
+    lastName: {
+      type: 'string'
     },
-    'age': {
-      'description': 'Age in years',
-      'type': 'integer',
-      'minimum': 0
+    age: {
+      description: 'Age in years',
+      type: 'integer',
+      minimum: 0
     },
-    'magic': {
-      'type': 'number'
+    magic: {
+      type: 'number'
     }
   },
-  'required': ['firstName', 'lastName']
+  required: ['firstName', 'lastName']
 }, {
   firstName: 'Matteo',
   lastName: 'Collina',
@@ -85,21 +85,21 @@ buildTest({
 }, 42.42)
 
 buildTest({
-  'title': 'deep',
-  'type': 'object',
-  'properties': {
-    'firstName': {
-      'type': 'string'
+  title: 'deep',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
     },
-    'lastName': {
-      'type': 'string'
+    lastName: {
+      type: 'string'
     },
-    'more': {
-      'description': 'more properties',
-      'type': 'object',
-      'properties': {
-        'something': {
-          'type': 'string'
+    more: {
+      description: 'more properties',
+      type: 'object',
+      properties: {
+        something: {
+          type: 'string'
         }
       }
     }
@@ -113,16 +113,16 @@ buildTest({
 })
 
 buildTest({
-  'title': 'null',
-  'type': 'null'
+  title: 'null',
+  type: 'null'
 }, null)
 
 buildTest({
-  'title': 'deep object with weird keys',
-  'type': 'object',
-  'properties': {
+  title: 'deep object with weird keys',
+  type: 'object',
+  properties: {
     '@version': {
-      'type': 'integer'
+      type: 'integer'
     }
   }
 }, {
@@ -130,30 +130,30 @@ buildTest({
 })
 
 buildTest({
-  'title': 'deep object with spaces in key',
-  'type': 'object',
-  'properties': {
+  title: 'deep object with spaces in key',
+  type: 'object',
+  properties: {
     'spaces in key': {
-      'type': 'object',
-      'properties': {
-        'something': {
-          'type': 'integer'
+      type: 'object',
+      properties: {
+        something: {
+          type: 'integer'
         }
       }
     }
   }
 }, {
   'spaces in key': {
-    'something': 1
+    something: 1
   }
 })
 
 buildTest({
-  'title': 'with null',
-  'type': 'object',
-  'properties': {
-    'firstName': {
-      'type': 'null'
+  title: 'with null',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'null'
     }
   }
 }, {
@@ -161,13 +161,13 @@ buildTest({
 })
 
 buildTest({
-  'title': 'array with objects',
-  'type': 'array',
-  'items': {
-    'type': 'object',
-    'properties': {
-      'name': {
-        'type': 'string'
+  title: 'array with objects',
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      name: {
+        type: 'string'
       }
     }
   }
@@ -178,10 +178,10 @@ buildTest({
 }])
 
 buildTest({
-  'title': 'array with strings',
-  'type': 'array',
-  'items': {
-    'type': 'string'
+  title: 'array with strings',
+  type: 'array',
+  items: {
+    type: 'string'
   }
 }, [
   'Matteo',
@@ -189,10 +189,10 @@ buildTest({
 ])
 
 buildTest({
-  'title': 'array with numbers',
-  'type': 'array',
-  'items': {
-    'type': 'number'
+  title: 'array with numbers',
+  type: 'array',
+  items: {
+    type: 'number'
   }
 }, [
   42.42,
@@ -200,10 +200,10 @@ buildTest({
 ])
 
 buildTest({
-  'title': 'array with integers',
-  'type': 'array',
-  'items': {
-    'type': 'number'
+  title: 'array with integers',
+  type: 'array',
+  items: {
+    type: 'number'
   }
 }, [
   42,
@@ -211,16 +211,16 @@ buildTest({
 ])
 
 buildTest({
-  'title': 'nested array with objects',
-  'type': 'object',
-  'properties': {
-    'data': {
-      'type': 'array',
-      'items': {
-        'type': 'object',
-        'properties': {
-          'name': {
-            'type': 'string'
+  title: 'nested array with objects',
+  type: 'object',
+  properties: {
+    data: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string'
           }
         }
       }
@@ -235,11 +235,11 @@ buildTest({
 })
 
 buildTest({
-  'title': 'object with boolean',
-  'type': 'object',
-  'properties': {
-    'readonly': {
-      'type': 'boolean'
+  title: 'object with boolean',
+  type: 'object',
+  properties: {
+    readonly: {
+      type: 'boolean'
     }
   }
 }, {
@@ -248,14 +248,14 @@ buildTest({
 
 test('skip or coerce numbers and integers that are not numbers', (t) => {
   const stringify = build({
-    'title': 'basic',
-    'type': 'object',
-    'properties': {
-      'age': {
-        'type': 'number'
+    title: 'basic',
+    type: 'object',
+    properties: {
+      age: {
+        type: 'number'
       },
-      'distance': {
-        'type': 'integer'
+      distance: {
+        type: 'integer'
       }
     }
   })

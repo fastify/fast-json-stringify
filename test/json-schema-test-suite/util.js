@@ -13,7 +13,7 @@ function runTests (t, testsuite, skippedTests) {
       t.test(test.description, (t) => {
         t.plan(1)
         try {
-          let output = stringify(test.data)
+          const output = stringify(test.data)
           t.equal(output, JSON.stringify(test.data), 'compare payloads')
         } catch (err) {
           if (test.valid === false) {

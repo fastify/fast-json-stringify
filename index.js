@@ -1,5 +1,7 @@
 'use strict'
 
+/* eslint no-prototype-builtins: 0 */
+
 var Ajv = require('ajv')
 var merge = require('deepmerge')
 var util = require('util')
@@ -38,7 +40,7 @@ function build (schema, options) {
   options = options || {}
   isValidSchema(schema)
   if (options.schema) {
-    for (let key of Object.keys(options.schema)) {
+    for (const key of Object.keys(options.schema)) {
       isValidSchema(options.schema[key], key)
     }
   }

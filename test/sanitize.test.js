@@ -57,7 +57,7 @@ const stringify = build({
     '.*foo$': {
       type: 'string'
     },
-    'test': {
+    test: {
       type: 'number'
     },
     'phra\'/ && process.exit(1) && /\'': {
@@ -107,7 +107,7 @@ const stringify2 = build({
 
 t.deepEqual(JSON.parse(stringify2({
   '"\'phra////': 42,
-  'asd': 42
+  asd: 42
 })), {
 })
 
