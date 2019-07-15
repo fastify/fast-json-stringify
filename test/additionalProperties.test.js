@@ -18,7 +18,7 @@ test('additionalProperties', (t) => {
     }
   })
 
-  let obj = { str: 'test', foo: 42, ofoo: true, foof: 'string', objfoo: { a: true } }
+  const obj = { str: 'test', foo: 42, ofoo: true, foof: 'string', objfoo: { a: true } }
   t.equal('{"foo":"42","ofoo":"true","foof":"string","objfoo":"[object Object]","str":"test"}', stringify(obj))
 })
 
@@ -177,7 +177,7 @@ test('nested additionalProperties', (t) => {
     }
   })
 
-  let obj = [{ ap: { value: 'string' } }]
+  const obj = [{ ap: { value: 'string' } }]
   t.equal('[{"ap":{"value":"string"}}]', stringify(obj))
 })
 
@@ -214,7 +214,7 @@ test('very nested additionalProperties', (t) => {
     }
   })
 
-  let obj = [{ ap: { nested: { moarNested: { finally: { value: 'str' } } } } }]
+  const obj = [{ ap: { nested: { moarNested: { finally: { value: 'str' } } } } }]
   t.equal('[{"ap":{"nested":{"moarNested":{"finally":{"value":"str"}}}}}]', stringify(obj))
 })
 
@@ -231,7 +231,7 @@ test('nested additionalProperties set to true', (t) => {
     }
   })
 
-  let obj = { ap: { value: 'string', someNumber: 42 } }
+  const obj = { ap: { value: 'string', someNumber: 42 } }
   t.equal('{"ap":{"value":"string","someNumber":42}}', stringify(obj))
 })
 
@@ -248,6 +248,6 @@ test('field passed to fastSafeStringify as undefined should be removed', (t) => 
     }
   })
 
-  let obj = { ap: { value: 'string', someNumber: undefined } }
+  const obj = { ap: { value: 'string', someNumber: undefined } }
   t.equal('{"ap":{"value":"string"}}', stringify(obj))
 })

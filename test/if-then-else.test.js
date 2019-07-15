@@ -4,43 +4,43 @@ const t = require('tap')
 const build = require('..')
 
 const schema = {
-  'type': 'object',
-  'properties': {
+  type: 'object',
+  properties: {
   },
-  'if': {
-    'properties': {
-      'kind': { 'type': 'string', 'enum': ['foobar'] }
+  if: {
+    properties: {
+      kind: { type: 'string', enum: ['foobar'] }
     }
   },
-  'then': {
-    'properties': {
-      'kind': { 'type': 'string', 'enum': ['foobar'] },
-      'foo': { 'type': 'string' },
-      'bar': { 'type': 'number' },
-      'list': {
-        'type': 'array',
-        'items': {
-          'type': 'object',
-          'properties': {
-            'name': { 'type': 'string' },
-            'value': { 'type': 'string' }
+  then: {
+    properties: {
+      kind: { type: 'string', enum: ['foobar'] },
+      foo: { type: 'string' },
+      bar: { type: 'number' },
+      list: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            value: { type: 'string' }
           }
         }
       }
     }
   },
-  'else': {
-    'properties': {
-      'kind': { 'type': 'string', 'enum': ['greeting'] },
-      'hi': { 'type': 'string' },
-      'hello': { 'type': 'number' },
-      'list': {
-        'type': 'array',
-        'items': {
-          'type': 'object',
-          'properties': {
-            'name': { 'type': 'string' },
-            'value': { 'type': 'string' }
+  else: {
+    properties: {
+      kind: { type: 'string', enum: ['greeting'] },
+      hi: { type: 'string' },
+      hello: { type: 'number' },
+      list: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            value: { type: 'string' }
           }
         }
       }
@@ -49,104 +49,104 @@ const schema = {
 }
 
 const nestedIfSchema = {
-  'type': 'object',
-  'properties': { },
-  'if': {
-    'properties': {
-      'kind': { 'type': 'string', 'enum': ['foobar', 'greeting'] }
+  type: 'object',
+  properties: { },
+  if: {
+    properties: {
+      kind: { type: 'string', enum: ['foobar', 'greeting'] }
     }
   },
-  'then': {
-    'if': {
-      'properties': {
-        'kind': { 'type': 'string', 'enum': ['foobar'] }
+  then: {
+    if: {
+      properties: {
+        kind: { type: 'string', enum: ['foobar'] }
       }
     },
-    'then': {
-      'properties': {
-        'kind': { 'type': 'string', 'enum': ['foobar'] },
-        'foo': { 'type': 'string' },
-        'bar': { 'type': 'number' },
-        'list': {
-          'type': 'array',
-          'items': {
-            'type': 'object',
-            'properties': {
-              'name': { 'type': 'string' },
-              'value': { 'type': 'string' }
+    then: {
+      properties: {
+        kind: { type: 'string', enum: ['foobar'] },
+        foo: { type: 'string' },
+        bar: { type: 'number' },
+        list: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              value: { type: 'string' }
             }
           }
         }
       }
     },
-    'else': {
-      'properties': {
-        'kind': { 'type': 'string', 'enum': ['greeting'] },
-        'hi': { 'type': 'string' },
-        'hello': { 'type': 'number' }
+    else: {
+      properties: {
+        kind: { type: 'string', enum: ['greeting'] },
+        hi: { type: 'string' },
+        hello: { type: 'number' }
       }
     }
   },
-  'else': {
-    'properties': {
-      'kind': { 'type': 'string', 'enum': ['alphabet'] },
-      'a': { 'type': 'string' },
-      'b': { 'type': 'number' }
+  else: {
+    properties: {
+      kind: { type: 'string', enum: ['alphabet'] },
+      a: { type: 'string' },
+      b: { type: 'number' }
     }
   }
 }
 
 const nestedElseSchema = {
-  'type': 'object',
-  'properties': { },
-  'if': {
-    'properties': {
-      'kind': { 'type': 'string', 'enum': ['foobar'] }
+  type: 'object',
+  properties: { },
+  if: {
+    properties: {
+      kind: { type: 'string', enum: ['foobar'] }
     }
   },
-  'then': {
-    'properties': {
-      'kind': { 'type': 'string', 'enum': ['foobar'] },
-      'foo': { 'type': 'string' },
-      'bar': { 'type': 'number' },
-      'list': {
-        'type': 'array',
-        'items': {
-          'type': 'object',
-          'properties': {
-            'name': { 'type': 'string' },
-            'value': { 'type': 'string' }
+  then: {
+    properties: {
+      kind: { type: 'string', enum: ['foobar'] },
+      foo: { type: 'string' },
+      bar: { type: 'number' },
+      list: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            value: { type: 'string' }
           }
         }
       }
     }
   },
-  'else': {
-    'if': {
-      'properties': {
-        'kind': { 'type': 'string', 'enum': ['greeting'] }
+  else: {
+    if: {
+      properties: {
+        kind: { type: 'string', enum: ['greeting'] }
       }
     },
-    'then': {
-      'properties': {
-        'kind': { 'type': 'string', 'enum': ['greeting'] },
-        'hi': { 'type': 'string' },
-        'hello': { 'type': 'number' }
+    then: {
+      properties: {
+        kind: { type: 'string', enum: ['greeting'] },
+        hi: { type: 'string' },
+        hello: { type: 'number' }
       }
     },
-    'else': {
-      'properties': {
-        'kind': { 'type': 'string', 'enum': ['alphabet'] },
-        'a': { 'type': 'string' },
-        'b': { 'type': 'number' }
+    else: {
+      properties: {
+        kind: { type: 'string', enum: ['alphabet'] },
+        a: { type: 'string' },
+        b: { type: 'number' }
       }
     }
   }
 }
 
 const nestedDeepElseSchema = {
-  'type': 'object',
-  'additionalProperties': schema
+  type: 'object',
+  additionalProperties: schema
 }
 
 const fooBarInput = {

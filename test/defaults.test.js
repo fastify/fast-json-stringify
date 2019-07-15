@@ -19,26 +19,26 @@ function buildTest (schema, toStringify, expected) {
 }
 
 buildTest({
-  'title': 'default string',
-  'type': 'object',
-  'properties': {
-    'firstName': {
-      'type': 'string'
+  title: 'default string',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
     },
-    'lastName': {
-      'type': 'string',
+    lastName: {
+      type: 'string',
       default: 'Collina'
     },
-    'age': {
-      'description': 'Age in years',
-      'type': 'integer',
-      'minimum': 0
+    age: {
+      description: 'Age in years',
+      type: 'integer',
+      minimum: 0
     },
-    'magic': {
-      'type': 'number'
+    magic: {
+      type: 'number'
     }
   },
-  'required': ['firstName', 'lastName']
+  required: ['firstName', 'lastName']
 }, {
   firstName: 'Matteo',
   magic: 42,
@@ -51,26 +51,26 @@ buildTest({
 })
 
 buildTest({
-  'title': 'default string with value',
-  'type': 'object',
-  'properties': {
-    'firstName': {
-      'type': 'string'
+  title: 'default string with value',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
     },
-    'lastName': {
-      'type': 'string',
+    lastName: {
+      type: 'string',
       default: 'Collina'
     },
-    'age': {
-      'description': 'Age in years',
-      'type': 'integer',
-      'minimum': 0
+    age: {
+      description: 'Age in years',
+      type: 'integer',
+      minimum: 0
     },
-    'magic': {
-      'type': 'number'
+    magic: {
+      type: 'number'
     }
   },
-  'required': ['firstName', 'lastName']
+  required: ['firstName', 'lastName']
 }, {
   firstName: 'Matteo',
   lastName: 'collina',
@@ -84,26 +84,26 @@ buildTest({
 })
 
 buildTest({
-  'title': 'default number',
-  'type': 'object',
-  'properties': {
-    'firstName': {
-      'type': 'string'
+  title: 'default number',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
     },
-    'lastName': {
-      'type': 'string'
+    lastName: {
+      type: 'string'
     },
-    'age': {
-      'description': 'Age in years',
-      'type': 'integer',
-      'minimum': 0
+    age: {
+      description: 'Age in years',
+      type: 'integer',
+      minimum: 0
     },
-    'magic': {
-      'type': 'number',
+    magic: {
+      type: 'number',
       default: 42
     }
   },
-  'required': ['firstName', 'lastName']
+  required: ['firstName', 'lastName']
 }, {
   firstName: 'Matteo',
   lastName: 'Collina',
@@ -116,26 +116,26 @@ buildTest({
 })
 
 buildTest({
-  'title': 'default number with value',
-  'type': 'object',
-  'properties': {
-    'firstName': {
-      'type': 'string'
+  title: 'default number with value',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
     },
-    'lastName': {
-      'type': 'string'
+    lastName: {
+      type: 'string'
     },
-    'age': {
-      'description': 'Age in years',
-      'type': 'integer',
-      'minimum': 0
+    age: {
+      description: 'Age in years',
+      type: 'integer',
+      minimum: 0
     },
-    'magic': {
-      'type': 'number',
+    magic: {
+      type: 'number',
       default: 42
     }
   },
-  'required': ['firstName', 'lastName']
+  required: ['firstName', 'lastName']
 }, {
   firstName: 'Matteo',
   lastName: 'Collina',
@@ -149,26 +149,26 @@ buildTest({
 })
 
 buildTest({
-  'title': 'default object',
-  'type': 'object',
-  'properties': {
-    'firstName': {
-      'type': 'string'
+  title: 'default object',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
     },
-    'lastName': {
-      'type': 'string'
+    lastName: {
+      type: 'string'
     },
-    'age': {
-      'description': 'Age in years',
-      'type': 'integer',
-      'minimum': 0
+    age: {
+      description: 'Age in years',
+      type: 'integer',
+      minimum: 0
     },
-    'otherProps': {
-      'type': 'object',
+    otherProps: {
+      type: 'object',
       default: { foo: 'bar' }
     }
   },
-  'required': ['firstName', 'lastName']
+  required: ['firstName', 'lastName']
 }, {
   firstName: 'Matteo',
   lastName: 'Collina',
@@ -181,27 +181,27 @@ buildTest({
 })
 
 buildTest({
-  'title': 'default object with value',
-  'type': 'object',
-  'properties': {
-    'firstName': {
-      'type': 'string'
+  title: 'default object with value',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
     },
-    'lastName': {
-      'type': 'string'
+    lastName: {
+      type: 'string'
     },
-    'age': {
-      'description': 'Age in years',
-      'type': 'integer',
-      'minimum': 0
+    age: {
+      description: 'Age in years',
+      type: 'integer',
+      minimum: 0
     },
-    'otherProps': {
-      'type': 'object',
+    otherProps: {
+      type: 'object',
       additionalProperties: true,
       default: { foo: 'bar' }
     }
   },
-  'required': ['firstName', 'lastName']
+  required: ['firstName', 'lastName']
 }, {
   firstName: 'Matteo',
   lastName: 'Collina',
@@ -215,27 +215,27 @@ buildTest({
 })
 
 buildTest({
-  'title': 'default array',
-  'type': 'object',
-  'properties': {
-    'firstName': {
-      'type': 'string'
+  title: 'default array',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
     },
-    'lastName': {
-      'type': 'string'
+    lastName: {
+      type: 'string'
     },
-    'age': {
-      'description': 'Age in years',
-      'type': 'integer',
-      'minimum': 0
+    age: {
+      description: 'Age in years',
+      type: 'integer',
+      minimum: 0
     },
-    'otherProps': {
-      'type': 'array',
+    otherProps: {
+      type: 'array',
       items: { type: 'string' },
       default: ['FOO']
     }
   },
-  'required': ['firstName', 'lastName']
+  required: ['firstName', 'lastName']
 }, {
   firstName: 'Matteo',
   lastName: 'Collina',
@@ -248,27 +248,27 @@ buildTest({
 })
 
 buildTest({
-  'title': 'default array with value',
-  'type': 'object',
-  'properties': {
-    'firstName': {
-      'type': 'string'
+  title: 'default array with value',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
     },
-    'lastName': {
-      'type': 'string'
+    lastName: {
+      type: 'string'
     },
-    'age': {
-      'description': 'Age in years',
-      'type': 'integer',
-      'minimum': 0
+    age: {
+      description: 'Age in years',
+      type: 'integer',
+      minimum: 0
     },
-    'otherProps': {
-      'type': 'array',
+    otherProps: {
+      type: 'array',
       items: { type: 'string' },
       default: ['FOO']
     }
   },
-  'required': ['firstName', 'lastName']
+  required: ['firstName', 'lastName']
 }, {
   firstName: 'Matteo',
   lastName: 'Collina',
@@ -282,21 +282,21 @@ buildTest({
 })
 
 buildTest({
-  'title': 'default deeper value',
-  'type': 'object',
-  'properties': {
-    'level1': {
-      'type': 'object',
-      'properties': {
-        'level2': {
-          'type': 'object',
-          'properties': {
-            'level3': {
-              'type': 'object',
-              'properties': {
-                'level4': {
-                  'type': 'object',
-                  'default': { 'foo': 'bar' }
+  title: 'default deeper value',
+  type: 'object',
+  properties: {
+    level1: {
+      type: 'object',
+      properties: {
+        level2: {
+          type: 'object',
+          properties: {
+            level3: {
+              type: 'object',
+              properties: {
+                level4: {
+                  type: 'object',
+                  default: { foo: 'bar' }
                 }
               }
             }
@@ -312,21 +312,21 @@ buildTest({
 })
 
 buildTest({
-  'title': 'default deeper value with value',
-  'type': 'object',
-  'properties': {
-    'level1': {
-      'type': 'object',
-      'properties': {
-        'level2': {
-          'type': 'object',
-          'properties': {
-            'level3': {
-              'type': 'object',
-              'properties': {
-                'level4': {
-                  'type': 'object',
-                  'default': { 'foo': 'bar' }
+  title: 'default deeper value with value',
+  type: 'object',
+  properties: {
+    level1: {
+      type: 'object',
+      properties: {
+        level2: {
+          type: 'object',
+          properties: {
+            level3: {
+              type: 'object',
+              properties: {
+                level4: {
+                  type: 'object',
+                  default: { foo: 'bar' }
                 }
               }
             }

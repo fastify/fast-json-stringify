@@ -6,7 +6,7 @@ const build = require('..')
 
 const nullable = true
 
-let complexObject = {
+const complexObject = {
   type: 'object',
   properties: {
     nullableString: { type: 'string', nullable: nullable },
@@ -45,7 +45,7 @@ let complexObject = {
   }
 }
 
-let complexData = {
+const complexData = {
   nullableString: null,
   nullableNumber: null,
   nullableInteger: null,
@@ -62,10 +62,10 @@ let complexData = {
     nullableNull: null,
     nullableArray: null
   },
-  arrayWithNullableItems: [ 1, 2, null ]
+  arrayWithNullableItems: [1, 2, null]
 }
 
-let complexExpectedResult = {
+const complexExpectedResult = {
   nullableString: null,
   nullableNumber: null,
   nullableInteger: null,
@@ -82,32 +82,32 @@ let complexExpectedResult = {
     nullableNull: null,
     nullableArray: null
   },
-  arrayWithNullableItems: [ 1, 2, null ]
+  arrayWithNullableItems: [1, 2, null]
 }
 
-let testSet = {
-  nullableString: [ { type: 'string', nullable: nullable }, null, null ],
-  nullableNumber: [ { type: 'number', nullable: nullable }, null, null ],
-  nullableInteger: [ { type: 'integer', nullable: nullable }, null, null ],
-  nullableBoolean: [ { type: 'boolean', nullable: nullable }, null, null ],
-  nullableNull: [ { type: 'null', nullable: nullable }, null, null ],
-  nullableArray: [ {
+const testSet = {
+  nullableString: [{ type: 'string', nullable: nullable }, null, null],
+  nullableNumber: [{ type: 'number', nullable: nullable }, null, null],
+  nullableInteger: [{ type: 'integer', nullable: nullable }, null, null],
+  nullableBoolean: [{ type: 'boolean', nullable: nullable }, null, null],
+  nullableNull: [{ type: 'null', nullable: nullable }, null, null],
+  nullableArray: [{
     type: 'array',
     nullable: true,
     items: {}
-  }, null, null ],
-  nullableObject: [ { type: 'object', nullable: true }, null, null ],
-  complexObject: [ complexObject, complexData, complexExpectedResult ]
+  }, null, null],
+  nullableObject: [{ type: 'object', nullable: true }, null, null],
+  complexObject: [complexObject, complexData, complexExpectedResult]
 }
 
 Object.keys(testSet).forEach(key => {
   test(`handle nullable:true in ${key} correctly`, (t) => {
     t.plan(1)
 
-    let stringifier = build(testSet[key][0])
-    let data = testSet[key][1]
-    let expected = testSet[key][2]
-    let result = stringifier(data)
+    const stringifier = build(testSet[key][0])
+    const data = testSet[key][1]
+    const expected = testSet[key][2]
+    const result = stringifier(data)
     t.deepEqual(JSON.parse(result), expected)
   })
 })

@@ -46,7 +46,7 @@ const stringify = fastJson({
     '.*foo$': {
       type: 'string'
     },
-    'test': {
+    test: {
       type: 'number'
     }
   },

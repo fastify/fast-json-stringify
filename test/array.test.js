@@ -23,13 +23,13 @@ function buildTest (schema, toStringify) {
 }
 
 buildTest({
-  'title': 'string array',
-  'type': 'object',
-  'properties': {
-    'ids': {
-      'type': 'array',
-      'items': {
-        'type': 'string'
+  title: 'string array',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: {
+        type: 'string'
       }
     }
   }
@@ -38,13 +38,13 @@ buildTest({
 })
 
 buildTest({
-  'title': 'number array',
-  'type': 'object',
-  'properties': {
-    'ids': {
-      'type': 'array',
-      'items': {
-        'type': 'number'
+  title: 'number array',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: {
+        type: 'number'
       }
     }
   }
@@ -53,39 +53,39 @@ buildTest({
 })
 
 buildTest({
-  'title': 'mixed array',
-  'type': 'object',
-  'properties': {
-    'ids': {
-      'type': 'array',
-      'items': [
+  title: 'mixed array',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: [
         {
-          'type': 'null'
+          type: 'null'
         },
         {
-          'type': 'string'
+          type: 'string'
         },
         {
-          'type': 'integer'
+          type: 'integer'
         },
         {
-          'type': 'number'
+          type: 'number'
         },
         {
-          'type': 'boolean'
+          type: 'boolean'
         },
         {
-          'type': 'object',
-          'properties': {
-            'a': {
-              'type': 'string'
+          type: 'object',
+          properties: {
+            a: {
+              type: 'string'
             }
           }
         },
         {
-          'type': 'array',
-          'items': {
-            'type': 'string'
+          type: 'array',
+          items: {
+            type: 'string'
           }
         }
       ]
@@ -96,12 +96,12 @@ buildTest({
 })
 
 buildTest({
-  'title': 'repeated types',
-  'type': 'object',
-  'properties': {
-    'ids': {
-      'type': 'array',
-      'items': [
+  title: 'repeated types',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: [
         {
           type: 'number'
         },
@@ -114,25 +114,25 @@ buildTest({
 }, { ids: [1, 2] })
 
 buildTest({
-  'title': 'pattern properties array',
-  'type': 'object',
-  'properties': {
-    'args': {
-      'type': 'array',
-      'items': [
+  title: 'pattern properties array',
+  type: 'object',
+  properties: {
+    args: {
+      type: 'array',
+      items: [
         {
-          'type': 'object',
-          'patternProperties': {
+          type: 'object',
+          patternProperties: {
             '.*': {
-              'type': 'string'
+              type: 'string'
             }
           }
         },
         {
-          'type': 'object',
-          'patternProperties': {
+          type: 'object',
+          patternProperties: {
             '.*': {
-              'type': 'number'
+              type: 'number'
             }
           }
         }
@@ -144,16 +144,16 @@ buildTest({
 test('invalid items throw', (t) => {
   t.plan(1)
   const schema = {
-    'type': 'object',
-    'properties': {
-      'args': {
-        'type': 'array',
-        'items': [
+    type: 'object',
+    properties: {
+      args: {
+        type: 'array',
+        items: [
           {
-            'type': 'object',
-            'patternProperties': {
+            type: 'object',
+            patternProperties: {
               '.*': {
-                'type': 'string'
+                type: 'string'
               }
             }
           }

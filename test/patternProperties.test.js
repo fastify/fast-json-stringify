@@ -14,13 +14,13 @@ test('patternProperties', (t) => {
       }
     },
     patternProperties: {
-      'foo': {
+      foo: {
         type: 'string'
       }
     }
   })
 
-  let obj = { str: 'test', foo: 42, ofoo: true, foof: 'string', objfoo: { a: true }, notMe: false }
+  const obj = { str: 'test', foo: 42, ofoo: true, foof: 'string', objfoo: { a: true }, notMe: false }
   t.equal(stringify(obj), '{"foo":"42","ofoo":"true","foof":"string","objfoo":"[object Object]","str":"test"}')
 })
 
