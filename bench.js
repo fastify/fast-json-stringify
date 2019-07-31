@@ -70,11 +70,8 @@ const CJSStringifyString = CJS({ type: 'string' })
 
 const FJS = require('.')
 const stringify = FJS(schema)
-const stringifyUgly = FJS(schema, { uglify: true })
 const stringifyArray = FJS(arraySchema)
-const stringifyArrayUgly = FJS(arraySchema, { uglify: true })
 const stringifyString = FJS({ type: 'string' })
-const stringifyStringUgly = FJS({ type: 'string', uglify: true })
 var str = ''
 
 for (var i = 0; i < 10000; i++) {
@@ -108,10 +105,6 @@ suite.add('fast-json-stringify array', function () {
   stringifyArray(multiArray)
 })
 
-suite.add('fast-json-stringify-uglified array', function () {
-  stringifyArrayUgly(multiArray)
-})
-
 suite.add('json-strify array', function () {
   JSTRArray(multiArray)
 })
@@ -126,10 +119,6 @@ suite.add('JSON.stringify long string', function () {
 
 suite.add('fast-json-stringify long string', function () {
   stringifyString(str)
-})
-
-suite.add('fast-json-stringify-uglified long string', function () {
-  stringifyStringUgly(str)
 })
 
 suite.add('json-strify long string', function () {
@@ -148,10 +137,6 @@ suite.add('fast-json-stringify short string', function () {
   stringifyString('hello world')
 })
 
-suite.add('fast-json-stringify-uglified short string', function () {
-  stringifyStringUgly('hello world')
-})
-
 suite.add('json-strify short string', function () {
   JSTRInstance('hello world')
 })
@@ -166,10 +151,6 @@ suite.add('JSON.stringify obj', function () {
 
 suite.add('fast-json-stringify obj', function () {
   stringify(obj)
-})
-
-suite.add('fast-json-stringify-uglified obj', function () {
-  stringifyUgly(obj)
 })
 
 suite.add('json-strify obj', function () {

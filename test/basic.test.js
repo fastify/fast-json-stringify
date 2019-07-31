@@ -6,18 +6,14 @@ const build = require('..')
 
 function buildTest (schema, toStringify) {
   test(`render a ${schema.title} as JSON`, (t) => {
-    t.plan(5)
+    t.plan(3)
 
     const validate = validator(schema)
     const stringify = build(schema)
-    const stringifyUgly = build(schema, { uglify: true })
     const output = stringify(toStringify)
-    const outputUglify = stringifyUgly(toStringify)
 
     t.deepEqual(JSON.parse(output), toStringify)
-    t.deepEqual(JSON.parse(outputUglify), toStringify)
     t.equal(output, JSON.stringify(toStringify))
-    t.equal(outputUglify, JSON.stringify(toStringify))
     t.ok(validate(JSON.parse(output)), 'valid schema')
   })
 }

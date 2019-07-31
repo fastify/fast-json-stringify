@@ -41,7 +41,6 @@
     "tap": "^12.6.5",
     "tap-mocha-reporter": "^3.0.9",
     "typescript": "^3.0.0",
-    "uglify-es": "^3.3.9",
     "compile-json-stringify": "^0.1.2",
     "json-strify": "^0.1.7"
   },

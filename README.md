@@ -13,19 +13,15 @@ FJS creation x 8,951 ops/sec ±0.51% (92 runs sampled)
 
 JSON.stringify array x 5,146 ops/sec ±0.32% (97 runs sampled)
 fast-json-stringify array x 8,402 ops/sec ±0.62% (95 runs sampled)
-fast-json-stringify-uglified array x 8,474 ops/sec ±0.49% (93 runs sampled)
 
 JSON.stringify long string x 13,061 ops/sec ±0.25% (98 runs sampled)
 fast-json-stringify long string x 13,059 ops/sec ±0.21% (98 runs sampled)
-fast-json-stringify-uglified long string x 13,099 ops/sec ±0.14% (98 runs sampled)
 
 JSON.stringify short string x 6,295,988 ops/sec ±0.28% (98 runs sampled)
 fast-json-stringify short string x 43,335,575 ops/sec ±1.24% (86 runs sampled)
-fast-json-stringify-uglified short string x 40,042,871 ops/sec ±1.38% (93 runs sampled)
 
 JSON.stringify obj x 2,557,026 ops/sec ±0.20% (97 runs sampled)
 fast-json-stringify obj x 9,001,890 ops/sec ±0.48% (90 runs sampled)
-fast-json-stringify-uglified obj x 9,073,607 ops/sec ±0.41% (94 runs sampled)
 ```
 
 #### Table of contents:
@@ -40,7 +36,6 @@ fast-json-stringify-uglified obj x 9,073,607 ops/sec ±0.41% (94 runs sampled)
  - <a href="#anyof">`AnyOf`</a>
  - <a href="#ref">`Reuse - $ref`</a>
  - <a href="#long">`Long integers`</a>
- - <a href="#uglify">`Uglify`</a>
  - <a href="#nullable">`Nullable`</a>
 - <a href="#caveat">`Caveat`</a>
 - <a href="#acknowledgements">`Acknowledgements`</a>
@@ -427,30 +422,6 @@ const obj = {
 }
 
 console.log(stringify(obj)) // '{"id":18446744073709551615}'
-```
-
-<a name="uglify"></a>
-#### Uglify
-If you want to squeeze a little bit more performance out of the serialization at the cost of readability in the generated code, you can pass `uglify: true` as an option.
-Note that you have to manually install `uglify-es` in order for this to work. Only version 3 is supported.
-Example:
-
-Note that if you are using Node 8.3.0 or newer, there are no performance gains from using Uglify. See https://www.nearform.com/blog/node-js-is-getting-a-new-v8-with-turbofan/
-
-```javascript
-
-const stringify = fastJson({
-  title: 'Example Schema',
-  type: 'object',
-  properties: {
-    id: {
-      type: 'integer'
-    }
-  }
-}, { uglify: true })
-
-// stringify is now minified code
-console.log(stringify({ some: 'object' })) // '{"some":"object"}'
 ```
 
 <a name="nullable"></a>

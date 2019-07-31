@@ -7,7 +7,6 @@ var merge = require('deepmerge')
 var util = require('util')
 var validate = require('./schema-validator')
 
-var uglify = null
 var isLong
 try {
   isLong = require('long').isLong
@@ -118,10 +117,6 @@ function build (schema, options) {
     ;
      return ${main}
   `
-
-  if (options.uglify) {
-    code = uglifyCode(code)
-  }
 
   var dependencies = []
   var dependenciesName = []
@@ -993,38 +988,6 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
   return {
     code,
     laterCode
-  }
-}
-
-function uglifyCode (code) {
-  if (!uglify) {
-    loadUglify()
-  }
-
-  var uglified = uglify.minify(code, { parse: { bare_returns: true } })
-
-  if (uglified.error) {
-    throw uglified.error
-  }
-
-  return uglified.code
-}
-
-function loadUglify () {
-  try {
-    uglify = require('uglify-es')
-    var uglifyVersion = require('uglify-es/package.json').version
-
-    if (uglifyVersion[0] !== '3') {
-      throw new Error('Only version 3 of uglify-es is supported')
-    }
-  } catch (e) {
-    uglify = null
-    if (e.code === 'MODULE_NOT_FOUND') {
-      throw new Error('In order to use uglify, you have to manually install `uglify-es`')
-    }
-
-    throw e
   }
 }
 

@@ -5,16 +5,13 @@ const build = require('..')
 
 function buildTest (schema, toStringify, expected) {
   test(`render a ${schema.title} with default as JSON`, (t) => {
-    t.plan(2)
+    t.plan(1)
 
     const stringify = build(schema)
 
-    const stringifyUgly = build(schema, { uglify: true })
     const output = stringify(toStringify)
-    const outputUglify = stringifyUgly(toStringify)
 
     t.strictEqual(output, JSON.stringify(expected))
-    t.strictEqual(outputUglify, JSON.stringify(expected))
   })
 }
 
