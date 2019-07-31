@@ -231,3 +231,20 @@ test('object with field with type union of multiple objects', (t) => {
     t.fail()
   }
 })
+
+test('null value in schema', (t) => {
+  t.plan(0)
+
+  const schema = {
+    title: 'schema with null child',
+    type: 'string',
+    nullable: true,
+    enum: [null]
+  }
+
+  try {
+    build(schema)
+  } catch (e) {
+    t.fail()
+  }
+})

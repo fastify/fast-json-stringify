@@ -188,6 +188,7 @@ function inferTypeByKeyword (schema) {
 }
 
 function hasAnyOf (schema) {
+  if (!schema) { return false }
   if ('anyOf' in schema) { return true }
 
   var objectKeys = Object.keys(schema)
