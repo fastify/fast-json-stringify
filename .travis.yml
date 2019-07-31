@@ -4,9 +4,9 @@ os:
   - windows
   - linux
 node_js:
-- '6'
 - '8'
 - '10'
+- '12'
 
 notifications:
   email:
