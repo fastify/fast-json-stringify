@@ -8,7 +8,7 @@
     "benchmark": "node bench.js",
     "test:lint": "standard",
     "test:typescript": "tsc --project ./test/types/tsconfig.json",
-    "test:unit": "tap -J test/*.test.js test/**/*.test.js",
+    "test:unit": "tap --no-esm --no-cov -J test/*.test.js test/**/*.test.js",
     "test": "npm run test:lint && npm run test:unit && npm run test:typescript",
     "test:report": "npm run test:unit | tee out.tap",
     "test:reporter": "tap-mocha-reporter xunit < out.tap > test/junit-testresults.xml"
@@ -33,29 +33,24 @@
   "devDependencies": {
     "ajv-pack": "^0.3.1",
     "benchmark": "^2.1.4",
-    "is-my-json-valid": "^2.19.0",
+    "compile-json-stringify": "^0.1.2",
+    "is-my-json-valid": "^2.20.0",
+    "json-strify": "^0.1.7",
     "long": "^4.0.0",
     "pre-commit": "^1.2.2",
-    "proxyquire": "^2.1.0",
+    "proxyquire": "^2.1.1",
     "standard": "^13.0.1",
-    "tap": "^12.6.5",
-    "tap-mocha-reporter": "^3.0.9",
-    "typescript": "^3.0.0",
-    "compile-json-stringify": "^0.1.2",
-    "json-strify": "^0.1.7"
+    "tap": "^14.5.0",
+    "tap-mocha-reporter": "^4.0.1",
+    "typescript": "^3.5.3"
   },
   "dependencies": {
-    "ajv": "^6.8.1",
+    "ajv": "^6.10.2",
     "deepmerge": "^4.0.0"
   },
   "standard": {
     "ignore": [
       "schema-validator.js"
-    ]
-  },
-  "greenkeeper": {
-    "ignore": [
-      "tap"
     ]
   }
 }
