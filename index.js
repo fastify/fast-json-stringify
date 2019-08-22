@@ -74,8 +74,8 @@ function build (schema, options) {
     `
   }
 
-  if (schema['$ref']) {
-    schema = refFinder(schema['$ref'], schema, options.schema)
+  if (schema.$ref) {
+    schema = refFinder(schema.$ref, schema, options.schema)
   }
 
   if (schema.type === undefined) {
@@ -309,8 +309,8 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
         if (properties[keys[i]]) continue
   `
   Object.keys(pp).forEach((regex, index) => {
-    if (pp[regex]['$ref']) {
-      pp[regex] = refFinder(pp[regex]['$ref'], fullSchema, externalSchema, fullSchema)
+    if (pp[regex].$ref) {
+      pp[regex] = refFinder(pp[regex].$ref, fullSchema, externalSchema, fullSchema)
     }
     var type = pp[regex].type
     code += `
@@ -385,8 +385,8 @@ function additionalProperty (schema, externalSchema, fullSchema) {
         }
     `
   }
-  if (ap['$ref']) {
-    ap = refFinder(ap['$ref'], fullSchema, externalSchema)
+  if (ap.$ref) {
+    ap = refFinder(ap.$ref, fullSchema, externalSchema)
   }
 
   var type = ap.type
@@ -486,8 +486,8 @@ function refFinder (ref, schema, externalSchema) {
   if (ref[0]) {
     schema = externalSchema[ref[0]]
 
-    if (schema['$ref']) {
-      return refFinder(schema['$ref'], schema, externalSchema)
+    if (schema.$ref) {
+      return refFinder(schema.$ref, schema, externalSchema)
     }
   }
 
@@ -532,8 +532,8 @@ function sanitizeKey (key) {
 
 function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
   Object.keys(schema.properties || {}).forEach((key, i, a) => {
-    if (schema.properties[key]['$ref']) {
-      schema.properties[key] = refFinder(schema.properties[key]['$ref'], fullSchema, externalSchema)
+    if (schema.properties[key].$ref) {
+      schema.properties[key] = refFinder(schema.properties[key].$ref, fullSchema, externalSchema)
     }
 
     // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
@@ -783,8 +783,8 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
   `
   var laterCode = ''
 
-  if (schema.items['$ref']) {
-    schema.items = refFinder(schema.items['$ref'], fullSchema, externalSchema)
+  if (schema.items.$ref) {
+    schema.items = refFinder(schema.items.$ref, fullSchema, externalSchema)
   }
 
   var result = { code: '', laterCode: '' }

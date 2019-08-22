@@ -5,7 +5,7 @@ const validator = require('is-my-json-valid')
 const proxyquire = require('proxyquire')
 const build = proxyquire('..', { long: null })
 
-test(`render an integer as JSON`, (t) => {
+test('render an integer as JSON', (t) => {
   t.plan(2)
 
   const schema = {
@@ -21,7 +21,7 @@ test(`render an integer as JSON`, (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test(`render an object with an integer as JSON`, (t) => {
+test('render an object with an integer as JSON', (t) => {
   t.plan(2)
 
   const schema = {
@@ -44,7 +44,7 @@ test(`render an object with an integer as JSON`, (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test(`render an array with an integer as JSON`, (t) => {
+test('render an array with an integer as JSON', (t) => {
   t.plan(2)
 
   const schema = {
@@ -63,7 +63,7 @@ test(`render an array with an integer as JSON`, (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test(`render an object with an additionalProperty of type integer as JSON`, (t) => {
+test('render an object with an additionalProperty of type integer as JSON', (t) => {
   t.plan(2)
 
   const schema = {

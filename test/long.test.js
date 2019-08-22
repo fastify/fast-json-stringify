@@ -5,7 +5,7 @@ const validator = require('is-my-json-valid')
 const Long = require('long')
 const build = require('..')
 
-test(`render a long as JSON`, (t) => {
+test('render a long as JSON', (t) => {
   t.plan(2)
 
   const schema = {
@@ -21,7 +21,7 @@ test(`render a long as JSON`, (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test(`render an object with long as JSON`, (t) => {
+test('render an object with long as JSON', (t) => {
   t.plan(2)
 
   const schema = {
@@ -44,7 +44,7 @@ test(`render an object with long as JSON`, (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test(`render an array with long as JSON`, (t) => {
+test('render an array with long as JSON', (t) => {
   t.plan(2)
 
   const schema = {
@@ -63,7 +63,7 @@ test(`render an array with long as JSON`, (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test(`render an object with a long additionalProperty as JSON`, (t) => {
+test('render an object with a long additionalProperty as JSON', (t) => {
   t.plan(2)
 
   const schema = {
