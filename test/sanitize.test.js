@@ -17,7 +17,7 @@ const stringify = build({
       description: 'Age in years"',
       type: 'integer'
     },
-    [(() => `phra'&& process.exit(1) ||'phra`)()]: {},
+    [(() => "phra'&& process.exit(1) ||'phra")()]: {},
     now: {
       type: 'string'
     },
