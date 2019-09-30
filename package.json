@@ -39,7 +39,7 @@
     "proxyquire": "^2.1.0",
     "standard": "^14.0.0",
     "tap": "^12.6.5",
-    "tap-mocha-reporter": "^3.0.9",
+    "tap-mocha-reporter": "^5.0.0",
     "typescript": "^3.0.0",
     "uglify-es": "^3.3.9",
     "compile-json-stringify": "^0.1.2",
