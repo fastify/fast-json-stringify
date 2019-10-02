@@ -766,3 +766,41 @@ test('ref in root external multiple times', (t) => {
 
   t.equal(output, '{"int":42}')
 })
+
+test('ref external to relative definition', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    'relative:to:local': {
+      $id: 'relative:to:local',
+      type: 'object',
+      properties: {
+        foo: { $ref: '#/definitions/foo' }
+      },
+      definitions: {
+        foo: { type: 'string' }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    required: ['foo'],
+    properties: {
+      fooParent: { $ref: 'relative:to:local' }
+    }
+  }
+
+  const object = { fooParent: { foo: 'bar' } }
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"fooParent":{"foo":"bar"}}')
+})
