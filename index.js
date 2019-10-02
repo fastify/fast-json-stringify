@@ -533,7 +533,9 @@ function sanitizeKey (key) {
 function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
   Object.keys(schema.properties || {}).forEach((key, i, a) => {
     if (schema.properties[key].$ref) {
-      schema.properties[key] = refFinder(schema.properties[key].$ref, fullSchema, externalSchema)
+      // if the schema object is deep in the tree, we must resolve the ref in the parent scope
+      const isRelative = schema.definitions && schema.properties[key].$ref[0] === '#'
+      schema.properties[key] = refFinder(schema.properties[key].$ref, isRelative ? schema : fullSchema, externalSchema)
     }
 
     // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
