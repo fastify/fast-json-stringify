@@ -804,3 +804,45 @@ test('ref external to relative definition', (t) => {
 
   t.equal(output, '{"fooParent":{"foo":"bar"}}')
 })
+
+test('ref to nested ref definition', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    'a:b:c1': {
+      $id: 'a:b:c1',
+      type: 'object',
+      definitions: {
+        foo: { $ref: 'a:b:c2#/definitions/foo' }
+      }
+    },
+    'a:b:c2': {
+      $id: 'a:b:c2',
+      type: 'object',
+      definitions: {
+        foo: { type: 'string' }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    required: ['foo'],
+    properties: {
+      foo: { $ref: 'a:b:c1#/definitions/foo' }
+    }
+  }
+
+  const object = { foo: 'foo' }
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"foo":"foo"}')
+})
