@@ -404,6 +404,38 @@ const externalSchema = {
 
 const stringify = fastJson(schema, { schema: externalSchema })
 ```
+External definitions can also reference each other.
+Example:
+```javascript
+const schema = {
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    foo: {
+      $ref: 'strings#/definitions/foo'
+    }
+  }
+}
+
+const externalSchema = {
+  strings: {
+    definitions: {
+      foo: {
+        $ref: 'things#/definitions/foo'
+      }
+    }
+  },
+  things: {
+    definitions: {
+      foo: {
+        type: 'string'
+      }
+    }
+  }
+}
+
+const stringify = fastJson(schema, { schema: externalSchema })
+```
 
 <a name="long"></a>
 #### Long integers

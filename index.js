@@ -310,7 +310,7 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
   `
   Object.keys(pp).forEach((regex, index) => {
     if (pp[regex].$ref) {
-      pp[regex] = refFinder(pp[regex].$ref, fullSchema, externalSchema, fullSchema)
+      pp[regex] = refFinder(pp[regex].$ref, fullSchema, externalSchema)
     }
     var type = pp[regex].type
     code += `
@@ -513,7 +513,8 @@ function refFinder (ref, schema, externalSchema) {
       }
     }
   }
-  return (new Function('schema', code))(schema)
+  const result = (new Function('schema', code))(schema)
+  return result.$ref ? refFinder(result.$ref, schema, externalSchema) : result
 }
 
 function sanitizeKey (key) {
