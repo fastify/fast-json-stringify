@@ -1,6 +1,6 @@
 {
   "name": "fast-json-stringify",
-  "version": "1.15.5",
+  "version": "1.15.6",
   "description": "Stringify your JSON at max speed",
   "main": "index.js",
   "types": "index.d.ts",
@@ -34,7 +34,7 @@
     "ajv-pack": "^0.3.1",
     "benchmark": "^2.1.4",
     "compile-json-stringify": "^0.1.2",
-    "is-my-json-valid": "^2.19.0",
+    "is-my-json-valid": "^2.20.0",
     "json-strify": "^0.1.7",
     "long": "^4.0.0",
     "pre-commit": "^1.2.2",
@@ -46,7 +46,7 @@
     "uglify-es": "^3.3.9"
   },
   "dependencies": {
-    "ajv": "^6.8.1",
+    "ajv": "^6.10.2",
     "deepmerge": "^4.0.0"
   },
   "standard": {
