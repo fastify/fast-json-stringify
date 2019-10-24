@@ -931,8 +931,16 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
     case undefined:
       if ('anyOf' in schema) {
         schema.anyOf.forEach((s, index) => {
+          // inner levels of nesting
           while (s.$ref) {
             s = refFinder(s.$ref, fullSchema, externalSchema)
+          }
+          if ('anyOf' in s) {
+            s.anyOf.forEach((innerS) => {
+              if (innerS.$ref) {
+                throw new Error('Multiple nesting levels of anyOf not supported.')
+              }
+            })
           }
           var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index)
           code += `
