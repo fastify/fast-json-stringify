@@ -293,3 +293,87 @@ test('anyOf and $ref together', (t) => {
     t.fail()
   }
 })
+
+test('anyOf and $ref: 2 levels are fine', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      cs: {
+        anyOf: [
+          {
+            $ref: '#/definitions/Option'
+          },
+          {
+            type: 'boolean'
+          }
+        ]
+      }
+    },
+    definitions: {
+      Option: {
+        anyOf: [
+          {
+            type: 'number'
+          },
+          {
+            type: 'boolean'
+          }
+        ]
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  try {
+    const value = stringify({
+      cs: 3
+    })
+    t.is(value, '{"cs":3}')
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('anyOf and $ref: multiple levels should throw at build.', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      cs: {
+        anyOf: [
+          {
+            $ref: '#/definitions/Option'
+          },
+          {
+            type: 'boolean'
+          }
+        ]
+      }
+    },
+    definitions: {
+      Option: {
+        anyOf: [
+          {
+            $ref: '#/definitions/Option2'
+          },
+          {
+            type: 'boolean'
+          }
+        ]
+      },
+      Option2: {
+        type: 'number'
+      }
+    }
+  }
+
+  try {
+    build(schema)
+    t.fail('Should have thrown exception')
+  } catch (e) {
+    t.pass('Exception thrown')
+  }
+})
