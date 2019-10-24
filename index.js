@@ -910,6 +910,10 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
 
   subKey = subKey || ''
 
+  if (schema.$ref) {
+    schema = refFinder(schema.$ref, fullSchema, fullSchema)
+  }
+  
   if (schema.type === undefined) {
     var inferedType = inferTypeByKeyword(schema)
     if (inferedType) {

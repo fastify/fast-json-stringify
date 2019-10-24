@@ -248,3 +248,33 @@ test('null value in schema', (t) => {
     t.fail()
   }
 })
+
+test('anyOf and $ref together', (t) => {
+  t.plan(0)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      'cs': {
+        'anyOf': [
+          {
+            '$ref': '#/definitions/Option'
+          },
+          {
+            'type': 'boolean'
+          }
+        ]
+      }
+    }, 'definitions': {
+      'Option': {
+        'type': 'string'
+      }
+    }
+  }
+
+  try {
+    build(schema)
+  } catch (e) {
+    t.fail()
+  }
+})
