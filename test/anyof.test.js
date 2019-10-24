@@ -255,19 +255,20 @@ test('anyOf and $ref together', (t) => {
   const schema = {
     type: 'object',
     properties: {
-      'cs': {
-        'anyOf': [
+      cs: {
+        anyOf: [
           {
-            '$ref': '#/definitions/Option'
+            $ref: '#/definitions/Option'
           },
           {
-            'type': 'boolean'
+            type: 'boolean'
           }
         ]
       }
-    }, 'definitions': {
-      'Option': {
-        'type': 'string'
+    },
+    definitions: {
+      Option: {
+        type: 'string'
       }
     }
   }
