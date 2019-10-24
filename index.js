@@ -911,7 +911,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
   subKey = subKey || ''
 
   if (schema.$ref) {
-    schema = refFinder(schema.$ref, fullSchema, fullSchema)
+    schema = refFinder(schema.$ref, fullSchema, externalSchema)
   }
 
   if (schema.type === undefined) {
@@ -960,6 +960,9 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
     case undefined:
       if ('anyOf' in schema) {
         schema.anyOf.forEach((s, index) => {
+          while (s.$ref) {
+            s = refFinder(s.$ref, fullSchema, externalSchema)
+          }
           var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index)
           code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null })}, obj${accessor}))
@@ -1025,7 +1028,6 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
         throw new Error(`${type} unsupported`)
       }
   }
-
   return {
     code,
     laterCode

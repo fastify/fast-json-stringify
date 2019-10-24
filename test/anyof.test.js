@@ -250,7 +250,7 @@ test('null value in schema', (t) => {
 })
 
 test('anyOf and $ref together', (t) => {
-  t.plan(0)
+  t.plan(2)
 
   const schema = {
     type: 'object',
@@ -273,8 +273,22 @@ test('anyOf and $ref together', (t) => {
     }
   }
 
+  const stringify = build(schema)
+
   try {
-    build(schema)
+    const value = stringify({
+      cs: 'franco'
+    })
+    t.is(value, '{"cs":"franco"}')
+  } catch (e) {
+    t.fail()
+  }
+
+  try {
+    const value = stringify({
+      cs: true
+    })
+    t.is(value, '{"cs":true}')
   } catch (e) {
     t.fail()
   }
