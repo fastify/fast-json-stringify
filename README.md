@@ -107,6 +107,21 @@ And nested ones, too.
 | `Date`     | `string` via `toISOString()` |
 | `RegExp`   | `string`                     |
 
+A field with schema type `string` and format `date-time` will be serialized by its `toISOString()`.
+Example with a MomentJS object:
+```javascript
+const moment = require('moment')
+
+const stringify = fastJson({
+  title: 'Example Schema with string date-time field',
+  type: 'string',
+  format: 'date-time'
+}
+
+console.log(stringify(moment())) // '"YYYY-MM-DDTHH:mm:ss.sssZ"'
+```
+
+
 <a name="required"></a>
 #### Required
 You can set specific fields of an object as required in your schema by adding the field name inside the `required` array in your schema.

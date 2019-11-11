@@ -43,7 +43,8 @@
     "tap": "^12.6.5",
     "tap-mocha-reporter": "^3.0.9",
     "typescript": "^3.6.3",
-    "uglify-es": "^3.3.9"
+    "uglify-es": "^3.3.9",
+    "moment": "^2.24.0"
   },
   "dependencies": {
     "ajv": "^6.10.2",

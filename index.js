@@ -54,6 +54,7 @@ function build (schema, options) {
     ${$asString.toString()}
     ${$asStringNullable.toString()}
     ${$asStringSmall.toString()}
+    ${$asDate.toString()}
     ${$asNumber.toString()}
     ${$asNumberNullable.toString()}
     ${$asIntegerNullable.toString()}
@@ -92,7 +93,8 @@ function build (schema, options) {
       code = buildObject(schema, code, main, options.schema, schema)
       break
     case 'string':
-      main = schema.nullable ? $asStringNullable.name : $asString.name
+      var stringSerializer = (schema.format === 'date-time') ? $asDate : $asString
+      main = schema.nullable ? $asStringNullable.name : stringSerializer.name
       break
     case 'integer':
       main = schema.nullable ? $asIntegerNullable.name : $asInteger.name
@@ -244,6 +246,14 @@ function $asBooleanNullable (bool) {
   return bool === null ? null : $asBoolean(bool)
 }
 
+function $asDate (date) {
+  if (typeof date.toISOString === 'function') {
+    return '"' + date.toISOString() + '"'
+  } else {
+    return $asString(date)
+  }
+}
+
 function $asString (str) {
   if (str instanceof Date) {
     return '"' + str.toISOString() + '"'
@@ -313,6 +323,8 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
       pp[regex] = refFinder(pp[regex].$ref, fullSchema, externalSchema)
     }
     var type = pp[regex].type
+    var format = pp[regex].format
+    var stringSerializer = (format === 'date-time') ? '$asDate' : '$asString'
     code += `
         if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
     `
@@ -336,7 +348,7 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
     } else if (type === 'string') {
       code += `
           ${addComma}
-          json += $asString(keys[i]) + ':' + $asString(obj[keys[i]])
+          json += $asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
       `
     } else if (type === 'integer') {
       code += `
@@ -390,6 +402,8 @@ function additionalProperty (schema, externalSchema, fullSchema) {
   }
 
   var type = ap.type
+  var format = ap.format
+  var stringSerializer = (format === 'date-time') ? '$asDate' : '$asString'
   if (type === 'object') {
     code += buildObject(ap, '', 'buildObjectAP', externalSchema)
     code += `
@@ -410,7 +424,7 @@ function additionalProperty (schema, externalSchema, fullSchema) {
   } else if (type === 'string') {
     code += `
         ${addComma}
-        json += $asString(keys[i]) + ':' + $asString(obj[keys[i]])
+        json += $asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
     `
   } else if (type === 'integer') {
     code += `
@@ -899,7 +913,8 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       `
       break
     case 'string':
-      code += nullable ? `json += obj${accessor} === null ? null : $asString(obj${accessor})` : `json += $asString(obj${accessor})`
+      var stringSerializer = (schema.format === 'date-time') ? '$asDate' : '$asString'
+      code += nullable ? `json += obj${accessor} === null ? null : ${stringSerializer}(obj${accessor})` : `json += ${stringSerializer}(obj${accessor})`
       break
     case 'integer':
       code += nullable ? `json += obj${accessor} === null ? null : $asInteger(obj${accessor})` : `json += $asInteger(obj${accessor})`
@@ -954,7 +969,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
           var nestedResult = nested(laterCode, name, key, tempSchema, externalSchema, fullSchema, subKey)
           if (type === 'string') {
             code += `
-              ${index === 0 ? 'if' : 'else if'}(typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || obj${accessor} instanceof RegExp)
+              ${index === 0 ? 'if' : 'else if'}(typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || typeof obj${accessor}.toISOString === "function" || obj${accessor} instanceof RegExp)
                 ${nestedResult.code}
             `
           } else if (type === 'null') {
