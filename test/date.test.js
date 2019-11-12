@@ -22,6 +22,24 @@ test('render a date in a string as JSON', (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
+test('render an date in a string when type is date-format as ISOString', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'an date in a string',
+    type: 'string',
+    format: 'date-time'
+  }
+  const toStringify = new Date()
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, JSON.stringify(toStringify))
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
 test('render an object in a string when type is date-format as ISOString', (t) => {
   t.plan(2)
 
@@ -31,6 +49,29 @@ test('render an object in a string when type is date-format as ISOString', (t) =
     format: 'date-time'
   }
   const toStringify = moment()
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, JSON.stringify(toStringify))
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('render a nested object in a string when type is date-format as ISOString', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'an object in a string',
+    type: 'object',
+    properties: {
+      date: {
+        type: 'string',
+        format: 'date-time'
+      }
+    }
+  }
+  const toStringify = { date: moment() }
 
   const validate = validator(schema)
   const stringify = build(schema)
