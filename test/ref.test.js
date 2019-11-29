@@ -846,3 +846,33 @@ test('ref to nested ref definition', (t) => {
 
   t.equal(output, '{"foo":"foo"}')
 })
+
+test('ref in definition with exact match', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    '#/definitions/foo': {
+      type: 'string'
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: { $ref: '#/definitions/foo' }
+    }
+  }
+
+  const object = { foo: 'foo' }
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"foo":"foo"}')
+})

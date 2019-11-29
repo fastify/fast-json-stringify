@@ -479,6 +479,8 @@ function idFinder (schema, searchedId) {
 }
 
 function refFinder (ref, schema, externalSchema) {
+  if (externalSchema && externalSchema[ref]) return externalSchema[ref]
+
   // Split file from walk
   ref = ref.split('#')
 
