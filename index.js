@@ -214,6 +214,8 @@ function $asNull () {
 function $asInteger (i) {
   if (isLong && isLong(i)) {
     return i.toString()
+  } else if (typeof i === 'bigint') {
+    return i.toString()
   } else {
     return $asNumber(i)
   }
