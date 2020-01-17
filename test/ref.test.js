@@ -876,3 +876,202 @@ test('ref in definition with exact match', (t) => {
 
   t.equal(output, '{"foo":"foo"}')
 })
+
+test('Bad key', t => {
+  t.test('Find match', t => {
+    t.plan(1)
+    try {
+      build({
+        definitions: {
+          projectId: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer' }
+            }
+          }
+        },
+        type: 'object',
+        properties: {
+          data: {
+            $ref: '#/definitions/porjectId'
+          }
+        }
+      })
+      t.fail('Should throw')
+    } catch (err) {
+      t.is(err.message, "Cannot find reference 'porjectId', did you mean 'projectId'?")
+    }
+  })
+
+  t.test('No match', t => {
+    t.plan(1)
+    try {
+      build({
+        definitions: {
+          projectId: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer' }
+            }
+          }
+        },
+        type: 'object',
+        properties: {
+          data: {
+            $ref: '#/definitions/foobar'
+          }
+        }
+      })
+      t.fail('Should throw')
+    } catch (err) {
+      t.is(err.message, "Cannot find reference 'foobar'")
+    }
+  })
+
+  t.test('Find match (external schema)', t => {
+    t.plan(1)
+    try {
+      build({
+        type: 'object',
+        properties: {
+          data: {
+            $ref: 'external#/definitions/porjectId'
+          }
+        }
+      }, {
+        schema: {
+          external: {
+            definitions: {
+              projectId: {
+                type: 'object',
+                properties: {
+                  id: { type: 'integer' }
+                }
+              }
+            }
+          }
+        }
+      })
+      t.fail('Should throw')
+    } catch (err) {
+      t.is(err.message, "Cannot find reference 'porjectId', did you mean 'projectId'?")
+    }
+  })
+
+  t.test('No match (external schema)', t => {
+    t.plan(1)
+    try {
+      build({
+        type: 'object',
+        properties: {
+          data: {
+            $ref: 'external#/definitions/foobar'
+          }
+        }
+      }, {
+        schema: {
+          external: {
+            definitions: {
+              projectId: {
+                type: 'object',
+                properties: {
+                  id: { type: 'integer' }
+                }
+              }
+            }
+          }
+        }
+      })
+      t.fail('Should throw')
+    } catch (err) {
+      t.is(err.message, "Cannot find reference 'foobar'")
+    }
+  })
+
+  t.test('Find match (external definitions typo)', t => {
+    t.plan(1)
+    try {
+      build({
+        type: 'object',
+        properties: {
+          data: {
+            $ref: 'external#/deifnitions/projectId'
+          }
+        }
+      }, {
+        schema: {
+          external: {
+            definitions: {
+              projectId: {
+                type: 'object',
+                properties: {
+                  id: { type: 'integer' }
+                }
+              }
+            }
+          }
+        }
+      })
+      t.fail('Should throw')
+    } catch (err) {
+      t.is(err.message, "Cannot find reference 'deifnitions', did you mean 'definitions'?")
+    }
+  })
+
+  t.test('Find match (definitions typo)', t => {
+    t.plan(1)
+    try {
+      build({
+        definitions: {
+          projectId: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer' }
+            }
+          }
+        },
+        type: 'object',
+        properties: {
+          data: {
+            $ref: '#/deifnitions/projectId'
+          }
+        }
+      })
+      t.fail('Should throw')
+    } catch (err) {
+      t.is(err.message, "Cannot find reference 'deifnitions', did you mean 'definitions'?")
+    }
+  })
+
+  t.test('Find match (external schema typo)', t => {
+    t.plan(1)
+    try {
+      build({
+        type: 'object',
+        properties: {
+          data: {
+            $ref: 'extrenal#/definitions/projectId'
+          }
+        }
+      }, {
+        schema: {
+          external: {
+            definitions: {
+              projectId: {
+                type: 'object',
+                properties: {
+                  id: { type: 'integer' }
+                }
+              }
+            }
+          }
+        }
+      })
+      t.fail('Should throw')
+    } catch (err) {
+      t.is(err.message, "Cannot find reference 'extrenal', did you mean 'external'?")
+    }
+  })
+
+  t.end()
+})
