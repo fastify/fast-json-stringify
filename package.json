@@ -48,7 +48,8 @@
   },
   "dependencies": {
     "ajv": "^6.10.2",
-    "deepmerge": "^4.0.0"
+    "deepmerge": "^4.0.0",
+    "string-similarity": "^4.0.1"
   },
   "standard": {
     "ignore": [

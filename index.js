@@ -6,6 +6,7 @@ var Ajv = require('ajv')
 var merge = require('deepmerge')
 var util = require('util')
 var validate = require('./schema-validator')
+var stringSimilarity = null
 
 var uglify = null
 var isLong
@@ -490,6 +491,10 @@ function refFinder (ref, schema, externalSchema) {
   if (ref[0]) {
     schema = externalSchema[ref[0]]
 
+    if (schema === undefined) {
+      findBadKey(externalSchema, [ref[0]])
+    }
+
     if (schema.$ref) {
       return refFinder(schema.$ref, schema, externalSchema)
     }
@@ -517,8 +522,30 @@ function refFinder (ref, schema, externalSchema) {
       }
     }
   }
-  const result = (new Function('schema', code))(schema)
+  var result
+  try {
+    result = (new Function('schema', code))(schema)
+  } catch (err) {}
+
+  if (result === undefined) {
+    findBadKey(schema, walk.slice(1))
+  }
   return result.$ref ? refFinder(result.$ref, schema, externalSchema) : result
+
+  function findBadKey (obj, keys) {
+    if (keys.length === 0) return null
+    const key = sanitizeKey(keys.shift())
+    if (obj[key] === undefined) {
+      stringSimilarity = stringSimilarity || require('string-similarity')
+      const { bestMatch } = stringSimilarity.findBestMatch(key, Object.keys(obj))
+      if (bestMatch.rating >= 0.5) {
+        throw new Error(`Cannot find reference '${key}', did you mean '${bestMatch.target}'?`)
+      } else {
+        throw new Error(`Cannot find reference '${key}'`)
+      }
+    }
+    return findBadKey(obj[key], keys)
+  }
 }
 
 function sanitizeKey (key) {
