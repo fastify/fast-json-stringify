@@ -685,15 +685,13 @@ function buildCodeWithAllOfs (schema, code, laterCode, name, externalSchema, ful
 }
 
 function buildInnerObject (schema, name, externalSchema, fullSchema) {
-  var laterCode = ''
-  var code = ''
+  var result = buildCodeWithAllOfs(schema, '', '', name, externalSchema, fullSchema)
   if (schema.patternProperties) {
-    code += addPatternProperties(schema, externalSchema, fullSchema)
+    result.code += addPatternProperties(schema, externalSchema, fullSchema)
   } else if (schema.additionalProperties && !schema.patternProperties) {
-    code += addAdditionalProperties(schema, externalSchema, fullSchema)
+    result.code += addAdditionalProperties(schema, externalSchema, fullSchema)
   }
-
-  return buildCodeWithAllOfs(schema, code, laterCode, name, externalSchema, fullSchema)
+  return result
 }
 
 function addIfThenElse (schema, name, externalSchema, fullSchema) {
