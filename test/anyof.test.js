@@ -337,7 +337,7 @@ test('anyOf and $ref: 2 levels are fine', (t) => {
 })
 
 test('anyOf and $ref: multiple levels should throw at build.', (t) => {
-  t.plan(1)
+  t.plan(3)
 
   const schema = {
     type: 'object',
@@ -360,7 +360,7 @@ test('anyOf and $ref: multiple levels should throw at build.', (t) => {
             $ref: '#/definitions/Option2'
           },
           {
-            type: 'boolean'
+            type: 'string'
           }
         ]
       },
@@ -370,10 +370,29 @@ test('anyOf and $ref: multiple levels should throw at build.', (t) => {
     }
   }
 
+  const stringify = build(schema)
   try {
-    build(schema)
-    t.fail('Should have thrown exception')
+    const value = stringify({
+      cs: 3
+    })
+    t.is(value, '{"cs":3}')
   } catch (e) {
-    t.pass('Exception thrown')
+    t.fail(e)
+  }
+  try {
+    const value = stringify({
+      cs: true
+    })
+    t.is(value, '{"cs":true}')
+  } catch (e) {
+    t.fail(e)
+  }
+  try {
+    const value = stringify({
+      cs: 'pippo'
+    })
+    t.is(value, '{"cs":"pippo"}')
+  } catch (e) {
+    t.fail(e)
   }
 })

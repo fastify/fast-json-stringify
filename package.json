@@ -1,5 +1,5 @@
 {
-  "name": "fast-json-stringify",
+  "name": "@hazam/fast-json-stringify",
   "version": "1.15.6",
   "description": "Stringify your JSON at max speed",
   "main": "index.js",
