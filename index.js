@@ -904,11 +904,25 @@ function buildArrayTypeCondition (type, accessor) {
   return condition
 }
 
+function dereferenceAnyOfRefs (schema, externalSchema, fullSchema) {
+  schema.anyOf.forEach((s, index) => {
+    // follow the refs
+    while (s.$ref) {
+      schema.anyOf[index] = refFinder(s.$ref, fullSchema, externalSchema)
+      s = schema.anyOf[index]
+    }
+  })
+}
+
 function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKey) {
   var code = ''
   var funcName
 
   subKey = subKey || ''
+
+  if (schema.$ref) {
+    schema = refFinder(schema.$ref, fullSchema, externalSchema)
+  }
 
   if (schema.type === undefined) {
     var inferedType = inferTypeByKeyword(schema)
@@ -955,6 +969,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       break
     case undefined:
       if ('anyOf' in schema) {
+        dereferenceAnyOfRefs(schema, externalSchema, fullSchema)
         schema.anyOf.forEach((s, index) => {
           var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index)
           code += `

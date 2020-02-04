@@ -248,3 +248,151 @@ test('null value in schema', (t) => {
     t.fail()
   }
 })
+
+test('anyOf and $ref together', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      cs: {
+        anyOf: [
+          {
+            $ref: '#/definitions/Option'
+          },
+          {
+            type: 'boolean'
+          }
+        ]
+      }
+    },
+    definitions: {
+      Option: {
+        type: 'string'
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  try {
+    const value = stringify({
+      cs: 'franco'
+    })
+    t.is(value, '{"cs":"franco"}')
+  } catch (e) {
+    t.fail()
+  }
+
+  try {
+    const value = stringify({
+      cs: true
+    })
+    t.is(value, '{"cs":true}')
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('anyOf and $ref: 2 levels are fine', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      cs: {
+        anyOf: [
+          {
+            $ref: '#/definitions/Option'
+          },
+          {
+            type: 'boolean'
+          }
+        ]
+      }
+    },
+    definitions: {
+      Option: {
+        anyOf: [
+          {
+            type: 'number'
+          },
+          {
+            type: 'boolean'
+          }
+        ]
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  try {
+    const value = stringify({
+      cs: 3
+    })
+    t.is(value, '{"cs":3}')
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('anyOf and $ref: multiple levels should throw at build.', (t) => {
+  t.plan(3)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      cs: {
+        anyOf: [
+          {
+            $ref: '#/definitions/Option'
+          },
+          {
+            type: 'boolean'
+          }
+        ]
+      }
+    },
+    definitions: {
+      Option: {
+        anyOf: [
+          {
+            $ref: '#/definitions/Option2'
+          },
+          {
+            type: 'string'
+          }
+        ]
+      },
+      Option2: {
+        type: 'number'
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  try {
+    const value = stringify({
+      cs: 3
+    })
+    t.is(value, '{"cs":3}')
+  } catch (e) {
+    t.fail(e)
+  }
+  try {
+    const value = stringify({
+      cs: true
+    })
+    t.is(value, '{"cs":true}')
+  } catch (e) {
+    t.fail(e)
+  }
+  try {
+    const value = stringify({
+      cs: 'pippo'
+    })
+    t.is(value, '{"cs":"pippo"}')
+  } catch (e) {
+    t.fail(e)
+  }
+})
