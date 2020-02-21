@@ -75,6 +75,7 @@ function build (schema, options) {
     `
   }
 
+  const fullSchema = schema
   if (schema.$ref) {
     schema = refFinder(schema.$ref, schema, options.schema)
   }
@@ -90,7 +91,7 @@ function build (schema, options) {
   switch (schema.type) {
     case 'object':
       main = '$main'
-      code = buildObject(schema, code, main, options.schema, schema)
+      code = buildObject(schema, code, main, options.schema, fullSchema)
       break
     case 'string':
       main = schema.nullable ? $asStringNullable.name : $asString.name
