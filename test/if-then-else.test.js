@@ -149,6 +149,33 @@ const nestedDeepElseSchema = {
   additionalProperties: schema
 }
 
+const noElseSchema = {
+  type: 'object',
+  properties: {
+  },
+  if: {
+    properties: {
+      kind: { type: 'string', enum: ['foobar'] }
+    }
+  },
+  then: {
+    properties: {
+      kind: { type: 'string', enum: ['foobar'] },
+      foo: { type: 'string' },
+      bar: { type: 'number' },
+      list: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            value: { type: 'string' }
+          }
+        }
+      }
+    }
+  }
+}
 const fooBarInput = {
   kind: 'foobar',
   foo: 'FOO',
@@ -204,6 +231,15 @@ const alphabetOutput = JSON.stringify({
 })
 const deepFoobarOutput = JSON.stringify({
   foobar: JSON.parse(foobarOutput)
+})
+const noElseGreetingOutput = JSON.stringify({
+  kind: 'greeting',
+  foo: 'FOO',
+  bar: 42,
+  hi: 'HI',
+  hello: 45,
+  a: 'A',
+  b: 35
 })
 
 t.test('if-then-else', t => {
@@ -261,6 +297,12 @@ t.test('if-then-else', t => {
       schema: nestedDeepElseSchema,
       input: deepFoobarInput,
       expected: deepFoobarOutput
+    },
+    {
+      name: 'no else',
+      schema: noElseSchema,
+      input: greetingInput,
+      expected: noElseGreetingOutput
     }
   ]
 
