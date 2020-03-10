@@ -704,7 +704,7 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
   const copy = merge({}, schema)
   const i = copy.if
   const then = copy.then
-  const e = copy.else
+  const e = copy.else ? copy.else : { additionalProperties: true }
   delete copy.if
   delete copy.then
   delete copy.else
@@ -727,27 +727,25 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
   code += `
     }
   `
-  if (e) {
-    merged = merge(copy, e)
+  merged = merge(copy, e)
 
-    code += `
+  code += `
       else {
     `
 
-    if (merged.if && merged.then) {
-      innerR = addIfThenElse(merged, name + 'Else', externalSchema, fullSchema)
-      code += innerR.code
-      laterCode += innerR.laterCode
-    }
+  if (merged.if && merged.then) {
+    innerR = addIfThenElse(merged, name + 'Else', externalSchema, fullSchema)
+    code += innerR.code
+    laterCode += innerR.laterCode
+  }
 
-    r = buildInnerObject(merged, name + 'Else', externalSchema, fullSchema)
-    code += r.code
-    laterCode += r.laterCode
+  r = buildInnerObject(merged, name + 'Else', externalSchema, fullSchema)
+  code += r.code
+  laterCode += r.laterCode
 
-    code += `
+  code += `
       }
     `
-  }
   return { code: code, laterCode: laterCode }
 }
 
