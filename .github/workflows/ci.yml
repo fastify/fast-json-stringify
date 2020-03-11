@@ -1,0 +1,20 @@
+name: CI workflow
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [6.x, 8.x, 10.x, 11.x, 12.x]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: Install Dependencies
+      run: npm install
+    - name: Linter
+      run: npm run test:lint
+    - name: Test
+      run: npm run test:report && npm run test:reporter
