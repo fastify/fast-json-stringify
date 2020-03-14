@@ -13,6 +13,6 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - name: Install Dependencies
-      run: npm install
+      run: npm install --ignore-scripts
     - name: Test
       run: npm run test
