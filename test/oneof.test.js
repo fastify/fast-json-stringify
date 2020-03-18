@@ -27,8 +27,7 @@ test('object with multiple types field', (t) => {
     })
     t.is(value, '{"str":"string"}')
   } catch (e) {
-    console.log('errorrrrr', e)
-    t.fail()
+    t.fail(e.message)
   }
 
   try {
