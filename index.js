@@ -127,7 +127,7 @@ function build (schema, options) {
 
   var dependencies = []
   var dependenciesName = []
-  if (hasAnyOf(schema) || hasSchemaSomeIf) {
+  if (hasOf(schema) || hasSchemaSomeIf) {
     dependencies.push(new Ajv(options.ajv))
     dependenciesName.push('ajv')
   }
@@ -189,15 +189,15 @@ function inferTypeByKeyword (schema) {
   return schema.type
 }
 
-function hasAnyOf (schema) {
+function hasOf (schema) {
   if (!schema) { return false }
-  if ('anyOf' in schema) { return true }
+  if ('anyOf' in schema || 'oneOf' in schema) { return true }
 
   var objectKeys = Object.keys(schema)
   for (var i = 0; i < objectKeys.length; i++) {
     var value = schema[objectKeys[i]]
     if (typeof value === 'object') {
-      if (hasAnyOf(value)) { return true }
+      if (hasOf(value)) { return true }
     }
   }
 
@@ -903,12 +903,12 @@ function buildArrayTypeCondition (type, accessor) {
   return condition
 }
 
-function dereferenceAnyOfRefs (schema, externalSchema, fullSchema) {
-  schema.anyOf.forEach((s, index) => {
+function dereferenceOfRefs (schema, externalSchema, fullSchema, type) {
+  schema[type].forEach((s, index) => {
     // follow the refs
     while (s.$ref) {
-      schema.anyOf[index] = refFinder(s.$ref, fullSchema, externalSchema)
-      s = schema.anyOf[index]
+      schema[type][index] = refFinder(s.$ref, fullSchema, externalSchema)
+      s = schema[type][index]
     }
   })
 }
@@ -968,8 +968,21 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       break
     case undefined:
       if ('anyOf' in schema) {
-        dereferenceAnyOfRefs(schema, externalSchema, fullSchema)
+        dereferenceOfRefs(schema, externalSchema, fullSchema, 'anyOf')
         schema.anyOf.forEach((s, index) => {
+          var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index)
+          code += `
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null })}, obj${accessor}))
+              ${nestedResult.code}
+          `
+          laterCode = nestedResult.laterCode
+        })
+        code += `
+          else json+= null
+        `
+      } else if ('oneOf' in schema) {
+        dereferenceOfRefs(schema, externalSchema, fullSchema, 'oneOf')
+        schema.oneOf.forEach((s, index) => {
           var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index)
           code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null })}, obj${accessor}))
