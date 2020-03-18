@@ -75,7 +75,8 @@ test('object with field of type object or null', (t) => {
   try {
     const value = stringify({
       prop: {
-        str: 'string'
+        str: 'string',
+        remove: 'this'
       }
     })
     t.is(value, '{"prop":{"str":"string"}}')
