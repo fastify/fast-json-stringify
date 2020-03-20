@@ -9,9 +9,7 @@
     "test:lint": "standard",
     "test:typescript": "tsc --project ./test/types/tsconfig.json",
     "test:unit": "tap -J test/*.test.js test/**/*.test.js",
-    "test": "npm run test:lint && npm run test:unit && npm run test:typescript",
-    "test:report": "npm run test:unit | tee out.tap",
-    "test:reporter": "tap-mocha-reporter xunit < out.tap > test/junit-testresults.xml"
+    "test": "npm run test:lint && npm run test:unit && npm run test:typescript"
   },
   "precommit": "test",
   "repository": {
@@ -42,7 +40,6 @@
     "semver": "^7.1.0",
     "standard": "^14.0.0",
     "tap": "^12.6.5",
-    "tap-mocha-reporter": "^3.0.9",
     "typescript": "^3.7.5",
     "uglify-es": "^3.3.9"
   },
