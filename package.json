@@ -52,10 +52,5 @@
     "ignore": [
       "schema-validator.js"
     ]
-  },
-  "greenkeeper": {
-    "ignore": [
-      "tap"
-    ]
   }
 }
