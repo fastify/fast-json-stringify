@@ -1,7 +1,7 @@
 # fast-json-stringify
 
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](http://standardjs.com/)
-![Ci Workflow](https://github.com/fastify/fastify-bearer-auth/workflows/CI%20workflow/badge.svg)
+![Ci Workflow](https://github.com/fastify/fast-json-stringify/workflows/CI%20workflow/badge.svg)
 [![NPM downloads](https://img.shields.io/npm/dm/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify) 
 
 
