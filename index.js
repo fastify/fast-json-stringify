@@ -226,7 +226,7 @@ function getStringSerializer (format) {
 
 function $pad2Zeros (num) {
   var s = '00' + num
-  return s.substr(s.length - 2)
+  return s[s.length - 2] + s[s.length - 1]
 }
 
 function $asNull () {
