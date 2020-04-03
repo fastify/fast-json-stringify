@@ -105,15 +105,19 @@ And nested ones, too.
 <a name="specific"></a>
 #### Specific use cases
 
-| Instance   | Serialized as                |
-| -----------|------------------------------|
-| `Date`     | `string` via `toISOString()` |
-| `RegExp`   | `string`                     |
-| `BigInt`   | `integer` via `toString`     |
+| Instance | Serialized as                |
+| -------- | ---------------------------- |
+| `Date`   | `string` via `toISOString()` |
+| `RegExp` | `string`                     |
+| `BigInt` | `integer` via `toString`     |
 
-[JSON Schema built-in formats](https://json-schema.org/understanding-json-schema/reference/string.html#built-in-formats) for dates are supported and will be serialized using the MomentJS library.
+[JSON Schema built-in formats](https://json-schema.org/understanding-json-schema/reference/string.html#built-in-formats) for dates are supported and will be serialized as:
 
-The following formats are supported: `date-time`, `date` and `time`.
+| Format      | Serialized format example  |
+| ----------- | -------------------------- |
+| `date-time` | `2020-04-03T09:11:08.615Z` |
+| `date`      | `2020-04-03`               |
+| `time`      | `09:11:08`                 |
 
 Example with a MomentJS object:
 
