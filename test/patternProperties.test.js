@@ -21,7 +21,7 @@ test('patternProperties', (t) => {
   })
 
   const obj = { str: 'test', foo: 42, ofoo: true, foof: 'string', objfoo: { a: true }, notMe: false }
-  t.equal(stringify(obj), '{"foo":"42","ofoo":"true","foof":"string","objfoo":"[object Object]","str":"test"}')
+  t.equal(stringify(obj), '{"str":"test","foo":"42","ofoo":"true","foof":"string","objfoo":"[object Object]"}')
 })
 
 test('patternProperties should not change properties', (t) => {
@@ -42,7 +42,7 @@ test('patternProperties should not change properties', (t) => {
   })
 
   const obj = { foo: '42', ofoo: 42 }
-  t.equal(stringify(obj), '{"ofoo":42,"foo":"42"}')
+  t.equal(stringify(obj), '{"foo":"42","ofoo":42}')
 })
 
 test('patternProperties - string coerce', (t) => {

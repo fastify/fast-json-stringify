@@ -1,6 +1,6 @@
 {
   "name": "fast-json-stringify",
-  "version": "1.15.6",
+  "version": "1.18.0",
   "description": "Stringify your JSON at max speed",
   "main": "index.js",
   "types": "index.d.ts",
@@ -9,9 +9,7 @@
     "test:lint": "standard",
     "test:typescript": "tsc --project ./test/types/tsconfig.json",
     "test:unit": "tap -J test/*.test.js test/**/*.test.js",
-    "test": "npm run test:lint && npm run test:unit && npm run test:typescript",
-    "test:report": "npm run test:unit | tee out.tap",
-    "test:reporter": "tap-mocha-reporter xunit < out.tap > test/junit-testresults.xml"
+    "test": "npm run test:lint && npm run test:unit && npm run test:typescript"
   },
   "precommit": "test",
   "repository": {
@@ -37,27 +35,24 @@
     "is-my-json-valid": "^2.20.0",
     "json-strify": "^0.1.7",
     "long": "^4.0.0",
+    "moment": "^2.24.0",
     "pre-commit": "^1.2.2",
     "proxyquire": "^2.1.3",
+    "semver": "^7.1.0",
     "standard": "^14.0.0",
     "tap": "^12.6.5",
     "tap-mocha-reporter": "^3.0.9",
-    "typescript": "^3.6.3",
-    "uglify-es": "^3.3.9",
-    "moment": "^2.24.0"
+    "typescript": "^3.7.5",
+    "uglify-es": "^3.3.9"
   },
   "dependencies": {
-    "ajv": "^6.10.2",
-    "deepmerge": "^4.0.0"
+    "ajv": "^6.11.0",
+    "deepmerge": "^4.2.2",
+    "string-similarity": "^4.0.1"
   },
   "standard": {
     "ignore": [
       "schema-validator.js"
-    ]
-  },
-  "greenkeeper": {
-    "ignore": [
-      "tap"
     ]
   }
 }

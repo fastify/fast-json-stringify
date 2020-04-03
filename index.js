@@ -6,6 +6,7 @@ var Ajv = require('ajv')
 var merge = require('deepmerge')
 var util = require('util')
 var validate = require('./schema-validator')
+var stringSimilarity = null
 
 var uglify = null
 var isLong
@@ -75,6 +76,7 @@ function build (schema, options) {
     `
   }
 
+  const fullSchema = schema
   if (schema.$ref) {
     schema = refFinder(schema.$ref, schema, options.schema)
   }
@@ -90,7 +92,7 @@ function build (schema, options) {
   switch (schema.type) {
     case 'object':
       main = '$main'
-      code = buildObject(schema, code, main, options.schema, schema)
+      code = buildObject(schema, code, main, options.schema, fullSchema)
       break
     case 'string':
       var stringSerializer = (schema.format === 'date-time') ? $asDate : $asString
@@ -127,7 +129,7 @@ function build (schema, options) {
 
   var dependencies = []
   var dependenciesName = []
-  if (hasAnyOf(schema) || hasSchemaSomeIf) {
+  if (hasOf(schema) || hasSchemaSomeIf) {
     dependencies.push(new Ajv(options.ajv))
     dependenciesName.push('ajv')
   }
@@ -189,15 +191,15 @@ function inferTypeByKeyword (schema) {
   return schema.type
 }
 
-function hasAnyOf (schema) {
+function hasOf (schema) {
   if (!schema) { return false }
-  if ('anyOf' in schema) { return true }
+  if ('anyOf' in schema || 'oneOf' in schema) { return true }
 
   var objectKeys = Object.keys(schema)
   for (var i = 0; i < objectKeys.length; i++) {
     var value = schema[objectKeys[i]]
     if (typeof value === 'object') {
-      if (hasAnyOf(value)) { return true }
+      if (hasOf(value)) { return true }
     }
   }
 
@@ -215,6 +217,8 @@ function $asNull () {
 
 function $asInteger (i) {
   if (isLong && isLong(i)) {
+    return i.toString()
+  } else if (typeof i === 'bigint') {
     return i.toString()
   } else {
     return $asNumber(i)
@@ -493,12 +497,18 @@ function idFinder (schema, searchedId) {
 }
 
 function refFinder (ref, schema, externalSchema) {
+  if (externalSchema && externalSchema[ref]) return externalSchema[ref]
+
   // Split file from walk
   ref = ref.split('#')
 
   // If external file
   if (ref[0]) {
     schema = externalSchema[ref[0]]
+
+    if (schema === undefined) {
+      findBadKey(externalSchema, [ref[0]])
+    }
 
     if (schema.$ref) {
       return refFinder(schema.$ref, schema, externalSchema)
@@ -527,8 +537,30 @@ function refFinder (ref, schema, externalSchema) {
       }
     }
   }
-  const result = (new Function('schema', code))(schema)
+  var result
+  try {
+    result = (new Function('schema', code))(schema)
+  } catch (err) {}
+
+  if (result === undefined) {
+    findBadKey(schema, walk.slice(1))
+  }
   return result.$ref ? refFinder(result.$ref, schema, externalSchema) : result
+
+  function findBadKey (obj, keys) {
+    if (keys.length === 0) return null
+    const key = sanitizeKey(keys.shift())
+    if (obj[key] === undefined) {
+      stringSimilarity = stringSimilarity || require('string-similarity')
+      const { bestMatch } = stringSimilarity.findBestMatch(key, Object.keys(obj))
+      if (bestMatch.rating >= 0.5) {
+        throw new Error(`Cannot find reference '${key}', did you mean '${bestMatch.target}'?`)
+      } else {
+        throw new Error(`Cannot find reference '${key}'`)
+      }
+    }
+    return findBadKey(obj[key], keys)
+  }
 }
 
 function sanitizeKey (key) {
@@ -668,15 +700,13 @@ function buildCodeWithAllOfs (schema, code, laterCode, name, externalSchema, ful
 }
 
 function buildInnerObject (schema, name, externalSchema, fullSchema) {
-  var laterCode = ''
-  var code = ''
+  var result = buildCodeWithAllOfs(schema, '', '', name, externalSchema, fullSchema)
   if (schema.patternProperties) {
-    code += addPatternProperties(schema, externalSchema, fullSchema)
+    result.code += addPatternProperties(schema, externalSchema, fullSchema)
   } else if (schema.additionalProperties && !schema.patternProperties) {
-    code += addAdditionalProperties(schema, externalSchema, fullSchema)
+    result.code += addAdditionalProperties(schema, externalSchema, fullSchema)
   }
-
-  return buildCodeWithAllOfs(schema, code, laterCode, name, externalSchema, fullSchema)
+  return result
 }
 
 function addIfThenElse (schema, name, externalSchema, fullSchema) {
@@ -688,7 +718,7 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
   const copy = merge({}, schema)
   const i = copy.if
   const then = copy.then
-  const e = copy.else
+  const e = copy.else ? copy.else : { additionalProperties: true }
   delete copy.if
   delete copy.then
   delete copy.else
@@ -711,27 +741,25 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
   code += `
     }
   `
-  if (e) {
-    merged = merge(copy, e)
+  merged = merge(copy, e)
 
-    code += `
+  code += `
       else {
     `
 
-    if (merged.if && merged.then) {
-      innerR = addIfThenElse(merged, name + 'Else', externalSchema, fullSchema)
-      code += innerR.code
-      laterCode += innerR.laterCode
-    }
+  if (merged.if && merged.then) {
+    innerR = addIfThenElse(merged, name + 'Else', externalSchema, fullSchema)
+    code += innerR.code
+    laterCode += innerR.laterCode
+  }
 
-    r = buildInnerObject(merged, name + 'Else', externalSchema, fullSchema)
-    code += r.code
-    laterCode += r.laterCode
+  r = buildInnerObject(merged, name + 'Else', externalSchema, fullSchema)
+  code += r.code
+  laterCode += r.laterCode
 
-    code += `
+  code += `
       }
     `
-  }
   return { code: code, laterCode: laterCode }
 }
 
@@ -889,11 +917,25 @@ function buildArrayTypeCondition (type, accessor) {
   return condition
 }
 
+function dereferenceOfRefs (schema, externalSchema, fullSchema, type) {
+  schema[type].forEach((s, index) => {
+    // follow the refs
+    while (s.$ref) {
+      schema[type][index] = refFinder(s.$ref, fullSchema, externalSchema)
+      s = schema[type][index]
+    }
+  })
+}
+
 function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKey) {
   var code = ''
   var funcName
 
   subKey = subKey || ''
+
+  if (schema.$ref) {
+    schema = refFinder(schema.$ref, fullSchema, externalSchema)
+  }
 
   if (schema.type === undefined) {
     var inferedType = inferTypeByKeyword(schema)
@@ -941,7 +983,21 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       break
     case undefined:
       if ('anyOf' in schema) {
+        dereferenceOfRefs(schema, externalSchema, fullSchema, 'anyOf')
         schema.anyOf.forEach((s, index) => {
+          var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index)
+          code += `
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null })}, obj${accessor}))
+              ${nestedResult.code}
+          `
+          laterCode = nestedResult.laterCode
+        })
+        code += `
+          else json+= null
+        `
+      } else if ('oneOf' in schema) {
+        dereferenceOfRefs(schema, externalSchema, fullSchema, 'oneOf')
+        schema.oneOf.forEach((s, index) => {
           var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index)
           code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null })}, obj${accessor}))

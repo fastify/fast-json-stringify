@@ -19,7 +19,7 @@ test('additionalProperties', (t) => {
   })
 
   const obj = { str: 'test', foo: 42, ofoo: true, foof: 'string', objfoo: { a: true } }
-  t.equal('{"foo":"42","ofoo":"true","foof":"string","objfoo":"[object Object]","str":"test"}', stringify(obj))
+  t.equal('{"str":"test","foo":"42","ofoo":"true","foof":"string","objfoo":"[object Object]"}', stringify(obj))
 })
 
 test('additionalProperties should not change properties', (t) => {
@@ -38,7 +38,7 @@ test('additionalProperties should not change properties', (t) => {
   })
 
   const obj = { foo: '42', ofoo: 42 }
-  t.equal('{"ofoo":42,"foo":"42"}', stringify(obj))
+  t.equal('{"foo":"42","ofoo":42}', stringify(obj))
 })
 
 test('additionalProperties should not change properties and patternProperties', (t) => {
@@ -62,7 +62,7 @@ test('additionalProperties should not change properties and patternProperties', 
   })
 
   const obj = { foo: '42', ofoo: 42, test: '42' }
-  t.equal('{"ofoo":"42","test":42,"foo":"42"}', stringify(obj))
+  t.equal('{"foo":"42","ofoo":"42","test":42}', stringify(obj))
 })
 
 test('additionalProperties set to true, use of fast-safe-stringify', (t) => {

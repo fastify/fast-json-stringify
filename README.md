@@ -1,6 +1,9 @@
 # fast-json-stringify
 
-[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](http://standardjs.com/)  [![Build Status](https://dev.azure.com/fastify/fastify/_apis/build/status/fastify.fast-json-stringify?branchName=master)](https://dev.azure.com/fastify/fastify/_build/latest?definitionId=3&branchName=master)  [![Build Status](https://travis-ci.org/fastify/fast-json-stringify.svg?branch=master)](https://travis-ci.org/fastify/fast-json-stringify)  [![NPM downloads](https://img.shields.io/npm/dm/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify)
+[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](http://standardjs.com/)
+![Ci Workflow](https://github.com/fastify/fast-json-stringify/workflows/CI%20workflow/badge.svg)
+[![NPM downloads](https://img.shields.io/npm/dm/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify) 
+
 
 __fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads. Its performance advantage shrinks as your payload grows. It pairs well with [__flatstr__](https://www.npmjs.com/package/flatstr), which triggers a V8 optimization that improves performance when eventually converting the string to a `Buffer`.
 
@@ -106,6 +109,7 @@ And nested ones, too.
 | -----------|------------------------------|
 | `Date`     | `string` via `toISOString()` |
 | `RegExp`   | `string`                     |
+| `BigInt`   | `integer` via `toString`     |
 
 A field with schema type `string` and format `date-time` will be serialized by its `toISOString()`.
 Example with a MomentJS object:
@@ -234,6 +238,7 @@ console.log(stringify(obj)) // '{"matchfoo":"42","otherfoo":"str","matchnum":3,"
 If *additionalProperties* is not present or is set to `false`, every property that is not explicitly listed in the *properties* and *patternProperties* objects,will be ignored, as described in <a href="#missingFields">Missing fields</a>.
 Missing fields are ignored to avoid having to rewrite objects before serializing. However, other schema rules would throw in similar situations.
 If *additionalProperties* is set to `true`, it will be used by `JSON.stringify` to stringify the additional properties. If you want to achieve maximum performance, we strongly encourage you to use a fixed schema where possible.
+The additional properties will always be serialzied at the end of the object.
 Example:
 ```javascript
 const stringify = fastJson({
@@ -266,7 +271,7 @@ const obj = {
   nomatchint: 313
 }
 
-console.log(stringify(obj)) // '{"matchfoo":"42","otherfoo":"str","matchnum":3,"nomatchstr":"valar morghulis",nomatchint:"313","nickname":"nick"}'
+console.log(stringify(obj)) // '{"nickname":"nick","matchfoo":"42","otherfoo":"str","matchnum":3,"nomatchstr":"valar morghulis",nomatchint:"313"}'
 ```
 
 #### AnyOf
@@ -454,9 +459,28 @@ const stringify = fastJson(schema, { schema: externalSchema })
 
 <a name="long"></a>
 #### Long integers
-Long integers (64-bit) are supported using the [long](https://github.com/dcodeIO/long.js) module.
+By default the library will handle automatically [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) from Node.js v10.3 and above.  
+If you can't use BigInts in your environment, long integers (64-bit) are also supported using the [long](https://github.com/dcodeIO/long.js) module.
 Example:
 ```javascript
+// => using native BigInt
+const stringify = fastJson({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    id: {
+      type: 'integer'
+    }
+  }
+})
+
+const obj = {
+  id: 18446744073709551615n
+}
+
+console.log(stringify(obj)) // '{"id":18446744073709551615}'
+
+// => using the long library
 const Long = require('long')
 
 const stringify = fastJson({
