@@ -40,7 +40,6 @@
     "semver": "^7.1.0",
     "standard": "^14.0.0",
     "tap": "^12.6.5",
-    "tap-mocha-reporter": "^3.0.9",
     "typescript": "^3.7.5",
     "uglify-es": "^3.3.9"
   },
