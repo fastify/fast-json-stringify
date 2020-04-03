@@ -4,6 +4,8 @@
 
 var Ajv = require('ajv')
 var merge = require('deepmerge')
+var moment = require('moment')
+
 var util = require('util')
 var validate = require('./schema-validator')
 var stringSimilarity = null
@@ -55,7 +57,9 @@ function build (schema, options) {
     ${$asString.toString()}
     ${$asStringNullable.toString()}
     ${$asStringSmall.toString()}
+    ${$asDatetime.toString()}
     ${$asDate.toString()}
+    ${$asTime.toString()}
     ${$asNumber.toString()}
     ${$asNumberNullable.toString()}
     ${$asIntegerNullable.toString()}
@@ -95,8 +99,7 @@ function build (schema, options) {
       code = buildObject(schema, code, main, options.schema, fullSchema)
       break
     case 'string':
-      var stringSerializer = (schema.format === 'date-time') ? $asDate : $asString
-      main = schema.nullable ? $asStringNullable.name : stringSerializer.name
+      main = schema.nullable ? $asStringNullable.name : getStringSerializer(schema.format)
       break
     case 'integer':
       main = schema.nullable ? $asIntegerNullable.name : $asInteger.name
@@ -132,6 +135,10 @@ function build (schema, options) {
   if (hasOf(schema) || hasSchemaSomeIf) {
     dependencies.push(new Ajv(options.ajv))
     dependenciesName.push('ajv')
+  }
+  if (hasStringFormat(schema)) {
+    dependencies.push(moment)
+    dependenciesName.push('moment')
   }
 
   dependenciesName.push(code)
@@ -211,6 +218,31 @@ function hasIf (schema) {
   return /"if":{/.test(str) && /"then":{/.test(str)
 }
 
+function hasStringFormat (schema) {
+  if (!schema) { return false }
+  if ('format' in schema) { return true }
+
+  var objectKeys = Object.keys(schema)
+  for (var i = 0; i < objectKeys.length; i++) {
+    var value = schema[objectKeys[i]]
+    if (typeof value === 'object') {
+      if (hasStringFormat(value)) { return true }
+    }
+  }
+
+  return false
+}
+
+const stringSerializerMap = {
+  'date-time': '$asDatetime',
+  date: '$asDate',
+  time: '$asTime'
+}
+
+function getStringSerializer (format) {
+  return stringSerializerMap[format] || '$asString'
+}
+
 function $asNull () {
   return 'null'
 }
@@ -250,9 +282,31 @@ function $asBooleanNullable (bool) {
   return bool === null ? null : $asBoolean(bool)
 }
 
-function $asDate (date) {
-  if (typeof date.toISOString === 'function') {
+function $asDatetime (date) {
+  if (date instanceof Date) {
     return '"' + date.toISOString() + '"'
+  } else if (date instanceof moment) {
+    return '"' + date.toISOString() + '"'
+  } else {
+    return $asString(date)
+  }
+}
+
+function $asDate (date) {
+  if (date instanceof Date) {
+    return '"' + moment(date).format('YYYY-MM-DD') + '"'
+  } else if (date instanceof moment) {
+    return '"' + date.format('YYYY-MM-DD') + '"'
+  } else {
+    return $asString(date)
+  }
+}
+
+function $asTime (date) {
+  if (date instanceof Date) {
+    return '"' + moment(date).format('HH:mm:ss') + '"'
+  } else if (date instanceof moment) {
+    return '"' + date.format('HH:mm:ss') + '"'
   } else {
     return $asString(date)
   }
@@ -328,7 +382,7 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
     }
     var type = pp[regex].type
     var format = pp[regex].format
-    var stringSerializer = (format === 'date-time') ? '$asDate' : '$asString'
+    var stringSerializer = getStringSerializer(format)
     code += `
         if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
     `
@@ -407,7 +461,7 @@ function additionalProperty (schema, externalSchema, fullSchema) {
 
   var type = ap.type
   var format = ap.format
-  var stringSerializer = (format === 'date-time') ? '$asDate' : '$asString'
+  var stringSerializer = getStringSerializer(format)
   if (type === 'object') {
     code += buildObject(ap, '', 'buildObjectAP', externalSchema)
     code += `
@@ -955,7 +1009,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       `
       break
     case 'string':
-      var stringSerializer = (schema.format === 'date-time') ? '$asDate' : '$asString'
+      var stringSerializer = getStringSerializer(schema.format)
       code += nullable ? `json += obj${accessor} === null ? null : ${stringSerializer}(obj${accessor})` : `json += ${stringSerializer}(obj${accessor})`
       break
     case 'integer':

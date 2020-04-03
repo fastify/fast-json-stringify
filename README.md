@@ -2,7 +2,7 @@
 
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](http://standardjs.com/)
 ![Ci Workflow](https://github.com/fastify/fast-json-stringify/workflows/CI%20workflow/badge.svg)
-[![NPM downloads](https://img.shields.io/npm/dm/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify) 
+[![NPM downloads](https://img.shields.io/npm/dm/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify)
 
 
 __fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads. Its performance advantage shrinks as your payload grows. It pairs well with [__flatstr__](https://www.npmjs.com/package/flatstr), which triggers a V8 optimization that improves performance when eventually converting the string to a `Buffer`.
@@ -111,8 +111,12 @@ And nested ones, too.
 | `RegExp`   | `string`                     |
 | `BigInt`   | `integer` via `toString`     |
 
-A field with schema type `string` and format `date-time` will be serialized by its `toISOString()`.
+[JSON Schema built-in formats](https://json-schema.org/understanding-json-schema/reference/string.html#built-in-formats) for dates are supported and will be serialized using the MomentJS library.
+
+The following formats are supported: `date-time`, `date` and `time`.
+
 Example with a MomentJS object:
+
 ```javascript
 const moment = require('moment')
 
@@ -459,7 +463,7 @@ const stringify = fastJson(schema, { schema: externalSchema })
 
 <a name="long"></a>
 #### Long integers
-By default the library will handle automatically [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) from Node.js v10.3 and above.  
+By default the library will handle automatically [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) from Node.js v10.3 and above.
 If you can't use BigInts in your environment, long integers (64-bit) are also supported using the [long](https://github.com/dcodeIO/long.js) module.
 Example:
 ```javascript
