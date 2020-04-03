@@ -4,7 +4,6 @@
 
 var Ajv = require('ajv')
 var merge = require('deepmerge')
-var moment = require('moment')
 
 var util = require('util')
 var validate = require('./schema-validator')
@@ -54,6 +53,7 @@ function build (schema, options) {
   `
 
   code += `
+    ${$pad2Zeros.toString()}
     ${$asString.toString()}
     ${$asStringNullable.toString()}
     ${$asStringSmall.toString()}
@@ -136,10 +136,6 @@ function build (schema, options) {
     dependencies.push(new Ajv(options.ajv))
     dependenciesName.push('ajv')
   }
-  if (hasStringFormat(schema)) {
-    dependencies.push(moment)
-    dependenciesName.push('moment')
-  }
 
   dependenciesName.push(code)
   return (Function.apply(null, dependenciesName).apply(null, dependencies))
@@ -218,21 +214,6 @@ function hasIf (schema) {
   return /"if":{/.test(str) && /"then":{/.test(str)
 }
 
-function hasStringFormat (schema) {
-  if (!schema) { return false }
-  if ('format' in schema) { return true }
-
-  var objectKeys = Object.keys(schema)
-  for (var i = 0; i < objectKeys.length; i++) {
-    var value = schema[objectKeys[i]]
-    if (typeof value === 'object') {
-      if (hasStringFormat(value)) { return true }
-    }
-  }
-
-  return false
-}
-
 const stringSerializerMap = {
   'date-time': '$asDatetime',
   date: '$asDate',
@@ -241,6 +222,11 @@ const stringSerializerMap = {
 
 function getStringSerializer (format) {
   return stringSerializerMap[format] || '$asString'
+}
+
+function $pad2Zeros (num) {
+  var s = '00' + num
+  return s.substr(s.length - 2)
 }
 
 function $asNull () {
@@ -285,7 +271,7 @@ function $asBooleanNullable (bool) {
 function $asDatetime (date) {
   if (date instanceof Date) {
     return '"' + date.toISOString() + '"'
-  } else if (date instanceof moment) {
+  } else if (typeof date.toISOString === 'function') {
     return '"' + date.toISOString() + '"'
   } else {
     return $asString(date)
@@ -294,8 +280,11 @@ function $asDatetime (date) {
 
 function $asDate (date) {
   if (date instanceof Date) {
-    return '"' + moment(date).format('YYYY-MM-DD') + '"'
-  } else if (date instanceof moment) {
+    var year = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date)
+    var month = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(date)
+    var day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date)
+    return '"' + year + '-' + month + '-' + day + '"'
+  } else if (typeof date.format === 'function') {
     return '"' + date.format('YYYY-MM-DD') + '"'
   } else {
     return $asString(date)
@@ -304,8 +293,11 @@ function $asDate (date) {
 
 function $asTime (date) {
   if (date instanceof Date) {
-    return '"' + moment(date).format('HH:mm:ss') + '"'
-  } else if (date instanceof moment) {
+    var hour = new Intl.DateTimeFormat('en', { hour: 'numeric', hour12: false }).format(date)
+    var minute = new Intl.DateTimeFormat('en', { minute: 'numeric' }).format(date)
+    var second = new Intl.DateTimeFormat('en', { second: 'numeric' }).format(date)
+    return '"' + $pad2Zeros(hour) + ':' + $pad2Zeros(minute) + ':' + $pad2Zeros(second) + '"'
+  } else if (typeof date.format === 'function') {
     return '"' + date.format('HH:mm:ss') + '"'
   } else {
     return $asString(date)

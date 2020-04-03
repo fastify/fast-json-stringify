@@ -58,6 +58,24 @@ test('render a date in a string when format is date as YYYY-MM-DD', (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
+test('verify padding for rendered date in a string when format is date', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'date'
+  }
+  const toStringify = new Date(2020, 0, 1, 0, 0, 0, 0)
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, `"${moment(toStringify).format('YYYY-MM-DD')}"`)
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
 test('render a date in a string when format is time as HH:mm:ss', (t) => {
   t.plan(2)
 
@@ -67,6 +85,27 @@ test('render a date in a string when format is time as HH:mm:ss', (t) => {
     format: 'time'
   }
   const toStringify = new Date()
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  validate(JSON.parse(output))
+  console.log(validate.errors)
+
+  t.equal(output, `"${moment(toStringify).format('HH:mm:ss')}"`)
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('verify padding for rendered date in a string when format is time', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'time'
+  }
+  const toStringify = new Date(2020, 0, 1, 1, 1, 1, 1)
 
   const validate = validator(schema)
   const stringify = build(schema)
