@@ -2,7 +2,7 @@
 
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](http://standardjs.com/)
 ![Ci Workflow](https://github.com/fastify/fast-json-stringify/workflows/CI%20workflow/badge.svg)
-[![NPM downloads](https://img.shields.io/npm/dm/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify) 
+[![NPM downloads](https://img.shields.io/npm/dm/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify)
 
 
 __fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads. Its performance advantage shrinks as your payload grows. It pairs well with [__flatstr__](https://www.npmjs.com/package/flatstr), which triggers a V8 optimization that improves performance when eventually converting the string to a `Buffer`.
@@ -105,11 +105,34 @@ And nested ones, too.
 <a name="specific"></a>
 #### Specific use cases
 
-| Instance   | Serialized as                |
-| -----------|------------------------------|
-| `Date`     | `string` via `toISOString()` |
-| `RegExp`   | `string`                     |
-| `BigInt`   | `integer` via `toString`     |
+| Instance | Serialized as                |
+| -------- | ---------------------------- |
+| `Date`   | `string` via `toISOString()` |
+| `RegExp` | `string`                     |
+| `BigInt` | `integer` via `toString`     |
+
+[JSON Schema built-in formats](https://json-schema.org/understanding-json-schema/reference/string.html#built-in-formats) for dates are supported and will be serialized as:
+
+| Format      | Serialized format example  |
+| ----------- | -------------------------- |
+| `date-time` | `2020-04-03T09:11:08.615Z` |
+| `date`      | `2020-04-03`               |
+| `time`      | `09:11:08`                 |
+
+Example with a MomentJS object:
+
+```javascript
+const moment = require('moment')
+
+const stringify = fastJson({
+  title: 'Example Schema with string date-time field',
+  type: 'string',
+  format: 'date-time'
+}
+
+console.log(stringify(moment())) // '"YYYY-MM-DDTHH:mm:ss.sssZ"'
+```
+
 
 <a name="required"></a>
 #### Required
@@ -444,7 +467,7 @@ const stringify = fastJson(schema, { schema: externalSchema })
 
 <a name="long"></a>
 #### Long integers
-By default the library will handle automatically [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) from Node.js v10.3 and above.  
+By default the library will handle automatically [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) from Node.js v10.3 and above.
 If you can't use BigInts in your environment, long integers (64-bit) are also supported using the [long](https://github.com/dcodeIO/long.js) module.
 Example:
 ```javascript

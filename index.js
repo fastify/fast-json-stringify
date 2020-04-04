@@ -4,6 +4,7 @@
 
 var Ajv = require('ajv')
 var merge = require('deepmerge')
+
 var util = require('util')
 var validate = require('./schema-validator')
 var stringSimilarity = null
@@ -52,9 +53,13 @@ function build (schema, options) {
   `
 
   code += `
+    ${$pad2Zeros.toString()}
     ${$asString.toString()}
     ${$asStringNullable.toString()}
     ${$asStringSmall.toString()}
+    ${$asDatetime.toString()}
+    ${$asDate.toString()}
+    ${$asTime.toString()}
     ${$asNumber.toString()}
     ${$asNumberNullable.toString()}
     ${$asIntegerNullable.toString()}
@@ -94,7 +99,7 @@ function build (schema, options) {
       code = buildObject(schema, code, main, options.schema, fullSchema)
       break
     case 'string':
-      main = schema.nullable ? $asStringNullable.name : $asString.name
+      main = schema.nullable ? $asStringNullable.name : getStringSerializer(schema.format)
       break
     case 'integer':
       main = schema.nullable ? $asIntegerNullable.name : $asInteger.name
@@ -209,6 +214,21 @@ function hasIf (schema) {
   return /"if":{/.test(str) && /"then":{/.test(str)
 }
 
+const stringSerializerMap = {
+  'date-time': '$asDatetime',
+  date: '$asDate',
+  time: '$asTime'
+}
+
+function getStringSerializer (format) {
+  return stringSerializerMap[format] || '$asString'
+}
+
+function $pad2Zeros (num) {
+  var s = '00' + num
+  return s[s.length - 2] + s[s.length - 1]
+}
+
 function $asNull () {
   return 'null'
 }
@@ -246,6 +266,42 @@ function $asBoolean (bool) {
 
 function $asBooleanNullable (bool) {
   return bool === null ? null : $asBoolean(bool)
+}
+
+function $asDatetime (date) {
+  if (date instanceof Date) {
+    return '"' + date.toISOString() + '"'
+  } else if (typeof date.toISOString === 'function') {
+    return '"' + date.toISOString() + '"'
+  } else {
+    return $asString(date)
+  }
+}
+
+function $asDate (date) {
+  if (date instanceof Date) {
+    var year = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date)
+    var month = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(date)
+    var day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date)
+    return '"' + year + '-' + month + '-' + day + '"'
+  } else if (typeof date.format === 'function') {
+    return '"' + date.format('YYYY-MM-DD') + '"'
+  } else {
+    return $asString(date)
+  }
+}
+
+function $asTime (date) {
+  if (date instanceof Date) {
+    var hour = new Intl.DateTimeFormat('en', { hour: 'numeric', hour12: false }).format(date)
+    var minute = new Intl.DateTimeFormat('en', { minute: 'numeric' }).format(date)
+    var second = new Intl.DateTimeFormat('en', { second: 'numeric' }).format(date)
+    return '"' + $pad2Zeros(hour) + ':' + $pad2Zeros(minute) + ':' + $pad2Zeros(second) + '"'
+  } else if (typeof date.format === 'function') {
+    return '"' + date.format('HH:mm:ss') + '"'
+  } else {
+    return $asString(date)
+  }
 }
 
 function $asString (str) {
@@ -317,6 +373,8 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
       pp[regex] = refFinder(pp[regex].$ref, fullSchema, externalSchema)
     }
     var type = pp[regex].type
+    var format = pp[regex].format
+    var stringSerializer = getStringSerializer(format)
     code += `
         if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
     `
@@ -340,7 +398,7 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
     } else if (type === 'string') {
       code += `
           ${addComma}
-          json += $asString(keys[i]) + ':' + $asString(obj[keys[i]])
+          json += $asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
       `
     } else if (type === 'integer') {
       code += `
@@ -394,6 +452,8 @@ function additionalProperty (schema, externalSchema, fullSchema) {
   }
 
   var type = ap.type
+  var format = ap.format
+  var stringSerializer = getStringSerializer(format)
   if (type === 'object') {
     code += buildObject(ap, '', 'buildObjectAP', externalSchema)
     code += `
@@ -414,7 +474,7 @@ function additionalProperty (schema, externalSchema, fullSchema) {
   } else if (type === 'string') {
     code += `
         ${addComma}
-        json += $asString(keys[i]) + ':' + $asString(obj[keys[i]])
+        json += $asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
     `
   } else if (type === 'integer') {
     code += `
@@ -941,7 +1001,8 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       `
       break
     case 'string':
-      code += nullable ? `json += obj${accessor} === null ? null : $asString(obj${accessor})` : `json += $asString(obj${accessor})`
+      var stringSerializer = getStringSerializer(schema.format)
+      code += nullable ? `json += obj${accessor} === null ? null : ${stringSerializer}(obj${accessor})` : `json += ${stringSerializer}(obj${accessor})`
       break
     case 'integer':
       code += nullable ? `json += obj${accessor} === null ? null : $asInteger(obj${accessor})` : `json += $asInteger(obj${accessor})`
@@ -1010,7 +1071,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
           var nestedResult = nested(laterCode, name, key, tempSchema, externalSchema, fullSchema, subKey)
           if (type === 'string') {
             code += `
-              ${index === 0 ? 'if' : 'else if'}(typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || obj${accessor} instanceof RegExp)
+              ${index === 0 ? 'if' : 'else if'}(typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || typeof obj${accessor}.toISOString === "function" || obj${accessor} instanceof RegExp)
                 ${nestedResult.code}
             `
           } else if (type === 'null') {

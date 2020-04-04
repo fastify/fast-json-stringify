@@ -1,5 +1,6 @@
 'use strict'
 
+const moment = require('moment')
 const fastJson = require('.')
 const stringify = fastJson({
   title: 'Example Schema',
@@ -17,6 +18,10 @@ const stringify = fastJson({
     },
     now: {
       type: 'string'
+    },
+    birthdate: {
+      type: ['string'],
+      format: 'date-time'
     },
     reg: {
       type: 'string'
@@ -48,6 +53,10 @@ const stringify = fastJson({
     },
     test: {
       type: 'number'
+    },
+    date: {
+      type: 'string',
+      format: 'date-time'
     }
   },
   additionalProperties: {
@@ -60,10 +69,12 @@ console.log(stringify({
   lastName: 'Collina',
   age: 32,
   now: new Date(),
+  birthdate: moment(),
   reg: /"([^"]|\\")*"/,
   foo: 'hello',
   numfoo: 42,
   test: 42,
+  date: moment(),
   strtest: '23',
   arr: [{ str: 'stark' }, { str: 'lannister' }],
   obj: { bool: true },
