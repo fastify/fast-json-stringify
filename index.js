@@ -138,6 +138,14 @@ function build (schema, options) {
   }
 
   dependenciesName.push(code)
+
+  if (options.debugMode) {
+    dependenciesName.toString = function () {
+      return dependenciesName.join('\n')
+    }
+    return dependenciesName
+  }
+
   return (Function.apply(null, dependenciesName).apply(null, dependencies))
 }
 
