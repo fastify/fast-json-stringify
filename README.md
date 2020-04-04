@@ -578,6 +578,31 @@ allowing user input to directly supply a schema.
 It can't be guaranteed that allowing user input for the schema couldn't feasibly expose an attack
 vector.
 
+<a name="debug"></a>
+### Debug Mode
+
+The debug mode can be activated during your development to understand what is going on when things do not
+work as you expect.
+
+```js
+const debugCompiled = fastJson({
+  title: 'default string',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
+    }
+  }
+}, { debugMode: true })
+
+console.log(debugCompiled) // it is an array of functions that can create your `stringify` function
+console.log(debugCompiled.toString()) // print a "ready to read" string function, you can save it to a file
+
+const rawString = debugCompiled.toString()
+const stringify = fastJson.restore(rawString) // use the generated string to get back the `stringify` function
+console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"Foo"}'
+```
+
 <a name="acknowledgements"></a>
 ## Acknowledgements
 
