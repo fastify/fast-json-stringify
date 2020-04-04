@@ -4,8 +4,10 @@
 
 var Ajv = require('ajv')
 var merge = require('deepmerge')
+
 var util = require('util')
 var validate = require('./schema-validator')
+var stringSimilarity = null
 
 var isLong
 try {
@@ -50,9 +52,13 @@ function build (schema, options) {
   `
 
   code += `
+    ${$pad2Zeros.toString()}
     ${$asString.toString()}
     ${$asStringNullable.toString()}
     ${$asStringSmall.toString()}
+    ${$asDatetime.toString()}
+    ${$asDate.toString()}
+    ${$asTime.toString()}
     ${$asNumber.toString()}
     ${$asNumberNullable.toString()}
     ${$asIntegerNullable.toString()}
@@ -73,8 +79,9 @@ function build (schema, options) {
     `
   }
 
-  if (schema['$ref']) {
-    schema = refFinder(schema['$ref'], schema, options.schema)
+  const fullSchema = schema
+  if (schema.$ref) {
+    schema = refFinder(schema.$ref, schema, options.schema)
   }
 
   if (schema.type === undefined) {
@@ -88,10 +95,10 @@ function build (schema, options) {
   switch (schema.type) {
     case 'object':
       main = '$main'
-      code = buildObject(schema, code, main, options.schema, schema)
+      code = buildObject(schema, code, main, options.schema, fullSchema)
       break
     case 'string':
-      main = schema.nullable ? $asStringNullable.name : $asString.name
+      main = schema.nullable ? $asStringNullable.name : getStringSerializer(schema.format)
       break
     case 'integer':
       main = schema.nullable ? $asIntegerNullable.name : $asInteger.name
@@ -120,12 +127,20 @@ function build (schema, options) {
 
   var dependencies = []
   var dependenciesName = []
-  if (hasAnyOf(schema) || hasSchemaSomeIf) {
+  if (hasOf(schema) || hasSchemaSomeIf) {
     dependencies.push(new Ajv(options.ajv))
     dependenciesName.push('ajv')
   }
 
   dependenciesName.push(code)
+
+  if (options.debugMode) {
+    dependenciesName.toString = function () {
+      return dependenciesName.join('\n')
+    }
+    return dependenciesName
+  }
+
   return (Function.apply(null, dependenciesName).apply(null, dependencies))
 }
 
@@ -182,15 +197,15 @@ function inferTypeByKeyword (schema) {
   return schema.type
 }
 
-function hasAnyOf (schema) {
+function hasOf (schema) {
   if (!schema) { return false }
-  if ('anyOf' in schema) { return true }
+  if ('anyOf' in schema || 'oneOf' in schema) { return true }
 
   var objectKeys = Object.keys(schema)
   for (var i = 0; i < objectKeys.length; i++) {
     var value = schema[objectKeys[i]]
     if (typeof value === 'object') {
-      if (hasAnyOf(value)) { return true }
+      if (hasOf(value)) { return true }
     }
   }
 
@@ -202,12 +217,29 @@ function hasIf (schema) {
   return /"if":{/.test(str) && /"then":{/.test(str)
 }
 
+const stringSerializerMap = {
+  'date-time': '$asDatetime',
+  date: '$asDate',
+  time: '$asTime'
+}
+
+function getStringSerializer (format) {
+  return stringSerializerMap[format] || '$asString'
+}
+
+function $pad2Zeros (num) {
+  var s = '00' + num
+  return s[s.length - 2] + s[s.length - 1]
+}
+
 function $asNull () {
   return 'null'
 }
 
 function $asInteger (i) {
   if (isLong && isLong(i)) {
+    return i.toString()
+  } else if (typeof i === 'bigint') {
     return i.toString()
   } else {
     return $asNumber(i)
@@ -237,6 +269,42 @@ function $asBoolean (bool) {
 
 function $asBooleanNullable (bool) {
   return bool === null ? null : $asBoolean(bool)
+}
+
+function $asDatetime (date) {
+  if (date instanceof Date) {
+    return '"' + date.toISOString() + '"'
+  } else if (typeof date.toISOString === 'function') {
+    return '"' + date.toISOString() + '"'
+  } else {
+    return $asString(date)
+  }
+}
+
+function $asDate (date) {
+  if (date instanceof Date) {
+    var year = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date)
+    var month = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(date)
+    var day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date)
+    return '"' + year + '-' + month + '-' + day + '"'
+  } else if (typeof date.format === 'function') {
+    return '"' + date.format('YYYY-MM-DD') + '"'
+  } else {
+    return $asString(date)
+  }
+}
+
+function $asTime (date) {
+  if (date instanceof Date) {
+    var hour = new Intl.DateTimeFormat('en', { hour: 'numeric', hour12: false }).format(date)
+    var minute = new Intl.DateTimeFormat('en', { minute: 'numeric' }).format(date)
+    var second = new Intl.DateTimeFormat('en', { second: 'numeric' }).format(date)
+    return '"' + $pad2Zeros(hour) + ':' + $pad2Zeros(minute) + ':' + $pad2Zeros(second) + '"'
+  } else if (typeof date.format === 'function') {
+    return '"' + date.format('HH:mm:ss') + '"'
+  } else {
+    return $asString(date)
+  }
 }
 
 function $asString (str) {
@@ -304,10 +372,12 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
         if (properties[keys[i]]) continue
   `
   Object.keys(pp).forEach((regex, index) => {
-    if (pp[regex]['$ref']) {
-      pp[regex] = refFinder(pp[regex]['$ref'], fullSchema, externalSchema, fullSchema)
+    if (pp[regex].$ref) {
+      pp[regex] = refFinder(pp[regex].$ref, fullSchema, externalSchema)
     }
     var type = pp[regex].type
+    var format = pp[regex].format
+    var stringSerializer = getStringSerializer(format)
     code += `
         if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
     `
@@ -331,7 +401,7 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
     } else if (type === 'string') {
       code += `
           ${addComma}
-          json += $asString(keys[i]) + ':' + $asString(obj[keys[i]])
+          json += $asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
       `
     } else if (type === 'integer') {
       code += `
@@ -380,11 +450,13 @@ function additionalProperty (schema, externalSchema, fullSchema) {
         }
     `
   }
-  if (ap['$ref']) {
-    ap = refFinder(ap['$ref'], fullSchema, externalSchema)
+  if (ap.$ref) {
+    ap = refFinder(ap.$ref, fullSchema, externalSchema)
   }
 
   var type = ap.type
+  var format = ap.format
+  var stringSerializer = getStringSerializer(format)
   if (type === 'object') {
     code += buildObject(ap, '', 'buildObjectAP', externalSchema)
     code += `
@@ -405,7 +477,7 @@ function additionalProperty (schema, externalSchema, fullSchema) {
   } else if (type === 'string') {
     code += `
         ${addComma}
-        json += $asString(keys[i]) + ':' + $asString(obj[keys[i]])
+        json += $asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
     `
   } else if (type === 'integer') {
     code += `
@@ -474,6 +546,8 @@ function idFinder (schema, searchedId) {
 }
 
 function refFinder (ref, schema, externalSchema) {
+  if (externalSchema && externalSchema[ref]) return externalSchema[ref]
+
   // Split file from walk
   ref = ref.split('#')
 
@@ -481,8 +555,12 @@ function refFinder (ref, schema, externalSchema) {
   if (ref[0]) {
     schema = externalSchema[ref[0]]
 
-    if (schema['$ref']) {
-      return refFinder(schema['$ref'], schema, externalSchema)
+    if (schema === undefined) {
+      findBadKey(externalSchema, [ref[0]])
+    }
+
+    if (schema.$ref) {
+      return refFinder(schema.$ref, schema, externalSchema)
     }
   }
 
@@ -508,7 +586,30 @@ function refFinder (ref, schema, externalSchema) {
       }
     }
   }
-  return (new Function('schema', code))(schema)
+  var result
+  try {
+    result = (new Function('schema', code))(schema)
+  } catch (err) {}
+
+  if (result === undefined) {
+    findBadKey(schema, walk.slice(1))
+  }
+  return result.$ref ? refFinder(result.$ref, schema, externalSchema) : result
+
+  function findBadKey (obj, keys) {
+    if (keys.length === 0) return null
+    const key = sanitizeKey(keys.shift())
+    if (obj[key] === undefined) {
+      stringSimilarity = stringSimilarity || require('string-similarity')
+      const { bestMatch } = stringSimilarity.findBestMatch(key, Object.keys(obj))
+      if (bestMatch.rating >= 0.5) {
+        throw new Error(`Cannot find reference '${key}', did you mean '${bestMatch.target}'?`)
+      } else {
+        throw new Error(`Cannot find reference '${key}'`)
+      }
+    }
+    return findBadKey(obj[key], keys)
+  }
 }
 
 function sanitizeKey (key) {
@@ -527,8 +628,10 @@ function sanitizeKey (key) {
 
 function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
   Object.keys(schema.properties || {}).forEach((key, i, a) => {
-    if (schema.properties[key]['$ref']) {
-      schema.properties[key] = refFinder(schema.properties[key]['$ref'], fullSchema, externalSchema)
+    if (schema.properties[key].$ref) {
+      // if the schema object is deep in the tree, we must resolve the ref in the parent scope
+      const isRelative = schema.definitions && schema.properties[key].$ref[0] === '#'
+      schema.properties[key] = refFinder(schema.properties[key].$ref, isRelative ? schema : fullSchema, externalSchema)
     }
 
     // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
@@ -646,15 +749,13 @@ function buildCodeWithAllOfs (schema, code, laterCode, name, externalSchema, ful
 }
 
 function buildInnerObject (schema, name, externalSchema, fullSchema) {
-  var laterCode = ''
-  var code = ''
+  var result = buildCodeWithAllOfs(schema, '', '', name, externalSchema, fullSchema)
   if (schema.patternProperties) {
-    code += addPatternProperties(schema, externalSchema, fullSchema)
+    result.code += addPatternProperties(schema, externalSchema, fullSchema)
   } else if (schema.additionalProperties && !schema.patternProperties) {
-    code += addAdditionalProperties(schema, externalSchema, fullSchema)
+    result.code += addAdditionalProperties(schema, externalSchema, fullSchema)
   }
-
-  return buildCodeWithAllOfs(schema, code, laterCode, name, externalSchema, fullSchema)
+  return result
 }
 
 function addIfThenElse (schema, name, externalSchema, fullSchema) {
@@ -666,7 +767,7 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
   const copy = merge({}, schema)
   const i = copy.if
   const then = copy.then
-  const e = copy.else
+  const e = copy.else ? copy.else : { additionalProperties: true }
   delete copy.if
   delete copy.then
   delete copy.else
@@ -689,27 +790,25 @@ function addIfThenElse (schema, name, externalSchema, fullSchema) {
   code += `
     }
   `
-  if (e) {
-    merged = merge(copy, e)
+  merged = merge(copy, e)
 
-    code += `
+  code += `
       else {
     `
 
-    if (merged.if && merged.then) {
-      innerR = addIfThenElse(merged, name + 'Else', externalSchema, fullSchema)
-      code += innerR.code
-      laterCode += innerR.laterCode
-    }
+  if (merged.if && merged.then) {
+    innerR = addIfThenElse(merged, name + 'Else', externalSchema, fullSchema)
+    code += innerR.code
+    laterCode += innerR.laterCode
+  }
 
-    r = buildInnerObject(merged, name + 'Else', externalSchema, fullSchema)
-    code += r.code
-    laterCode += r.laterCode
+  r = buildInnerObject(merged, name + 'Else', externalSchema, fullSchema)
+  code += r.code
+  laterCode += r.laterCode
 
-    code += `
+  code += `
       }
     `
-  }
   return { code: code, laterCode: laterCode }
 }
 
@@ -778,8 +877,8 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
   `
   var laterCode = ''
 
-  if (schema.items['$ref']) {
-    schema.items = refFinder(schema.items['$ref'], fullSchema, externalSchema)
+  if (schema.items.$ref) {
+    schema.items = refFinder(schema.items.$ref, fullSchema, externalSchema)
   }
 
   var result = { code: '', laterCode: '' }
@@ -867,11 +966,25 @@ function buildArrayTypeCondition (type, accessor) {
   return condition
 }
 
+function dereferenceOfRefs (schema, externalSchema, fullSchema, type) {
+  schema[type].forEach((s, index) => {
+    // follow the refs
+    while (s.$ref) {
+      schema[type][index] = refFinder(s.$ref, fullSchema, externalSchema)
+      s = schema[type][index]
+    }
+  })
+}
+
 function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKey) {
   var code = ''
   var funcName
 
   subKey = subKey || ''
+
+  if (schema.$ref) {
+    schema = refFinder(schema.$ref, fullSchema, externalSchema)
+  }
 
   if (schema.type === undefined) {
     var inferedType = inferTypeByKeyword(schema)
@@ -891,7 +1004,8 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       `
       break
     case 'string':
-      code += nullable ? `json += obj${accessor} === null ? null : $asString(obj${accessor})` : `json += $asString(obj${accessor})`
+      var stringSerializer = getStringSerializer(schema.format)
+      code += nullable ? `json += obj${accessor} === null ? null : ${stringSerializer}(obj${accessor})` : `json += ${stringSerializer}(obj${accessor})`
       break
     case 'integer':
       code += nullable ? `json += obj${accessor} === null ? null : $asInteger(obj${accessor})` : `json += $asInteger(obj${accessor})`
@@ -918,7 +1032,21 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       break
     case undefined:
       if ('anyOf' in schema) {
+        dereferenceOfRefs(schema, externalSchema, fullSchema, 'anyOf')
         schema.anyOf.forEach((s, index) => {
+          var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index)
+          code += `
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null })}, obj${accessor}))
+              ${nestedResult.code}
+          `
+          laterCode = nestedResult.laterCode
+        })
+        code += `
+          else json+= null
+        `
+      } else if ('oneOf' in schema) {
+        dereferenceOfRefs(schema, externalSchema, fullSchema, 'oneOf')
+        schema.oneOf.forEach((s, index) => {
           var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index)
           code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null })}, obj${accessor}))
@@ -946,7 +1074,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
           var nestedResult = nested(laterCode, name, key, tempSchema, externalSchema, fullSchema, subKey)
           if (type === 'string') {
             code += `
-              ${index === 0 ? 'if' : 'else if'}(typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || obj${accessor} instanceof RegExp)
+              ${index === 0 ? 'if' : 'else if'}(typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || typeof obj${accessor}.toISOString === "function" || obj${accessor} instanceof RegExp)
                 ${nestedResult.code}
             `
           } else if (type === 'null') {
@@ -999,3 +1127,16 @@ function isEmpty (schema) {
 }
 
 module.exports = build
+
+module.exports.restore = function (debugModeStr, options = {}) {
+  const dependencies = [debugModeStr]
+  const args = []
+  if (debugModeStr.startsWith('ajv')) {
+    dependencies.unshift('ajv')
+    args.push(new Ajv(options.ajv))
+  }
+
+  // eslint-disable-next-line
+  return (Function.apply(null, ['ajv', debugModeStr])
+    .apply(null, args))
+}

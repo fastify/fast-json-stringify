@@ -4,7 +4,7 @@ const test = require('tap').test
 const validator = require('is-my-json-valid')
 const build = require('..')
 
-test(`render a string with surrogate pairs as JSON:test 1`, (t) => {
+test('render a string with surrogate pairs as JSON:test 1', (t) => {
   t.plan(2)
 
   const schema = {
@@ -20,7 +20,7 @@ test(`render a string with surrogate pairs as JSON:test 1`, (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test(`render a string with surrogate pairs as JSON: test 2`, (t) => {
+test('render a string with surrogate pairs as JSON: test 2', (t) => {
   t.plan(2)
 
   const schema = {
@@ -36,7 +36,7 @@ test(`render a string with surrogate pairs as JSON: test 2`, (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test(`render a string with Unpaired surrogate code as JSON`, (t) => {
+test('render a string with Unpaired surrogate code as JSON', (t) => {
   t.plan(2)
 
   const schema = {
@@ -51,7 +51,7 @@ test(`render a string with Unpaired surrogate code as JSON`, (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test(`render a string with lone surrogate code as JSON`, (t) => {
+test('render a string with lone surrogate code as JSON', (t) => {
   t.plan(2)
 
   const schema = {

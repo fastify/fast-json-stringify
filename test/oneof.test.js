@@ -11,7 +11,7 @@ test('object with multiple types field', (t) => {
     type: 'object',
     properties: {
       str: {
-        anyOf: [{
+        oneOf: [{
           type: 'string'
         }, {
           type: 'boolean'
@@ -27,7 +27,7 @@ test('object with multiple types field', (t) => {
     })
     t.is(value, '{"str":"string"}')
   } catch (e) {
-    t.fail()
+    t.fail(e.message)
   }
 
   try {
@@ -48,7 +48,7 @@ test('object with field of type object or null', (t) => {
     type: 'object',
     properties: {
       prop: {
-        anyOf: [{
+        oneOf: [{
           type: 'object',
           properties: {
             str: {
@@ -75,7 +75,8 @@ test('object with field of type object or null', (t) => {
   try {
     const value = stringify({
       prop: {
-        str: 'string'
+        str: 'string',
+        remove: 'this'
       }
     })
     t.is(value, '{"prop":{"str":"string"}}')
@@ -92,7 +93,7 @@ test('object with field of type object or array', (t) => {
     type: 'object',
     properties: {
       prop: {
-        anyOf: [{
+        oneOf: [{
           type: 'object',
           properties: {},
           additionalProperties: true
@@ -136,7 +137,7 @@ test('object with field of type string and coercion disable ', (t) => {
     type: 'object',
     properties: {
       str: {
-        anyOf: [{
+        oneOf: [{
           type: 'string'
         }]
       }
@@ -162,7 +163,7 @@ test('object with field of type string and coercion enable ', (t) => {
     type: 'object',
     properties: {
       str: {
-        anyOf: [{
+        oneOf: [{
           type: 'string'
         }]
       }
@@ -190,11 +191,11 @@ test('object with field with type union of multiple objects', (t) => {
   t.plan(2)
 
   const schema = {
-    title: 'object with anyOf property value containing objects',
+    title: 'object with oneOf property value containing objects',
     type: 'object',
     properties: {
-      anyOfSchema: {
-        anyOf: [
+      oneOfSchema: {
+        oneOf: [
           {
             type: 'object',
             properties: {
@@ -212,21 +213,21 @@ test('object with field with type union of multiple objects', (t) => {
         ]
       }
     },
-    required: ['anyOfSchema']
+    required: ['oneOfSchema']
   }
 
   const stringify = build(schema)
 
   try {
-    const value = stringify({ anyOfSchema: { baz: 5 } })
-    t.is(value, '{"anyOfSchema":{"baz":5}}')
+    const value = stringify({ oneOfSchema: { baz: 5 } })
+    t.is(value, '{"oneOfSchema":{"baz":5}}')
   } catch (e) {
     t.fail()
   }
 
   try {
-    const value = stringify({ anyOfSchema: { bar: 'foo' } })
-    t.is(value, '{"anyOfSchema":{"bar":"foo"}}')
+    const value = stringify({ oneOfSchema: { bar: 'foo' } })
+    t.is(value, '{"oneOfSchema":{"bar":"foo"}}')
   } catch (e) {
     t.fail()
   }
@@ -249,14 +250,14 @@ test('null value in schema', (t) => {
   }
 })
 
-test('anyOf and $ref together', (t) => {
+test('oneOf and $ref together', (t) => {
   t.plan(2)
 
   const schema = {
     type: 'object',
     properties: {
       cs: {
-        anyOf: [
+        oneOf: [
           {
             $ref: '#/definitions/Option'
           },
@@ -294,14 +295,14 @@ test('anyOf and $ref together', (t) => {
   }
 })
 
-test('anyOf and $ref: 2 levels are fine', (t) => {
+test('oneOf and $ref: 2 levels are fine', (t) => {
   t.plan(1)
 
   const schema = {
     type: 'object',
     properties: {
       cs: {
-        anyOf: [
+        oneOf: [
           {
             $ref: '#/definitions/Option'
           },
@@ -313,7 +314,7 @@ test('anyOf and $ref: 2 levels are fine', (t) => {
     },
     definitions: {
       Option: {
-        anyOf: [
+        oneOf: [
           {
             type: 'number'
           },
@@ -336,14 +337,14 @@ test('anyOf and $ref: 2 levels are fine', (t) => {
   }
 })
 
-test('anyOf and $ref: multiple levels should throw at build.', (t) => {
+test('oneOf and $ref: multiple levels should throw at build.', (t) => {
   t.plan(3)
 
   const schema = {
     type: 'object',
     properties: {
       cs: {
-        anyOf: [
+        oneOf: [
           {
             $ref: '#/definitions/Option'
           },
@@ -355,7 +356,7 @@ test('anyOf and $ref: multiple levels should throw at build.', (t) => {
     },
     definitions: {
       Option: {
-        anyOf: [
+        oneOf: [
           {
             $ref: '#/definitions/Option2'
           },

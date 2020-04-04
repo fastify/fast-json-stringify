@@ -1,11 +1,13 @@
 'use strict'
 
-const test = require('tap').test
+const t = require('tap')
+const test = t.test
+const semver = require('semver')
 const validator = require('is-my-json-valid')
 const proxyquire = require('proxyquire')
 const build = proxyquire('..', { long: null })
 
-test(`render an integer as JSON`, (t) => {
+test('render an integer as JSON', (t) => {
   t.plan(2)
 
   const schema = {
@@ -21,7 +23,7 @@ test(`render an integer as JSON`, (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test(`render an object with an integer as JSON`, (t) => {
+test('render an object with an integer as JSON', (t) => {
   t.plan(2)
 
   const schema = {
@@ -44,7 +46,7 @@ test(`render an object with an integer as JSON`, (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test(`render an array with an integer as JSON`, (t) => {
+test('render an array with an integer as JSON', (t) => {
   t.plan(2)
 
   const schema = {
@@ -63,7 +65,7 @@ test(`render an array with an integer as JSON`, (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test(`render an object with an additionalProperty of type integer as JSON`, (t) => {
+test('render an object with an additionalProperty of type integer as JSON', (t) => {
   t.plan(2)
 
   const schema = {
@@ -83,3 +85,10 @@ test(`render an object with an additionalProperty of type integer as JSON`, (t) 
   t.equal(output, '{"num":1615}')
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
+
+if (semver.gt(process.versions.node, '10.3.0')) {
+  require('./bigint')(t.test, build)
+} else {
+  t.pass('Skip because Node version < 10.4')
+  t.end()
+}
