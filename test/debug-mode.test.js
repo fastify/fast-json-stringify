@@ -2,7 +2,6 @@
 
 const test = require('tap').test
 const fjs = require('..')
-const Ajv = require('ajv')
 
 function build (opts) {
   return fjs({
@@ -31,14 +30,13 @@ test('activate debug mode truthy', t => {
   t.like(debugMode.toString.toString(), 'join', 'to string override')
 })
 
-/* eslint no-new-func: "off" */
 test('to string auto-consistent', t => {
   t.plan(2)
   const debugMode = build({ debugMode: 1 })
   t.type(debugMode, Array)
 
   const str = debugMode.toString()
-  const compiled = Function(str)()
+  const compiled = fjs.restore(str)
   const tobe = JSON.stringify({ firstName: 'Foo' })
   t.deepEquals(compiled({ firstName: 'Foo', surname: 'bar' }), tobe, 'surname evicted')
 })
@@ -61,8 +59,7 @@ test('to string auto-consistent with ajv', t => {
   t.type(debugMode, Array)
 
   const str = debugMode.toString()
-  global.ajv = new Ajv()
-  const compiled = Function(str)()
+  const compiled = fjs.restore(str)
   const tobe = JSON.stringify({ str: 'Foo' })
   t.deepEquals(compiled({ str: 'Foo', void: 'me' }), tobe)
 })

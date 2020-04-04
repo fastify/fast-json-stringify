@@ -1164,3 +1164,16 @@ function isEmpty (schema) {
 }
 
 module.exports = build
+
+module.exports.restore = function (debugModeStr, options = {}) {
+  const dependencies = [debugModeStr]
+  const args = []
+  if (debugModeStr.startsWith('ajv')) {
+    dependencies.unshift('ajv')
+    args.push(new Ajv(options.ajv))
+  }
+
+  // eslint-disable-next-line
+  return (Function.apply(null, ['ajv', debugModeStr])
+    .apply(null, args))
+}
