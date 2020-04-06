@@ -195,71 +195,210 @@ test('render a nested object in a string when type is date-format as ISOString',
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('string:: should not break when the value of field is null', (t) => {
-  t.plan(2)
+test('serializing null value', t => {
+  const input = { updatedAt: null }
 
-  const schema = {
-    title: 'an object in a string',
-    type: 'object',
-    properties: {
-      updatedAt: {
-        type: 'string',
-        format: 'date-time'
-      }
+  function createSchema (properties) {
+    return {
+      title: 'an object in a string',
+      type: 'object',
+      properties
     }
   }
 
-  const toStringify = { updatedAt: null }
-  const validate = validator(schema)
-  const stringify = build(schema)
-  const output = stringify(toStringify)
+  function serialize (schema, input) {
+    const validate = validator(schema)
+    const stringify = build(schema)
+    const output = stringify(input)
 
-  t.equal(output, '{"updatedAt":""}')
-  t.notOk(validate(JSON.parse(output)), 'an empty string is not a date-time format')
-})
-
-test('nullable:: should not break when the value of field is null', (t) => {
-  t.plan(2)
-
-  const schema = {
-    title: 'an object in a string',
-    type: 'object',
-    properties: {
-      updatedAt: {
-        type: ['string', 'null'],
-        format: 'date-time'
-      }
+    return {
+      validate,
+      output
     }
   }
 
-  const toStringify = { updatedAt: null }
-  const stringify = build(schema)
-  const validate = validator(schema)
-  const output = stringify(toStringify)
+  t.plan(3)
 
-  t.equal(output, '{"updatedAt":null}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
-})
+  t.test('type::string', t => {
+    t.plan(3)
 
-test('not nullable:: should not break when the value of field is null', (t) => {
-  t.plan(2)
+    t.test('format::date-time', t => {
+      t.plan(2)
 
-  const schema = {
-    title: 'an object in a string',
-    type: 'object',
-    properties: {
-      updatedAt: {
-        type: ['string'],
-        format: 'date-time'
+      const prop = {
+        updatedAt: {
+          type: 'string',
+          format: 'date-time'
+        }
       }
-    }
-  }
 
-  const toStringify = { updatedAt: null }
-  const validate = validator(schema)
-  const stringify = build(schema)
-  const output = stringify(toStringify)
+      const {
+        output,
+        validate
+      } = serialize(createSchema(prop), input)
 
-  t.equal(output, '{"updatedAt":""}')
-  t.notOk(validate(JSON.parse(output)), 'an empty string is not a date-time format')
+      t.equal(output, '{"updatedAt":""}')
+      t.notOk(validate(JSON.parse(output)), 'an empty string is not a date-time format')
+    })
+
+    t.test('format::date', t => {
+      t.plan(2)
+
+      const prop = {
+        updatedAt: {
+          type: 'string',
+          format: 'date'
+        }
+      }
+
+      const {
+        output,
+        validate
+      } = serialize(createSchema(prop), input)
+
+      t.equal(output, '{"updatedAt":""}')
+      t.notOk(validate(JSON.parse(output)), 'an empty string is not a date format')
+    })
+
+    t.test('format::time', t => {
+      t.plan(2)
+
+      const prop = {
+        updatedAt: {
+          type: 'string',
+          format: 'time'
+        }
+      }
+
+      const {
+        output,
+        validate
+      } = serialize(createSchema(prop), input)
+
+      t.equal(output, '{"updatedAt":""}')
+      t.notOk(validate(JSON.parse(output)), 'an empty string is not a time format')
+    })
+  })
+
+  t.test('type::array', t => {
+    t.plan(3)
+
+    t.test('format::date-time', t => {
+      t.plan(2)
+
+      const prop = {
+        updatedAt: {
+          type: ['string'],
+          format: 'date-time'
+        }
+      }
+
+      const {
+        output,
+        validate
+      } = serialize(createSchema(prop), input)
+
+      t.equal(output, '{"updatedAt":""}')
+      t.notOk(validate(JSON.parse(output)), 'an empty string is not a date-time format')
+    })
+
+    t.test('format::date', t => {
+      t.plan(2)
+
+      const prop = {
+        updatedAt: {
+          type: ['string'],
+          format: 'date'
+        }
+      }
+
+      const {
+        output,
+        validate
+      } = serialize(createSchema(prop), input)
+
+      t.equal(output, '{"updatedAt":""}')
+      t.notOk(validate(JSON.parse(output)), 'an empty string is not a date format')
+    })
+
+    t.test('format::time', t => {
+      t.plan(2)
+
+      const prop = {
+        updatedAt: {
+          type: ['string'],
+          format: 'time'
+        }
+      }
+
+      const {
+        output,
+        validate
+      } = serialize(createSchema(prop), input)
+
+      t.equal(output, '{"updatedAt":""}')
+      t.notOk(validate(JSON.parse(output)), 'an empty string is not a time format')
+    })
+  })
+
+  t.test('type::array::nullable', t => {
+    t.plan(3)
+
+    t.test('format::date-time', t => {
+      t.plan(2)
+
+      const prop = {
+        updatedAt: {
+          type: ['string', 'null'],
+          format: 'date-time'
+        }
+      }
+
+      const {
+        output,
+        validate
+      } = serialize(createSchema(prop), input)
+
+      t.equal(output, '{"updatedAt":null}')
+      t.ok(validate(JSON.parse(output)), 'an empty string is not a date-time format')
+    })
+
+    t.test('format::date', t => {
+      t.plan(2)
+
+      const prop = {
+        updatedAt: {
+          type: ['string', 'null'],
+          format: 'date'
+        }
+      }
+
+      const {
+        output,
+        validate
+      } = serialize(createSchema(prop), input)
+
+      t.equal(output, '{"updatedAt":null}')
+      t.ok(validate(JSON.parse(output)), 'an empty string is not a date format')
+    })
+
+    t.test('format::time', t => {
+      t.plan(2)
+
+      const prop = {
+        updatedAt: {
+          type: ['string', 'null'],
+          format: 'time'
+        }
+      }
+
+      const {
+        output,
+        validate
+      } = serialize(createSchema(prop), input)
+
+      t.equal(output, '{"updatedAt":null}')
+      t.ok(validate(JSON.parse(output)), 'an empty string is not a time format')
+    })
+  })
 })
