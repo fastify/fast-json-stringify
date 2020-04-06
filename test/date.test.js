@@ -219,7 +219,7 @@ test('string:: should not break when the value of field is null', (t) => {
 })
 
 test('nullable:: should not break when the value of field is null', (t) => {
-  t.plan(1)
+  t.plan(2)
 
   const schema = {
     title: 'an object in a string',
@@ -234,9 +234,11 @@ test('nullable:: should not break when the value of field is null', (t) => {
 
   const toStringify = { updatedAt: null }
   const stringify = build(schema)
+  const validate = validator(schema)
   const output = stringify(toStringify)
 
   t.equal(output, '{"updatedAt":null}')
+  t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('not nullable:: should not break when the value of field is null', (t) => {
