@@ -42,7 +42,6 @@
     "standard": "^14.0.0",
     "tap": "^14.0.0",
     "typescript": "^3.7.5",
-    "uglify-es": "^3.3.9"
   },
   "dependencies": {
     "ajv": "^6.11.0",
