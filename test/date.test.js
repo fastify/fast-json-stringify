@@ -398,7 +398,7 @@ test('serializing null value', t => {
       } = serialize(createSchema(prop), input)
 
       t.equal(output, '{"updatedAt":null}')
-      t.ok(validate(JSON.parse(output)), 'an empty string is not a time format')
+      t.ok(validate(JSON.parse(output)), 'valid schema')
     })
   })
 })
