@@ -277,13 +277,9 @@ function $asBooleanNullable (bool) {
 }
 
 function $asDatetime (date) {
-  if (!date) {
-    return '""'
-  }
-
   if (date instanceof Date) {
     return '"' + date.toISOString() + '"'
-  } else if (typeof date.toISOString === 'function') {
+  } else if (date && typeof date.toISOString === 'function') {
     return '"' + date.toISOString() + '"'
   } else {
     return $asString(date)
@@ -296,7 +292,7 @@ function $asDate (date) {
     var month = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(date)
     var day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date)
     return '"' + year + '-' + month + '-' + day + '"'
-  } else if (typeof date.format === 'function') {
+  } else if (date && typeof date.format === 'function') {
     return '"' + date.format('YYYY-MM-DD') + '"'
   } else {
     return $asString(date)
@@ -304,16 +300,12 @@ function $asDate (date) {
 }
 
 function $asTime (date) {
-  if (!date) {
-    return '""'
-  }
-
   if (date instanceof Date) {
     var hour = new Intl.DateTimeFormat('en', { hour: 'numeric', hour12: false }).format(date)
     var minute = new Intl.DateTimeFormat('en', { minute: 'numeric' }).format(date)
     var second = new Intl.DateTimeFormat('en', { second: 'numeric' }).format(date)
     return '"' + $pad2Zeros(hour) + ':' + $pad2Zeros(minute) + ':' + $pad2Zeros(second) + '"'
-  } else if (typeof date.format === 'function') {
+  } else if (date && typeof date.format === 'function') {
     return '"' + date.format('HH:mm:ss') + '"'
   } else {
     return $asString(date)
