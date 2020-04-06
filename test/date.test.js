@@ -91,7 +91,6 @@ test('render a date in a string when format is time as HH:mm:ss', (t) => {
   const output = stringify(toStringify)
 
   validate(JSON.parse(output))
-  console.log(validate.errors)
 
   t.equal(output, `"${moment(toStringify).format('HH:mm:ss')}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
@@ -112,7 +111,6 @@ test('verify padding for rendered date in a string when format is time', (t) => 
   const output = stringify(toStringify)
 
   validate(JSON.parse(output))
-  console.log(validate.errors)
 
   t.equal(output, `"${moment(toStringify).format('HH:mm:ss')}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
