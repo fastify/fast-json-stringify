@@ -274,7 +274,7 @@ function $asBooleanNullable (bool) {
 function $asDatetime (date) {
   if (date instanceof Date) {
     return '"' + date.toISOString() + '"'
-  } else if (typeof date.toISOString === 'function') {
+  } else if (date && typeof date.toISOString === 'function') {
     return '"' + date.toISOString() + '"'
   } else {
     return $asString(date)
@@ -287,7 +287,7 @@ function $asDate (date) {
     var month = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(date)
     var day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date)
     return '"' + year + '-' + month + '-' + day + '"'
-  } else if (typeof date.format === 'function') {
+  } else if (date && typeof date.format === 'function') {
     return '"' + date.format('YYYY-MM-DD') + '"'
   } else {
     return $asString(date)
@@ -300,7 +300,7 @@ function $asTime (date) {
     var minute = new Intl.DateTimeFormat('en', { minute: 'numeric' }).format(date)
     var second = new Intl.DateTimeFormat('en', { second: 'numeric' }).format(date)
     return '"' + $pad2Zeros(hour) + ':' + $pad2Zeros(minute) + ':' + $pad2Zeros(second) + '"'
-  } else if (typeof date.format === 'function') {
+  } else if (date && typeof date.format === 'function') {
     return '"' + date.format('HH:mm:ss') + '"'
   } else {
     return $asString(date)
@@ -1072,9 +1072,10 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
         sortedTypes.forEach((type, index) => {
           var tempSchema = Object.assign({}, schema, { type })
           var nestedResult = nested(laterCode, name, key, tempSchema, externalSchema, fullSchema, subKey)
+
           if (type === 'string') {
             code += `
-              ${index === 0 ? 'if' : 'else if'}(typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || typeof obj${accessor}.toISOString === "function" || obj${accessor} instanceof RegExp)
+              ${index === 0 ? 'if' : 'else if'}(obj${accessor} === null || typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || typeof obj${accessor}.toISOString === "function" || obj${accessor} instanceof RegExp)
                 ${nestedResult.code}
             `
           } else if (type === 'null') {

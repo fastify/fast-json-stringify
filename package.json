@@ -1,6 +1,6 @@
 {
   "name": "fast-json-stringify",
-  "version": "1.20.0",
+  "version": "1.20.1",
   "description": "Stringify your JSON at max speed",
   "main": "index.js",
   "types": "index.d.ts",
@@ -48,6 +48,9 @@
     "ajv": "^6.11.0",
     "deepmerge": "^4.2.2",
     "string-similarity": "^4.0.1"
+  },
+  "engines": {
+    "node": ">= 10.0.0"
   },
   "standard": {
     "ignore": [
