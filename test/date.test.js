@@ -194,3 +194,70 @@ test('render a nested object in a string when type is date-format as ISOString',
   t.equal(output, JSON.stringify(toStringify))
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
+
+test('string:: should not break when the value of field is null', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'an object in a string',
+    type: 'object',
+    properties: {
+      updatedAt: {
+        type: 'string',
+        format: 'date-time'
+      }
+    }
+  }
+
+  const toStringify = { updatedAt: null }
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, '{"updatedAt":""}')
+  t.notOk(validate(JSON.parse(output)), 'an empty string is not a date-time format')
+})
+
+test('nullable:: should not break when the value of field is null', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'an object in a string',
+    type: 'object',
+    properties: {
+      updatedAt: {
+        type: ['string', 'null'],
+        format: 'date-time'
+      }
+    }
+  }
+
+  const toStringify = { updatedAt: null }
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, '{"updatedAt":null}')
+})
+
+test('not nullable:: should not break when the value of field is null', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'an object in a string',
+    type: 'object',
+    properties: {
+      updatedAt: {
+        type: ['string'],
+        format: 'date-time'
+      }
+    }
+  }
+
+  const toStringify = { updatedAt: null }
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, '{"updatedAt":""}')
+  t.notOk(validate(JSON.parse(output)), 'an empty string is not a date-time format')
+})

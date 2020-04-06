@@ -277,9 +277,13 @@ function $asBooleanNullable (bool) {
 }
 
 function $asDatetime (date) {
+  if (!date) {
+    return '""'
+  }
+
   if (date instanceof Date) {
     return '"' + date.toISOString() + '"'
-  } else if (date && typeof date.toISOString === 'function') {
+  } else if (typeof date.toISOString === 'function') {
     return '"' + date.toISOString() + '"'
   } else {
     return $asString(date)
@@ -300,6 +304,10 @@ function $asDate (date) {
 }
 
 function $asTime (date) {
+  if (!date) {
+    return '""'
+  }
+
   if (date instanceof Date) {
     var hour = new Intl.DateTimeFormat('en', { hour: 'numeric', hour12: false }).format(date)
     var minute = new Intl.DateTimeFormat('en', { minute: 'numeric' }).format(date)
@@ -1080,7 +1088,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
 
           if (type === 'string') {
             code += `
-              ${index === 0 ? 'if' : 'else if'}(typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || (obj${accessor} && typeof obj${accessor}.toISOString === "function") || obj${accessor} instanceof RegExp)
+              ${index === 0 ? 'if' : 'else if'}(obj${accessor} === null || typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || typeof obj${accessor}.toISOString === "function" || obj${accessor} instanceof RegExp)
                 ${nestedResult.code}
             `
           } else if (type === 'null') {

@@ -344,26 +344,3 @@ test('render a single quote as JSON', (t) => {
   t.equal(output, JSON.stringify(toStringify))
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
-
-test('should not break when the value of field is null', (t) => {
-  t.plan(2)
-
-  const schema = {
-    title: 'an object in a string',
-    type: 'object',
-    properties: {
-      updatedAt: {
-        type: ['string'],
-        format: 'date-time'
-      }
-    }
-  }
-
-  const toStringify = { updatedAt: null }
-  const validate = validator(schema)
-  const stringify = build(schema)
-  const output = stringify(toStringify)
-
-  t.equal(output, JSON.stringify(toStringify))
-  t.notOk(validate(JSON.parse(output)), 'valid schema')
-})
