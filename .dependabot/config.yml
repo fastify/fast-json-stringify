@@ -3,6 +3,6 @@ update_configs:
   - package_manager: "javascript"
     directory: "/"
     update_schedule: "daily"
-    ignored_updates:
-      - match:
-          dependency_name: "tap"
+    # ignored_updates:
+    #   - match:
+    #       dependency_name: "tap"
