@@ -41,7 +41,7 @@
     "semver": "^7.1.0",
     "standard": "^14.0.0",
     "tap": "^14.0.0",
-    "typescript": "^3.7.5",
+    "typescript": "^3.7.5"
   },
   "dependencies": {
     "ajv": "^6.11.0",
