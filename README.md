@@ -8,23 +8,24 @@
 __fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads. Its performance advantage shrinks as your payload grows. It pairs well with [__flatstr__](https://www.npmjs.com/package/flatstr), which triggers a V8 optimization that improves performance when eventually converting the string to a `Buffer`.
 
 ##### Benchmarks
+
 - Machine: `EX41S-SSD, Intel Core i7, 4Ghz, 64GB RAM, 4C/8T, SSD`.
-- Node.js `v10.15.2`
+- Node.js `v12.16.2`
 
 ```
-FJS creation x 8,951 ops/sec ±0.51% (92 runs sampled)
+FJS creation x 59,805 ops/sec ±0.23% (91 runs sampled)
 
-JSON.stringify array x 5,146 ops/sec ±0.32% (97 runs sampled)
-fast-json-stringify array x 8,402 ops/sec ±0.62% (95 runs sampled)
+JSON.stringify array x 5,330 ops/sec ±0.54% (97 runs sampled)
+fast-json-stringify array x 6,995 ops/sec ±0.24% (94 runs sampled)
 
-JSON.stringify long string x 13,061 ops/sec ±0.25% (98 runs sampled)
-fast-json-stringify long string x 13,059 ops/sec ±0.21% (98 runs sampled)
+JSON.stringify long string x 15,108 ops/sec ±0.13% (100 runs sampled)
+fast-json-stringify long string x 15,089 ops/sec ±0.15% (98 runs sampled)
 
-JSON.stringify short string x 6,295,988 ops/sec ±0.28% (98 runs sampled)
-fast-json-stringify short string x 43,335,575 ops/sec ±1.24% (86 runs sampled)
+JSON.stringify short string x 13,214,696 ops/sec ±0.19% (97 runs sampled)
+fast-json-stringify short string x 33,378,500 ops/sec ±0.27% (95 runs sampled)
 
-JSON.stringify obj x 2,557,026 ops/sec ±0.20% (97 runs sampled)
-fast-json-stringify obj x 9,001,890 ops/sec ±0.48% (90 runs sampled)
+JSON.stringify obj x 3,172,653 ops/sec ±0.15% (98 runs sampled)
+fast-json-stringify obj x 13,537,123 ops/sec ±0.19% (95 runs sampled)
 ```
 
 #### Table of contents:
