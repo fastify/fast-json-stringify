@@ -252,7 +252,7 @@ function $asIntegerNullable (i) {
 
 function $asNumber (i) {
   var num = Number(i)
-  if (isNaN(num)) {
+  if (isNaN(num) || !isFinite(num)) {
     return 'null'
   } else {
     return '' + num
