@@ -184,3 +184,200 @@ test('object with nested allOfs', (t) => {
     t.fail()
   }
 })
+
+test('object with $ref in allOf', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'object with $ref in allOf',
+    type: 'object',
+    definitions: {
+      id1: {
+        type: 'object',
+        properties: {
+          id1: {
+            type: 'integer'
+          }
+        }
+      }
+    },
+    allOf: [
+      {
+        $ref: '#/definitions/id1'
+      }
+    ]
+  }
+
+  try {
+    const stringify = build(schema)
+    try {
+      const value = stringify({
+        id1: 1,
+        id2: 2 // extra prop shouldn't be in result
+      })
+      t.is(value, '{"id1":1}')
+    } catch (e) {
+      t.fail()
+    }
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('object with $ref and other object in allOf', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'object with $ref in allOf',
+    type: 'object',
+    definitions: {
+      id1: {
+        type: 'object',
+        properties: {
+          id1: {
+            type: 'integer'
+          }
+        }
+      }
+    },
+    allOf: [
+      {
+        $ref: '#/definitions/id1'
+      },
+      {
+        type: 'object',
+        properties: {
+          id2: {
+            type: 'integer'
+          }
+        }
+      }
+    ]
+  }
+
+  try {
+    const stringify = build(schema)
+    try {
+      const value = stringify({
+        id1: 1,
+        id2: 2,
+        id3: 3 // extra prop shouldn't be in result
+      })
+      t.is(value, '{"id1":1,"id2":2}')
+    } catch (e) {
+      t.fail()
+    }
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('object with multiple $refs in allOf', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'object with $ref in allOf',
+    type: 'object',
+    definitions: {
+      id1: {
+        type: 'object',
+        properties: {
+          id1: {
+            type: 'integer'
+          }
+        }
+      },
+      id2: {
+        type: 'object',
+        properties: {
+          id2: {
+            type: 'integer'
+          }
+        }
+      }
+    },
+    allOf: [
+      {
+        $ref: '#/definitions/id1'
+      },
+      {
+        $ref: '#/definitions/id2'
+      }
+    ]
+  }
+
+  try {
+    const stringify = build(schema)
+    try {
+      const value = stringify({
+        id1: 1,
+        id2: 2,
+        id3: 3 // extra prop shouldn't be in result
+      })
+      t.is(value, '{"id1":1,"id2":2}')
+    } catch (e) {
+      t.fail()
+    }
+  } catch (e) {
+    t.fail()
+  }
+})
+
+test('object with external $refs in allOf', (t) => {
+  t.plan(1)
+
+  const externalSchema = {
+    first: {
+      definitions: {
+        id1: {
+          type: 'object',
+          properties: {
+            id1: {
+              type: 'integer'
+            }
+          }
+        }
+      }
+    },
+    second: {
+      id2: {
+        $id: '#id2',
+        type: 'object',
+        properties: {
+          id2: {
+            type: 'integer'
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    title: 'object with $ref in allOf',
+    type: 'object',
+    allOf: [
+      {
+        $ref: 'first#/definitions/id1'
+      },
+      {
+        $ref: 'second#id2'
+      }
+    ]
+  }
+
+  try {
+    const stringify = build(schema, { schema: externalSchema })
+    try {
+      const value = stringify({
+        id1: 1,
+        id2: 2,
+        id3: 3 // extra prop shouldn't be in result
+      })
+      t.is(value, '{"id1":1,"id2":2}')
+    } catch (e) {
+      t.fail()
+    }
+  } catch (e) {
+    t.fail()
+  }
+})
