@@ -627,6 +627,10 @@ function sanitizeKey (key) {
 }
 
 function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
+  if (schema.$ref) {
+    schema = refFinder(schema.$ref, fullSchema, externalSchema)
+  }
+
   Object.keys(schema.properties || {}).forEach((key, i, a) => {
     if (schema.properties[key].$ref) {
       // if the schema object is deep in the tree, we must resolve the ref in the parent scope
