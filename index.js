@@ -737,10 +737,17 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
   })
 
   if (required && required.length > 0) {
+    code += 'var required = ['
+    for (var i = 0; i < required.length; i++) {
+      if (i > 0) {
+        code += ','
+      }
+      code += `'${required[i]}'`
+    }
+    code += ']'
     code += `
-      var requiredArr = '${required}'.split(',')
-      for (var i = 0; i < requiredArr.length; i++) {
-        if (obj[requiredArr[i]] === undefined) throw new Error(requiredArr[i] + ' is required!')
+      for (var i = 0; i < required.length; i++) {
+        if (obj[required[i]] === undefined) throw new Error(required[i] + ' is required!')
       }
     `
   }
