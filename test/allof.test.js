@@ -135,7 +135,7 @@ test('object with nested allOfs', (t) => {
     allOf: [
       {
         required: [
-          'id'
+          'id1'
         ],
         type: 'object',
         properties: {
@@ -178,10 +178,10 @@ test('object with nested allOfs', (t) => {
       })
       t.is(value, '{"id1":1,"id2":2,"id3":3}')
     } catch (e) {
-      t.fail()
+      t.fail(e.message)
     }
   } catch (e) {
-    t.fail()
+    t.fail(e.message)
   }
 })
 

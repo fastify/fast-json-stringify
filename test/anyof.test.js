@@ -228,7 +228,7 @@ test('object with field with type union of multiple objects', (t) => {
     const value = stringify({ anyOfSchema: { bar: 'foo' } })
     t.is(value, '{"anyOfSchema":{"bar":"foo"}}')
   } catch (e) {
-    t.fail()
+    t.fail(e.message)
   }
 })
 
