@@ -742,7 +742,7 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
       if (i > 0) {
         code += ','
       }
-      code += `'${required[i]}'`
+      code += `${$asString(required[i]).replace(/\\/g, '\\\\')}`
     }
     code += ']'
     code += `
