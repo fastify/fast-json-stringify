@@ -636,6 +636,8 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
     schema = refFinder(schema.$ref, fullSchema, externalSchema)
   }
 
+  var required = schema.required
+
   Object.keys(schema.properties || {}).forEach((key, i, a) => {
     if (schema.properties[key].$ref) {
       // if the schema object is deep in the tree, we must resolve the ref in the parent scope
@@ -714,12 +716,14 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
 
     var defaultValue = schema.properties[key].default
     if (defaultValue !== undefined) {
+      required = filterRequired(schema.required, key)
       code += `
       } else {
         ${addComma}
         json += '${asString}:${sanitizeKey(JSON.stringify(defaultValue).replace(/\\/g, '\\\\'))}'
       `
     } else if (schema.required && schema.required.indexOf(key) !== -1) {
+      required = filterRequired(schema.required, key)
       code += `
       } else {
         throw new Error('${sanitized} is required!')
@@ -736,7 +740,31 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
       `
     }
   })
+
+  if (required && required.length > 0) {
+    code += 'var required = ['
+    for (var i = 0; i < required.length; i++) {
+      if (i > 0) {
+        code += ','
+      }
+      code += `${$asString(required[i]).replace(/\\/g, '\\\\')}`
+    }
+    code += ']'
+    code += `
+      for (var i = 0; i < required.length; i++) {
+        if (obj[required[i]] === undefined) throw new Error(required[i] + ' is required!')
+      }
+    `
+  }
+
   return { code: code, laterCode: laterCode }
+}
+
+function filterRequired (required, key) {
+  if (!required) {
+    return required
+  }
+  return required.filter(k => k !== key)
 }
 
 function buildCodeWithAllOfs (schema, code, laterCode, name, externalSchema, fullSchema) {

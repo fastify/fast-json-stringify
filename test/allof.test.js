@@ -135,7 +135,7 @@ test('object with nested allOfs', (t) => {
     allOf: [
       {
         required: [
-          'id'
+          'id1'
         ],
         type: 'object',
         properties: {
