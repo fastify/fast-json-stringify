@@ -138,6 +138,21 @@ buildTest({
   }
 }, { args: [{ a: 'test' }, { b: 1 }] })
 
+buildTest({
+  title: 'array with weird key',
+  type: 'object',
+  properties: {
+    '@data': {
+      type: 'array',
+      items: {
+        type: 'string'
+      }
+    }
+  }
+}, {
+  '@data': ['test']
+})
+
 test('invalid items throw', (t) => {
   t.plan(1)
   const schema = {

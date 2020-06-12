@@ -1021,14 +1021,14 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       code += nullable ? `json += obj${accessor} === null ? null : $asBoolean(obj${accessor})` : `json += $asBoolean(obj${accessor})`
       break
     case 'object':
-      funcName = (name + key + subKey).replace(/[-.\[\] ]/g, '') // eslint-disable-line
+      funcName = (name + key + subKey).replace(/[-.\[\] ]/g, '').replace(/[@]/g, 'AT_SYMBOL') // eslint-disable-line
       laterCode = buildObject(schema, laterCode, funcName, externalSchema, fullSchema)
       code += `
         json += ${funcName}(obj${accessor})
       `
       break
     case 'array':
-      funcName = '$arr' + (name + key + subKey).replace(/[-.\[\] ]/g, '') // eslint-disable-line
+      funcName = '$arr' + (name + key + subKey).replace(/[-.\[\] ]/g, '').replace(/[@]/g, 'AT_SYMBOL') // eslint-disable-line
       laterCode = buildArray(schema, laterCode, funcName, externalSchema, fullSchema)
       code += `
         json += ${funcName}(obj${accessor})

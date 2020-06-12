@@ -126,6 +126,25 @@ buildTest({
 })
 
 buildTest({
+  title: 'deep object with weird keys of type object',
+  type: 'object',
+  properties: {
+    '@data': {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string'
+        }
+      }
+    }
+  }
+}, {
+  '@data': {
+    id: 'string'
+  }
+})
+
+buildTest({
   title: 'deep object with spaces in key',
   type: 'object',
   properties: {
