@@ -820,7 +820,7 @@ test('ref external to relative definition', (t) => {
 
   const schema = {
     type: 'object',
-    required: ['foo'],
+    required: ['fooParent'],
     properties: {
       fooParent: { $ref: 'relative:to:local' }
     }
