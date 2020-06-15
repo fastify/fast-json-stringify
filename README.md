@@ -41,7 +41,7 @@ fast-json-stringify obj x 13,537,123 ops/sec ±0.19% (95 runs sampled)
  - <a href="#ref">`Reuse - $ref`</a>
  - <a href="#long">`Long integers`</a>
  - <a href="#nullable">`Nullable`</a>
-- <a href="#caveat">`Caveat`</a>
+- <a href="#security">`Security Notice`</a>
 - <a href="#acknowledgements">`Acknowledgements`</a>
 - <a href="#license">`License`</a>
 
@@ -540,15 +540,17 @@ Otherwise, instead of raising an error, null values will be coerced as follows:
 - `string` -> `""`
 - `boolean` -> `false`
 
-<a name="caveat"></a>
-## Caveat
+<a name="security"></a>
+## Security notice
+
+Treat the schema definition as application code, it
+is not safe to use user-provided schemas.
 
 In order to achieve lowest cost/highest performance redaction `fast-json-stringify`
 creates and compiles a function (using the `Function` constructor) on initialization.
-While the `schema` is currently validated for any developer errors, it's recommended against
-allowing user input to directly supply a schema.
-It can't be guaranteed that allowing user input for the schema couldn't feasibly expose an attack
-vector.
+While the `schema` is currently validated for any developer errors,
+there is no guarantee that supplying user-generated schema could not
+expose your application to remote attacks.
 
 <a name="debug"></a>
 ### Debug Mode
