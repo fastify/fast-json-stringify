@@ -124,7 +124,7 @@ const stringify = fastJson({
   title: 'Example Schema with string date-time field',
   type: 'string',
   format: 'date-time'
-}
+})
 
 console.log(stringify(moment())) // '"YYYY-MM-DDTHH:mm:ss.sssZ"'
 ```
@@ -298,7 +298,7 @@ const stringify = fastJson({
       }]
     }
   }
-}
+})
 ```
 
 <a name="if-then-else"></a>
