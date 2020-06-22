@@ -201,3 +201,15 @@ test('moment array', (t) => {
     t.fail(e)
   }
 })
+
+buildTest({
+  title: 'item types in array default to any',
+  type: 'object',
+  properties: {
+    foo: {
+      type: 'array'
+    }
+  }
+}, {
+  foo: [1, 'string', {}, null]
+})
