@@ -909,6 +909,11 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
   `
   var laterCode = ''
 
+  // default to any items type
+  if (!schema.items) {
+    schema.items = {}
+  }
+
   if (schema.items.$ref) {
     schema.items = refFinder(schema.items.$ref, fullSchema, externalSchema)
   }
