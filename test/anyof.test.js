@@ -396,3 +396,42 @@ test('anyOf and $ref: multiple levels should throw at build.', (t) => {
     t.fail(e)
   }
 })
+
+test('anyOf looks for all of the array items', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'type array that may have any of declared items',
+    type: 'array',
+    items: {
+      anyOf: [
+        {
+          type: 'object',
+          properties: {
+            savedId: {
+              type: 'string'
+            }
+          },
+          required: ['savedId']
+        },
+        {
+          type: 'object',
+          properties: {
+            error: {
+              type: 'string'
+            }
+          },
+          required: ['error']
+        }
+      ]
+    }
+  }
+  const stringify = build(schema)
+
+  try {
+    const value = stringify([{ savedId: 'great' }, { error: 'oops' }])
+    t.is(value, '[{"savedId":"great"},{"error":"oops"}]')
+  } catch (e) {
+    t.fail()
+  }
+})

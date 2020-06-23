@@ -1024,9 +1024,9 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
   }
 
   if (schema.type === undefined) {
-    var inferedType = inferTypeByKeyword(schema)
-    if (inferedType) {
-      schema.type = inferedType
+    var inferredType = inferTypeByKeyword(schema)
+    if (inferredType) {
+      schema.type = inferredType
     }
   }
 
