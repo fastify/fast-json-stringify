@@ -44,7 +44,7 @@ test('object with allOf and multiple schema on the allOf', (t) => {
       id: 1
     })
   } catch (e) {
-    t.is(e.message, 'name is required!')
+    t.is(e.message, '"name" is required!')
   }
 
   try {
@@ -52,7 +52,7 @@ test('object with allOf and multiple schema on the allOf', (t) => {
       name: 'string'
     })
   } catch (e) {
-    t.is(e.message, 'id is required!')
+    t.is(e.message, '"id" is required!')
   }
 
   try {

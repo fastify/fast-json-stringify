@@ -383,6 +383,11 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
     var type = pp[regex].type
     var format = pp[regex].format
     var stringSerializer = getStringSerializer(format)
+    try {
+      RegExp(regex)
+    } catch (err) {
+      throw new Error(`${err.message}. Found at ${regex} matching ${JSON.stringify(pp[regex])}`)
+    }
     code += `
         if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
     `
@@ -425,7 +430,7 @@ function addPatternProperties (schema, externalSchema, fullSchema) {
       `
     } else {
       code += `
-        throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ${type}')
+        throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ' + ${JSON.stringify(type)})
       `
     }
 
@@ -518,7 +523,7 @@ function additionalProperty (schema, externalSchema, fullSchema) {
     `
   } else {
     code += `
-        throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ${type}')
+        throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ' + ${JSON.stringify(type)})
     `
   }
   return code
@@ -587,7 +592,7 @@ function refFinder (ref, schema, externalSchema) {
       return dereferenced
     } else {
       for (var i = 1; i < walk.length; i++) {
-        code += `['${sanitizeKey(walk[i])}']`
+        code += `[${JSON.stringify(walk[i])}]`
       }
     }
   }
@@ -603,32 +608,18 @@ function refFinder (ref, schema, externalSchema) {
 
   function findBadKey (obj, keys) {
     if (keys.length === 0) return null
-    const key = sanitizeKey(keys.shift())
+    const key = keys.shift()
     if (obj[key] === undefined) {
       stringSimilarity = stringSimilarity || require('string-similarity')
       const { bestMatch } = stringSimilarity.findBestMatch(key, Object.keys(obj))
       if (bestMatch.rating >= 0.5) {
-        throw new Error(`Cannot find reference '${key}', did you mean '${bestMatch.target}'?`)
+        throw new Error(`Cannot find reference ${JSON.stringify(key)}, did you mean ${JSON.stringify(bestMatch.target)}?`)
       } else {
-        throw new Error(`Cannot find reference '${key}'`)
+        throw new Error(`Cannot find reference ${JSON.stringify(key)}`)
       }
     }
     return findBadKey(obj[key], keys)
   }
-}
-
-function sanitizeKey (key) {
-  const rep = key.replace(/(\\*)'/g, function (match, p1) {
-    var base = ''
-    if (p1.length % 2 === 1) {
-      base = p1.slice(2)
-    } else {
-      base = p1
-    }
-    var rep = base + '\\\''
-    return rep
-  })
-  return rep
 }
 
 function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
@@ -650,14 +641,14 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
 
     var type = schema.properties[key].type
     var nullable = schema.properties[key].nullable
-    var sanitized = sanitizeKey(key)
-    var asString = sanitizeKey($asString(key).replace(/\\/g, '\\\\'))
+    var sanitized = JSON.stringify(key)
+    var asString = JSON.stringify(sanitized)
 
     if (nullable) {
       code += `
-        if (obj['${sanitized}'] === null) {
+        if (obj[${sanitized}] === null) {
           ${addComma}
-          json += '${asString}:null'
+          json += ${asString} + ':null'
           var rendered = true
         } else {
       `
@@ -665,10 +656,10 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
 
     if (type === 'number') {
       code += `
-          var t = Number(obj['${sanitized}'])
+          var t = Number(obj[${sanitized}])
           if (!isNaN(t)) {
             ${addComma}
-            json += '${asString}:' + t
+            json += ${asString} + ':' + t
       `
     } else if (type === 'integer') {
       code += `
@@ -676,25 +667,25 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
       `
       if (isLong) {
         code += `
-            if (isLong(obj['${sanitized}'])) {
+            if (isLong(obj[${sanitized}])) {
               ${addComma}
-              json += '${asString}:' + obj['${sanitized}'].toString()
+              json += ${asString} + ':' + obj[${sanitized}].toString()
               rendered = true
             } else {
-              var t = Number(obj['${sanitized}'])
+              var t = Number(obj[${sanitized}])
               if (!isNaN(t)) {
                 ${addComma}
-                json += '${asString}:' + t
+                json += ${asString} + ':' + t
                 rendered = true
               }
             }
         `
       } else {
         code += `
-            var t = Number(obj['${sanitized}'])
+            var t = Number(obj[${sanitized}])
             if (!isNaN(t)) {
               ${addComma}
-              json += '${asString}:' + t
+              json += ${asString} + ':' + t
               rendered = true
             }
         `
@@ -704,12 +695,12 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
       `
     } else {
       code += `
-        if (obj['${sanitized}'] !== undefined) {
+        if (obj[${sanitized}] !== undefined) {
           ${addComma}
-          json += '${asString}:'
+          json += ${asString} + ':'
         `
 
-      var result = nested(laterCode, name, key, schema.properties[key], externalSchema, fullSchema)
+      var result = nested(laterCode, name, key, schema.properties[key], externalSchema, fullSchema, undefined, false)
       code += result.code
       laterCode = result.laterCode
     }
@@ -720,7 +711,7 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
       code += `
       } else {
         ${addComma}
-        json += '${asString}:${sanitizeKey(JSON.stringify(defaultValue).replace(/\\/g, '\\\\'))}'
+        json += ${asString} + ':' + ${JSON.stringify(JSON.stringify(defaultValue))}
       `
     } else if (schema.required && schema.required.indexOf(key) !== -1) {
       required = filterRequired(schema.required, key)
@@ -747,12 +738,12 @@ function buildCode (schema, code, laterCode, name, externalSchema, fullSchema) {
       if (i > 0) {
         code += ','
       }
-      code += `${$asString(required[i]).replace(/\\/g, '\\\\')}`
+      code += `${JSON.stringify(required[i])}`
     }
     code += ']'
     code += `
       for (var i = 0; i < required.length; i++) {
-        if (obj[required[i]] === undefined) throw new Error(required[i] + ' is required!')
+        if (obj[required[i]] === undefined) throw new Error('"' + required[i] + '" is required!')
       }
     `
   }
@@ -922,7 +913,7 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
   if (Array.isArray(schema.items)) {
     result = schema.items.reduce((res, item, i) => {
       var accessor = '[i]'
-      const tmpRes = nested(laterCode, name, accessor, item, externalSchema, fullSchema, i)
+      const tmpRes = nested(laterCode, name, accessor, item, externalSchema, fullSchema, i, true)
       var condition = `i === ${i} && ${buildArrayTypeCondition(item.type, accessor)}`
       return {
         code: `${res.code}
@@ -939,7 +930,7 @@ function buildArray (schema, code, name, externalSchema, fullSchema) {
     }
     `
   } else {
-    result = nested(laterCode, name, '[i]', schema.items, externalSchema, fullSchema)
+    result = nested(laterCode, name, '[i]', schema.items, externalSchema, fullSchema, undefined, true)
   }
 
   code += `
@@ -1013,7 +1004,21 @@ function dereferenceOfRefs (schema, externalSchema, fullSchema, type) {
   })
 }
 
-function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKey) {
+var strNameCounter = 0
+function asFuncName (str) {
+  // only allow chars that can work
+  var rep = str.replace(/[^a-zA-Z0-9$_]/g, '')
+
+  if (rep.length === 0) {
+    return 'anan' + strNameCounter++
+  } else if (rep !== str) {
+    rep += strNameCounter++
+  }
+
+  return rep
+}
+
+function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKey, isArray) {
   var code = ''
   var funcName
 
@@ -1033,7 +1038,8 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
   var type = schema.type
   var nullable = schema.nullable === true
 
-  var accessor = key.indexOf('[') === 0 ? sanitizeKey(key) : `['${sanitizeKey(key)}']`
+  var accessor = isArray ? key : `[${JSON.stringify(key)}]`
+
   switch (type) {
     case 'null':
       code += `
@@ -1054,14 +1060,14 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       code += nullable ? `json += obj${accessor} === null ? null : $asBoolean(obj${accessor})` : `json += $asBoolean(obj${accessor})`
       break
     case 'object':
-      funcName = (name + key + subKey).replace(/[-.\[\] ]/g, '').replace(/[@]/g, 'AT_SYMBOL') // eslint-disable-line
+      funcName = asFuncName(name + key + subKey)
       laterCode = buildObject(schema, laterCode, funcName, externalSchema, fullSchema)
       code += `
         json += ${funcName}(obj${accessor})
       `
       break
     case 'array':
-      funcName = '$arr' + (name + key + subKey).replace(/[-.\[\] ]/g, '').replace(/[@]/g, 'AT_SYMBOL') // eslint-disable-line
+      funcName = asFuncName('$arr' + name + key + subKey) // eslint-disable-line
       laterCode = buildArray(schema, laterCode, funcName, externalSchema, fullSchema)
       code += `
         json += ${funcName}(obj${accessor})
@@ -1071,7 +1077,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       if ('anyOf' in schema) {
         dereferenceOfRefs(schema, externalSchema, fullSchema, 'anyOf')
         schema.anyOf.forEach((s, index) => {
-          var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index)
+          var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index, isArray)
           code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null })}, obj${accessor}))
               ${nestedResult.code}
@@ -1084,7 +1090,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
       } else if ('oneOf' in schema) {
         dereferenceOfRefs(schema, externalSchema, fullSchema, 'oneOf')
         schema.oneOf.forEach((s, index) => {
-          var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index)
+          var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index, isArray)
           code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null })}, obj${accessor}))
               ${nestedResult.code}
@@ -1108,7 +1114,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
         const sortedTypes = nullIndex !== -1 ? [type[nullIndex]].concat(type.slice(0, nullIndex)).concat(type.slice(nullIndex + 1)) : type
         sortedTypes.forEach((type, index) => {
           var tempSchema = Object.assign({}, schema, { type })
-          var nestedResult = nested(laterCode, name, key, tempSchema, externalSchema, fullSchema, subKey)
+          var nestedResult = nested(laterCode, name, key, tempSchema, externalSchema, fullSchema, subKey, isArray)
 
           if (type === 'string') {
             code += `
