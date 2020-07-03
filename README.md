@@ -301,6 +301,35 @@ const stringify = fastJson({
 })
 ```
 
+When specifying object JSON schemas for *anyOf*, add *required* validation keyword to match only the objects with the properties you want.
+
+Example:
+```javascript
+const stringify = fastJson({
+  title: 'Example Schema',
+  type: 'array',
+  items: {
+    anyOf: [
+      {
+        type: 'object',
+        properties: {
+          savedId: { type: 'string' }
+        },
+        // without "required" validation any object will match
+        required: ['saveId']
+      },
+      {
+        type: 'object',
+        properties: {
+          error: { type: 'string' }
+        },
+        required: ['error']
+      }
+    ]
+  }
+})
+```
+
 <a name="if-then-else"></a>
 #### If/then/else
 `fast-json-stringify` supports `if/then/else` jsonschema feature. See [ajv documentation](https://ajv.js.org/keywords.html#ifthenelse).
