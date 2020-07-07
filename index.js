@@ -1079,7 +1079,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
         schema.anyOf.forEach((s, index) => {
           var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index, isArray)
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null })}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null, maxArrayLength: null })}, obj${accessor}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
@@ -1092,7 +1092,7 @@ function nested (laterCode, name, key, schema, externalSchema, fullSchema, subKe
         schema.oneOf.forEach((s, index) => {
           var nestedResult = nested(laterCode, name, key, s, externalSchema, fullSchema, subKey !== '' ? subKey : 'i' + index, isArray)
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null })}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null, maxArrayLength: null })}, obj${accessor}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
