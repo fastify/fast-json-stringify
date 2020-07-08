@@ -397,3 +397,29 @@ test('oneOf and $ref: multiple levels should throw at build.', (t) => {
     t.fail(e)
   }
 })
+
+test('oneOf with enum with more than 100 entries', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'type array that may have one of declared items',
+    type: 'array',
+    items: {
+      oneOf: [
+        {
+          type: 'string',
+          enum: ['EUR', 'USD', ...(new Set([...new Array(200)].map(() => Math.random().toString(36).substr(2, 3)))).values()]
+        },
+        { type: 'null' }
+      ]
+    }
+  }
+  const stringify = build(schema)
+
+  try {
+    const value = stringify(['EUR', 'USD', null])
+    t.is(value, '["EUR","USD",null]')
+  } catch (e) {
+    t.fail()
+  }
+})
