@@ -408,7 +408,7 @@ test('oneOf with enum with more than 100 entries', (t) => {
       oneOf: [
         {
           type: 'string',
-          enum: ['EUR', 'USD', ...([...new Array(150)].map(() => Math.random().toString(36).substr(2, 3)))]
+          enum: ['EUR', 'USD', ...(new Set([...new Array(200)].map(() => Math.random().toString(36).substr(2, 3)))).values()]
         },
         { type: 'null' }
       ]
