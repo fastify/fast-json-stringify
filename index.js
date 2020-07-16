@@ -642,11 +642,15 @@ function refFinder (ref, location) {
     findBadKey(schema, walk.slice(1))
   }
 
-  return result.$ref ? refFinder(result.$ref, {
-    schema: schema,
-    root: root,
-    externalSchema: externalSchema
-  }) : {
+  if (result.$ref) {
+    return refFinder(result.$ref, {
+      schema: schema,
+      root: root,
+      externalSchema: externalSchema
+    })
+  }
+
+  return {
     schema: result,
     root: root,
     externalSchema: externalSchema
