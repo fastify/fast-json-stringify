@@ -398,6 +398,66 @@ test('oneOf and $ref: multiple levels should throw at build.', (t) => {
   }
 })
 
+test('oneOf and $ref - multiple external $ref', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    external: {
+      definitions: {
+        def: {
+          type: 'object',
+          properties: {
+            prop: { oneOf: [{ $ref: 'external2#/definitions/other' }] }
+          }
+        }
+      }
+    },
+    external2: {
+      definitions: {
+        internal: {
+          type: 'string'
+        },
+        other: {
+          type: 'object',
+          properties: {
+            prop2: { $ref: '#/definitions/internal' }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    title: 'object with $ref',
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: 'external#/definitions/def'
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      prop: {
+        prop2: 'test'
+      }
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"obj":{"prop":{"prop2":"test"}}}')
+})
+
 test('oneOf with enum with more than 100 entries', (t) => {
   t.plan(1)
 

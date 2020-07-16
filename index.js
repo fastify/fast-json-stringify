@@ -1059,15 +1059,20 @@ function buildArrayTypeCondition (type, accessor) {
 
 function dereferenceOfRefs (location, type) {
   var schema = location.schema
+  var locations = []
 
   schema[type].forEach((s, index) => {
     // follow the refs
+    var sLocation = mergeLocation(location, { schema: s })
     while (s.$ref) {
-      // todo: fixme
-      schema[type][index] = refFinder(s.$ref, location).schema
+      sLocation = refFinder(s.$ref, sLocation)
+      schema[type][index] = sLocation.schema
       s = schema[type][index]
     }
+    locations[index] = sLocation
   })
+
+  return locations
 }
 
 var strNameCounter = 0
@@ -1143,11 +1148,13 @@ function nested (laterCode, name, key, location, subKey, isArray) {
       break
     case undefined:
       if ('anyOf' in schema) {
-        dereferenceOfRefs(location, 'anyOf')
-        schema.anyOf.forEach((s, index) => {
-          var nestedResult = nested(laterCode, name, key, mergeLocation(location, { schema: s }), subKey !== '' ? subKey : 'i' + index, isArray)
+        // beware: dereferenceOfRefs has side effects and changes schema.anyOf
+        var anyOfLocations = dereferenceOfRefs(location, 'anyOf')
+        anyOfLocations.forEach((location, index) => {
+          var nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
+
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null, maxArrayLength: null })}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(location.schema, { depth: null, maxArrayLength: null })}, obj${accessor}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
@@ -1156,11 +1163,12 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           else json+= null
         `
       } else if ('oneOf' in schema) {
-        dereferenceOfRefs(location, 'oneOf')
-        schema.oneOf.forEach((s, index) => {
-          var nestedResult = nested(laterCode, name, key, mergeLocation(location, { schema: s }), subKey !== '' ? subKey : 'i' + index, isArray)
+        // beware: dereferenceOfRefs has side effects and changes schema.oneOf
+        var oneOfLocations = dereferenceOfRefs(location, 'oneOf')
+        oneOfLocations.forEach((location, index) => {
+          var nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(s, { depth: null, maxArrayLength: null })}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(location.schema, { depth: null, maxArrayLength: null })}, obj${accessor}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
