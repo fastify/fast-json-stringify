@@ -685,6 +685,52 @@ test('ref internal - multiple $ref format', (t) => {
   t.equal(output, '{"zero":"test","a":"test","b":"test","c":"test","d":"test","e":"test"}')
 })
 
+test('ref external - external schema with internal ref', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    external: {
+      definitions: {
+        internal: { type: 'string' },
+        def: {
+          type: 'object',
+          properties: {
+            prop: { $ref: '#/definitions/internal' }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    title: 'object with $ref',
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: 'external#/definitions/def'
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      prop: 'test'
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"obj":{"prop":"test"}}')
+})
+
 test('ref in root internal', (t) => {
   t.plan(2)
 
