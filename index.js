@@ -1153,6 +1153,13 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         anyOfLocations.forEach((location, index) => {
           var nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
 
+          // Since we are only passing the relevant schema to ajv.validate, it needs to be full dereferenced
+          // otherwise any $ref pointing to an external schema would result in an error.
+          // Full dereference of the schema happens as side effect of two functions:
+          // 1. `dereferenceOfRefs` loops through the `schema.anyOf`` array and replaces any top level reference
+          // with the actual schema
+          // 2. `nested`, through `buildCode`, replaces any reference in object properties with the actual schema
+          // (see https://github.com/fastify/fast-json-stringify/blob/6da3b3e8ac24b1ca5578223adedb4083b7adf8db/index.js#L631)
           code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(location.schema, { depth: null, maxArrayLength: null })}, obj${accessor}))
               ${nestedResult.code}
@@ -1167,6 +1174,8 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         var oneOfLocations = dereferenceOfRefs(location, 'oneOf')
         oneOfLocations.forEach((location, index) => {
           var nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
+
+          // see comment on anyOf about derefencing the schema before calling ajv.validate
           code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(location.schema, { depth: null, maxArrayLength: null })}, obj${accessor}))
               ${nestedResult.code}
