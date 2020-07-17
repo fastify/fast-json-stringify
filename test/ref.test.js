@@ -685,6 +685,186 @@ test('ref internal - multiple $ref format', (t) => {
   t.equal(output, '{"zero":"test","a":"test","b":"test","c":"test","d":"test","e":"test"}')
 })
 
+test('ref external - external schema with internal ref (object property)', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    external: {
+      definitions: {
+        internal: { type: 'string' },
+        def: {
+          type: 'object',
+          properties: {
+            prop: { $ref: '#/definitions/internal' }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    title: 'object with $ref',
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: 'external#/definitions/def'
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      prop: 'test'
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"obj":{"prop":"test"}}')
+})
+
+test('ref external - external schema with internal ref (array items)', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    external: {
+      definitions: {
+        internal: { type: 'string' },
+        def: {
+          type: 'object',
+          properties: {
+            prop: { $ref: '#/definitions/internal' }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    title: 'object with $ref',
+    type: 'object',
+    properties: {
+      arr: {
+        type: 'array',
+        items: {
+          $ref: 'external#/definitions/def'
+        }
+      }
+    }
+  }
+
+  const object = {
+    arr: [{
+      prop: 'test'
+    }]
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"arr":[{"prop":"test"}]}')
+})
+
+test('ref external - external schema with internal ref (root)', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    external: {
+      definitions: {
+        internal: { type: 'string' },
+        def: {
+          type: 'object',
+          properties: {
+            prop: { $ref: '#/definitions/internal' }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    title: 'object with $ref',
+    $ref: 'external#/definitions/def'
+  }
+
+  const object = {
+    prop: 'test'
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"prop":"test"}')
+})
+
+test('ref external - external schema with internal ref (pattern properties)', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    external: {
+      definitions: {
+        internal: { type: 'string' },
+        def: {
+          type: 'object',
+          patternProperties: {
+            '^p': { $ref: '#/definitions/internal' }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    title: 'object with $ref',
+    type: 'object',
+    patternProperties: {
+      '^o': {
+        $ref: 'external#/definitions/def'
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      prop: 'test'
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"obj":{"prop":"test"}}')
+})
+
 test('ref in root internal', (t) => {
   t.plan(2)
 
