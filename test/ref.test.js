@@ -35,12 +35,8 @@ test('ref internal - properties', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"obj":{"str":"test"}}')
 })
@@ -71,12 +67,8 @@ test('ref internal - items', (t) => {
   const stringify = build(schema)
   const output = stringify(array)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '[{"str":"test"}]')
 })
@@ -136,12 +128,8 @@ test('ref external - properties', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"obj":{"str":"test"},"num":{"int":42},"strPlain":"test","strHash":"test"}')
 })
@@ -179,12 +167,8 @@ test('ref internal - patternProperties', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"obj":{"str":"test"}}')
 })
@@ -220,12 +204,8 @@ test('ref internal - additionalProperties', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"obj":{"str":"test"}}')
 })
@@ -269,12 +249,8 @@ test('ref internal - pattern-additional Properties', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"reg":{"str":"test"},"obj":{"str":"test"}}')
 })
@@ -324,12 +300,8 @@ test('ref external - pattern-additional Properties', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"reg":{"str":"test"},"obj":{"int":42}}')
 })
@@ -380,12 +352,8 @@ test('ref internal - deepObject schema', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"winter":{"is":{"coming":{"where":"to town"}}}}')
 })
@@ -424,12 +392,8 @@ test('ref internal - plain name fragment', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"obj":{"str":"test"}}')
 })
@@ -487,12 +451,8 @@ test('ref external - plain name fragment', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"first":{"str":"test"},"second":{"int":42}}')
 })
@@ -563,12 +523,8 @@ test('ref external - duplicate plain name fragment', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"local":{"prop":"test"},"external":{"prop":true},"other":{"prop":42}}')
 })
@@ -675,12 +631,8 @@ test('ref internal - multiple $ref format', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"zero":"test","a":"test","b":"test","c":"test","d":"test","e":"test"}')
 })
@@ -721,12 +673,8 @@ test('ref external - external schema with internal ref (object property)', (t) =
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"obj":{"prop":"test"}}')
 })
@@ -770,12 +718,8 @@ test('ref external - external schema with internal ref (array items)', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"arr":[{"prop":"test"}]}')
 })
@@ -809,12 +753,8 @@ test('ref external - external schema with internal ref (root)', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"prop":"test"}')
 })
@@ -855,12 +795,8 @@ test('ref external - external schema with internal ref (pattern properties)', (t
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"obj":{"prop":"test"}}')
 })
@@ -890,12 +826,8 @@ test('ref in root internal', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"int":42}')
 })
@@ -929,12 +861,8 @@ test('ref in root external', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"int":42}')
 })
@@ -972,12 +900,8 @@ test('ref in root external multiple times', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"int":42}')
 })
@@ -1010,12 +934,8 @@ test('ref external to relative definition', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"fooParent":{"foo":"bar"}}')
 })
@@ -1052,12 +972,8 @@ test('ref to nested ref definition', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"foo":"foo"}')
 })
@@ -1082,12 +998,8 @@ test('ref in definition with exact match', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"foo":"foo"}')
 })

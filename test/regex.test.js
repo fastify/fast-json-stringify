@@ -25,12 +25,8 @@ test('object with RexExp', (t) => {
   const validate = validator(schema)
   const output = stringify(obj)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(obj.reg.source, new RegExp(JSON.parse(output).reg).source)
   t.ok(validate(JSON.parse(output)), 'valid schema')

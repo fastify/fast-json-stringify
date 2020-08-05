@@ -21,14 +21,10 @@ test('object with required field', (t) => {
   }
   const stringify = build(schema)
 
-  try {
-    stringify({
-      str: 'string'
-    })
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  stringify({
+    str: 'string'
+  })
+  t.pass()
 
   try {
     stringify({
@@ -157,7 +153,7 @@ test('object with multiple required field not in properties schema', (t) => {
 })
 
 test('object with required bool', (t) => {
-  t.plan(3)
+  t.plan(2)
 
   const schema = {
     title: 'object with required field',
@@ -180,14 +176,9 @@ test('object with required bool', (t) => {
     t.pass()
   }
 
-  try {
-    stringify({
-      bool: false
-    })
-    t.pass()
-  } catch (e) {
-    t.fail(e.message)
-  }
+  stringify({
+    bool: false
+  })
 })
 
 test('required nullable', (t) => {
@@ -206,14 +197,10 @@ test('required nullable', (t) => {
   }
   const stringify = build(schema)
 
-  try {
-    stringify({
-      null: null
-    })
-    t.pass()
-  } catch (e) {
-    t.fail(e.message)
-  }
+  stringify({
+    null: null
+  })
+  t.pass()
 })
 
 test('required numbers', (t) => {
@@ -234,14 +221,10 @@ test('required numbers', (t) => {
   }
   const stringify = build(schema)
 
-  try {
-    stringify({
-      num: 42
-    })
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  stringify({
+    num: 42
+  })
+  t.pass()
 
   try {
     stringify({
