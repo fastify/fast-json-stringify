@@ -192,14 +192,10 @@ test('moment array', (t) => {
     }
   }
   const stringify = build(schema)
-  try {
-    const value = stringify({
-      times: [moment('2018-04-21T07:52:31.017Z')]
-    })
-    t.is(value, '{"times":["2018-04-21T07:52:31.017Z"]}')
-  } catch (e) {
-    t.fail(e)
-  }
+  const value = stringify({
+    times: [moment('2018-04-21T07:52:31.017Z')]
+  })
+  t.is(value, '{"times":["2018-04-21T07:52:31.017Z"]}')
 })
 
 buildTest({

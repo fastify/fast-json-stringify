@@ -19,14 +19,10 @@ test('possibly nullable integer primitive alternative', (t) => {
 
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      data: 4
-    })
-    t.is(value, '{"data":4}')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify({
+    data: 4
+  })
+  t.is(value, '{"data":4}')
 })
 
 test('possibly nullable number primitive alternative', (t) => {
@@ -44,14 +40,10 @@ test('possibly nullable number primitive alternative', (t) => {
 
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      data: 4
-    })
-    t.is(value, '{"data":4}')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify({
+    data: 4
+  })
+  t.is(value, '{"data":4}')
 })
 
 test('possibly nullable integer primitive alternative with null value', (t) => {
@@ -69,14 +61,10 @@ test('possibly nullable integer primitive alternative with null value', (t) => {
 
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      data: null
-    })
-    t.is(value, '{"data":0}')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify({
+    data: null
+  })
+  t.is(value, '{"data":0}')
 })
 
 test('possibly nullable number primitive alternative with null value', (t) => {
@@ -94,14 +82,10 @@ test('possibly nullable number primitive alternative with null value', (t) => {
 
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      data: null
-    })
-    t.is(value, '{"data":0}')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify({
+    data: null
+  })
+  t.is(value, '{"data":0}')
 })
 
 test('nullable integer primitive', (t) => {
@@ -119,14 +103,10 @@ test('nullable integer primitive', (t) => {
 
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      data: 4
-    })
-    t.is(value, '{"data":4}')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify({
+    data: 4
+  })
+  t.is(value, '{"data":4}')
 })
 
 test('nullable number primitive', (t) => {
@@ -144,14 +124,10 @@ test('nullable number primitive', (t) => {
 
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      data: 4
-    })
-    t.is(value, '{"data":4}')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify({
+    data: 4
+  })
+  t.is(value, '{"data":4}')
 })
 
 test('nullable primitive with null value', (t) => {
@@ -169,14 +145,10 @@ test('nullable primitive with null value', (t) => {
 
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      data: null
-    })
-    t.is(value, '{"data":null}')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify({
+    data: null
+  })
+  t.is(value, '{"data":null}')
 })
 
 test('nullable number primitive with null value', (t) => {
@@ -194,14 +166,10 @@ test('nullable number primitive with null value', (t) => {
 
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      data: null
-    })
-    t.is(value, '{"data":null}')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify({
+    data: null
+  })
+  t.is(value, '{"data":null}')
 })
 
 test('possibly null object with multi-type property', (t) => {
@@ -223,35 +191,21 @@ test('possibly null object with multi-type property', (t) => {
   }
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      objectOrNull: {
-        stringOrNumber: 'string'
-      }
-    })
-    t.is(value, '{"objectOrNull":{"stringOrNumber":"string"}}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({
+    objectOrNull: {
+      stringOrNumber: 'string'
+    }
+  }), '{"objectOrNull":{"stringOrNumber":"string"}}')
 
-  try {
-    const value = stringify({
-      objectOrNull: {
-        stringOrNumber: 42
-      }
-    })
-    t.is(value, '{"objectOrNull":{"stringOrNumber":42}}')
-  } catch (e) {
-    t.fail()
-  }
-  try {
-    const value = stringify({
-      objectOrNull: null
-    })
-    t.is(value, '{"objectOrNull":null}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({
+    objectOrNull: {
+      stringOrNumber: 42
+    }
+  }), '{"objectOrNull":{"stringOrNumber":42}}')
+
+  t.is(stringify({
+    objectOrNull: null
+  }), '{"objectOrNull":null}')
 })
 
 test('object with possibly null array of multiple types', (t) => {
@@ -291,31 +245,17 @@ test('object with possibly null array of multiple types', (t) => {
     t.fail()
   }
 
-  try {
-    const value = stringify({
-      arrayOfStringsAndNumbers: [42, 7]
-    })
-    t.is(value, '{"arrayOfStringsAndNumbers":[42,7]}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({
+    arrayOfStringsAndNumbers: [42, 7]
+  }), '{"arrayOfStringsAndNumbers":[42,7]}')
 
-  try {
-    const value = stringify({
-      arrayOfStringsAndNumbers: ['string1', 42, 7, 'string2']
-    })
-    t.is(value, '{"arrayOfStringsAndNumbers":["string1",42,7,"string2"]}')
-  } catch (e) {
-    t.fail()
-  }
-  try {
-    const value = stringify({
-      arrayOfStringsAndNumbers: ['string1', null, 42, 7, 'string2', null]
-    })
-    t.is(value, '{"arrayOfStringsAndNumbers":["string1",null,42,7,"string2",null]}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({
+    arrayOfStringsAndNumbers: ['string1', 42, 7, 'string2']
+  }), '{"arrayOfStringsAndNumbers":["string1",42,7,"string2"]}')
+
+  t.is(stringify({
+    arrayOfStringsAndNumbers: ['string1', null, 42, 7, 'string2', null]
+  }), '{"arrayOfStringsAndNumbers":["string1",null,42,7,"string2",null]}')
 })
 
 test('object with tuple of multiple types', (t) => {
@@ -400,23 +340,13 @@ test('object with anyOf and multiple types', (t) => {
     t.fail()
   }
 
-  try {
-    const value = stringify({
-      objectOrBoolean: { stringOrNumber: 42 }
-    })
-    t.is(value, '{"objectOrBoolean":{"stringOrNumber":42}}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({
+    objectOrBoolean: { stringOrNumber: 42 }
+  }), '{"objectOrBoolean":{"stringOrNumber":42}}')
 
-  try {
-    const value = stringify({
-      objectOrBoolean: true
-    })
-    t.is(value, '{"objectOrBoolean":true}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({
+    objectOrBoolean: true
+  }), '{"objectOrBoolean":true}')
 })
 
 test('string type array can handle dates', (t) => {
@@ -429,13 +359,9 @@ test('string type array can handle dates', (t) => {
     }
   }
   const stringify = build(schema)
-  try {
-    const value = stringify({
-      date: new Date('2018-04-20T07:52:31.017Z'),
-      dateObject: moment('2018-04-21T07:52:31.017Z')
-    })
-    t.is(value, '{"date":"2018-04-20T07:52:31.017Z","dateObject":"2018-04-21T07:52:31.017Z"}')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify({
+    date: new Date('2018-04-20T07:52:31.017Z'),
+    dateObject: moment('2018-04-21T07:52:31.017Z')
+  })
+  t.is(value, '{"date":"2018-04-20T07:52:31.017Z","dateObject":"2018-04-21T07:52:31.017Z"}')
 })

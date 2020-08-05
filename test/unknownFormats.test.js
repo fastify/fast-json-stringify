@@ -19,13 +19,9 @@ test('object with custom format field', (t) => {
 
   const stringify = build(schema)
 
-  try {
-    stringify({
-      str: 'string'
-    })
+  stringify({
+    str: 'string'
+  })
 
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  t.pass()
 })

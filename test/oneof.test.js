@@ -21,23 +21,8 @@ test('object with multiple types field', (t) => {
   }
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      str: 'string'
-    })
-    t.is(value, '{"str":"string"}')
-  } catch (e) {
-    t.fail(e.message)
-  }
-
-  try {
-    const value = stringify({
-      str: true
-    })
-    t.is(value, '{"str":true}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({ str: 'string' }), '{"str":"string"}')
+  t.is(stringify({ str: true }), '{"str":true}')
 })
 
 test('object with field of type object or null', (t) => {
@@ -63,26 +48,13 @@ test('object with field of type object or null', (t) => {
   }
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      prop: null
-    })
-    t.is(value, '{"prop":null}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({ prop: null }), '{"prop":null}')
 
-  try {
-    const value = stringify({
-      prop: {
-        str: 'string',
-        remove: 'this'
-      }
-    })
-    t.is(value, '{"prop":{"str":"string"}}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({
+    prop: {
+      str: 'string', remove: 'this'
+    }
+  }), '{"prop":{"str":"string"}}')
 })
 
 test('object with field of type object or array', (t) => {
@@ -108,25 +80,13 @@ test('object with field of type object or array', (t) => {
   }
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      prop: {
-        str: 'string'
-      }
-    })
-    t.is(value, '{"prop":{"str":"string"}}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({
+    prop: { str: 'string' }
+  }), '{"prop":{"str":"string"}}')
 
-  try {
-    const value = stringify({
-      prop: ['string']
-    })
-    t.is(value, '{"prop":["string"]}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({
+    prop: ['string']
+  }), '{"prop":["string"]}')
 })
 
 test('object with field of type string and coercion disable ', (t) => {
@@ -145,14 +105,10 @@ test('object with field of type string and coercion disable ', (t) => {
   }
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      str: 1
-    })
-    t.is(value, '{"str":null}')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify({
+    str: 1
+  })
+  t.is(value, '{"str":null}')
 })
 
 test('object with field of type string and coercion enable ', (t) => {
@@ -177,14 +133,10 @@ test('object with field of type string and coercion enable ', (t) => {
   }
   const stringify = build(schema, options)
 
-  try {
-    const value = stringify({
-      str: 1
-    })
-    t.is(value, '{"str":"1"}')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify({
+    str: 1
+  })
+  t.is(value, '{"str":"1"}')
 })
 
 test('object with field with type union of multiple objects', (t) => {
@@ -218,19 +170,9 @@ test('object with field with type union of multiple objects', (t) => {
 
   const stringify = build(schema)
 
-  try {
-    const value = stringify({ oneOfSchema: { baz: 5 } })
-    t.is(value, '{"oneOfSchema":{"baz":5}}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({ oneOfSchema: { baz: 5 } }), '{"oneOfSchema":{"baz":5}}')
 
-  try {
-    const value = stringify({ oneOfSchema: { bar: 'foo' } })
-    t.is(value, '{"oneOfSchema":{"bar":"foo"}}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({ oneOfSchema: { bar: 'foo' } }), '{"oneOfSchema":{"bar":"foo"}}')
 })
 
 test('null value in schema', (t) => {
@@ -243,11 +185,7 @@ test('null value in schema', (t) => {
     enum: [null]
   }
 
-  try {
-    build(schema)
-  } catch (e) {
-    t.fail()
-  }
+  build(schema)
 })
 
 test('oneOf and $ref together', (t) => {
@@ -276,23 +214,9 @@ test('oneOf and $ref together', (t) => {
 
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      cs: 'franco'
-    })
-    t.is(value, '{"cs":"franco"}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({ cs: 'franco' }), '{"cs":"franco"}')
 
-  try {
-    const value = stringify({
-      cs: true
-    })
-    t.is(value, '{"cs":true}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({ cs: true }), '{"cs":true}')
 })
 
 test('oneOf and $ref: 2 levels are fine', (t) => {
@@ -327,14 +251,10 @@ test('oneOf and $ref: 2 levels are fine', (t) => {
   }
 
   const stringify = build(schema)
-  try {
-    const value = stringify({
-      cs: 3
-    })
-    t.is(value, '{"cs":3}')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify({
+    cs: 3
+  })
+  t.is(value, '{"cs":3}')
 })
 
 test('oneOf and $ref: multiple levels should throw at build.', (t) => {
@@ -372,30 +292,10 @@ test('oneOf and $ref: multiple levels should throw at build.', (t) => {
   }
 
   const stringify = build(schema)
-  try {
-    const value = stringify({
-      cs: 3
-    })
-    t.is(value, '{"cs":3}')
-  } catch (e) {
-    t.fail(e)
-  }
-  try {
-    const value = stringify({
-      cs: true
-    })
-    t.is(value, '{"cs":true}')
-  } catch (e) {
-    t.fail(e)
-  }
-  try {
-    const value = stringify({
-      cs: 'pippo'
-    })
-    t.is(value, '{"cs":"pippo"}')
-  } catch (e) {
-    t.fail(e)
-  }
+
+  t.is(stringify({ cs: 3 }), '{"cs":3}')
+  t.is(stringify({ cs: true }), '{"cs":true}')
+  t.is(stringify({ cs: 'pippo' }), '{"cs":"pippo"}')
 })
 
 test('oneOf and $ref - multiple external $ref', (t) => {
@@ -448,12 +348,8 @@ test('oneOf and $ref - multiple external $ref', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
+  JSON.parse(output)
+  t.pass()
 
   t.equal(output, '{"obj":{"prop":{"prop2":"test"}}}')
 })
@@ -476,10 +372,6 @@ test('oneOf with enum with more than 100 entries', (t) => {
   }
   const stringify = build(schema)
 
-  try {
-    const value = stringify(['EUR', 'USD', null])
-    t.is(value, '["EUR","USD",null]')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify(['EUR', 'USD', null])
+  t.is(value, '["EUR","USD",null]')
 })

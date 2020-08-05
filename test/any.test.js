@@ -10,53 +10,27 @@ test('object with nested random property', (t) => {
     title: 'empty schema to allow any object',
     type: 'object',
     properties: {
-      id: {
-        type: 'number'
-      },
+      id: { type: 'number' },
       name: {}
     }
   }
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      id: 1,
-      name: 'string'
-    })
-    t.is(value, '{"id":1,"name":"string"}')
-  } catch (e) {
-    t.fail()
-  }
-  try {
-    const value = stringify({
-      id: 1,
-      name: {
-        first: 'name',
-        last: 'last'
-      }
-    })
-    t.is(value, '{"id":1,"name":{"first":"name","last":"last"}}')
-  } catch (e) {
-    t.fail()
-  }
-  try {
-    const value = stringify({
-      id: 1,
-      name: null
-    })
-    t.is(value, '{"id":1,"name":null}')
-  } catch (e) {
-    t.fail()
-  }
-  try {
-    const value = stringify({
-      id: 1,
-      name: ['first', 'last']
-    })
-    t.is(value, '{"id":1,"name":["first","last"]}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({
+    id: 1, name: 'string'
+  }), '{"id":1,"name":"string"}')
+
+  t.is(stringify({
+    id: 1, name: { first: 'name', last: 'last' }
+  }), '{"id":1,"name":{"first":"name","last":"last"}}')
+
+  t.is(stringify({
+    id: 1, name: null
+  }), '{"id":1,"name":null}')
+
+  t.is(stringify({
+    id: 1, name: ['first', 'last']
+  }), '{"id":1,"name":["first","last"]}')
 })
 
 test('array with random items', (t) => {
@@ -65,15 +39,10 @@ test('array with random items', (t) => {
   const schema = {
     title: 'empty schema to allow any object',
     type: 'array',
-    items: {
-    }
+    items: {}
   }
   const stringify = build(schema)
 
-  try {
-    const value = stringify([1, 'string', null])
-    t.is(value, '[1,"string",null]')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify([1, 'string', null])
+  t.is(value, '[1,"string",null]')
 })

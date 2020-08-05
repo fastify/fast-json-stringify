@@ -55,26 +55,16 @@ test('object with allOf and multiple schema on the allOf', (t) => {
     t.is(e.message, '"id" is required!')
   }
 
-  try {
-    const value = stringify({
-      id: 1,
-      name: 'string'
-    })
-    t.is(value, '{"name":"string","id":1}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({
+    id: 1,
+    name: 'string'
+  }), '{"name":"string","id":1}')
 
-  try {
-    const value = stringify({
-      id: 1,
-      name: 'string',
-      tag: 'otherString'
-    })
-    t.is(value, '{"name":"string","tag":"otherString","id":1}')
-  } catch (e) {
-    t.fail()
-  }
+  t.is(stringify({
+    id: 1,
+    name: 'string',
+    tag: 'otherString'
+  }), '{"name":"string","tag":"otherString","id":1}')
 })
 
 test('object with allOf and one schema on the allOf', (t) => {
@@ -99,14 +89,10 @@ test('object with allOf and one schema on the allOf', (t) => {
   }
   const stringify = build(schema)
 
-  try {
-    const value = stringify({
-      id: 1
-    })
-    t.is(value, '{"id":1}')
-  } catch (e) {
-    t.fail()
-  }
+  const value = stringify({
+    id: 1
+  })
+  t.is(value, '{"id":1}')
 })
 
 test('object with allOf and no schema on the allOf', (t) => {
@@ -167,22 +153,14 @@ test('object with nested allOfs', (t) => {
     ]
   }
 
-  try {
-    const stringify = build(schema)
-    try {
-      const value = stringify({
-        id1: 1,
-        id2: 2,
-        id3: 3,
-        id4: 4 // extra prop shouldn't be in result
-      })
-      t.is(value, '{"id1":1,"id2":2,"id3":3}')
-    } catch (e) {
-      t.fail()
-    }
-  } catch (e) {
-    t.fail()
-  }
+  const stringify = build(schema)
+  const value = stringify({
+    id1: 1,
+    id2: 2,
+    id3: 3,
+    id4: 4 // extra prop shouldn't be in result
+  })
+  t.is(value, '{"id1":1,"id2":2,"id3":3}')
 })
 
 test('object with $ref in allOf', (t) => {
@@ -208,20 +186,12 @@ test('object with $ref in allOf', (t) => {
     ]
   }
 
-  try {
-    const stringify = build(schema)
-    try {
-      const value = stringify({
-        id1: 1,
-        id2: 2 // extra prop shouldn't be in result
-      })
-      t.is(value, '{"id1":1}')
-    } catch (e) {
-      t.fail()
-    }
-  } catch (e) {
-    t.fail()
-  }
+  const stringify = build(schema)
+  const value = stringify({
+    id1: 1,
+    id2: 2 // extra prop shouldn't be in result
+  })
+  t.is(value, '{"id1":1}')
 })
 
 test('object with $ref and other object in allOf', (t) => {
@@ -255,21 +225,13 @@ test('object with $ref and other object in allOf', (t) => {
     ]
   }
 
-  try {
-    const stringify = build(schema)
-    try {
-      const value = stringify({
-        id1: 1,
-        id2: 2,
-        id3: 3 // extra prop shouldn't be in result
-      })
-      t.is(value, '{"id1":1,"id2":2}')
-    } catch (e) {
-      t.fail()
-    }
-  } catch (e) {
-    t.fail()
-  }
+  const stringify = build(schema)
+  const value = stringify({
+    id1: 1,
+    id2: 2,
+    id3: 3 // extra prop shouldn't be in result
+  })
+  t.is(value, '{"id1":1,"id2":2}')
 })
 
 test('object with multiple $refs in allOf', (t) => {
@@ -306,21 +268,13 @@ test('object with multiple $refs in allOf', (t) => {
     ]
   }
 
-  try {
-    const stringify = build(schema)
-    try {
-      const value = stringify({
-        id1: 1,
-        id2: 2,
-        id3: 3 // extra prop shouldn't be in result
-      })
-      t.is(value, '{"id1":1,"id2":2}')
-    } catch (e) {
-      t.fail()
-    }
-  } catch (e) {
-    t.fail()
-  }
+  const stringify = build(schema)
+  const value = stringify({
+    id1: 1,
+    id2: 2,
+    id3: 3 // extra prop shouldn't be in result
+  })
+  t.is(value, '{"id1":1,"id2":2}')
 })
 
 test('object with external $refs in allOf', (t) => {
@@ -365,19 +319,11 @@ test('object with external $refs in allOf', (t) => {
     ]
   }
 
-  try {
-    const stringify = build(schema, { schema: externalSchema })
-    try {
-      const value = stringify({
-        id1: 1,
-        id2: 2,
-        id3: 3 // extra prop shouldn't be in result
-      })
-      t.is(value, '{"id1":1,"id2":2}')
-    } catch (e) {
-      t.fail()
-    }
-  } catch (e) {
-    t.fail()
-  }
+  const stringify = build(schema, { schema: externalSchema })
+  const value = stringify({
+    id1: 1,
+    id2: 2,
+    id3: 3 // extra prop shouldn't be in result
+  })
+  t.is(value, '{"id1":1,"id2":2}')
 })

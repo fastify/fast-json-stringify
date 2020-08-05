@@ -11,13 +11,9 @@ test('Should clean the cache', (t) => {
     type: 'string'
   }
 
-  try {
-    build(schema)
-    build(schema)
-    t.pass()
-  } catch (err) {
-    t.fail(err)
-  }
+  build(schema)
+  build(schema)
+  t.pass()
 })
 
 test('Should clean the cache with external schemas', (t) => {
@@ -43,11 +39,7 @@ test('Should clean the cache with external schemas', (t) => {
     }
   }
 
-  try {
-    build(schema)
-    build(schema)
-    t.pass()
-  } catch (err) {
-    t.fail(err)
-  }
+  build(schema)
+  build(schema)
+  t.pass()
 })
