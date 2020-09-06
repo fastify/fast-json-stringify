@@ -165,7 +165,8 @@ const objectKeywords = [
   'properties',
   'patternProperties',
   'additionalProperties',
-  'dependencies'
+  'dependencies',
+  'enum'
 ]
 
 const arrayKeywords = [
@@ -1105,6 +1106,10 @@ function nested (laterCode, name, key, location, subKey, isArray) {
     var inferredType = inferTypeByKeyword(schema)
     if (inferredType) {
       schema.type = inferredType
+
+      if (inferredType === 'object' && schema.enum && !Object.hasOwnProperty.call(schema, 'additionalProperties')) {
+        schema.additionalProperties = true
+      }
     }
   }
 

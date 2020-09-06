@@ -251,3 +251,36 @@ test('field passed to fastSafeStringify as undefined should be removed', (t) => 
   const obj = { ap: { value: 'string', someNumber: undefined } }
   t.equal('{"ap":{"value":"string"}}', stringify(obj))
 })
+
+test('property without type but with enum, will acts as additionalProperties', (t) => {
+  t.plan(1)
+  const stringify = build({
+    title: 'automatic additionalProperties',
+    type: 'object',
+    properties: {
+      ap: {
+        enum: ['foobar', 42, ['foo', 'bar'], {}]
+      }
+    }
+  })
+
+  const obj = { ap: { additional: 'field' } }
+  t.equal('{"ap":{"additional":"field"}}', stringify(obj))
+})
+
+test('property without type but with enum, will acts as additionalProperties without overwriting', (t) => {
+  t.plan(1)
+  const stringify = build({
+    title: 'automatic additionalProperties',
+    type: 'object',
+    properties: {
+      ap: {
+        additionalProperties: false,
+        enum: ['foobar', 42, ['foo', 'bar'], {}]
+      }
+    }
+  })
+
+  const obj = { ap: { additional: 'field' } }
+  t.equal('{"ap":{}}', stringify(obj))
+})
