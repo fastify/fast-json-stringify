@@ -405,14 +405,12 @@ function addPatternProperties (location) {
         if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
     `
     if (type === 'object') {
-      code += buildObject(ppLocation, '', 'buildObjectPP' + index)
-      code += `
+      code += `${buildObject(ppLocation, '', 'buildObjectPP' + index)}
           ${addComma}
           json += $asString(keys[i]) + ':' + buildObjectPP${index}(obj[keys[i]])
       `
     } else if (type === 'array') {
-      code += buildArray(ppLocation, '', 'buildArrayPP' + index)
-      code += `
+      code += `${buildArray(ppLocation, '', 'buildArrayPP' + index)}
           ${addComma}
           json += $asString(keys[i]) + ':' + buildArrayPP${index}(obj[keys[i]])
       `
@@ -483,14 +481,12 @@ function additionalProperty (location) {
   var format = ap.format
   var stringSerializer = getStringSerializer(format)
   if (type === 'object') {
-    code += buildObject(apLocation, '', 'buildObjectAP')
-    code += `
+    code += `${buildObject(apLocation, '', 'buildObjectAP')}
         ${addComma}
         json += $asString(keys[i]) + ':' + buildObjectAP(obj[keys[i]])
     `
   } else if (type === 'array') {
-    code += buildArray(apLocation, '', 'buildArrayAP')
-    code += `
+    code += `${buildArray(apLocation, '', 'buildArrayAP')}
         ${addComma}
         json += $asString(keys[i]) + ':' + buildArrayAP(obj[keys[i]])
     `
@@ -792,8 +788,7 @@ function buildCode (location, code, laterCode, name) {
       }
       code += `${JSON.stringify(required[i])}`
     }
-    code += ']'
-    code += `
+    code += `]
       for (var i = 0; i < required.length; i++) {
         if (obj[required[i]] === undefined) throw new Error('"' + required[i] + '" is required!')
       }
@@ -932,11 +927,10 @@ function buildObject (location, code, name) {
     r = buildInnerObject(location, name)
   }
 
-  code += r.code
   laterCode = r.laterCode
 
   // Removes the comma if is the last element of the string (in case there are not properties)
-  code += `
+  code += `${r.code}
       json += '}'
       return json
     }
@@ -1006,15 +1000,12 @@ function buildArray (location, code, name) {
       }
       ${result.code}
     }
+    json += ']'
+    return json
+  }
   `
 
   laterCode = result.laterCode
-
-  code += `
-      json += ']'
-      return json
-    }
-  `
 
   code += laterCode
 
