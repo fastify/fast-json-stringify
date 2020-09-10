@@ -374,4 +374,3 @@ buildTest({
     'name', 'dev'
   ]
 }, { dev: true }, { name: 'foo', dev: true, job: 'awesome' })
-
