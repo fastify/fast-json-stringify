@@ -755,14 +755,14 @@ function buildCode (location, code, laterCode, name) {
 
     var defaultValue = schema.properties[key].default
     if (defaultValue !== undefined) {
-      required = filterRequired(schema.required, key)
+      required = filterRequired(required, key)
       code += `
       } else {
         ${addComma}
         json += ${asString} + ':' + ${JSON.stringify(JSON.stringify(defaultValue))}
       `
-    } else if (schema.required && schema.required.indexOf(key) !== -1) {
-      required = filterRequired(schema.required, key)
+    } else if (required && required.indexOf(key) !== -1) {
+      required = filterRequired(required, key)
       code += `
       } else {
         throw new Error('${sanitized} is required!')
