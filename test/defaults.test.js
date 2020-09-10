@@ -337,3 +337,40 @@ buildTest({
 }, {
   level1: { level2: { level3: { level4: { } } } }
 })
+
+buildTest({
+  type: 'object',
+  properties: {
+    name: {
+      type: 'string',
+      default: 'foo'
+    },
+    dev: {
+      type: 'boolean',
+      default: false
+    }
+  },
+  required: [
+    'name', 'dev'
+  ]
+}, {}, { name: 'foo', dev: false })
+
+buildTest({
+  type: 'object',
+  properties: {
+    name: {
+      type: 'string',
+      default: 'foo'
+    },
+    dev: {
+      type: 'boolean'
+    },
+    job: {
+      type: 'string',
+      default: 'awesome'
+    }
+  },
+  required: [
+    'name', 'dev'
+  ]
+}, { dev: true }, { name: 'foo', dev: true, job: 'awesome' })
