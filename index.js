@@ -916,7 +916,6 @@ function buildObject (location, code, name) {
       var addComma = false
   `
 
-  var laterCode = ''
   var r
   if (schema.if && schema.then) {
     code += `
@@ -927,16 +926,14 @@ function buildObject (location, code, name) {
     r = buildInnerObject(location, name)
   }
 
-  laterCode = r.laterCode
-
   // Removes the comma if is the last element of the string (in case there are not properties)
   code += `${r.code}
       json += '}'
       return json
     }
+    ${r.laterCode}
   `
 
-  code += laterCode
   return code
 }
 
@@ -1003,11 +1000,8 @@ function buildArray (location, code, name) {
     json += ']'
     return json
   }
+  ${result.laterCode}
   `
-
-  laterCode = result.laterCode
-
-  code += laterCode
 
   return code
 }
