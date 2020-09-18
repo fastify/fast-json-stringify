@@ -1240,7 +1240,9 @@ function nested (laterCode, name, key, location, subKey, isArray) {
 
 function isEmpty (schema) {
   for (var key in schema) {
-    if (schema.hasOwnProperty(key)) return false
+    if (schema.hasOwnProperty(key) && schema[key] !== undefined) {
+      return false
+    }
   }
   return true
 }

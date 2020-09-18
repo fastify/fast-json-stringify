@@ -33,6 +33,23 @@ test('object with nested random property', (t) => {
   }), '{"id":1,"name":["first","last"]}')
 })
 
+// reference: https://github.com/fastify/fast-json-stringify/issues/259
+test('object with empty schema with $id: undefined set', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'empty schema to allow any object with $id: undefined set',
+    type: 'object',
+    properties: {
+      name: { $id: undefined }
+    }
+  }
+  const stringify = build(schema)
+  t.is(stringify({
+    name: 'string'
+  }), '{"name":"string"}')
+})
+
 test('array with random items', (t) => {
   t.plan(1)
 
