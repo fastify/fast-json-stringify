@@ -365,3 +365,29 @@ test('string type array can handle dates', (t) => {
   })
   t.is(value, '{"date":"2018-04-20T07:52:31.017Z","dateObject":"2018-04-21T07:52:31.017Z"}')
 })
+
+test('object that is simultaneously a string and a json', (t) => {
+  t.plan(2)
+  const schema = {
+    type: 'object',
+    properties: {
+      simultaneously: {
+        type: ['string', 'object'],
+        properties: {
+          foo: { type: 'string' }
+        }
+      }
+    }
+  }
+
+  const likeObjectId = {
+    toString () { return 'hello' }
+  }
+
+  const stringify = build(schema)
+  const valueStr = stringify({ simultaneously: likeObjectId })
+  t.is(valueStr, '{"simultaneously":"hello"}')
+
+  const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
+  t.is(valueObj, '{"simultaneously":{"foo":"hello"}}')
+})
