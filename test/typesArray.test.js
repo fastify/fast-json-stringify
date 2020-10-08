@@ -391,3 +391,29 @@ test('object that is simultaneously a string and a json', (t) => {
   const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
   t.is(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
+
+test('object that is simultaneously a string and a json switched', (t) => {
+  t.plan(2)
+  const schema = {
+    type: 'object',
+    properties: {
+      simultaneously: {
+        type: ['object', 'string'],
+        properties: {
+          foo: { type: 'string' }
+        }
+      }
+    }
+  }
+
+  const likeObjectId = {
+    toString () { return 'hello' }
+  }
+
+  const stringify = build(schema)
+  const valueStr = stringify({ simultaneously: likeObjectId })
+  t.is(valueStr, '{"simultaneously":{}}')
+
+  const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
+  t.is(valueObj, '{"simultaneously":{"foo":"hello"}}')
+})
