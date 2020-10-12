@@ -436,3 +436,23 @@ test('should default to [] when type is array and object is null', (t) => {
   const valueStr = stringify({ arr: null })
   t.is(valueStr, '{"arr":[]}')
 })
+
+test('should not throw an error with default set to []', (t) => {
+  t.plan(1)
+  const schema = {
+    type: 'object',
+    properties: {
+      arr: {
+        type: 'array',
+        items: {
+          type: 'number'
+        },
+        default: []
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const valueStr = stringify({})
+  t.is(valueStr, '{"arr":[]}')
+})
