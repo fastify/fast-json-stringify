@@ -417,3 +417,22 @@ test('object that is simultaneously a string and a json switched', (t) => {
   const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
   t.is(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
+
+test('should default to [] when type is array and object is null', (t) => {
+  t.plan(1)
+  const schema = {
+    type: 'object',
+    properties: {
+      arr: {
+        type: 'array',
+        items: {
+          type: 'number'
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const valueStr = stringify({ arr: null })
+  t.is(valueStr, '{"arr":[]}')
+})

@@ -989,7 +989,7 @@ function buildArray (location, code, name) {
   }
 
   code += `
-    var l = obj.length
+    var l = obj ? obj.length : 0
     var w = l - 1
     for (var i = 0; i < l; i++) {
       if (i > 0) {
