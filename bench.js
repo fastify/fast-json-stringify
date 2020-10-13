@@ -58,11 +58,6 @@ const obj = {
 
 const multiArray = []
 
-const JSTR = require('json-strify')
-const JSTRStringify = JSTR(schemaCJS)
-const JSTRArray = JSTR(arraySchemaCJS)
-const JSTRInstance = JSTR()
-
 const CJS = require('compile-json-stringify')
 const CJSStringify = CJS(schemaCJS)
 const CJSStringifyArray = CJS(arraySchemaCJS)
@@ -90,9 +85,6 @@ for (i = 0; i < 1000; i++) {
 suite.add('FJS creation', function () {
   FJS(schema)
 })
-suite.add('JSTR creation', function () {
-  JSTR(schemaCJS)
-})
 suite.add('CJS creation', function () {
   CJS(schemaCJS)
 })
@@ -103,10 +95,6 @@ suite.add('JSON.stringify array', function () {
 
 suite.add('fast-json-stringify array', function () {
   stringifyArray(multiArray)
-})
-
-suite.add('json-strify array', function () {
-  JSTRArray(multiArray)
 })
 
 suite.add('compile-json-stringify array', function () {
@@ -121,10 +109,6 @@ suite.add('fast-json-stringify long string', function () {
   stringifyString(str)
 })
 
-suite.add('json-strify long string', function () {
-  JSTRInstance(str)
-})
-
 suite.add('compile-json-stringify long string', function () {
   CJSStringifyString(str)
 })
@@ -137,10 +121,6 @@ suite.add('fast-json-stringify short string', function () {
   stringifyString('hello world')
 })
 
-suite.add('json-strify short string', function () {
-  JSTRInstance('hello world')
-})
-
 suite.add('compile-json-stringify short string', function () {
   CJSStringifyString('hello world')
 })
@@ -151,10 +131,6 @@ suite.add('JSON.stringify obj', function () {
 
 suite.add('fast-json-stringify obj', function () {
   stringify(obj)
-})
-
-suite.add('json-strify obj', function () {
-  JSTRStringify(obj)
 })
 
 suite.add('compile-json-stringify obj', function () {
