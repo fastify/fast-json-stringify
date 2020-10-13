@@ -418,7 +418,7 @@ test('object that is simultaneously a string and a json switched', (t) => {
   t.is(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
 
-test('should default to [] when type is array and object is null', (t) => {
+test('should throw an error when type is array and object is null', (t) => {
   t.plan(1)
   const schema = {
     type: 'object',
@@ -433,6 +433,5 @@ test('should default to [] when type is array and object is null', (t) => {
   }
 
   const stringify = build(schema)
-  const valueStr = stringify({ arr: null })
-  t.is(valueStr, '{"arr":[]}')
+  t.throws(() => stringify({ arr: null }), new TypeError('Property \'arr\' should be of type array, received \'null\' instead.'))
 })
