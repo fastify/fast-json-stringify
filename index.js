@@ -937,7 +937,7 @@ function buildObject (location, code, name) {
   return code
 }
 
-function buildArray (location, code, name) {
+function buildArray (location, code, name, key = null) {
   var schema = location.schema
   code += `
     function ${name} (obj) {
@@ -986,6 +986,14 @@ function buildArray (location, code, name) {
     `
   } else {
     result = nested(laterCode, name, '[i]', mergeLocation(location, { schema: schema.items }), undefined, true)
+  }
+
+  if (key) {
+    code += `
+    if(!Array.isArray(obj)) {
+      throw new TypeError(\`Property '${key}' should be of type array, received '$\{obj}' instead.\`)
+    }
+    `
   }
 
   code += `
@@ -1131,7 +1139,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
       break
     case 'array':
       funcName = asFuncName('$arr' + name + key + subKey) // eslint-disable-line
-      laterCode = buildArray(location, laterCode, funcName)
+      laterCode = buildArray(location, laterCode, funcName, key)
       code += `
         json += ${funcName}(obj${accessor})
       `

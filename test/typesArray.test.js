@@ -417,3 +417,21 @@ test('object that is simultaneously a string and a json switched', (t) => {
   const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
   t.is(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
+
+test('should throw an error when type is array and object is null', (t) => {
+  t.plan(1)
+  const schema = {
+    type: 'object',
+    properties: {
+      arr: {
+        type: 'array',
+        items: {
+          type: 'number'
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  t.throws(() => stringify({ arr: null }), new TypeError('Property \'arr\' should be of type array, received \'null\' instead.'))
+})
