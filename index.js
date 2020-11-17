@@ -1159,7 +1159,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           // 2. `nested`, through `buildCode`, replaces any reference in object properties with the actual schema
           // (see https://github.com/fastify/fast-json-stringify/blob/6da3b3e8ac24b1ca5578223adedb4083b7adf8db/index.js#L631)
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(location.schema, { depth: null, maxArrayLength: null })}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(location.schema)}, obj${accessor}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
