@@ -197,6 +197,36 @@ test('null value in schema', (t) => {
   build(schema)
 })
 
+test('symbol value in schema', (t) => {
+  t.plan(4)
+
+  const ObjectKind = Symbol('LiteralKind')
+  const UnionKind = Symbol('UnionKind')
+  const LiteralKind = Symbol('LiteralKind')
+
+  const schema = {
+    kind: ObjectKind,
+    type: 'object',
+    properties: {
+      value: {
+        kind: UnionKind,
+        anyOf: [
+          { kind: LiteralKind, type: 'string', enum: ['foo'] },
+          { kind: LiteralKind, type: 'string', enum: ['bar'] },
+          { kind: LiteralKind, type: 'string', enum: ['baz'] }
+        ]
+      }
+    },
+    required: ['value']
+  }
+
+  const stringify = build(schema)
+  t.is(stringify({ value: 'foo' }), '{"value":"foo"}')
+  t.is(stringify({ value: 'bar' }), '{"value":"bar"}')
+  t.is(stringify({ value: 'baz' }), '{"value":"baz"}')
+  t.is(stringify({ value: 'qux' }), '{"value":null}')
+})
+
 test('anyOf and $ref together', (t) => {
   t.plan(2)
 
