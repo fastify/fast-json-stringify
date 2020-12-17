@@ -102,8 +102,6 @@ function build (schema, options) {
     schema.type = inferTypeByKeyword(schema)
   }
 
-  var hasSchemaSomeIf = hasIf(schema)
-
   var main
 
   switch (schema.type) {
@@ -141,7 +139,7 @@ function build (schema, options) {
 
   var dependencies = []
   var dependenciesName = []
-  if (hasOf(schema) || hasSchemaSomeIf) {
+  if (dependsOnAjv(schema)) {
     dependencies.push(new Ajv(options.ajv))
     dependenciesName.push('ajv')
   }
@@ -212,24 +210,9 @@ function inferTypeByKeyword (schema) {
   return schema.type
 }
 
-function hasOf (schema) {
-  if (!schema) { return false }
-  if ('anyOf' in schema || 'oneOf' in schema) { return true }
-
-  var objectKeys = Object.keys(schema)
-  for (var i = 0; i < objectKeys.length; i++) {
-    var value = schema[objectKeys[i]]
-    if (typeof value === 'object') {
-      if (hasOf(value)) { return true }
-    }
-  }
-
-  return false
-}
-
-function hasIf (schema) {
+function dependsOnAjv (schema) {
   const str = JSON.stringify(schema)
-  return /"if":{/.test(str) && /"then":{/.test(str)
+  return (/"if":{.*"then":{|"(anyOf|oneOf)":\[|"const":/.test(str))
 }
 
 const stringSerializerMap = {
@@ -1186,6 +1169,13 @@ function nested (laterCode, name, key, location, subKey, isArray) {
       } else if (isEmpty(schema)) {
         code += `
           json += JSON.stringify(obj${accessor})
+        `
+      } else if ('const' in schema) {
+        code += `
+          if(ajv.validate(${require('util').inspect(schema, { depth: null })}, obj${accessor}))
+            json += '${JSON.stringify(schema.const)}'
+          else
+            throw new Error(\`Item $\{JSON.stringify(obj${accessor})} does not match schema definition.\`)
         `
       } else {
         throw new Error(`${schema.type} unsupported`)
