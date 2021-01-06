@@ -69,24 +69,14 @@ function build (schema, options) {
     ${$asTime.toString()}
     ${$asNumber.toString()}
     ${$asNumberNullable.toString()}
+    ${$asInteger.toString()}
     ${$asIntegerNullable.toString()}
     ${$asNull.toString()}
     ${$asBoolean.toString()}
     ${$asBooleanNullable.toString()}
-  `
 
-  // only handle longs if the module is used
-  if (isLong) {
-    code += `
-      var isLong = ${isLong.toString()}
-      ${$asInteger.toString()}
+    var isLong = ${isLong ? isLong.toString() : false}
     `
-  } else {
-    code += `
-      var isLong = false
-      ${$asInteger.toString()}
-    `
-  }
 
   var location = {
     schema,
