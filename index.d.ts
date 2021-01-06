@@ -145,6 +145,10 @@ declare namespace build {
      * Configure Ajv, which is used to evaluate conditional schemas and combined (anyOf) schemas
      */
     ajv?: AjvOptions
+    /**
+     * Optionally configure how the integer will be rounded
+     */
+    rounding?: 'ceil' | 'floor' | 'round'
   }
 }
 

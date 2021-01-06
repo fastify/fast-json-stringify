@@ -24,6 +24,19 @@ test('render an integer as JSON', (t) => {
 })
 
 test('render a float as an integer', (t) => {
+  t.plan(2)
+  try {
+    build({
+      title: 'float as integer',
+      type: 'integer'
+    }, { rounding: 'foobar' })
+  } catch (error) {
+    t.ok(error)
+    t.equals(error.message, 'Unsupported integer rounding method foobar')
+  }
+})
+
+test('render a float as an integer', (t) => {
   const cases = [
     { input: Math.PI, output: '3' },
     { input: 5.0, output: '5' },
