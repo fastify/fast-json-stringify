@@ -40,6 +40,7 @@ fast-json-stringify obj x 13,537,123 ops/sec ±0.19% (95 runs sampled)
  - <a href="#anyof">`AnyOf`</a>
  - <a href="#ref">`Reuse - $ref`</a>
  - <a href="#long">`Long integers`</a>
+ - <a href="#integer">`Integers`</a>
  - <a href="#nullable">`Nullable`</a>
 - <a href="#security">`Security Notice`</a>
 - <a href="#acknowledgements">`Acknowledgements`</a>
@@ -532,6 +533,11 @@ const obj = {
 
 console.log(stringify(obj)) // '{"id":18446744073709551615}'
 ```
+
+<a name="integer"></a>
+#### Integers
+The `type: integer` property will be truncated if a floating point is provided.
+
 
 <a name="nullable"></a>
 #### Nullable

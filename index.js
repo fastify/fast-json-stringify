@@ -83,7 +83,8 @@ function build (schema, options) {
     `
   } else {
     code += `
-      var $asInteger = $asNumber
+      var isLong = false
+      ${$asInteger.toString()}
     `
   }
 
@@ -239,8 +240,11 @@ function $asInteger (i) {
     return i.toString()
   } else if (typeof i === 'bigint') {
     return i.toString()
-  } else {
+  } else if (Number.isInteger(i)) {
     return $asNumber(i)
+  } else {
+    // if the output is NaN the type is coerced to int 0
+    return $asNumber(parseInt(i) || 0)
   }
 }
 

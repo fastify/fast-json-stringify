@@ -23,6 +23,31 @@ test('render an integer as JSON', (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
+test('render a float as an integer', (t) => {
+  const cases = [
+    { input: Math.PI, output: '3' },
+    { input: 5.0, output: '5' },
+    { input: 1.99999, output: '1' }
+  ]
+
+  t.plan(cases.length * 2)
+  cases.forEach(checkInteger)
+
+  function checkInteger ({ input, output }) {
+    const schema = {
+      title: 'float as integer',
+      type: 'integer'
+    }
+
+    const validate = validator(schema)
+    const stringify = build(schema)
+    const str = stringify(input)
+
+    t.equal(str, output)
+    t.ok(validate(JSON.parse(str)), 'valid schema')
+  }
+})
+
 test('render an object with an integer as JSON', (t) => {
   t.plan(2)
 
