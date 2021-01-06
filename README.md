@@ -537,6 +537,11 @@ console.log(stringify(obj)) // '{"id":18446744073709551615}'
 <a name="integer"></a>
 #### Integers
 The `type: integer` property will be truncated if a floating point is provided.
+You can customize this behaviour with the `rounding` option that will accept [`round`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/round), [`ceil`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/ceil) or [`floor`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/floor):
+
+```js
+const stringify = fastJson(schema, { rounding: 'ceil' })
+```
 
 
 <a name="nullable"></a>

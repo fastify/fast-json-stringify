@@ -54,6 +54,15 @@ function build (schema, options) {
     }
   }
 
+  var intParseFunctionName = 'trunc'
+  if (options.rounding) {
+    if (['floor', 'ceil', 'round'].includes(options.rounding)) {
+      intParseFunctionName = options.rounding
+    } else {
+      throw new Error(`Unsupported integer rounding method ${options.rounding}`)
+    }
+  }
+
   /* eslint no-new-func: "off" */
   var code = `
     'use strict'
@@ -76,6 +85,8 @@ function build (schema, options) {
     ${$asBooleanNullable.toString()}
 
     var isLong = ${isLong ? isLong.toString() : false}
+
+    function parseInteger(int) { return Math.${intParseFunctionName}(int) }
     `
 
   var location = {
@@ -213,7 +224,8 @@ const stringSerializerMap = {
 }
 
 function getStringSerializer (format) {
-  return stringSerializerMap[format] || '$asString'
+  return stringSerializerMap[format] ||
+  '$asString'
 }
 
 function $pad2Zeros (num) {
@@ -234,7 +246,8 @@ function $asInteger (i) {
     return $asNumber(i)
   } else {
     // if the output is NaN the type is coerced to int 0
-    return $asNumber(parseInt(i) || 0)
+    /* eslint no-undef: "off" */
+    return $asNumber(parseInteger(i) || 0)
   }
 }
 
