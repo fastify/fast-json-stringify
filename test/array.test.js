@@ -209,3 +209,50 @@ buildTest({
 }, {
   foo: [1, 'string', {}, null]
 })
+
+// https://github.com/fastify/fast-json-stringify/issues/279
+test('object array with anyOf and symbol', (t) => {
+  t.plan(1)
+  const ArrayKind = Symbol('ArrayKind')
+  const ObjectKind = Symbol('LiteralKind')
+  const UnionKind = Symbol('UnionKind')
+  const LiteralKind = Symbol('LiteralKind')
+  const StringKind = Symbol('StringKind')
+
+  const schema = {
+    kind: ArrayKind,
+    type: 'array',
+    items: {
+      kind: ObjectKind,
+      type: 'object',
+      properties: {
+        name: {
+          kind: StringKind,
+          type: 'string'
+        },
+        option: {
+          kind: UnionKind,
+          anyOf: [
+            {
+              kind: LiteralKind,
+              type: 'string',
+              enum: ['Foo']
+            },
+            {
+              kind: LiteralKind,
+              type: 'string',
+              enum: ['Bar']
+            }
+          ]
+        }
+      },
+      required: ['name', 'option']
+    }
+  }
+  const stringify = build(schema)
+  const value = stringify([
+    { name: 'name-0', option: 'Foo' },
+    { name: 'name-1', option: 'Bar' }
+  ])
+  t.is(value, '[{"name":"name-0","option":"Foo"},{"name":"name-1","option":"Bar"}]')
+})
