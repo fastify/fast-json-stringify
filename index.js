@@ -5,7 +5,6 @@
 var Ajv = require('ajv')
 var merge = require('deepmerge')
 
-var util = require('util')
 var validate = require('./schema-validator')
 var stringSimilarity = null
 
@@ -834,7 +833,7 @@ function addIfThenElse (location, name) {
   var mergedLocation = mergeLocation(location, { schema: merged })
 
   code += `
-    valid = ajv.validate(${util.inspect(i, { depth: null })}, obj)
+    valid = ajv.validate(${JSON.stringify(i)}, obj)
     if (valid) {
   `
   if (merged.if && merged.then) {
