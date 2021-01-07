@@ -2,20 +2,20 @@
 
 /* eslint no-prototype-builtins: 0 */
 
-var Ajv = require('ajv')
-var merge = require('deepmerge')
+const Ajv = require('ajv')
+const merge = require('deepmerge')
 
-var validate = require('./schema-validator')
-var stringSimilarity = null
+const validate = require('./schema-validator')
+let stringSimilarity = null
 
-var isLong
+let isLong
 try {
   isLong = require('long').isLong
 } catch (e) {
   isLong = null
 }
 
-var addComma = `
+const addComma = `
   if (addComma) {
     json += ','
   }
@@ -54,7 +54,7 @@ function build (schema, options) {
   }
 
   /* eslint no-new-func: "off" */
-  var code = `
+  let code = `
     'use strict'
   `
 
@@ -86,7 +86,7 @@ function build (schema, options) {
     `
   }
 
-  var location = {
+  let location = {
     schema,
     root: schema,
     externalSchema: options.schema
@@ -101,7 +101,7 @@ function build (schema, options) {
     schema.type = inferTypeByKeyword(schema)
   }
 
-  var main
+  let main
 
   switch (schema.type) {
     case 'object':
@@ -136,8 +136,8 @@ function build (schema, options) {
      return ${main}
   `
 
-  var dependencies = []
-  var dependenciesName = []
+  const dependencies = []
+  const dependenciesName = []
   if (dependsOnAjv(schema)) {
     dependencies.push(new Ajv(options.ajv))
     dependenciesName.push('ajv')
@@ -225,7 +225,7 @@ function getStringSerializer (format) {
 }
 
 function $pad2Zeros (num) {
-  var s = '00' + num
+  const s = '00' + num
   return s[s.length - 2] + s[s.length - 1]
 }
 
@@ -248,7 +248,7 @@ function $asIntegerNullable (i) {
 }
 
 function $asNumber (i) {
-  var num = Number(i)
+  const num = Number(i)
   if (isNaN(num)) {
     return 'null'
   } else {
@@ -280,9 +280,9 @@ function $asDatetime (date) {
 
 function $asDate (date) {
   if (date instanceof Date) {
-    var year = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date)
-    var month = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(date)
-    var day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date)
+    const year = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date)
+    const month = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(date)
+    const day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date)
     return '"' + year + '-' + month + '-' + day + '"'
   } else if (date && typeof date.format === 'function') {
     return '"' + date.format('YYYY-MM-DD') + '"'
@@ -293,9 +293,9 @@ function $asDate (date) {
 
 function $asTime (date) {
   if (date instanceof Date) {
-    var hour = new Intl.DateTimeFormat('en', { hour: 'numeric', hour12: false }).format(date)
-    var minute = new Intl.DateTimeFormat('en', { minute: 'numeric' }).format(date)
-    var second = new Intl.DateTimeFormat('en', { second: 'numeric' }).format(date)
+    const hour = new Intl.DateTimeFormat('en', { hour: 'numeric', hour12: false }).format(date)
+    const minute = new Intl.DateTimeFormat('en', { minute: 'numeric' }).format(date)
+    const second = new Intl.DateTimeFormat('en', { second: 'numeric' }).format(date)
     return '"' + $pad2Zeros(hour) + ':' + $pad2Zeros(minute) + ':' + $pad2Zeros(second) + '"'
   } else if (date && typeof date.format === 'function') {
     return '"' + date.format('HH:mm:ss') + '"'
@@ -333,13 +333,13 @@ function $asStringNullable (str) {
 // 34 and 92 happens all the time, so we
 // have a fast case for them
 function $asStringSmall (str) {
-  var result = ''
-  var last = 0
-  var found = false
-  var surrogateFound = false
-  var l = str.length
-  var point = 255
-  for (var i = 0; i < l && point >= 32; i++) {
+  const l = str.length
+  let result = ''
+  let last = 0
+  let found = false
+  let surrogateFound = false
+  let point = 255
+  for (let i = 0; i < l && point >= 32; i++) {
     point = str.charCodeAt(i)
     if (point >= 0xD800 && point <= 0xDFFF) {
       // The current character is a surrogate.
@@ -361,23 +361,23 @@ function $asStringSmall (str) {
 }
 
 function addPatternProperties (location) {
-  var schema = location.schema
-  var pp = schema.patternProperties
-  var code = `
+  const schema = location.schema
+  const pp = schema.patternProperties
+  let code = `
       var properties = ${JSON.stringify(schema.properties)} || {}
       var keys = Object.keys(obj)
       for (var i = 0; i < keys.length; i++) {
         if (properties[keys[i]]) continue
   `
   Object.keys(pp).forEach((regex, index) => {
-    var ppLocation = mergeLocation(location, { schema: pp[regex] })
+    let ppLocation = mergeLocation(location, { schema: pp[regex] })
     if (pp[regex].$ref) {
       ppLocation = refFinder(pp[regex].$ref, location)
       pp[regex] = ppLocation.schema
     }
-    var type = pp[regex].type
-    var format = pp[regex].format
-    var stringSerializer = getStringSerializer(format)
+    const type = pp[regex].type
+    const format = pp[regex].format
+    const stringSerializer = getStringSerializer(format)
     try {
       RegExp(regex)
     } catch (err) {
@@ -443,8 +443,8 @@ function addPatternProperties (location) {
 }
 
 function additionalProperty (location) {
-  var ap = location.schema.additionalProperties
-  var code = ''
+  let ap = location.schema.additionalProperties
+  let code = ''
   if (ap === true) {
     return `
         if (obj[keys[i]] !== undefined) {
@@ -453,15 +453,15 @@ function additionalProperty (location) {
         }
     `
   }
-  var apLocation = mergeLocation(location, { schema: ap })
+  let apLocation = mergeLocation(location, { schema: ap })
   if (ap.$ref) {
     apLocation = refFinder(ap.$ref, location)
     ap = apLocation.schema
   }
 
-  var type = ap.type
-  var format = ap.format
-  var stringSerializer = getStringSerializer(format)
+  const type = ap.type
+  const format = ap.format
+  const stringSerializer = getStringSerializer(format)
   if (type === 'object') {
     code += `${buildObject(apLocation, '', 'buildObjectAP')}
         ${addComma}
@@ -549,9 +549,9 @@ function idFinder (schema, searchedId) {
 }
 
 function refFinder (ref, location) {
-  var externalSchema = location.externalSchema
-  var root = location.root
-  var schema = location.schema
+  const externalSchema = location.externalSchema
+  let root = location.root
+  let schema = location.schema
 
   if (externalSchema && externalSchema[ref]) {
     return {
@@ -582,17 +582,17 @@ function refFinder (ref, location) {
     }
   }
 
-  var code = 'return schema'
+  let code = 'return schema'
   // If it has a path
   if (ref[1]) {
     // ref[1] could contain a JSON pointer - ex: /definitions/num
     // or plain name fragment id without suffix # - ex: customId
-    var walk = ref[1].split('/')
+    const walk = ref[1].split('/')
     if (walk.length === 1) {
-      var targetId = `#${ref[1]}`
-      var dereferenced = idFinder(schema, targetId)
+      const targetId = `#${ref[1]}`
+      let dereferenced = idFinder(schema, targetId)
       if (dereferenced === undefined && !ref[0]) {
-        for (var key of Object.keys(externalSchema)) {
+        for (const key of Object.keys(externalSchema)) {
           dereferenced = idFinder(externalSchema[key], targetId)
           if (dereferenced !== undefined) {
             root = externalSchema[key]
@@ -607,17 +607,18 @@ function refFinder (ref, location) {
         externalSchema: externalSchema
       }
     } else {
-      for (var i = 1; i < walk.length; i++) {
+      for (let i = 1; i < walk.length; i++) {
         code += `[${JSON.stringify(walk[i])}]`
       }
     }
   }
-  var result
+  let result
   try {
     result = (new Function('schema', code))(root)
   } catch (err) {}
 
-  if (result === undefined) {
+  if (result === undefined && ref[1]) {
+    const walk = ref[1].split('/')
     findBadKey(schema, walk.slice(1))
   }
 
@@ -656,11 +657,11 @@ function buildCode (location, code, laterCode, name) {
     location = refFinder(location.schema.$ref, location)
   }
 
-  var schema = location.schema
-  var required = schema.required
+  const schema = location.schema
+  let required = schema.required
 
   Object.keys(schema.properties || {}).forEach((key, i, a) => {
-    var propertyLocation = mergeLocation(location, { schema: schema.properties[key] })
+    let propertyLocation = mergeLocation(location, { schema: schema.properties[key] })
     if (schema.properties[key].$ref) {
       propertyLocation = refFinder(schema.properties[key].$ref, location)
       schema.properties[key] = propertyLocation.schema
@@ -669,10 +670,10 @@ function buildCode (location, code, laterCode, name) {
     // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
     // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
 
-    var type = schema.properties[key].type
-    var nullable = schema.properties[key].nullable
-    var sanitized = JSON.stringify(key)
-    var asString = JSON.stringify(sanitized)
+    const type = schema.properties[key].type
+    const nullable = schema.properties[key].nullable
+    const sanitized = JSON.stringify(key)
+    const asString = JSON.stringify(sanitized)
 
     if (nullable) {
       code += `
@@ -730,12 +731,12 @@ function buildCode (location, code, laterCode, name) {
           json += ${asString} + ':'
         `
 
-      var result = nested(laterCode, name, key, mergeLocation(propertyLocation, { schema: schema.properties[key] }), undefined, false)
+      const result = nested(laterCode, name, key, mergeLocation(propertyLocation, { schema: schema.properties[key] }), undefined, false)
       code += result.code
       laterCode = result.laterCode
     }
 
-    var defaultValue = schema.properties[key].default
+    const defaultValue = schema.properties[key].default
     if (defaultValue !== undefined) {
       required = filterRequired(required, key)
       code += `
@@ -764,7 +765,7 @@ function buildCode (location, code, laterCode, name) {
 
   if (required && required.length > 0) {
     code += 'var required = ['
-    for (var i = 0; i < required.length; i++) {
+    for (let i = 0; i < required.length; i++) {
       if (i > 0) {
         code += ','
       }
@@ -790,12 +791,12 @@ function filterRequired (required, key) {
 function buildCodeWithAllOfs (location, code, laterCode, name) {
   if (location.schema.allOf) {
     location.schema.allOf.forEach((ss) => {
-      var builtCode = buildCodeWithAllOfs(mergeLocation(location, { schema: ss }), code, laterCode, name)
+      const builtCode = buildCodeWithAllOfs(mergeLocation(location, { schema: ss }), code, laterCode, name)
       code = builtCode.code
       laterCode = builtCode.laterCode
     })
   } else {
-    var builtCode = buildCode(location, code, laterCode, name)
+    const builtCode = buildCode(location, code, laterCode, name)
 
     code = builtCode.code
     laterCode = builtCode.laterCode
@@ -805,8 +806,8 @@ function buildCodeWithAllOfs (location, code, laterCode, name) {
 }
 
 function buildInnerObject (location, name) {
-  var schema = location.schema
-  var result = buildCodeWithAllOfs(location, '', '', name)
+  const schema = location.schema
+  const result = buildCodeWithAllOfs(location, '', '', name)
   if (schema.patternProperties) {
     result.code += addPatternProperties(location)
   } else if (schema.additionalProperties && !schema.patternProperties) {
@@ -816,12 +817,12 @@ function buildInnerObject (location, name) {
 }
 
 function addIfThenElse (location, name) {
-  var code = ''
-  var r
-  var laterCode = ''
-  var innerR
+  let code = ''
+  let r
+  let laterCode = ''
+  let innerR
 
-  var schema = location.schema
+  const schema = location.schema
   const copy = merge({}, schema)
   const i = copy.if
   const then = copy.then
@@ -829,8 +830,8 @@ function addIfThenElse (location, name) {
   delete copy.if
   delete copy.then
   delete copy.else
-  var merged = merge(copy, then)
-  var mergedLocation = mergeLocation(location, { schema: merged })
+  let merged = merge(copy, then)
+  let mergedLocation = mergeLocation(location, { schema: merged })
 
   code += `
     valid = ajv.validate(${JSON.stringify(i)}, obj)
@@ -898,7 +899,7 @@ function buildObject (location, code, name) {
       var addComma = false
   `
 
-  var r
+  let r
   if (schema.if && schema.then) {
     code += `
       var valid
@@ -920,7 +921,7 @@ function buildObject (location, code, name) {
 }
 
 function buildArray (location, code, name, key = null) {
-  var schema = location.schema
+  const schema = location.schema
   code += `
     function ${name} (obj) {
   `
@@ -934,7 +935,7 @@ function buildArray (location, code, name, key = null) {
   code += `
       var json = '['
   `
-  var laterCode = ''
+  const laterCode = ''
 
   // default to any items type
   if (!schema.items) {
@@ -946,12 +947,12 @@ function buildArray (location, code, name, key = null) {
     schema.items = location.schema
   }
 
-  var result = { code: '', laterCode: '' }
+  let result = { code: '', laterCode: '' }
   if (Array.isArray(schema.items)) {
     result = schema.items.reduce((res, item, i) => {
-      var accessor = '[i]'
+      const accessor = '[i]'
       const tmpRes = nested(laterCode, name, accessor, mergeLocation(location, { schema: item }), i, true)
-      var condition = `i === ${i} && ${buildArrayTypeCondition(item.type, accessor)}`
+      const condition = `i === ${i} && ${buildArrayTypeCondition(item.type, accessor)}`
       return {
         code: `${res.code}
         ${i > 0 ? 'else' : ''} if (${condition}) {
@@ -997,7 +998,7 @@ function buildArray (location, code, name, key = null) {
 }
 
 function buildArrayTypeCondition (type, accessor) {
-  var condition
+  let condition
   switch (type) {
     case 'null':
       condition = `obj${accessor} === null`
@@ -1022,7 +1023,7 @@ function buildArrayTypeCondition (type, accessor) {
       break
     default:
       if (Array.isArray(type)) {
-        var conditions = type.map((subType) => {
+        const conditions = type.map((subType) => {
           return buildArrayTypeCondition(subType, accessor)
         })
         condition = `(${conditions.join(' || ')})`
@@ -1034,12 +1035,12 @@ function buildArrayTypeCondition (type, accessor) {
 }
 
 function dereferenceOfRefs (location, type) {
-  var schema = location.schema
-  var locations = []
+  const schema = location.schema
+  const locations = []
 
   schema[type].forEach((s, index) => {
     // follow the refs
-    var sLocation = mergeLocation(location, { schema: s })
+    let sLocation = mergeLocation(location, { schema: s })
     while (s.$ref) {
       sLocation = refFinder(s.$ref, sLocation)
       schema[type][index] = sLocation.schema
@@ -1051,10 +1052,10 @@ function dereferenceOfRefs (location, type) {
   return locations
 }
 
-var strNameCounter = 0
+let strNameCounter = 0
 function asFuncName (str) {
   // only allow chars that can work
-  var rep = str.replace(/[^a-zA-Z0-9$_]/g, '')
+  let rep = str.replace(/[^a-zA-Z0-9$_]/g, '')
 
   if (rep.length === 0) {
     return 'anan' + strNameCounter++
@@ -1066,19 +1067,19 @@ function asFuncName (str) {
 }
 
 function nested (laterCode, name, key, location, subKey, isArray) {
-  var code = ''
-  var funcName
+  let code = ''
+  let funcName
 
   subKey = subKey || ''
 
-  var schema = location.schema
+  let schema = location.schema
 
   if (schema.$ref) {
     schema = refFinder(schema.$ref, location)
   }
 
   if (schema.type === undefined) {
-    var inferredType = inferTypeByKeyword(schema)
+    const inferredType = inferTypeByKeyword(schema)
     if (inferredType) {
       schema.type = inferredType
 
@@ -1088,10 +1089,10 @@ function nested (laterCode, name, key, location, subKey, isArray) {
     }
   }
 
-  var type = schema.type
-  var nullable = schema.nullable === true
+  const type = schema.type
+  const nullable = schema.nullable === true
 
-  var accessor = isArray ? key : `[${JSON.stringify(key)}]`
+  const accessor = isArray ? key : `[${JSON.stringify(key)}]`
 
   switch (type) {
     case 'null':
@@ -1099,10 +1100,11 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         json += $asNull()
       `
       break
-    case 'string':
-      var stringSerializer = getStringSerializer(schema.format)
+    case 'string': {
+      const stringSerializer = getStringSerializer(schema.format)
       code += nullable ? `json += obj${accessor} === null ? null : ${stringSerializer}(obj${accessor})` : `json += ${stringSerializer}(obj${accessor})`
       break
+    }
     case 'integer':
       code += nullable ? `json += obj${accessor} === null ? null : $asInteger(obj${accessor})` : `json += $asInteger(obj${accessor})`
       break
@@ -1129,9 +1131,9 @@ function nested (laterCode, name, key, location, subKey, isArray) {
     case undefined:
       if ('anyOf' in schema) {
         // beware: dereferenceOfRefs has side effects and changes schema.anyOf
-        var anyOfLocations = dereferenceOfRefs(location, 'anyOf')
+        const anyOfLocations = dereferenceOfRefs(location, 'anyOf')
         anyOfLocations.forEach((location, index) => {
-          var nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
+          const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
 
           // Since we are only passing the relevant schema to ajv.validate, it needs to be full dereferenced
           // otherwise any $ref pointing to an external schema would result in an error.
@@ -1151,9 +1153,9 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         `
       } else if ('oneOf' in schema) {
         // beware: dereferenceOfRefs has side effects and changes schema.oneOf
-        var oneOfLocations = dereferenceOfRefs(location, 'oneOf')
+        const oneOfLocations = dereferenceOfRefs(location, 'oneOf')
         oneOfLocations.forEach((location, index) => {
-          var nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
+          const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
 
           // see comment on anyOf about derefencing the schema before calling ajv.validate
           code += `
@@ -1185,8 +1187,8 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         const nullIndex = type.indexOf('null')
         const sortedTypes = nullIndex !== -1 ? [type[nullIndex]].concat(type.slice(0, nullIndex)).concat(type.slice(nullIndex + 1)) : type
         sortedTypes.forEach((type, index) => {
-          var tempSchema = Object.assign({}, schema, { type })
-          var nestedResult = nested(laterCode, name, key, mergeLocation(location, { schema: tempSchema }), subKey, isArray)
+          const tempSchema = Object.assign({}, schema, { type })
+          const nestedResult = nested(laterCode, name, key, mergeLocation(location, { schema: tempSchema }), subKey, isArray)
 
           if (type === 'string') {
             code += `
@@ -1236,7 +1238,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
 }
 
 function isEmpty (schema) {
-  for (var key in schema) {
+  for (const key in schema) {
     if (schema.hasOwnProperty(key) && schema[key] !== undefined) {
       return false
     }

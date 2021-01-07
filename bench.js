@@ -67,9 +67,9 @@ const FJS = require('.')
 const stringify = FJS(schema)
 const stringifyArray = FJS(arraySchema)
 const stringifyString = FJS({ type: 'string' })
-var str = ''
+let str = ''
 
-for (var i = 0; i < 10000; i++) {
+for (let i = 0; i < 10000; i++) {
   str += i
   if (i % 100 === 0) {
     str += '"'
@@ -78,7 +78,7 @@ for (var i = 0; i < 10000; i++) {
 
 Number(str)
 
-for (i = 0; i < 1000; i++) {
+for (let i = 0; i < 1000; i++) {
   multiArray.push(obj)
 }
 

@@ -275,7 +275,7 @@ test('skip or coerce numbers and integers that are not numbers', (t) => {
     }
   })
 
-  var result = stringify({
+  let result = stringify({
     age: 'hello  ',
     distance: 'long'
   })
