@@ -67,8 +67,9 @@ const FJS = require('.')
 const stringify = FJS(schema)
 const stringifyArray = FJS(arraySchema)
 const stringifyString = FJS({ type: 'string' })
-var str = ''
+let str = ''
 
+// eslint-disable-next-line
 for (var i = 0; i < 10000; i++) {
   str += i
   if (i % 100 === 0) {
