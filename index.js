@@ -48,7 +48,8 @@ function build (schema, options) {
   options = options || {}
   isValidSchema(schema)
   if (options.schema) {
-    for (const key of Object.keys(options.schema)) {
+    // eslint-disable-next-line
+    for (var key of Object.keys(options.schema)) {
       isValidSchema(options.schema[key], key)
     }
   }
@@ -194,16 +195,20 @@ const numberKeywords = [
  * https://json-schema.org/latest/json-schema-validation.html#rfc.section.6
  */
 function inferTypeByKeyword (schema) {
-  for (const keyword of objectKeywords) {
+  // eslint-disable-next-line
+  for (var keyword of objectKeywords) {
     if (keyword in schema) return 'object'
   }
-  for (const keyword of arrayKeywords) {
+  // eslint-disable-next-line
+  for (var keyword of arrayKeywords) {
     if (keyword in schema) return 'array'
   }
-  for (const keyword of stringKeywords) {
+  // eslint-disable-next-line
+  for (var keyword of stringKeywords) {
     if (keyword in schema) return 'string'
   }
-  for (const keyword of numberKeywords) {
+  // eslint-disable-next-line
+  for (var keyword of numberKeywords) {
     if (keyword in schema) return 'number'
   }
   return schema.type
@@ -593,7 +598,8 @@ function refFinder (ref, location) {
       const targetId = `#${ref[1]}`
       let dereferenced = idFinder(schema, targetId)
       if (dereferenced === undefined && !ref[0]) {
-        for (const key of Object.keys(externalSchema)) {
+        // eslint-disable-next-line
+        for (var key of Object.keys(externalSchema)) {
           dereferenced = idFinder(externalSchema[key], targetId)
           if (dereferenced !== undefined) {
             root = externalSchema[key]
@@ -1241,7 +1247,8 @@ function nested (laterCode, name, key, location, subKey, isArray) {
 }
 
 function isEmpty (schema) {
-  for (const key in schema) {
+  // eslint-disable-next-line
+  for (var key in schema) {
     if (schema.hasOwnProperty(key) && schema[key] !== undefined) {
       return false
     }
