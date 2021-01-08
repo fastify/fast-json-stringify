@@ -58,6 +58,9 @@ declare namespace build {
      */
     $ref: string;
   }
+  
+  export interface AnySchema extends BaseSchema {
+  }
 
   export interface StringSchema extends BaseSchema {
     type: "string";
@@ -153,6 +156,7 @@ declare namespace build {
  * @param schema The schema used to stringify values
  * @param options The options to use (optional)
  */
+declare function build(schema: build.AnySchema, options?: build.Options): (doc: any) => any;
 declare function build(schema: build.StringSchema, options?: build.Options): (doc: string) => string;
 declare function build(schema: build.IntegerSchema | build.NumberSchema, options?: build.Options): (doc: number) => string;
 declare function build(schema: build.NullSchema, options?: build.Options): (doc: null) => "null";
