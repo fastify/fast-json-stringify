@@ -69,7 +69,8 @@ const stringifyArray = FJS(arraySchema)
 const stringifyString = FJS({ type: 'string' })
 let str = ''
 
-for (let i = 0; i < 10000; i++) {
+// eslint-disable-next-line
+for (var i = 0; i < 10000; i++) {
   str += i
   if (i % 100 === 0) {
     str += '"'
@@ -78,7 +79,7 @@ for (let i = 0; i < 10000; i++) {
 
 Number(str)
 
-for (let i = 0; i < 1000; i++) {
+for (i = 0; i < 1000; i++) {
   multiArray.push(obj)
 }
 

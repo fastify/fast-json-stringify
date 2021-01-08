@@ -339,7 +339,8 @@ function $asStringSmall (str) {
   let found = false
   let surrogateFound = false
   let point = 255
-  for (let i = 0; i < l && point >= 32; i++) {
+  // eslint-disable-next-line
+  for (var i = 0; i < l && point >= 32; i++) {
     point = str.charCodeAt(i)
     if (point >= 0xD800 && point <= 0xDFFF) {
       // The current character is a surrogate.
@@ -607,7 +608,8 @@ function refFinder (ref, location) {
         externalSchema: externalSchema
       }
     } else {
-      for (let i = 1; i < walk.length; i++) {
+      // eslint-disable-next-line
+      for (var i = 1; i < walk.length; i++) {
         code += `[${JSON.stringify(walk[i])}]`
       }
     }
@@ -765,7 +767,8 @@ function buildCode (location, code, laterCode, name) {
 
   if (required && required.length > 0) {
     code += 'var required = ['
-    for (let i = 0; i < required.length; i++) {
+    // eslint-disable-next-line
+    for (var i = 0; i < required.length; i++) {
       if (i > 0) {
         code += ','
       }
