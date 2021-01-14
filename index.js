@@ -8,13 +8,6 @@ const merge = require('deepmerge')
 const validate = require('./schema-validator')
 let stringSimilarity = null
 
-let isLong
-try {
-  isLong = require('long').isLong
-} catch (e) {
-  isLong = null
-}
-
 const addComma = `
   if (addComma) {
     json += ','
@@ -44,8 +37,15 @@ function mergeLocation (source, dest) {
   }
 }
 
+let isLong
+
 function build (schema, options) {
   options = options || {}
+
+  if (options.useLong) {
+    isLong = require('long').isLong
+  }
+
   isValidSchema(schema)
   if (options.schema) {
     // eslint-disable-next-line
@@ -411,6 +411,11 @@ function addPatternProperties (location) {
       code += `
           ${addComma}
           json += $asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
+      `
+    } else if (type === 'integer' && isLong) {
+      code += `
+          ${addComma}
+          json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
       `
     } else if (type === 'integer') {
       code += `

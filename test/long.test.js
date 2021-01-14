@@ -14,7 +14,7 @@ test('render a long as JSON', (t) => {
   }
 
   const validate = validator(schema)
-  const stringify = build(schema)
+  const stringify = build(schema, { useLong: true })
   const output = stringify(Long.fromString('18446744073709551615', true))
 
   t.equal(output, '18446744073709551615')
@@ -35,7 +35,7 @@ test('render an object with long as JSON', (t) => {
   }
 
   const validate = validator(schema)
-  const stringify = build(schema)
+  const stringify = build(schema, { useLong: true })
   const output = stringify({
     id: Long.fromString('18446744073709551615', true)
   })
@@ -56,7 +56,7 @@ test('render an array with long as JSON', (t) => {
   }
 
   const validate = validator(schema)
-  const stringify = build(schema)
+  const stringify = build(schema, { useLong: true })
   const output = stringify([Long.fromString('18446744073709551615', true)])
 
   t.equal(output, '[18446744073709551615]')
@@ -75,7 +75,7 @@ test('render an object with a long additionalProperty as JSON', (t) => {
   }
 
   const validate = validator(schema)
-  const stringify = build(schema)
+  const stringify = build(schema, { useLong: true })
   const output = stringify({
     num: Long.fromString('18446744073709551615', true)
   })

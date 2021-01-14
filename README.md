@@ -494,6 +494,12 @@ const stringify = fastJson(schema, { schema: externalSchema })
 #### Long integers
 By default the library will handle automatically [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) from Node.js v10.3 and above.
 If you can't use BigInts in your environment, long integers (64-bit) are also supported using the [long](https://github.com/dcodeIO/long.js) module.
+
+In order to use long integers you have to:
+
+1. Install `long` dependency
+1. Pass `{useLong: true}` option when building schema
+
 Example:
 ```javascript
 // => using native BigInt
@@ -524,7 +530,7 @@ const stringify = fastJson({
       type: 'integer'
     }
   }
-})
+}, {useLong: true})
 
 const obj = {
   id: Long.fromString('18446744073709551615', true)
