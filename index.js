@@ -54,7 +54,7 @@ function build (schema, options) {
     }
   }
 
-  var intParseFunctionName = 'trunc'
+  let intParseFunctionName = 'trunc'
   if (options.rounding) {
     if (['floor', 'ceil', 'round'].includes(options.rounding)) {
       intParseFunctionName = options.rounding
