@@ -70,6 +70,7 @@ function build (schema, options) {
 
   code += `
     ${$pad2Zeros.toString()}
+    ${$asAny.toString()}
     ${$asString.toString()}
     ${$asStringNullable.toString()}
     ${$asStringSmall.toString()}
@@ -129,6 +130,9 @@ function build (schema, options) {
     case 'array':
       main = '$main'
       code = buildArray(location, code, main)
+      break
+    case undefined:
+      main = '$asAny'
       break
     default:
       throw new Error(`${schema.type} unsupported`)
@@ -235,6 +239,10 @@ function getStringSerializer (format) {
 function $pad2Zeros (num) {
   const s = '00' + num
   return s[s.length - 2] + s[s.length - 1]
+}
+
+function $asAny (i) {
+  return JSON.stringify(i)
 }
 
 function $asNull () {
@@ -890,7 +898,7 @@ function addIfThenElse (location, name) {
 }
 
 function toJSON (variableName) {
-  return `typeof ${variableName}.toJSON === 'function'
+  return `(${variableName} && typeof ${variableName}.toJSON === 'function')
     ? ${variableName}.toJSON()
     : ${variableName}
   `
@@ -1193,6 +1201,10 @@ function nested (laterCode, name, key, location, subKey, isArray) {
             json += '${JSON.stringify(schema.const)}'
           else
             throw new Error(\`Item $\{JSON.stringify(obj${accessor})} does not match schema definition.\`)
+        `
+      } else if (schema.type === undefined) {
+        code += `
+          json += JSON.stringify(obj${accessor})
         `
       } else {
         throw new Error(`${schema.type} unsupported`)
