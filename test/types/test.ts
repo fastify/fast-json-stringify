@@ -66,6 +66,7 @@ const schema9: Schema = {
 
 build(schema8)({})
 build(schema9)({ foo: 'bar' })
+build(schema9, { rounding: 'floor' })({ foo: 'bar' })
 
 // Reference schemas
 const schema10: Schema = {

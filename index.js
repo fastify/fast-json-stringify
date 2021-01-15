@@ -54,6 +54,15 @@ function build (schema, options) {
     }
   }
 
+  var intParseFunctionName = 'trunc'
+  if (options.rounding) {
+    if (['floor', 'ceil', 'round'].includes(options.rounding)) {
+      intParseFunctionName = options.rounding
+    } else {
+      throw new Error(`Unsupported integer rounding method ${options.rounding}`)
+    }
+  }
+
   /* eslint no-new-func: "off" */
   let code = `
     'use strict'
@@ -69,23 +78,16 @@ function build (schema, options) {
     ${$asTime.toString()}
     ${$asNumber.toString()}
     ${$asNumberNullable.toString()}
+    ${$asInteger.toString()}
     ${$asIntegerNullable.toString()}
     ${$asNull.toString()}
     ${$asBoolean.toString()}
     ${$asBooleanNullable.toString()}
-  `
 
-  // only handle longs if the module is used
-  if (isLong) {
-    code += `
-      var isLong = ${isLong.toString()}
-      ${$asInteger.toString()}
+    var isLong = ${isLong ? isLong.toString() : false}
+
+    function parseInteger(int) { return Math.${intParseFunctionName}(int) }
     `
-  } else {
-    code += `
-      var $asInteger = $asNumber
-    `
-  }
 
   let location = {
     schema,
@@ -226,7 +228,8 @@ const stringSerializerMap = {
 }
 
 function getStringSerializer (format) {
-  return stringSerializerMap[format] || '$asString'
+  return stringSerializerMap[format] ||
+  '$asString'
 }
 
 function $pad2Zeros (num) {
@@ -243,8 +246,12 @@ function $asInteger (i) {
     return i.toString()
   } else if (typeof i === 'bigint') {
     return i.toString()
-  } else {
+  } else if (Number.isInteger(i)) {
     return $asNumber(i)
+  } else {
+    // if the output is NaN the type is coerced to int 0
+    /* eslint no-undef: "off" */
+    return $asNumber(parseInteger(i) || 0)
   }
 }
 
