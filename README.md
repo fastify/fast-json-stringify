@@ -30,6 +30,7 @@ fast-json-stringify obj x 13,537,123 ops/sec ±0.19% (95 runs sampled)
 
 #### Table of contents:
 - <a href="#example">`Example`</a>
+- <a href="#options">`Options`</a>
 - <a href="#api">`API`</a>
  - <a href="#fastJsonStringify">`fastJsonStringify`</a>
  - <a href="#specific">`Specific use cases`</a>
@@ -79,13 +80,32 @@ console.log(stringify({
   reg: /"([^"]|\\")*"/
 }))
 ```
+
+<a name="options"></a>
+## Options
+
+Optionally, you may provide to `fast-json-stringify` an option object as second parameter:
+
+```js
+const fastJson = require('fast-json-stringify')
+const stringify = fastJson(mySchema, {
+  schema: { ... },
+  ajv: { ... },
+  rounding: 'ceil'
+})
+```
+
+- `schema`: external schemas references by $ref property. [More details](#ref)
+- `ajv`: ajv instance's settings for those properties that require `ajv`. [More details](#anyof)
+- `rounding`: setup how the `integer` types will be rounded when not integers. [More details](#integer)
+
+
 <a name="api"></a>
 ## API
 <a name="fastJsonStringify"></a>
 ### fastJsonStringify(schema)
 
-Build a `stringify()` function based on
-[jsonschema](http://json-schema.org/).
+Build a `stringify()` function based on [jsonschema](http://json-schema.org/).
 
 Supported types:
 
