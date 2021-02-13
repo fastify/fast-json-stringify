@@ -49,7 +49,7 @@ fast-json-stringify obj x 13,537,123 ops/sec ±0.19% (95 runs sampled)
 
 
 <a name="example"></a>
-Try it in the Node.js REPL: <a href="https://runkit.com/npm/fast-json-stringify">https://runkit.com/npm/fast-json-stringify</a>
+Try it out on RunKit: <a href="https://runkit.com/npm/fast-json-stringify">https://runkit.com/npm/fast-json-stringify</a>
 ## Example
 
 ```js
