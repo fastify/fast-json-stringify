@@ -43,7 +43,7 @@
     "typescript": "^4.0.2"
   },
   "dependencies": {
-    "ajv": "^6.11.0",
+    "ajv": "^7.1.1",
     "deepmerge": "^4.2.2",
     "string-similarity": "^4.0.1"
   },
