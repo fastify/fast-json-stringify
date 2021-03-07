@@ -6,6 +6,7 @@
   "types": "index.d.ts",
   "scripts": {
     "benchmark": "node bench.js",
+    "lint:fix": "standard --fix",
     "test:lint": "standard",
     "test:typescript": "tsc --project ./test/types/tsconfig.json",
     "test:unit": "tap -J test/*.test.js test/**/*.test.js",
@@ -45,6 +46,7 @@
   "dependencies": {
     "ajv": "^6.11.0",
     "deepmerge": "^4.2.2",
+    "rfdc": "^1.2.0",
     "string-similarity": "^4.0.1"
   },
   "engines": {

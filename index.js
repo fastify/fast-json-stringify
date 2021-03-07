@@ -4,6 +4,8 @@
 
 const Ajv = require('ajv')
 const merge = require('deepmerge')
+const clone = require('rfdc')({ proto: true })
+const fjsCloned = Symbol('fast-json-stringify.cloned')
 
 const validate = require('./schema-validator')
 let stringSimilarity = null
@@ -1059,6 +1061,12 @@ function buildArrayTypeCondition (type, accessor) {
 }
 
 function dereferenceOfRefs (location, type) {
+  if (!location.schema[fjsCloned]) {
+    const schemaClone = clone(location.schema)
+    schemaClone[fjsCloned] = true
+    location.schema = schemaClone
+  }
+
   const schema = location.schema
   const locations = []
 
