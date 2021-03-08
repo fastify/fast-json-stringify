@@ -4,6 +4,8 @@
 
 const Ajv = require('ajv')
 const merge = require('deepmerge')
+const clone = require('rfdc')({ proto: true })
+const fjsCloned = Symbol('fast-json-stringify.cloned')
 
 const validate = require('./schema-validator')
 let stringSimilarity = null
@@ -1069,6 +1071,12 @@ function buildArrayTypeCondition (type, accessor) {
 }
 
 function dereferenceOfRefs (location, type) {
+  if (!location.schema[fjsCloned]) {
+    const schemaClone = clone(location.schema)
+    schemaClone[fjsCloned] = true
+    location.schema = schemaClone
+  }
+
   const schema = location.schema
   const locations = []
 
@@ -1193,7 +1201,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
 
           // see comment on anyOf about derefencing the schema before calling ajv.validate
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${require('util').inspect(location.schema, { depth: null, maxArrayLength: null })}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(location.schema)}, obj${accessor}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
@@ -1207,7 +1215,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         `
       } else if ('const' in schema) {
         code += `
-          if(ajv.validate(${require('util').inspect(schema, { depth: null })}, obj${accessor}))
+          if(ajv.validate(${require('util').inspect(schema, { depth: null, showHidden: false })}, obj${accessor}))
             json += '${JSON.stringify(schema.const)}'
           else
             throw new Error(\`Item $\{JSON.stringify(obj${accessor})} does not match schema definition.\`)
