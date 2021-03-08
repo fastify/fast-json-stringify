@@ -442,6 +442,11 @@ function addPatternProperties (location) {
           ${addComma}
           json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]])
       `
+    } else if (type === undefined) {
+      code += `
+          ${addComma}
+          json += $asString(keys[i]) + ':' + $asAny(obj[keys[i]])
+      `
     } else {
       code += `
         throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ' + ${JSON.stringify(type)})
@@ -534,6 +539,11 @@ function additionalProperty (location) {
     code += `
         ${addComma}
         json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]])
+    `
+  } else if (type === undefined) {
+    code += `
+        ${addComma}
+        json += $asString(keys[i]) + ':' + $asAny(obj[keys[i]])
     `
   } else {
     code += `

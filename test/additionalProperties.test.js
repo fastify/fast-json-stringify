@@ -161,6 +161,31 @@ test('additionalProperties - array coerce', (t) => {
   t.equal('{"foo":["t","r","u","e"],"ofoo":[],"arrfoo":["1","2"],"objfoo":[]}', stringify(obj))
 })
 
+test('additionalProperties with empty schema', (t) => {
+  t.plan(1)
+  const stringify = build({
+    type: 'object',
+    additionalProperties: {}
+  })
+
+  const obj = { a: 1, b: true, c: null }
+  t.equal('{"a":1,"b":true,"c":null}', stringify(obj))
+})
+
+test('additionalProperties with nested empty schema', (t) => {
+  t.plan(1)
+  const stringify = build({
+    type: 'object',
+    properties: {
+      data: { type: 'object', additionalProperties: {} }
+    },
+    required: ['data']
+  })
+
+  const obj = { data: { a: 1, b: true, c: null } }
+  t.equal('{"data":{"a":1,"b":true,"c":null}}', stringify(obj))
+})
+
 test('nested additionalProperties', (t) => {
   t.plan(1)
   const stringify = build({
