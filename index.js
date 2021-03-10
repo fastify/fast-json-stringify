@@ -475,7 +475,7 @@ function additionalProperty (location) {
   let code = ''
   if (ap === true) {
     return `
-        if (obj[keys[i]] !== undefined) {
+        if (obj[keys[i]] !== undefined && typeof obj[keys[i]] !== 'function' && typeof obj[keys[i]] !== 'symbol') {
           ${addComma}
           json += $asString(keys[i]) + ':' + JSON.stringify(obj[keys[i]])
         }

@@ -309,3 +309,20 @@ test('property without type but with enum, will acts as additionalProperties wit
   const obj = { ap: { additional: 'field' } }
   t.equal('{"ap":{}}', stringify(obj))
 })
+
+test('function and symbol references are not serialized as undefined', (t) => {
+  t.plan(1)
+  const stringify = build({
+    title: 'additionalProperties',
+    type: 'object',
+    additionalProperties: true,
+    properties: {
+      str: {
+        type: 'string'
+      }
+    }
+  })
+
+  const obj = { str: 'x', test: 'test', meth: () => 'x', sym: Symbol('x') }
+  t.equal('{"str":"x","test":"test"}', stringify(obj))
+})
