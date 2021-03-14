@@ -957,7 +957,7 @@ function buildObject (location, code, name) {
 }
 
 function buildArray (location, code, name, key = null) {
-  const schema = location.schema
+  let schema = location.schema
   code += `
     function ${name} (obj) {
   `
@@ -979,6 +979,10 @@ function buildArray (location, code, name, key = null) {
   }
 
   if (schema.items.$ref) {
+    if (!schema[fjsCloned]) {
+      schema = clone(location.schema)
+      schema[fjsCloned] = true
+    }
     location = refFinder(schema.items.$ref, location)
     schema.items = location.schema
   }
@@ -1215,7 +1219,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         `
       } else if ('const' in schema) {
         code += `
-          if(ajv.validate(${require('util').inspect(schema, { depth: null, showHidden: false })}, obj${accessor}))
+          if(ajv.validate(${JSON.stringify(schema)}, obj${accessor}))
             json += '${JSON.stringify(schema.const)}'
           else
             throw new Error(\`Item $\{JSON.stringify(obj${accessor})} does not match schema definition.\`)

@@ -121,3 +121,37 @@ test('multiple $ref tree', t => {
   t.is(value, '{"people":{"name":"hello","age":42}}')
   t.deepEqual(schema, clonedSchema)
 })
+
+test('must not mutate items $ref', t => {
+  t.plan(2)
+
+  const referenceSchema = {
+    $id: 'ShowSchema',
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    type: 'object',
+    properties: {
+      name: {
+        type: 'string'
+      }
+    }
+  }
+
+  const schema = {
+    $id: 'ListSchema',
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    type: 'array',
+    items: {
+      $ref: 'ShowSchema#'
+    }
+  }
+  const clonedSchema = clone(schema)
+  const stringify = build(schema, {
+    schema: {
+      [referenceSchema.$id]: referenceSchema
+    }
+  })
+
+  const value = stringify([{ name: 'foo' }])
+  t.is(value, '[{"name":"foo"}]')
+  t.deepEqual(schema, clonedSchema)
+})
