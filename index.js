@@ -2,7 +2,7 @@
 
 /* eslint no-prototype-builtins: 0 */
 
-const Ajv = require('ajv')
+const Ajv = require('ajv').default
 const merge = require('deepmerge')
 const clone = require('rfdc')({ proto: true })
 const fjsCloned = Symbol('fast-json-stringify.cloned')
