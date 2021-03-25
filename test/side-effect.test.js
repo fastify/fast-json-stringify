@@ -69,9 +69,6 @@ test('oneOf and anyOf with $ref should not change the input schema', t => {
   const stringify = build(schema, {
     schema: {
       [referenceSchema.$id]: referenceSchema
-    },
-    ajv: {
-      addUsedSchema: false
     }
   })
 

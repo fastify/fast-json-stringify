@@ -87,6 +87,28 @@ function build (schema, options) {
     ${$asBoolean.toString()}
     ${$asBooleanNullable.toString()}
 
+    const $validateWithAjv = (function() {
+      const cache = new Set()
+
+      return function (schema, target) {
+        const id = schema.$id
+        
+        if (!id) {
+          return ajv.validate(schema, target)
+        }
+
+        const cached = cache.has(id)
+
+        if (cached) {
+          return ajv.validate(id, target)
+        } else {
+          cache.add(id)
+          return ajv.validate(schema, target)
+        }
+      }
+    })()
+
+
     var isLong = ${isLong ? isLong.toString() : false}
 
     function parseInteger(int) { return Math.${intParseFunctionName}(int) }
@@ -870,7 +892,7 @@ function addIfThenElse (location, name) {
   let mergedLocation = mergeLocation(location, { schema: merged })
 
   code += `
-    valid = ajv.validate(${JSON.stringify(i)}, obj)
+    valid = $validateWithAjv(${JSON.stringify(i)}, obj)
     if (valid) {
   `
   if (merged.if && merged.then) {
@@ -1189,7 +1211,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           // 2. `nested`, through `buildCode`, replaces any reference in object properties with the actual schema
           // (see https://github.com/fastify/fast-json-stringify/blob/6da3b3e8ac24b1ca5578223adedb4083b7adf8db/index.js#L631)
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(location.schema)}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}($validateWithAjv(${JSON.stringify(location.schema)}, obj${accessor}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
@@ -1205,7 +1227,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
 
           // see comment on anyOf about derefencing the schema before calling ajv.validate
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(location.schema)}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}($validateWithAjv(${JSON.stringify(location.schema)}, obj${accessor}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
