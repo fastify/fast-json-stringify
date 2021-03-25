@@ -87,6 +87,18 @@ function build (schema, options) {
     ${$asBoolean.toString()}
     ${$asBooleanNullable.toString()}
 
+    
+    /**
+     * Used by schemas that are dependant on calling 'ajv.validate' during runtime,
+     * it stores the value of the '$id' property of the schema (if it has it) inside
+     * a cache which is used to figure out if the schema was compiled into a validator
+     * by ajv on a previous call, if it was then the '$id' string will be used to 
+     * invoke 'ajv.validate', this allows:
+     * 
+     * 1. Schemas that depend on ajv.validate calls to leverage ajv caching system.
+     * 2. To avoid errors, since directly invoking 'ajv.validate' with the same 
+     * schema (that contains an '$id' property) will throw an error.
+     */
     const $validateWithAjv = (function() {
       const cache = new Set()
 
