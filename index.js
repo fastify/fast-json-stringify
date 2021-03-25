@@ -97,7 +97,7 @@ function build (schema, options) {
      * 
      * 1. Schemas that depend on ajv.validate calls to leverage ajv caching system.
      * 2. To avoid errors, since directly invoking 'ajv.validate' with the same 
-     * schema (that contains an '$id' property) will throw an error.
+     * schema (that contains an '$id' property) twice will throw an error.
      */
     const $validateWithAjv = (function() {
       const cache = new Set()
