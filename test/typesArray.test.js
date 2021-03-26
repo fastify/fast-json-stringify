@@ -17,7 +17,7 @@ test('possibly nullable integer primitive alternative', (t) => {
     }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { ajv: { allowUnionTypes: true } })
 
   const value = stringify({
     data: 4
@@ -328,7 +328,7 @@ test('object with anyOf and multiple types', (t) => {
       }
     }
   }
-  const stringify = build(schema)
+  const stringify = build(schema, { ajv: { allowUnionTypes: true } })
 
   try {
     const value = stringify({
