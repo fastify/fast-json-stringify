@@ -44,7 +44,7 @@
     "typescript": "^4.0.2"
   },
   "dependencies": {
-    "ajv": "^6.11.0",
+    "ajv": "^8.0.1",
     "deepmerge": "^4.2.2",
     "rfdc": "^1.2.0",
     "string-similarity": "^4.0.1"
