@@ -132,6 +132,7 @@ function build (schema, options) {
     case 'array':
       main = '$main'
       code = buildArray(location, code, main)
+      schema = location.schema
       break
     case undefined:
       main = '$asAny'
@@ -980,7 +981,8 @@ function buildArray (location, code, name, key = null) {
 
   if (schema.items.$ref) {
     if (!schema[fjsCloned]) {
-      schema = clone(location.schema)
+      location.schema = clone(location.schema)
+      schema = location.schema
       schema[fjsCloned] = true
     }
     location = refFinder(schema.items.$ref, location)

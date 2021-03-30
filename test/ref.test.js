@@ -1202,3 +1202,50 @@ test('Bad key', t => {
 
   t.end()
 })
+
+test('Regression 2.5.2', t => {
+  t.plan(1)
+
+  const externalSchema = {
+    '/models/Bar': {
+      $id: '/models/Bar',
+      $schema: 'http://json-schema.org/schema#',
+      definitions: {
+        entity: {
+          type: 'object',
+          properties: { field: { type: 'string' } }
+        }
+      }
+    },
+    '/models/Foo': {
+      $id: '/models/Foo',
+      $schema: 'http://json-schema.org/schema#',
+      definitions: {
+        entity: {
+          type: 'object',
+          properties: {
+            field: { type: 'string' },
+            sub: {
+              oneOf: [
+                { $ref: '/models/Bar#/definitions/entity' },
+                { type: 'null' }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'array',
+    items: {
+      $ref: '/models/Foo#/definitions/entity'
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify([{ field: 'parent', sub: { field: 'joined' } }])
+
+  t.equal(output, '[{"field":"parent","sub":{"field":"joined"}}]')
+})
