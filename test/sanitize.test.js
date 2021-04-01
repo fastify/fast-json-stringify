@@ -105,7 +105,7 @@ const stringify2 = build({
   }
 })
 
-t.deepEqual(JSON.parse(stringify2({
+t.same(JSON.parse(stringify2({
   '"\'phra////': 42,
   asd: 42
 })), {
@@ -135,7 +135,7 @@ const stringify4 = build({
   }
 })
 
-t.deepEqual(JSON.parse(stringify4({})), {
+t.same(JSON.parse(stringify4({})), {
   '"\\\\\\\\\'w00t': '"\'w00t'
 })
 

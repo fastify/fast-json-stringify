@@ -108,6 +108,6 @@ Object.keys(testSet).forEach(key => {
     const data = testSet[key][1]
     const expected = testSet[key][2]
     const result = stringifier(data)
-    t.deepEqual(JSON.parse(result), expected)
+    t.same(JSON.parse(result), expected)
   })
 })

@@ -32,7 +32,7 @@ test('render a float as an integer', (t) => {
     }, { rounding: 'foobar' })
   } catch (error) {
     t.ok(error)
-    t.equals(error.message, 'Unsupported integer rounding method foobar')
+    t.equal(error.message, 'Unsupported integer rounding method foobar')
   }
 })
 

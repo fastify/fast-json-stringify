@@ -32,8 +32,8 @@ test('oneOf with $ref should not change the input schema', t => {
   })
 
   const value = stringify({ people: { name: 'hello', foo: 'bar' } })
-  t.is(value, '{"people":{"name":"hello"}}')
-  t.deepEqual(schema, clonedSchema)
+  t.equal(value, '{"people":{"name":"hello"}}')
+  t.same(schema, clonedSchema)
 })
 
 test('oneOf and anyOf with $ref should not change the input schema', t => {
@@ -77,7 +77,7 @@ test('oneOf and anyOf with $ref should not change the input schema', t => {
 
   t.equal(valueAny1, '{"people":{"name":"hello"},"love":"music"}')
   t.equal(valueAny2, '{"people":{"name":"hello"},"love":true}')
-  t.deepEqual(schema, clonedSchema)
+  t.same(schema, clonedSchema)
 })
 
 test('multiple $ref tree', t => {
@@ -118,8 +118,8 @@ test('multiple $ref tree', t => {
   })
 
   const value = stringify({ people: { name: 'hello', foo: 'bar', age: 42 } })
-  t.is(value, '{"people":{"name":"hello","age":42}}')
-  t.deepEqual(schema, clonedSchema)
+  t.equal(value, '{"people":{"name":"hello","age":42}}')
+  t.same(schema, clonedSchema)
 })
 
 test('must not mutate items $ref', t => {
@@ -152,6 +152,6 @@ test('must not mutate items $ref', t => {
   })
 
   const value = stringify([{ name: 'foo' }])
-  t.is(value, '[{"name":"foo"}]')
-  t.deepEqual(schema, clonedSchema)
+  t.equal(value, '[{"name":"foo"}]')
+  t.same(schema, clonedSchema)
 })

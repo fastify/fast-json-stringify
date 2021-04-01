@@ -32,7 +32,7 @@ test('object with required field', (t) => {
     })
     t.fail()
   } catch (e) {
-    t.is(e.message, '"str" is required!')
+    t.equal(e.message, '"str" is required!')
     t.pass()
   }
 })
@@ -56,7 +56,7 @@ test('object with required field not in properties schema', (t) => {
     stringify({})
     t.fail()
   } catch (e) {
-    t.is(e.message, '"str" is required!')
+    t.equal(e.message, '"str" is required!')
     t.pass()
   }
 
@@ -66,7 +66,7 @@ test('object with required field not in properties schema', (t) => {
     })
     t.fail()
   } catch (e) {
-    t.is(e.message, '"str" is required!')
+    t.equal(e.message, '"str" is required!')
     t.pass()
   }
 })
@@ -91,7 +91,7 @@ test('object with required field not in properties schema with additional proper
     stringify({})
     t.fail()
   } catch (e) {
-    t.is(e.message, '"str" is required!')
+    t.equal(e.message, '"str" is required!')
     t.pass()
   }
 
@@ -101,7 +101,7 @@ test('object with required field not in properties schema with additional proper
     })
     t.fail()
   } catch (e) {
-    t.is(e.message, '"str" is required!')
+    t.equal(e.message, '"str" is required!')
     t.pass()
   }
 })
@@ -126,7 +126,7 @@ test('object with multiple required field not in properties schema', (t) => {
     stringify({})
     t.fail()
   } catch (e) {
-    t.is(e.message, '"num" is required!')
+    t.equal(e.message, '"num" is required!')
     t.pass()
   }
 
@@ -136,7 +136,7 @@ test('object with multiple required field not in properties schema', (t) => {
     })
     t.fail()
   } catch (e) {
-    t.is(e.message, '"key1" is required!')
+    t.equal(e.message, '"key1" is required!')
     t.pass()
   }
 
@@ -147,7 +147,7 @@ test('object with multiple required field not in properties schema', (t) => {
     })
     t.fail()
   } catch (e) {
-    t.is(e.message, '"key2" is required!')
+    t.equal(e.message, '"key2" is required!')
     t.pass()
   }
 })
@@ -172,7 +172,7 @@ test('object with required bool', (t) => {
     stringify({})
     t.fail()
   } catch (e) {
-    t.is(e.message, '"bool" is required!')
+    t.equal(e.message, '"bool" is required!')
     t.pass()
   }
 
@@ -232,7 +232,7 @@ test('required numbers', (t) => {
     })
     t.fail()
   } catch (e) {
-    t.is(e.message, '"num" is required!')
+    t.equal(e.message, '"num" is required!')
     t.pass()
   }
 })

@@ -1026,7 +1026,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.is(err.message, 'Cannot find reference "porjectId", did you mean "projectId"?')
+      t.equal(err.message, 'Cannot find reference "porjectId", did you mean "projectId"?')
     }
   })
 
@@ -1051,7 +1051,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.is(err.message, 'Cannot find reference "foobar"')
+      t.equal(err.message, 'Cannot find reference "foobar"')
     }
   })
 
@@ -1081,7 +1081,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.is(err.message, 'Cannot find reference "porjectId", did you mean "projectId"?')
+      t.equal(err.message, 'Cannot find reference "porjectId", did you mean "projectId"?')
     }
   })
 
@@ -1111,7 +1111,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.is(err.message, 'Cannot find reference "foobar"')
+      t.equal(err.message, 'Cannot find reference "foobar"')
     }
   })
 
@@ -1141,7 +1141,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.is(err.message, 'Cannot find reference "deifnitions", did you mean "definitions"?')
+      t.equal(err.message, 'Cannot find reference "deifnitions", did you mean "definitions"?')
     }
   })
 
@@ -1166,7 +1166,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.is(err.message, 'Cannot find reference "deifnitions", did you mean "definitions"?')
+      t.equal(err.message, 'Cannot find reference "deifnitions", did you mean "definitions"?')
     }
   })
 
@@ -1196,7 +1196,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.is(err.message, 'Cannot find reference "extrenal", did you mean "external"?')
+      t.equal(err.message, 'Cannot find reference "extrenal", did you mean "external"?')
     }
   })
 
