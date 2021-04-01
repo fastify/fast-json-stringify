@@ -11,7 +11,7 @@ function buildTest (schema, toStringify, expected) {
 
     const output = stringify(toStringify)
 
-    t.strictEqual(output, JSON.stringify(expected))
+    t.equal(output, JSON.stringify(expected))
   })
 }
 

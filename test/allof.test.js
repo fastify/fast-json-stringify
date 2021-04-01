@@ -44,7 +44,7 @@ test('object with allOf and multiple schema on the allOf', (t) => {
       id: 1
     })
   } catch (e) {
-    t.is(e.message, '"name" is required!')
+    t.equal(e.message, '"name" is required!')
   }
 
   try {
@@ -52,15 +52,15 @@ test('object with allOf and multiple schema on the allOf', (t) => {
       name: 'string'
     })
   } catch (e) {
-    t.is(e.message, '"id" is required!')
+    t.equal(e.message, '"id" is required!')
   }
 
-  t.is(stringify({
+  t.equal(stringify({
     id: 1,
     name: 'string'
   }), '{"name":"string","id":1}')
 
-  t.is(stringify({
+  t.equal(stringify({
     id: 1,
     name: 'string',
     tag: 'otherString'
@@ -92,7 +92,7 @@ test('object with allOf and one schema on the allOf', (t) => {
   const value = stringify({
     id: 1
   })
-  t.is(value, '{"id":1}')
+  t.equal(value, '{"id":1}')
 })
 
 test('object with allOf and no schema on the allOf', (t) => {
@@ -108,7 +108,7 @@ test('object with allOf and no schema on the allOf', (t) => {
     build(schema)
     t.fail()
   } catch (e) {
-    t.is(e.message, 'schema is invalid: data.allOf should NOT have fewer than 1 items')
+    t.equal(e.message, 'schema is invalid: data.allOf should NOT have fewer than 1 items')
   }
 })
 
@@ -160,7 +160,7 @@ test('object with nested allOfs', (t) => {
     id3: 3,
     id4: 4 // extra prop shouldn't be in result
   })
-  t.is(value, '{"id1":1,"id2":2,"id3":3}')
+  t.equal(value, '{"id1":1,"id2":2,"id3":3}')
 })
 
 test('object with $ref in allOf', (t) => {
@@ -191,7 +191,7 @@ test('object with $ref in allOf', (t) => {
     id1: 1,
     id2: 2 // extra prop shouldn't be in result
   })
-  t.is(value, '{"id1":1}')
+  t.equal(value, '{"id1":1}')
 })
 
 test('object with $ref and other object in allOf', (t) => {
@@ -231,7 +231,7 @@ test('object with $ref and other object in allOf', (t) => {
     id2: 2,
     id3: 3 // extra prop shouldn't be in result
   })
-  t.is(value, '{"id1":1,"id2":2}')
+  t.equal(value, '{"id1":1,"id2":2}')
 })
 
 test('object with multiple $refs in allOf', (t) => {
@@ -274,7 +274,7 @@ test('object with multiple $refs in allOf', (t) => {
     id2: 2,
     id3: 3 // extra prop shouldn't be in result
   })
-  t.is(value, '{"id1":1,"id2":2}')
+  t.equal(value, '{"id1":1,"id2":2}')
 })
 
 test('object with external $refs in allOf', (t) => {
@@ -325,5 +325,5 @@ test('object with external $refs in allOf', (t) => {
     id2: 2,
     id3: 3 // extra prop shouldn't be in result
   })
-  t.is(value, '{"id1":1,"id2":2}')
+  t.equal(value, '{"id1":1,"id2":2}')
 })

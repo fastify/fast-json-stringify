@@ -13,7 +13,7 @@ function buildTest (schema, toStringify) {
     const stringify = build(schema)
     const output = stringify(toStringify)
 
-    t.deepEqual(JSON.parse(output), toStringify)
+    t.same(JSON.parse(output), toStringify)
     t.equal(output, JSON.stringify(toStringify))
     t.ok(validate(JSON.parse(output)), 'valid schema')
   })
@@ -195,7 +195,7 @@ test('moment array', (t) => {
   const value = stringify({
     times: [moment('2018-04-21T07:52:31.017Z')]
   })
-  t.is(value, '{"times":["2018-04-21T07:52:31.017Z"]}')
+  t.equal(value, '{"times":["2018-04-21T07:52:31.017Z"]}')
 })
 
 buildTest({
@@ -254,5 +254,5 @@ test('object array with anyOf and symbol', (t) => {
     { name: 'name-0', option: 'Foo' },
     { name: 'name-1', option: 'Bar' }
   ])
-  t.is(value, '[{"name":"name-0","option":"Foo"},{"name":"name-1","option":"Bar"}]')
+  t.equal(value, '[{"name":"name-0","option":"Foo"},{"name":"name-1","option":"Bar"}]')
 })
