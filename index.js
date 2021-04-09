@@ -225,7 +225,19 @@ function inferTypeByKeyword (schema) {
 
 function dependsOnAjv (schema) {
   const str = JSON.stringify(schema)
-  return (/"if":{.*"then":{|"(anyOf|oneOf)":\[|"const":/.test(str))
+  switch (true) {
+    case /"if":{.*"then":{/.test(str):
+    case /"(anyOf|oneOf)":\[/.test(str):
+    case /"const"/.test(str):
+    case /"\$ref"/.test(str):
+    {
+      return true
+    }
+
+    default: {
+      return false
+    }
+  }
 }
 
 const stringSerializerMap = {
