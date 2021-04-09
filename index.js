@@ -10,13 +10,6 @@ const fjsCloned = Symbol('fast-json-stringify.cloned')
 const validate = require('./schema-validator')
 let stringSimilarity = null
 
-let isLong
-try {
-  isLong = require('long').isLong
-} catch (e) {
-  isLong = null
-}
-
 const addComma = `
   if (addComma) {
     json += ','
@@ -120,8 +113,6 @@ function build (schema, options) {
       }
     })()
 
-
-    var isLong = ${isLong ? isLong.toString() : false}
 
     function parseInteger(int) { return Math.${intParseFunctionName}(int) }
     `
@@ -286,9 +277,7 @@ function $asNull () {
 }
 
 function $asInteger (i) {
-  if (isLong && isLong(i)) {
-    return i.toString()
-  } else if (typeof i === 'bigint') {
+  if (typeof i === 'bigint') {
     return i.toString()
   } else if (Number.isInteger(i)) {
     return $asNumber(i)
@@ -547,22 +536,11 @@ function additionalProperty (location) {
   } else if (type === 'integer') {
     code += `
         var t = Number(obj[keys[i]])
+        if (!isNaN(t)) {
+          ${addComma}
+          json += $asString(keys[i]) + ':' + t
+        }
     `
-    if (isLong) {
-      code += `
-          if (isLong(obj[keys[i]]) || !isNaN(t)) {
-            ${addComma}
-            json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
-          }
-      `
-    } else {
-      code += `
-          if (!isNaN(t)) {
-            ${addComma}
-            json += $asString(keys[i]) + ':' + t
-          }
-      `
-    }
   } else if (type === 'number') {
     code += `
         var t = Number(obj[keys[i]])
@@ -764,33 +742,12 @@ function buildCode (location, code, laterCode, name) {
     } else if (type === 'integer') {
       code += `
           var rendered = false
-      `
-      if (isLong) {
-        code += `
-            if (isLong(obj[${sanitized}])) {
-              ${addComma}
-              json += ${asString} + ':' + obj[${sanitized}].toString()
-              rendered = true
-            } else {
-              var t = Number(obj[${sanitized}])
-              if (!isNaN(t)) {
-                ${addComma}
-                json += ${asString} + ':' + t
-                rendered = true
-              }
-            }
-        `
-      } else {
-        code += `
-            var t = Number(obj[${sanitized}])
-            if (!isNaN(t)) {
-              ${addComma}
-              json += ${asString} + ':' + t
-              rendered = true
-            }
-        `
-      }
-      code += `
+          var t = Number(obj[${sanitized}])
+          if (!isNaN(t)) {
+            ${addComma}
+            json += ${asString} + ':' + t
+            rendered = true
+          }
           if (rendered) {
       `
     } else {
