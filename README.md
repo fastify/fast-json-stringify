@@ -399,7 +399,7 @@ console.log(stringify({
 })) // {"kind":"foobar","foo":"FOO","bar":42}
 ```
 
-**NB:** don't declare the properties twice or you'll print them twice!
+**NB** Do not declare the properties twice or you will print them twice!
 
 <a name="ref"></a>
 #### Reuse - $ref
@@ -514,7 +514,7 @@ const stringify = fastJson(schema, { schema: externalSchema })
 
 <a name="long"></a>
 #### Long integers
-By default the library will handle automatically [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) from Node.js v10.3 and above.
+By default the library will automatically handle [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) from Node.js v10.3 and above.
 If you can't use BigInts in your environment, long integers (64-bit) are also supported using the [long](https://github.com/dcodeIO/long.js) module.
 Example:
 ```javascript
