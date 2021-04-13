@@ -1,5 +1,15 @@
 name: CI workflow
-on: [push, pull_request]
+
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+
 jobs:
   test:
     runs-on: ubuntu-latest
