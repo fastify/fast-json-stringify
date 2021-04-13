@@ -106,7 +106,7 @@ const stringify = fastJson(mySchema, {
 <a name="fastJsonStringify"></a>
 ### fastJsonStringify(schema)
 
-Build a `stringify()` function based on [jsonschema](http://json-schema.org/).
+Build a `stringify()` function based on [jsonschema](https://json-schema.org/).
 
 Supported types:
 
@@ -641,7 +641,7 @@ console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"F
 <a name="acknowledgements"></a>
 ## Acknowledgements
 
-This project was kindly sponsored by [nearForm](http://nearform.com).
+This project was kindly sponsored by [nearForm](shttp://nearform.com).
 
 <a name="license"></a>
 ## License
