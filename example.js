@@ -1,7 +1,5 @@
-'use strict'
-
 const moment = require('moment')
-const fastJson = require('.')
+const fastJson = require('fast-json-stringify')
 const stringify = fastJson({
   title: 'Example Schema',
   type: 'object',
