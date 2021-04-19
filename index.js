@@ -146,13 +146,8 @@ function build (schema, options) {
      return ${main}
   `
 
-  const dependencies = []
-  const dependenciesName = []
-  if (dependsOnAjv(schema)) {
-    dependencies.push(new Ajv(options.ajv))
-    dependenciesName.push('ajv')
-  }
-
+  const dependencies = [new Ajv(options.ajv)]
+  const dependenciesName = ['ajv']
   dependenciesName.push(code)
 
   if (options.debugMode) {
@@ -221,23 +216,6 @@ function inferTypeByKeyword (schema) {
     if (keyword in schema) return 'number'
   }
   return schema.type
-}
-
-function dependsOnAjv (schema) {
-  const str = JSON.stringify(schema)
-  switch (true) {
-    case /"if":{.*"then":{/.test(str):
-    case /"(anyOf|oneOf)":\[/.test(str):
-    case /"const"/.test(str):
-    case /"\$ref"/.test(str):
-    {
-      return true
-    }
-
-    default: {
-      return false
-    }
-  }
 }
 
 const stringSerializerMap = {
