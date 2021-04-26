@@ -210,6 +210,69 @@ buildTest({
   foo: [1, 'string', {}, null]
 })
 
+test('array items is a list of schema and additionalItems is true, just the described item is validated', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        type: 'array',
+        items: [
+          {
+            type: 'string'
+          }
+        ],
+        additionalItems: true
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const result = stringify({
+    foo: [
+      'foo',
+      'bar',
+      1
+    ]
+  })
+
+  t.equal(result, '{"foo":["foo","bar",1]}')
+})
+
+test('array items is a list of schema and additionalItems is false', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        type: 'array',
+        items: [
+          {
+            type: 'string'
+          }
+        ],
+        additionalItems: false
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  try {
+    stringify({
+      foo: [
+        'foo',
+        'bar'
+      ]
+    })
+    t.fail()
+  } catch (error) {
+    t.ok(/does not match schema definition./.test(error.message))
+  }
+})
+
 // https://github.com/fastify/fast-json-stringify/issues/279
 test('object array with anyOf and symbol', (t) => {
   t.plan(1)
