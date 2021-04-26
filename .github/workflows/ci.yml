@@ -15,7 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [10.x, 12.x, 13.x, 14.x]
+        node-version: [10, 12, 13, 14, 16]
         os: [macos-latest, ubuntu-latest, windows-latest]
 
     steps:
@@ -32,7 +32,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          npm run test
+          npm test
 
   automerge:
     needs: test
