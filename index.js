@@ -980,9 +980,9 @@ function buildArray (location, code, name, key = null) {
   }
 
   let result = { code: '', laterCode: '' }
+  const accessor = '[i]'
   if (Array.isArray(schema.items)) {
     result = schema.items.reduce((res, item, i) => {
-      const accessor = '[i]'
       const tmpRes = nested(laterCode, name, accessor, mergeLocation(location, { schema: item }), i, true)
       const condition = `i === ${i} && ${buildArrayTypeCondition(item.type, accessor)}`
       return {
@@ -994,13 +994,23 @@ function buildArray (location, code, name, key = null) {
         ${tmpRes.laterCode}`
       }
     }, result)
+
+    if (schema.additionalItems) {
+      const tmpRes = nested(laterCode, name, accessor, mergeLocation(location, { schema: schema.items }), undefined, true)
+      result.code += `
+      else if (i >= ${schema.items.length}) {
+        ${tmpRes.code}
+      }
+      `
+    }
+
     result.code += `
     else {
       throw new Error(\`Item at $\{i} does not match schema definition.\`)
     }
     `
   } else {
-    result = nested(laterCode, name, '[i]', mergeLocation(location, { schema: schema.items }), undefined, true)
+    result = nested(laterCode, name, accessor, mergeLocation(location, { schema: schema.items }), undefined, true)
   }
 
   if (key) {
