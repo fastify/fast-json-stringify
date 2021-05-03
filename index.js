@@ -228,6 +228,10 @@ function getStringSerializer (format) {
   '$asString'
 }
 
+function getTestSerializer (format) {
+  return stringSerializerMap[format]
+}
+
 function $pad2Zeros (num) {
   const s = '00' + num
   return s[s.length - 2] + s[s.length - 1]
@@ -280,37 +284,40 @@ function $asBooleanNullable (bool) {
   return bool === null ? null : $asBoolean(bool)
 }
 
-function $asDatetime (date) {
+function $asDatetime (date, skipQuotes) {
+  const quotes = skipQuotes === true ? '' : '"'
   if (date instanceof Date) {
-    return '"' + date.toISOString() + '"'
+    return quotes + date.toISOString() + quotes
   } else if (date && typeof date.toISOString === 'function') {
-    return '"' + date.toISOString() + '"'
+    return quotes + date.toISOString() + quotes
   } else {
     return $asString(date)
   }
 }
 
-function $asDate (date) {
+function $asDate (date, skipQuotes) {
+  const quotes = skipQuotes === true ? '' : '"'
   if (date instanceof Date) {
     const year = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date)
     const month = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(date)
     const day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date)
-    return '"' + year + '-' + month + '-' + day + '"'
+    return quotes + year + '-' + month + '-' + day + quotes
   } else if (date && typeof date.format === 'function') {
-    return '"' + date.format('YYYY-MM-DD') + '"'
+    return quotes + date.format('YYYY-MM-DD') + quotes
   } else {
     return $asString(date)
   }
 }
 
-function $asTime (date) {
+function $asTime (date, skipQuotes) {
+  const quotes = skipQuotes === true ? '' : '"'
   if (date instanceof Date) {
     const hour = new Intl.DateTimeFormat('en', { hour: 'numeric', hour12: false }).format(date)
     const minute = new Intl.DateTimeFormat('en', { minute: 'numeric' }).format(date)
     const second = new Intl.DateTimeFormat('en', { second: 'numeric' }).format(date)
-    return '"' + $pad2Zeros(hour) + ':' + $pad2Zeros(minute) + ':' + $pad2Zeros(second) + '"'
+    return quotes + $pad2Zeros(hour) + ':' + $pad2Zeros(minute) + ':' + $pad2Zeros(second) + quotes
   } else if (date && typeof date.format === 'function') {
-    return '"' + date.format('HH:mm:ss') + '"'
+    return quotes + date.format('HH:mm:ss') + quotes
   } else {
     return $asString(date)
   }
@@ -1177,6 +1184,11 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         const anyOfLocations = dereferenceOfRefs(location, 'anyOf')
         anyOfLocations.forEach((location, index) => {
           const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
+          // We need a test serializer as the String serializer will not work with
+          // date/time ajv validations
+          // see: https://github.com/fastify/fast-json-stringify/issues/325
+          const testSerializer = getTestSerializer(location.schema.format)
+          const testValue = testSerializer !== undefined ? `${testSerializer}(obj${accessor}, true)` : `obj${accessor}`
 
           // Since we are only passing the relevant schema to ajv.validate, it needs to be full dereferenced
           // otherwise any $ref pointing to an external schema would result in an error.
@@ -1186,7 +1198,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           // 2. `nested`, through `buildCode`, replaces any reference in object properties with the actual schema
           // (see https://github.com/fastify/fast-json-stringify/blob/6da3b3e8ac24b1ca5578223adedb4083b7adf8db/index.js#L631)
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(location.schema)}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(location.schema)}, ${testValue}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
@@ -1199,10 +1211,11 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         const oneOfLocations = dereferenceOfRefs(location, 'oneOf')
         oneOfLocations.forEach((location, index) => {
           const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
-
-          // see comment on anyOf about derefencing the schema before calling ajv.validate
+          const testSerializer = getTestSerializer(location.schema.format)
+          const testValue = testSerializer !== undefined ? `${testSerializer}(obj${accessor}, true)` : `obj${accessor}`
+          // see comment on anyOf about dereferencing the schema before calling ajv.validate
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(location.schema)}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(location.schema)}, ${testValue}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
