@@ -376,26 +376,10 @@ test('oneOf with enum with more than 100 entries', (t) => {
   t.is(value, '["EUR","USD",null]')
 })
 
-test('object with field of type string with format or null', (t) => {
-  t.plan(2)
+test('oneOf object with field of type string with format or null', (t) => {
+  t.plan(1)
 
   const toStringify = new Date()
-
-  const withoutOneOfSchema = {
-    type: 'object',
-    properties: {
-      prop: {
-        type: 'string',
-        format: 'date-time'
-      }
-    }
-  }
-
-  const withoutOneOfStringify = build(withoutOneOfSchema)
-
-  t.equal(withoutOneOfStringify({
-    prop: toStringify
-  }), `{"prop":"${toStringify.toISOString()}"}`)
 
   const withOneOfSchema = {
     type: 'object',
@@ -413,7 +397,6 @@ test('object with field of type string with format or null', (t) => {
 
   const withOneOfStringify = build(withOneOfSchema)
 
-  // This fails, is really {"prop":null}
   t.equal(withOneOfStringify({
     prop: toStringify
   }), `{"prop":"${toStringify.toISOString()}"}`)

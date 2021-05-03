@@ -1189,6 +1189,11 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         const anyOfLocations = dereferenceOfRefs(location, 'anyOf')
         anyOfLocations.forEach((location, index) => {
           const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
+          // We need a test serializer as the String serializer will not work with
+          // date/time ajv validations
+          // see: https://github.com/fastify/fast-json-stringify/issues/325
+          const testSerializer = getTestSerializer(location.schema.format)
+          const testValue = testSerializer !== undefined ? `${testSerializer}(obj${accessor}, true)` : `obj${accessor}`
 
           // Since we are only passing the relevant schema to ajv.validate, it needs to be full dereferenced
           // otherwise any $ref pointing to an external schema would result in an error.
@@ -1198,7 +1203,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           // 2. `nested`, through `buildCode`, replaces any reference in object properties with the actual schema
           // (see https://github.com/fastify/fast-json-stringify/blob/6da3b3e8ac24b1ca5578223adedb4083b7adf8db/index.js#L631)
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(location.schema)}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(location.schema)}, ${testValue}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
@@ -1213,7 +1218,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
           const testSerializer = getTestSerializer(location.schema.format)
           const testValue = testSerializer !== undefined ? `${testSerializer}(obj${accessor}, true)` : `obj${accessor}`
-          // see comment on anyOf about derefencing the schema before calling ajv.validate
+          // see comment on anyOf about dereferencing the schema before calling ajv.validate
           code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(location.schema)}, ${testValue}))
               ${nestedResult.code}
