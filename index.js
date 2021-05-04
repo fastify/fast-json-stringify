@@ -20,8 +20,9 @@ try {
 const addComma = `
   if (addComma) {
     json += ','
+  } else {
+    addComma = true
   }
-  addComma = true
 `
 
 function isValidSchema (schema, name) {
