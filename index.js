@@ -1252,42 +1252,48 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           const tempSchema = Object.assign({}, schema, { type })
           const nestedResult = nested(laterCode, name, key, mergeLocation(location, { schema: tempSchema }), subKey, isArray)
           switch (type) {
-            case 'string':
+            case 'string': {
               code += `
                 ${statement}(obj${accessor} === null || typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || typeof obj${accessor}.toISOString === "function" || obj${accessor} instanceof RegExp || (typeof obj${accessor} === "object" && Object.hasOwnProperty.call(obj${accessor}, "toString")))
                   ${nestedResult.code}
               `
               break
-            case 'null':
+            }
+            case 'null': {
               code += `
                 ${statement}(obj${accessor} == null)
                   ${nestedResult.code}
               `
               break
-            case 'array':
+            }
+            case 'array': {
               code += `
                 ${statement}(Array.isArray(obj${accessor}))
                   ${nestedResult.code}
               `
               break
-            case 'integer':
+            }
+            case 'integer': {
               code += `
                 ${statement}(Number.isInteger(obj${accessor}) || obj${accessor} === null)
                   ${nestedResult.code}
               `
               break
-            case 'number':
+            }
+            case 'number': {
               code += `
                 ${statement}(isNaN(obj${accessor}) === false)
                   ${nestedResult.code}
               `
               break
-            default:
+            }
+            default: {
               code += `
                 ${statement}(typeof obj${accessor} === "${type}")
                   ${nestedResult.code}
               `
               break
+            }
           }
           laterCode = nestedResult.laterCode
         })
