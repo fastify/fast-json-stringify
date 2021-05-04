@@ -1247,39 +1247,46 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         const nullIndex = type.indexOf('null')
         const sortedTypes = nullIndex !== -1 ? [type[nullIndex]].concat(type.slice(0, nullIndex)).concat(type.slice(nullIndex + 1)) : type
         sortedTypes.forEach((type, index) => {
+          const statement = index === 0 ? 'if' : 'else if'
           const tempSchema = Object.assign({}, schema, { type })
           const nestedResult = nested(laterCode, name, key, mergeLocation(location, { schema: tempSchema }), subKey, isArray)
-
-          if (type === 'string') {
-            code += `
-              ${index === 0 ? 'if' : 'else if'}(obj${accessor} === null || typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || typeof obj${accessor}.toISOString === "function" || obj${accessor} instanceof RegExp || (typeof obj${accessor} === "object" && Object.hasOwnProperty.call(obj${accessor}, "toString")))
-                ${nestedResult.code}
-            `
-          } else if (type === 'null') {
-            code += `
-              ${index === 0 ? 'if' : 'else if'}(obj${accessor} == null)
-              ${nestedResult.code}
-            `
-          } else if (type === 'array') {
-            code += `
-              ${index === 0 ? 'if' : 'else if'}(Array.isArray(obj${accessor}))
-              ${nestedResult.code}
-            `
-          } else if (type === 'integer') {
-            code += `
-              ${index === 0 ? 'if' : 'else if'}(Number.isInteger(obj${accessor}) || obj${accessor} === null)
-              ${nestedResult.code}
-            `
-          } else if (type === 'number') {
-            code += `
-              ${index === 0 ? 'if' : 'else if'}(isNaN(obj${accessor}) === false)
-              ${nestedResult.code}
-            `
-          } else {
-            code += `
-              ${index === 0 ? 'if' : 'else if'}(typeof obj${accessor} === "${type}")
-              ${nestedResult.code}
-            `
+          switch (type) {
+            case 'string':
+              code += `
+                ${statement}(obj${accessor} === null || typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || typeof obj${accessor}.toISOString === "function" || obj${accessor} instanceof RegExp || (typeof obj${accessor} === "object" && Object.hasOwnProperty.call(obj${accessor}, "toString")))
+                  ${nestedResult.code}
+              `
+              break
+            case 'null':
+              code += `
+                ${statement}(obj${accessor} == null)
+                  ${nestedResult.code}
+              `
+              break
+            case 'array':
+              code += `
+                ${statement}(Array.isArray(obj${accessor}))
+                  ${nestedResult.code}
+              `
+              break
+            case 'integer':
+              code += `
+                ${statement}(Number.isInteger(obj${accessor}) || obj${accessor} === null)
+                  ${nestedResult.code}
+              `
+              break
+            case 'number':
+              code += `
+                ${statement}(isNaN(obj${accessor}) === false)
+                  ${nestedResult.code}
+              `
+              break
+            default:
+              code += `
+                ${statement}(typeof obj${accessor} === "${type}")
+                  ${nestedResult.code}
+              `
+              break
           }
           laterCode = nestedResult.laterCode
         })
