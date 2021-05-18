@@ -472,10 +472,9 @@ test('anyOf object with field date-time of type string with format or null', (t)
   }), `{"prop":"${toStringify.toISOString()}"}`)
 })
 
-
 test('anyOf object with field date of type string with format or null', (t) => {
   t.plan(1)
-  const toStringify = '2011-01-01';
+  const toStringify = '2011-01-01'
   const withOneOfSchema = {
     type: 'object',
     properties: {
@@ -493,5 +492,5 @@ test('anyOf object with field date of type string with format or null', (t) => {
   const withOneOfStringify = build(withOneOfSchema)
   t.equal(withOneOfStringify({
     prop: toStringify
-  }), `{"prop":"2011-01-01"}`)
+  }), '{"prop":"2011-01-01"}')
 })

@@ -337,7 +337,7 @@ function $asString (str, skipQuotes) {
   }
   // If we skipQuotes it means that we are using it as test
   // no need to test the string length for the render
-  if(skipQuotes) {
+  if (skipQuotes) {
     return str
   }
 
