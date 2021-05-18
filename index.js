@@ -292,7 +292,7 @@ function $asDatetime (date, skipQuotes) {
   } else if (date && typeof date.toISOString === 'function') {
     return quotes + date.toISOString() + quotes
   } else {
-    return $asString(date)
+    return $asString(date, skipQuotes)
   }
 }
 
@@ -306,7 +306,7 @@ function $asDate (date, skipQuotes) {
   } else if (date && typeof date.format === 'function') {
     return quotes + date.format('YYYY-MM-DD') + quotes
   } else {
-    return $asString(date)
+    return $asString(date, skipQuotes)
   }
 }
 
@@ -320,19 +320,25 @@ function $asTime (date, skipQuotes) {
   } else if (date && typeof date.format === 'function') {
     return quotes + date.format('HH:mm:ss') + quotes
   } else {
-    return $asString(date)
+    return $asString(date, skipQuotes)
   }
 }
 
-function $asString (str) {
+function $asString (str, skipQuotes) {
+  const quotes = skipQuotes === true ? '' : '"'
   if (str instanceof Date) {
-    return '"' + str.toISOString() + '"'
+    return quotes + str.toISOString() + quotes
   } else if (str === null) {
-    return '""'
+    return quotes + quotes
   } else if (str instanceof RegExp) {
     str = str.source
   } else if (typeof str !== 'string') {
     str = str.toString()
+  }
+  // If we skipQuotes it means that we are using it as test
+  // no need to test the string length for the render
+  if(skipQuotes) {
+    return str
   }
 
   if (str.length < 42) {

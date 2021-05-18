@@ -448,7 +448,7 @@ test('anyOf with enum with more than 100 entries', (t) => {
   t.equal(value, '["EUR","USD",null]')
 })
 
-test('anyOf object with field of type string with format or null', (t) => {
+test('anyOf object with field date-time of type string with format or null', (t) => {
   t.plan(1)
   const toStringify = new Date()
   const withOneOfSchema = {
@@ -470,4 +470,28 @@ test('anyOf object with field of type string with format or null', (t) => {
   t.equal(withOneOfStringify({
     prop: toStringify
   }), `{"prop":"${toStringify.toISOString()}"}`)
+})
+
+
+test('anyOf object with field date of type string with format or null', (t) => {
+  t.plan(1)
+  const toStringify = '2011-01-01';
+  const withOneOfSchema = {
+    type: 'object',
+    properties: {
+      prop: {
+        anyOf: [{
+          type: 'string',
+          format: 'date'
+        }, {
+          type: 'null'
+        }]
+      }
+    }
+  }
+
+  const withOneOfStringify = build(withOneOfSchema)
+  t.equal(withOneOfStringify({
+    prop: toStringify
+  }), `{"prop":"2011-01-01"}`)
 })
