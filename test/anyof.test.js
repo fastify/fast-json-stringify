@@ -494,3 +494,26 @@ test('anyOf object with field date of type string with format or null', (t) => {
     prop: toStringify
   }), '{"prop":"2011-01-01"}')
 })
+
+test('anyOf object with invalid field date of type string with format or null', (t) => {
+  t.plan(1)
+  const toStringify = 'foo bar'
+  const withOneOfSchema = {
+    type: 'object',
+    properties: {
+      prop: {
+        anyOf: [{
+          type: 'string',
+          format: 'date'
+        }, {
+          type: 'null'
+        }]
+      }
+    }
+  }
+
+  const withOneOfStringify = build(withOneOfSchema)
+  t.equal(withOneOfStringify({
+    prop: toStringify
+  }), '{"prop":null}')
+})
