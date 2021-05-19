@@ -139,6 +139,8 @@ And nested ones, too.
 | `date`      | `2020-04-03`               |
 | `time`      | `09:11:08`                 |
 
+**Note**: In the case of string formatted Date and not Date Object, there will be no manipulation on it. It should be properly formatted.
+
 Example with a MomentJS object:
 
 ```javascript
