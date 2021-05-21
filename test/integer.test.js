@@ -137,3 +137,15 @@ if (semver.gt(process.versions.node, '10.3.0')) {
   t.pass('Skip because Node version < 10.4')
   t.end()
 }
+
+test('should round interger object parameter ', t => {
+  t.plan(2)
+
+  const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
+  const validate = validator(schema)
+  const stringify = build(schema, { rounding: 'ceil' })
+  const output = stringify({ magic: 4.2 })
+
+  t.equal(output, '{"magic":5}')
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
