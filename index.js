@@ -752,7 +752,7 @@ function buildCode (location, code, laterCode, name) {
         `
       } else {
         code += `
-            var t = Number(obj[${sanitized}])
+            var t = $asInteger(obj[${sanitized}])
             if (!isNaN(t)) {
               ${addComma}
               json += ${asString} + ':' + t
