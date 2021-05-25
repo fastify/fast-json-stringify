@@ -40,6 +40,10 @@ test('render a float as an integer', (t) => {
   const cases = [
     { input: Math.PI, output: '3' },
     { input: 5.0, output: '5' },
+    { input: null, output: '0' },
+    { input: 0, output: '0' },
+    { input: 0.0, output: '0' },
+    { input: 42, output: '42' },
     { input: 1.99999, output: '1' },
     { input: -45.05, output: '-45' },
     { input: 0.95, output: '1', rounding: 'ceil' },
@@ -138,7 +142,7 @@ if (semver.gt(process.versions.node, '10.3.0')) {
   t.end()
 }
 
-test('should round interger object parameter ', t => {
+test('should round integer object parameter', t => {
   t.plan(2)
 
   const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
@@ -147,5 +151,17 @@ test('should round interger object parameter ', t => {
   const output = stringify({ magic: 4.2 })
 
   t.equal(output, '{"magic":5}')
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('should not stringify a property if it does not exist', t => {
+  t.plan(2)
+
+  const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify({})
+
+  t.equal(output, '{}')
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
