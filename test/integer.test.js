@@ -165,3 +165,39 @@ test('should not stringify a property if it does not exist', t => {
   t.equal(output, '{}')
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
+
+test('should not stringify a property if it does not exist (rounding: ceil)', t => {
+  t.plan(2)
+
+  const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
+  const validate = validator(schema)
+  const stringify = build(schema, { rounding: 'ceil' })
+  const output = stringify({})
+
+  t.equal(output, '{}')
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('should not stringify a property if it does not exist (rounding: floor)', t => {
+  t.plan(2)
+
+  const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
+  const validate = validator(schema)
+  const stringify = build(schema, { rounding: 'floor' })
+  const output = stringify({})
+
+  t.equal(output, '{}')
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('should not stringify a property if it does not exist (rounding: round)', t => {
+  t.plan(2)
+
+  const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
+  const validate = validator(schema)
+  const stringify = build(schema, { rounding: 'round' })
+  const output = stringify({})
+
+  t.equal(output, '{}')
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
