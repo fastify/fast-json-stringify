@@ -6,6 +6,7 @@ const semver = require('semver')
 const validator = require('is-my-json-valid')
 const proxyquire = require('proxyquire')
 const build = proxyquire('..', { long: null })
+const ROUNDING_TYPES = ['ceil', 'floor', 'round']
 
 test('render an integer as JSON', (t) => {
   t.plan(2)
@@ -157,7 +158,7 @@ test('should round integer object parameter', t => {
 test('should not stringify a property if it does not exist', t => {
   t.plan(2)
 
-  const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
+  const schema = { title: 'Example Schema', type: 'object', properties: { age: { type: 'integer' } } }
   const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({})
@@ -166,38 +167,16 @@ test('should not stringify a property if it does not exist', t => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('should not stringify a property if it does not exist (rounding: ceil)', t => {
-  t.plan(2)
+ROUNDING_TYPES.forEach((rounding) => {
+  test(`should not stringify a property if it does not exist (rounding: ${rounding})`, t => {
+    t.plan(2)
 
-  const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
-  const validate = validator(schema)
-  const stringify = build(schema, { rounding: 'ceil' })
-  const output = stringify({})
+    const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
+    const validate = validator(schema)
+    const stringify = build(schema, { rounding })
+    const output = stringify({})
 
-  t.equal(output, '{}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
-})
-
-test('should not stringify a property if it does not exist (rounding: floor)', t => {
-  t.plan(2)
-
-  const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
-  const validate = validator(schema)
-  const stringify = build(schema, { rounding: 'floor' })
-  const output = stringify({})
-
-  t.equal(output, '{}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
-})
-
-test('should not stringify a property if it does not exist (rounding: round)', t => {
-  t.plan(2)
-
-  const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
-  const validate = validator(schema)
-  const stringify = build(schema, { rounding: 'round' })
-  const output = stringify({})
-
-  t.equal(output, '{}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+    t.equal(output, '{}')
+    t.ok(validate(JSON.parse(output)), 'valid schema')
+  })
 })

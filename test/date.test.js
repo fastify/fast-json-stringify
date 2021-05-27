@@ -93,7 +93,7 @@ test('render a date in a string when format is time as kk:mm:ss', (t) => {
   validate(JSON.parse(output))
   t.equal(validate.errors, null)
 
-  t.equal(output, `"${moment(toStringify).format('kk:mm:ss')}"`)
+  t.equal(output, `"${moment(toStringify).format('HH:mm:ss')}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
