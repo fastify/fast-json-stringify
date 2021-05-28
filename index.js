@@ -254,9 +254,8 @@ function $asInteger (i) {
   } else if (Number.isInteger(i)) {
     return $asNumber(i)
   } else {
-    // if the output is NaN the type is coerced to int 0
     /* eslint no-undef: "off" */
-    return $asNumber(parseInteger(i) || 0)
+    return $asNumber(parseInteger(i))
   }
 }
 

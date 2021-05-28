@@ -76,7 +76,7 @@ test('verify padding for rendered date in a string when format is date', (t) => 
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('render a date in a string when format is time as HH:mm:ss', (t) => {
+test('render a date in a string when format is time as kk:mm:ss', (t) => {
   t.plan(3)
 
   const schema = {
