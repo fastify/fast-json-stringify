@@ -342,7 +342,7 @@ const stringify = fastJson({
           savedId: { type: 'string' }
         },
         // without "required" validation any object will match
-        required: ['saveId']
+        required: ['savedId']
       },
       {
         type: 'object',
