@@ -72,21 +72,7 @@ function build (schema, options) {
   `
 
   code += `
-    ${$pad2Zeros.toString()}
-    ${$asAny.toString()}
-    ${$asString.toString()}
-    ${$asStringNullable.toString()}
-    ${$asStringSmall.toString()}
-    ${$asDatetime.toString()}
-    ${$asDate.toString()}
-    ${$asTime.toString()}
-    ${$asNumber.toString()}
-    ${$asNumberNullable.toString()}
-    ${$asInteger.toString()}
-    ${$asIntegerNullable.toString()}
-    ${$asNull.toString()}
-    ${$asBoolean.toString()}
-    ${$asBooleanNullable.toString()}
+    ${asFunctions}
 
     var isLong = ${isLong ? isLong.toString() : false}
 
@@ -116,19 +102,19 @@ function build (schema, options) {
       code = buildObject(location, code, main)
       break
     case 'string':
-      main = schema.nullable ? $asStringNullable.name : getStringSerializer(schema.format)
+      main = schema.nullable ? '$asStringNullable' : getStringSerializer(schema.format)
       break
     case 'integer':
-      main = schema.nullable ? $asIntegerNullable.name : $asInteger.name
+      main = schema.nullable ? '$asIntegerNullable' : '$asInteger'
       break
     case 'number':
-      main = schema.nullable ? $asNumberNullable.name : $asNumber.name
+      main = schema.nullable ? '$asNumberNullable' : '$asNumber'
       break
     case 'boolean':
-      main = schema.nullable ? $asBooleanNullable.name : $asBoolean.name
+      main = schema.nullable ? '$asBooleanNullable' : '$asBoolean'
       break
     case 'null':
-      main = $asNull.name
+      main = '$asNull'
       break
     case 'array':
       main = '$main'
@@ -233,6 +219,7 @@ function getTestSerializer (format) {
   return stringSerializerMap[format]
 }
 
+const asFunctions = `
 function $pad2Zeros (num) {
   const s = '00' + num
   return s[s.length - 2] + s[s.length - 1]
@@ -372,7 +359,7 @@ function $asStringSmall (str) {
       surrogateFound = true
     }
     if (point === 34 || point === 92) {
-      result += str.slice(last, i) + '\\'
+      result += str.slice(last, i) + '\\\\'
       last = i
       found = true
     }
@@ -385,6 +372,7 @@ function $asStringSmall (str) {
   }
   return ((point < 32) || (surrogateFound === true)) ? JSON.stringify(str) : '"' + result + '"'
 }
+`
 
 function addPatternProperties (location) {
   const schema = location.schema
@@ -928,7 +916,7 @@ function buildObject (location, code, name) {
   if (schema.nullable) {
     code += `
       if(input === null) {
-        return '${$asNull()}';
+        return 'null';
       }
   `
   }
@@ -967,7 +955,7 @@ function buildArray (location, code, name, key = null) {
   if (schema.nullable) {
     code += `
       if(obj === null) {
-        return '${$asNull()}';
+        return 'null';
       }
     `
   }
