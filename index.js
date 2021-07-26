@@ -1023,9 +1023,11 @@ function buildArray (location, code, name, key = null) {
 
   code += `
     var l = obj.length
-    var w = l - 1
+
     for (var i = 0; i < l; i++) {
-      if (i > 0) {
+      var jsonLastChar = json.slice(-1)
+
+      if (i > 0 && jsonLastChar != '[' && jsonLastChar != ',') {
         json += ','
       }
       ${result.code}
@@ -1214,9 +1216,12 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           `
           laterCode = nestedResult.laterCode
         })
-        code += `
-          else json+= null
-        `
+
+        if (!isArray) {
+          code += `
+            else json+= null
+          `
+        }
       } else if (isEmpty(schema)) {
         code += `
           json += JSON.stringify(obj${accessor})
