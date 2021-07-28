@@ -401,3 +401,105 @@ test('oneOf object with field of type string with format or null', (t) => {
     prop: toStringify
   }), `{"prop":"${toStringify.toISOString()}"}`)
 })
+
+test('one array item match oneOf types', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['data'],
+    properties: {
+      data: {
+        type: 'array',
+        minItems: 1,
+        items: {
+          oneOf: [
+            {
+              type: 'string'
+            },
+            {
+              type: 'number'
+            }
+          ]
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  const responseWithMappedType = stringify({
+    data: [false, 'foo']
+  })
+
+  t.equal('{"data":["foo"]}', responseWithMappedType)
+})
+
+test('some array items match oneOf types', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['data'],
+    properties: {
+      data: {
+        type: 'array',
+        minItems: 1,
+        items: {
+          oneOf: [
+            {
+              type: 'string'
+            },
+            {
+              type: 'number'
+            }
+          ]
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  const responseWithMappedTypes = stringify({
+    data: [false, 'foo', true, 5]
+  })
+
+  t.equal('{"data":["foo",5]}', responseWithMappedTypes)
+})
+
+test('all array items does not match oneOf types', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['data'],
+    properties: {
+      data: {
+        type: 'array',
+        minItems: 1,
+        items: {
+          oneOf: [
+            {
+              type: 'string'
+            },
+            {
+              type: 'number'
+            }
+          ]
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  const emptyResponse = stringify({
+    data: [null, false, true, undefined, [], {}]
+  })
+
+  t.equal('{"data":[]}', emptyResponse)
+})
