@@ -1025,9 +1025,9 @@ function buildArray (location, code, name, key = null) {
     var l = obj.length
 
     for (var i = 0; i < l; i++) {
-      var jsonLastChar = json.slice(-1)
+      var jsonLastChar = json[json.length - 1]
 
-      if (i > 0 && jsonLastChar != '[' && jsonLastChar != ',') {
+      if (i > 0 && jsonLastChar !== '[' && jsonLastChar !== ',') {
         json += ','
       }
       ${result.code}

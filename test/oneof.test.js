@@ -402,7 +402,7 @@ test('oneOf object with field of type string with format or null', (t) => {
   }), `{"prop":"${toStringify.toISOString()}"}`)
 })
 
-test('one array item do not match oneOf types', (t) => {
+test('one array item match oneOf types', (t) => {
   t.plan(1)
 
   const schema = {
@@ -436,7 +436,7 @@ test('one array item do not match oneOf types', (t) => {
   t.equal('{"data":["foo"]}', responseWithMappedType)
 })
 
-test('some array items does not match oneOf types', (t) => {
+test('some array items match oneOf types', (t) => {
   t.plan(1)
 
   const schema = {
