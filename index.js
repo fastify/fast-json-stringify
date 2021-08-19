@@ -588,7 +588,7 @@ function refFinder (ref, location) {
   // Split file from walk
   ref = ref.split('#')
 
-  // If external file
+  // If external or subschema
   if (ref[0]) {
     schema = externalSchema[ref[0]]
     root = externalSchema[ref[0]]
@@ -614,8 +614,8 @@ function refFinder (ref, location) {
     const walk = ref[1].split('/')
     if (walk.length === 1) {
       const targetId = `#${ref[1]}`
-      let dereferenced = idFinder(schema, targetId)
-      if (dereferenced === undefined && !ref[0]) {
+      let dereferenced = idFinder(root, targetId)
+      if (dereferenced === undefined && !ref[0] && externalSchema) {
         // eslint-disable-next-line
         for (var key of Object.keys(externalSchema)) {
           dereferenced = idFinder(externalSchema[key], targetId)
@@ -624,6 +624,10 @@ function refFinder (ref, location) {
             break
           }
         }
+      }
+
+      if (dereferenced === undefined) {
+        throw new Error(`Cannot find reference ${targetId}`)
       }
 
       return {

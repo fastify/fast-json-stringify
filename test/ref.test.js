@@ -398,6 +398,63 @@ test('ref internal - plain name fragment', (t) => {
   t.equal(output, '{"obj":{"str":"test"}}')
 })
 
+test('ref internal - plain name fragment in nested objects', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'object with $ref',
+    definitions: {
+      def: {
+        $id: '#def',
+        type: 'object',
+        properties: {
+          coming: {
+            type: 'object',
+            properties: {
+              where: { $ref: '#str' }
+            }
+          }
+        }
+      },
+      str: {
+        $id: '#str',
+        type: 'string'
+      }
+    },
+    type: 'object',
+    properties: {
+      winter: {
+        type: 'object',
+        properties: {
+          is: { $ref: '#def' },
+          first: { $ref: '#str' },
+          second: { $ref: '#str' }
+        }
+      }
+    }
+  }
+
+  const object = {
+    winter: {
+      is: {
+        coming: {
+          where: 'to town'
+        }
+      },
+      first: 'foo',
+      second: 'bar'
+    }
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  JSON.parse(output)
+  t.pass()
+
+  t.equal(output, '{"winter":{"is":{"coming":{"where":"to town"}},"first":"foo","second":"bar"}}')
+})
+
 test('ref external - plain name fragment', (t) => {
   t.plan(2)
 
