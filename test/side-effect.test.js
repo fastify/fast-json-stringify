@@ -155,3 +155,54 @@ test('must not mutate items $ref', t => {
   t.equal(value, '[{"name":"foo"}]')
   t.same(schema, clonedSchema)
 })
+
+test('must not mutate input schema', t => {
+  t.plan(2)
+
+  const ext1 = {
+    $id: 'http://foo/item',
+    type: 'object',
+    properties: { foo: { type: 'string' } }
+  }
+  const ext2 = {
+    $id: 'itemList',
+    type: 'array',
+    items: { $ref: 'http://foo/item#' }
+  }
+  const ext3 = {
+    $id: 'encapsulation',
+    type: 'object',
+    properties: {
+      id: { type: 'number' },
+      item: { $ref: 'http://foo/item#' },
+      secondItem: { $ref: 'http://foo/item#' }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      a: { $ref: 'itemList#' },
+      b: { $ref: 'http://foo/item#' },
+      c: { $ref: 'http://foo/item#' },
+      d: { $ref: 'http://foo/item#' }
+    }
+  }
+  const clonedSchema = clone(schema)
+  const stringify = build(schema, {
+    schema: {
+      [ext1.$id]: ext1,
+      [ext2.$id]: ext2,
+      [ext3.$id]: ext3
+    }
+  })
+
+  const value = stringify({
+    a: [{ foo: 'a' }],
+    b: { foo: 'b' },
+    c: { foo: 'c' },
+    d: { foo: 'd' }
+  })
+  t.equal(value, '{"a":[{"foo":"a"}],"b":{"foo":"b"},"c":{"foo":"c"},"d":{"foo":"d"}}')
+  t.same(schema, clonedSchema)
+})
