@@ -3,6 +3,7 @@
 /* eslint no-prototype-builtins: 0 */
 
 const Ajv = require('ajv')
+const ajvFormats = require('ajv-formats')
 const merge = require('deepmerge')
 const clone = require('rfdc')({ proto: true })
 const fjsCloned = Symbol('fast-json-stringify.cloned')
@@ -33,7 +34,7 @@ function isValidSchema (schema, name) {
       name = ''
     }
     const first = validate.errors[0]
-    const err = new Error(`${name}schema is invalid: data${first.dataPath} ${first.message}`)
+    const err = new Error(`${name}schema is invalid: data${first.instancePath} ${first.message}`)
     err.errors = isValidSchema.errors
     throw err
   }
@@ -133,7 +134,9 @@ function build (schema, options) {
      return ${main}
   `
 
-  const dependencies = [new Ajv(options.ajv)]
+  const ajvInstance = new Ajv(options.ajv)
+  ajvFormats(ajvInstance)
+  const dependencies = [ajvInstance]
   const dependenciesName = ['ajv']
   dependenciesName.push(code)
 
@@ -976,6 +979,9 @@ function buildArray (location, code, name, key = null) {
       schema[fjsCloned] = true
     }
     location = refFinder(schema.items.$ref, location)
+    if (location.schema && location.schema.$id) {
+      delete location.schema.$id
+    }
     schema.items = location.schema
   }
 
@@ -1093,6 +1099,9 @@ function dereferenceOfRefs (location, type) {
     let sLocation = mergeLocation(location, { schema: s })
     while (s.$ref) {
       sLocation = refFinder(s.$ref, sLocation)
+      if (sLocation.schema && sLocation.schema.$id) {
+        delete sLocation.schema.$id
+      }
       schema[type][index] = sLocation.schema
       s = schema[type][index]
     }
