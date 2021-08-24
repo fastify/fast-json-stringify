@@ -7,7 +7,9 @@
 [![NPM downloads](https://img.shields.io/npm/dm/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify)
 
 
-__fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads. Its performance advantage shrinks as your payload grows. It pairs well with [__flatstr__](https://www.npmjs.com/package/flatstr), which triggers a V8 optimization that improves performance when eventually converting the string to a `Buffer`.
+__fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads.  
+Its performance advantage shrinks as your payload grows.  
+It pairs well with [__flatstr__](https://www.npmjs.com/package/flatstr), which triggers a V8 optimization that improves performance when eventually converting the string to a `Buffer`.
 
 ##### Benchmarks
 
@@ -99,7 +101,7 @@ const stringify = fastJson(mySchema, {
 ```
 
 - `schema`: external schemas references by $ref property. [More details](#ref)
-- `ajv`: ajv instance's settings for those properties that require `ajv`. [More details](#anyof)
+- `ajv`: [ajv v8 instance's settings](https://ajv.js.org/options.html) for those properties that require `ajv`. [More details](#anyof)
 - `rounding`: setup how the `integer` types will be rounded when not integers. [More details](#integer)
 
 
