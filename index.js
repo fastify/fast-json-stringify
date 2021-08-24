@@ -1335,7 +1335,9 @@ module.exports.restore = function (debugModeStr, options = {}) {
   const args = []
   if (debugModeStr.startsWith('ajv')) {
     dependencies.unshift('ajv')
-    args.push(new Ajv(options.ajv))
+    const ajvInstance = new Ajv(options.ajv)
+    ajvFormats(ajvInstance)
+    args.push(ajvInstance)
   }
 
   // eslint-disable-next-line
