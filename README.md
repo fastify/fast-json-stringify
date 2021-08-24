@@ -11,6 +11,11 @@ __fast-json-stringify__ is significantly faster than `JSON.stringify()` for smal
 Its performance advantage shrinks as your payload grows.  
 It pairs well with [__flatstr__](https://www.npmjs.com/package/flatstr), which triggers a V8 optimization that improves performance when eventually converting the string to a `Buffer`.
 
+
+### How it works
+
+fast-json-stringify requires a [JSON Schema Draft 7](https://json-schema.org/specification-links.html#draft-7) input to generate a fast `stringify` function.
+
 ##### Benchmarks
 
 - Machine: `EX41S-SSD, Intel Core i7, 4Ghz, 64GB RAM, 4C/8T, SSD`.
@@ -110,7 +115,7 @@ const stringify = fastJson(mySchema, {
 <a name="fastJsonStringify"></a>
 ### fastJsonStringify(schema)
 
-Build a `stringify()` function based on [jsonschema](https://json-schema.org/).
+Build a `stringify()` function based on [jsonschema draft 7 spec](https://json-schema.org/specification-links.html#draft-7).
 
 Supported types:
 
