@@ -13,7 +13,7 @@ function buildTest (schema, toStringify) {
     const stringify = build(schema)
     const output = stringify(toStringify)
 
-    t.deepEqual(JSON.parse(output), toStringify)
+    t.same(JSON.parse(output), toStringify)
     t.equal(output, JSON.stringify(toStringify))
     t.ok(validate(JSON.parse(output)), 'valid schema')
   })
@@ -195,7 +195,7 @@ test('moment array', (t) => {
   const value = stringify({
     times: [moment('2018-04-21T07:52:31.017Z')]
   })
-  t.is(value, '{"times":["2018-04-21T07:52:31.017Z"]}')
+  t.equal(value, '{"times":["2018-04-21T07:52:31.017Z"]}')
 })
 
 buildTest({
@@ -208,6 +208,69 @@ buildTest({
   }
 }, {
   foo: [1, 'string', {}, null]
+})
+
+test('array items is a list of schema and additionalItems is true, just the described item is validated', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        type: 'array',
+        items: [
+          {
+            type: 'string'
+          }
+        ],
+        additionalItems: true
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const result = stringify({
+    foo: [
+      'foo',
+      'bar',
+      1
+    ]
+  })
+
+  t.equal(result, '{"foo":["foo","bar",1]}')
+})
+
+test('array items is a list of schema and additionalItems is false', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        type: 'array',
+        items: [
+          {
+            type: 'string'
+          }
+        ],
+        additionalItems: false
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  try {
+    stringify({
+      foo: [
+        'foo',
+        'bar'
+      ]
+    })
+    t.fail()
+  } catch (error) {
+    t.ok(/does not match schema definition./.test(error.message))
+  }
 })
 
 // https://github.com/fastify/fast-json-stringify/issues/279
@@ -254,5 +317,5 @@ test('object array with anyOf and symbol', (t) => {
     { name: 'name-0', option: 'Foo' },
     { name: 'name-1', option: 'Bar' }
   ])
-  t.is(value, '[{"name":"name-0","option":"Foo"},{"name":"name-1","option":"Bar"}]')
+  t.equal(value, '[{"name":"name-0","option":"Foo"},{"name":"name-1","option":"Bar"}]')
 })

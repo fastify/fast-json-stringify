@@ -16,19 +16,19 @@ test('object with nested random property', (t) => {
   }
   const stringify = build(schema)
 
-  t.is(stringify({
+  t.equal(stringify({
     id: 1, name: 'string'
   }), '{"id":1,"name":"string"}')
 
-  t.is(stringify({
+  t.equal(stringify({
     id: 1, name: { first: 'name', last: 'last' }
   }), '{"id":1,"name":{"first":"name","last":"last"}}')
 
-  t.is(stringify({
+  t.equal(stringify({
     id: 1, name: null
   }), '{"id":1,"name":null}')
 
-  t.is(stringify({
+  t.equal(stringify({
     id: 1, name: ['first', 'last']
   }), '{"id":1,"name":["first","last"]}')
 })
@@ -45,7 +45,7 @@ test('object with empty schema with $id: undefined set', (t) => {
     }
   }
   const stringify = build(schema)
-  t.is(stringify({
+  t.equal(stringify({
     name: 'string'
   }), '{"name":"string"}')
 })
@@ -61,7 +61,7 @@ test('array with random items', (t) => {
   const stringify = build(schema)
 
   const value = stringify([1, 'string', null])
-  t.is(value, '[1,"string",null]')
+  t.equal(value, '[1,"string",null]')
 })
 
 test('empty schema', (t) => {
@@ -71,13 +71,13 @@ test('empty schema', (t) => {
 
   const stringify = build(schema)
 
-  t.is(stringify(null), 'null')
-  t.is(stringify(1), '1')
-  t.is(stringify(true), 'true')
-  t.is(stringify('hello'), '"hello"')
-  t.is(stringify({}), '{}')
-  t.is(stringify({ x: 10 }), '{"x":10}')
-  t.is(stringify([true, 1, 'hello']), '[true,1,"hello"]')
+  t.equal(stringify(null), 'null')
+  t.equal(stringify(1), '1')
+  t.equal(stringify(true), 'true')
+  t.equal(stringify('hello'), '"hello"')
+  t.equal(stringify({}), '{}')
+  t.equal(stringify({ x: 10 }), '{"x":10}')
+  t.equal(stringify([true, 1, 'hello']), '[true,1,"hello"]')
 })
 
 test('empty schema on nested object', (t) => {
@@ -92,13 +92,13 @@ test('empty schema on nested object', (t) => {
 
   const stringify = build(schema)
 
-  t.is(stringify({ x: null }), '{"x":null}')
-  t.is(stringify({ x: 1 }), '{"x":1}')
-  t.is(stringify({ x: true }), '{"x":true}')
-  t.is(stringify({ x: 'hello' }), '{"x":"hello"}')
-  t.is(stringify({ x: {} }), '{"x":{}}')
-  t.is(stringify({ x: { x: 10 } }), '{"x":{"x":10}}')
-  t.is(stringify({ x: [true, 1, 'hello'] }), '{"x":[true,1,"hello"]}')
+  t.equal(stringify({ x: null }), '{"x":null}')
+  t.equal(stringify({ x: 1 }), '{"x":1}')
+  t.equal(stringify({ x: true }), '{"x":true}')
+  t.equal(stringify({ x: 'hello' }), '{"x":"hello"}')
+  t.equal(stringify({ x: {} }), '{"x":{}}')
+  t.equal(stringify({ x: { x: 10 } }), '{"x":{"x":10}}')
+  t.equal(stringify({ x: [true, 1, 'hello'] }), '{"x":[true,1,"hello"]}')
 })
 
 test('empty schema on array', (t) => {
@@ -111,7 +111,7 @@ test('empty schema on array', (t) => {
 
   const stringify = build(schema)
 
-  t.is(stringify([1, true, 'hello', [], { x: 1 }]), '[1,true,"hello",[],{"x":1}]')
+  t.equal(stringify([1, true, 'hello', [], { x: 1 }]), '[1,true,"hello",[],{"x":1}]')
 })
 
 test('empty schema on anyOf', (t) => {
@@ -147,8 +147,8 @@ test('empty schema on anyOf', (t) => {
 
   const stringify = build(schema)
 
-  t.is(stringify({ kind: 'Bar', value: 1 }), '{"kind":"Bar","value":1}')
-  t.is(stringify({ kind: 'Foo', value: 1 }), '{"kind":"Foo","value":1}')
-  t.is(stringify({ kind: 'Foo', value: true }), '{"kind":"Foo","value":true}')
-  t.is(stringify({ kind: 'Foo', value: 'hello' }), '{"kind":"Foo","value":"hello"}')
+  t.equal(stringify({ kind: 'Bar', value: 1 }), '{"kind":"Bar","value":1}')
+  t.equal(stringify({ kind: 'Foo', value: 1 }), '{"kind":"Foo","value":1}')
+  t.equal(stringify({ kind: 'Foo', value: true }), '{"kind":"Foo","value":true}')
+  t.equal(stringify({ kind: 'Foo', value: 'hello' }), '{"kind":"Foo","value":"hello"}')
 })

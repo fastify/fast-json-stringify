@@ -21,11 +21,11 @@ test('object with multiple types field', (t) => {
   }
   const stringify = build(schema)
 
-  t.is(stringify({
+  t.equal(stringify({
     str: 'string'
   }), '{"str":"string"}')
 
-  t.is(stringify({
+  t.equal(stringify({
     str: true
   }), '{"str":true}')
 })
@@ -53,11 +53,11 @@ test('object with field of type object or null', (t) => {
   }
   const stringify = build(schema)
 
-  t.is(stringify({
+  t.equal(stringify({
     prop: null
   }), '{"prop":null}')
 
-  t.is(stringify({
+  t.equal(stringify({
     prop: {
       str: 'string'
     }
@@ -87,13 +87,13 @@ test('object with field of type object or array', (t) => {
   }
   const stringify = build(schema)
 
-  t.is(stringify({
+  t.equal(stringify({
     prop: {
       str: 'string'
     }
   }), '{"prop":{"str":"string"}}')
 
-  t.is(stringify({
+  t.equal(stringify({
     prop: ['string']
   }), '{"prop":["string"]}')
 })
@@ -117,7 +117,7 @@ test('object with field of type string and coercion disable ', (t) => {
   const value = stringify({
     str: 1
   })
-  t.is(value, '{"str":null}')
+  t.equal(value, '{"str":null}')
 })
 
 test('object with field of type string and coercion enable ', (t) => {
@@ -145,7 +145,7 @@ test('object with field of type string and coercion enable ', (t) => {
   const value = stringify({
     str: 1
   })
-  t.is(value, '{"str":"1"}')
+  t.equal(value, '{"str":"1"}')
 })
 
 test('object with field with type union of multiple objects', (t) => {
@@ -179,9 +179,9 @@ test('object with field with type union of multiple objects', (t) => {
 
   const stringify = build(schema)
 
-  t.is(stringify({ anyOfSchema: { baz: 5 } }), '{"anyOfSchema":{"baz":5}}')
+  t.equal(stringify({ anyOfSchema: { baz: 5 } }), '{"anyOfSchema":{"baz":5}}')
 
-  t.is(stringify({ anyOfSchema: { bar: 'foo' } }), '{"anyOfSchema":{"bar":"foo"}}')
+  t.equal(stringify({ anyOfSchema: { bar: 'foo' } }), '{"anyOfSchema":{"bar":"foo"}}')
 })
 
 test('null value in schema', (t) => {
@@ -221,10 +221,10 @@ test('symbol value in schema', (t) => {
   }
 
   const stringify = build(schema)
-  t.is(stringify({ value: 'foo' }), '{"value":"foo"}')
-  t.is(stringify({ value: 'bar' }), '{"value":"bar"}')
-  t.is(stringify({ value: 'baz' }), '{"value":"baz"}')
-  t.is(stringify({ value: 'qux' }), '{"value":null}')
+  t.equal(stringify({ value: 'foo' }), '{"value":"foo"}')
+  t.equal(stringify({ value: 'bar' }), '{"value":"bar"}')
+  t.equal(stringify({ value: 'baz' }), '{"value":"baz"}')
+  t.equal(stringify({ value: 'qux' }), '{"value":null}')
 })
 
 test('anyOf and $ref together', (t) => {
@@ -253,9 +253,9 @@ test('anyOf and $ref together', (t) => {
 
   const stringify = build(schema)
 
-  t.is(stringify({ cs: 'franco' }), '{"cs":"franco"}')
+  t.equal(stringify({ cs: 'franco' }), '{"cs":"franco"}')
 
-  t.is(stringify({ cs: true }), '{"cs":true}')
+  t.equal(stringify({ cs: true }), '{"cs":true}')
 })
 
 test('anyOf and $ref: 2 levels are fine', (t) => {
@@ -291,7 +291,7 @@ test('anyOf and $ref: 2 levels are fine', (t) => {
 
   const stringify = build(schema)
   const value = stringify({ cs: 3 })
-  t.is(value, '{"cs":3}')
+  t.equal(value, '{"cs":3}')
 })
 
 test('anyOf and $ref: multiple levels should throw at build.', (t) => {
@@ -330,9 +330,9 @@ test('anyOf and $ref: multiple levels should throw at build.', (t) => {
 
   const stringify = build(schema)
 
-  t.is(stringify({ cs: 3 }), '{"cs":3}')
-  t.is(stringify({ cs: true }), '{"cs":true}')
-  t.is(stringify({ cs: 'pippo' }), '{"cs":"pippo"}')
+  t.equal(stringify({ cs: 3 }), '{"cs":3}')
+  t.equal(stringify({ cs: true }), '{"cs":true}')
+  t.equal(stringify({ cs: 'pippo' }), '{"cs":"pippo"}')
 })
 
 test('anyOf and $ref - multiple external $ref', (t) => {
@@ -423,7 +423,7 @@ test('anyOf looks for all of the array items', (t) => {
   const stringify = build(schema)
 
   const value = stringify([{ savedId: 'great' }, { error: 'oops' }])
-  t.is(value, '[{"savedId":"great"},{"error":"oops"}]')
+  t.equal(value, '[{"savedId":"great"},{"error":"oops"}]')
 })
 
 test('anyOf with enum with more than 100 entries', (t) => {
@@ -445,5 +445,75 @@ test('anyOf with enum with more than 100 entries', (t) => {
   const stringify = build(schema)
 
   const value = stringify(['EUR', 'USD', null])
-  t.is(value, '["EUR","USD",null]')
+  t.equal(value, '["EUR","USD",null]')
+})
+
+test('anyOf object with field date-time of type string with format or null', (t) => {
+  t.plan(1)
+  const toStringify = new Date()
+  const withOneOfSchema = {
+    type: 'object',
+    properties: {
+      prop: {
+        anyOf: [{
+          type: 'string',
+          format: 'date-time'
+        }, {
+          type: 'null'
+        }]
+      }
+    }
+  }
+
+  const withOneOfStringify = build(withOneOfSchema)
+
+  t.equal(withOneOfStringify({
+    prop: toStringify
+  }), `{"prop":"${toStringify.toISOString()}"}`)
+})
+
+test('anyOf object with field date of type string with format or null', (t) => {
+  t.plan(1)
+  const toStringify = '2011-01-01'
+  const withOneOfSchema = {
+    type: 'object',
+    properties: {
+      prop: {
+        anyOf: [{
+          type: 'string',
+          format: 'date'
+        }, {
+          type: 'null'
+        }]
+      }
+    }
+  }
+
+  const withOneOfStringify = build(withOneOfSchema)
+  t.equal(withOneOfStringify({
+    prop: toStringify
+  }), '{"prop":"2011-01-01"}')
+})
+
+test('anyOf object with invalid field date of type string with format or null', (t) => {
+  t.plan(1)
+  const toStringify = 'foo bar'
+  const withOneOfSchema = {
+    type: 'object',
+    properties: {
+      prop: {
+        anyOf: [{
+          type: 'string',
+          format: 'date'
+        }, {
+          type: 'null'
+        }]
+      }
+    }
+  }
+
+  const withOneOfStringify = build(withOneOfSchema)
+  t.equal(withOneOfStringify({
+    prop: toStringify
+  }), '{"prop":null}')
 })

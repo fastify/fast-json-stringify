@@ -1026,7 +1026,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.is(err.message, 'Cannot find reference "porjectId", did you mean "projectId"?')
+      t.equal(err.message, 'Cannot find reference "porjectId", did you mean "projectId"?')
     }
   })
 
@@ -1051,7 +1051,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.is(err.message, 'Cannot find reference "foobar"')
+      t.equal(err.message, 'Cannot find reference "foobar"')
     }
   })
 
@@ -1081,7 +1081,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.is(err.message, 'Cannot find reference "porjectId", did you mean "projectId"?')
+      t.equal(err.message, 'Cannot find reference "porjectId", did you mean "projectId"?')
     }
   })
 
@@ -1111,7 +1111,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.is(err.message, 'Cannot find reference "foobar"')
+      t.equal(err.message, 'Cannot find reference "foobar"')
     }
   })
 
@@ -1141,7 +1141,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.is(err.message, 'Cannot find reference "deifnitions", did you mean "definitions"?')
+      t.equal(err.message, 'Cannot find reference "deifnitions", did you mean "definitions"?')
     }
   })
 
@@ -1166,7 +1166,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.is(err.message, 'Cannot find reference "deifnitions", did you mean "definitions"?')
+      t.equal(err.message, 'Cannot find reference "deifnitions", did you mean "definitions"?')
     }
   })
 
@@ -1196,9 +1196,56 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.is(err.message, 'Cannot find reference "extrenal", did you mean "external"?')
+      t.equal(err.message, 'Cannot find reference "extrenal", did you mean "external"?')
     }
   })
 
   t.end()
+})
+
+test('Regression 2.5.2', t => {
+  t.plan(1)
+
+  const externalSchema = {
+    '/models/Bar': {
+      $id: '/models/Bar',
+      $schema: 'http://json-schema.org/schema#',
+      definitions: {
+        entity: {
+          type: 'object',
+          properties: { field: { type: 'string' } }
+        }
+      }
+    },
+    '/models/Foo': {
+      $id: '/models/Foo',
+      $schema: 'http://json-schema.org/schema#',
+      definitions: {
+        entity: {
+          type: 'object',
+          properties: {
+            field: { type: 'string' },
+            sub: {
+              oneOf: [
+                { $ref: '/models/Bar#/definitions/entity' },
+                { type: 'null' }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'array',
+    items: {
+      $ref: '/models/Foo#/definitions/entity'
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify([{ field: 'parent', sub: { field: 'joined' } }])
+
+  t.equal(output, '[{"field":"parent","sub":{"field":"joined"}}]')
 })

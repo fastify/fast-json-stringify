@@ -4,6 +4,7 @@ const t = require('tap')
 const test = t.test
 const validator = require('is-my-json-valid')
 const build = require('..')
+const ROUNDING_TYPES = ['ceil', 'floor', 'round']
 
 test('render an integer as JSON', (t) => {
   t.plan(2)
@@ -30,7 +31,7 @@ test('render a float as an integer', (t) => {
     }, { rounding: 'foobar' })
   } catch (error) {
     t.ok(error)
-    t.equals(error.message, 'Unsupported integer rounding method foobar')
+    t.equal(error.message, 'Unsupported integer rounding method foobar')
   }
 })
 
@@ -38,6 +39,10 @@ test('render a float as an integer', (t) => {
   const cases = [
     { input: Math.PI, output: '3' },
     { input: 5.0, output: '5' },
+    { input: null, output: '0' },
+    { input: 0, output: '0' },
+    { input: 0.0, output: '0' },
+    { input: 42, output: '42' },
     { input: 1.99999, output: '1' },
     { input: -45.05, output: '-45' },
     { input: 0.95, output: '1', rounding: 'ceil' },
@@ -127,4 +132,42 @@ test('render an object with an additionalProperty of type integer as JSON', (t) 
 
   t.equal(output, '{"num":1615}')
   t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('should round integer object parameter', t => {
+  t.plan(2)
+
+  const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
+  const validate = validator(schema)
+  const stringify = build(schema, { rounding: 'ceil' })
+  const output = stringify({ magic: 4.2 })
+
+  t.equal(output, '{"magic":5}')
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('should not stringify a property if it does not exist', t => {
+  t.plan(2)
+
+  const schema = { title: 'Example Schema', type: 'object', properties: { age: { type: 'integer' } } }
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify({})
+
+  t.equal(output, '{}')
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+ROUNDING_TYPES.forEach((rounding) => {
+  test(`should not stringify a property if it does not exist (rounding: ${rounding})`, t => {
+    t.plan(2)
+
+    const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
+    const validate = validator(schema)
+    const stringify = build(schema, { rounding })
+    const output = stringify({})
+
+    t.equal(output, '{}')
+    t.ok(validate(JSON.parse(output)), 'valid schema')
+  })
 })

@@ -1,7 +1,9 @@
 # fast-json-stringify
 
-[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](http://standardjs.com/)
-![Ci Workflow](https://github.com/fastify/fast-json-stringify/workflows/CI%20workflow/badge.svg)
+![CI](https://github.com/fastify/fast-json-stringify/workflows/CI/badge.svg)
+[![NPM version](https://img.shields.io/npm/v/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify)
+[![Known Vulnerabilities](https://snyk.io/test/github/fastify/fast-json-stringify/badge.svg)](https://snyk.io/test/github/fastify/fast-json-stringify)
+[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](https://standardjs.com/)
 [![NPM downloads](https://img.shields.io/npm/dm/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify)
 
 
@@ -106,7 +108,7 @@ const stringify = fastJson(mySchema, {
 <a name="fastJsonStringify"></a>
 ### fastJsonStringify(schema)
 
-Build a `stringify()` function based on [jsonschema](http://json-schema.org/).
+Build a `stringify()` function based on [jsonschema](https://json-schema.org/).
 
 Supported types:
 
@@ -136,6 +138,8 @@ And nested ones, too.
 | `date-time` | `2020-04-03T09:11:08.615Z` |
 | `date`      | `2020-04-03`               |
 | `time`      | `09:11:08`                 |
+
+**Note**: In the case of string formatted Date and not Date Object, there will be no manipulation on it. It should be properly formatted.
 
 Example with a MomentJS object:
 
@@ -338,7 +342,7 @@ const stringify = fastJson({
           savedId: { type: 'string' }
         },
         // without "required" validation any object will match
-        required: ['saveId']
+        required: ['savedId']
       },
       {
         type: 'object',
@@ -399,7 +403,7 @@ console.log(stringify({
 })) // {"kind":"foobar","foo":"FOO","bar":42}
 ```
 
-**NB:** don't declare the properties twice or you'll print them twice!
+**NB** Do not declare the properties twice or you will print them twice!
 
 <a name="ref"></a>
 #### Reuse - $ref
@@ -602,7 +606,7 @@ console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"F
 <a name="acknowledgements"></a>
 ## Acknowledgements
 
-This project was kindly sponsored by [nearForm](http://nearform.com).
+This project was kindly sponsored by [nearForm](https://nearform.com).
 
 <a name="license"></a>
 ## License

@@ -28,5 +28,5 @@ test('nested objects with same properties', (t) => {
       numberProperty: 42
     }
   })
-  t.is(value, '{"stringProperty":"string1","objectProperty":{"stringProperty":"string2","numberProperty":42}}')
+  t.equal(value, '{"stringProperty":"string1","objectProperty":{"stringProperty":"string2","numberProperty":42}}')
 })

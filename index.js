@@ -13,8 +13,9 @@ let stringSimilarity = null
 const addComma = `
   if (addComma) {
     json += ','
+  } else {
+    addComma = true
   }
-  addComma = true
 `
 
 function isValidSchema (schema, name) {
@@ -64,21 +65,7 @@ function build (schema, options) {
   `
 
   code += `
-    ${$pad2Zeros.toString()}
-    ${$asAny.toString()}
-    ${$asString.toString()}
-    ${$asStringNullable.toString()}
-    ${$asStringSmall.toString()}
-    ${$asDatetime.toString()}
-    ${$asDate.toString()}
-    ${$asTime.toString()}
-    ${$asNumber.toString()}
-    ${$asNumberNullable.toString()}
-    ${$asInteger.toString()}
-    ${$asIntegerNullable.toString()}
-    ${$asNull.toString()}
-    ${$asBoolean.toString()}
-    ${$asBooleanNullable.toString()}
+    ${asFunctions}
 
     
     /**
@@ -140,23 +127,24 @@ function build (schema, options) {
       code = buildObject(location, code, main)
       break
     case 'string':
-      main = schema.nullable ? $asStringNullable.name : getStringSerializer(schema.format)
+      main = schema.nullable ? '$asStringNullable' : getStringSerializer(schema.format)
       break
     case 'integer':
-      main = schema.nullable ? $asIntegerNullable.name : $asInteger.name
+      main = schema.nullable ? '$asIntegerNullable' : '$asInteger'
       break
     case 'number':
-      main = schema.nullable ? $asNumberNullable.name : $asNumber.name
+      main = schema.nullable ? '$asNumberNullable' : '$asNumber'
       break
     case 'boolean':
-      main = schema.nullable ? $asBooleanNullable.name : $asBoolean.name
+      main = schema.nullable ? '$asBooleanNullable' : '$asBoolean'
       break
     case 'null':
-      main = $asNull.name
+      main = '$asNull'
       break
     case 'array':
       main = '$main'
       code = buildArray(location, code, main)
+      schema = location.schema
       break
     case undefined:
       main = '$asAny'
@@ -170,13 +158,8 @@ function build (schema, options) {
      return ${main}
   `
 
-  const dependencies = []
-  const dependenciesName = []
-  if (dependsOnAjv(schema)) {
-    dependencies.push(new Ajv(options.ajv))
-    dependenciesName.push('ajv')
-  }
-
+  const dependencies = [new Ajv(options.ajv)]
+  const dependenciesName = ['ajv']
   dependenciesName.push(code)
 
   if (options.debugMode) {
@@ -196,8 +179,7 @@ const objectKeywords = [
   'properties',
   'patternProperties',
   'additionalProperties',
-  'dependencies',
-  'enum'
+  'dependencies'
 ]
 
 const arrayKeywords = [
@@ -247,11 +229,6 @@ function inferTypeByKeyword (schema) {
   return schema.type
 }
 
-function dependsOnAjv (schema) {
-  const str = JSON.stringify(schema)
-  return (/"if":{.*"then":{|"(anyOf|oneOf)":\[|"const":/.test(str))
-}
-
 const stringSerializerMap = {
   'date-time': '$asDatetime',
   date: '$asDate',
@@ -263,6 +240,11 @@ function getStringSerializer (format) {
   '$asString'
 }
 
+function getTestSerializer (format) {
+  return stringSerializerMap[format]
+}
+
+const asFunctions = `
 function $pad2Zeros (num) {
   const s = '00' + num
   return s[s.length - 2] + s[s.length - 1]
@@ -282,9 +264,8 @@ function $asInteger (i) {
   } else if (Number.isInteger(i)) {
     return $asNumber(i)
   } else {
-    // if the output is NaN the type is coerced to int 0
     /* eslint no-undef: "off" */
-    return $asNumber(parseInteger(i) || 0)
+    return $asNumber(parseInteger(i))
   }
 }
 
@@ -313,51 +294,60 @@ function $asBooleanNullable (bool) {
   return bool === null ? null : $asBoolean(bool)
 }
 
-function $asDatetime (date) {
+function $asDatetime (date, skipQuotes) {
+  const quotes = skipQuotes === true ? '' : '"'
   if (date instanceof Date) {
-    return '"' + date.toISOString() + '"'
+    return quotes + date.toISOString() + quotes
   } else if (date && typeof date.toISOString === 'function') {
-    return '"' + date.toISOString() + '"'
+    return quotes + date.toISOString() + quotes
   } else {
-    return $asString(date)
+    return $asString(date, skipQuotes)
   }
 }
 
-function $asDate (date) {
+function $asDate (date, skipQuotes) {
+  const quotes = skipQuotes === true ? '' : '"'
   if (date instanceof Date) {
     const year = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date)
     const month = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(date)
     const day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date)
-    return '"' + year + '-' + month + '-' + day + '"'
+    return quotes + year + '-' + month + '-' + day + quotes
   } else if (date && typeof date.format === 'function') {
-    return '"' + date.format('YYYY-MM-DD') + '"'
+    return quotes + date.format('YYYY-MM-DD') + quotes
   } else {
-    return $asString(date)
+    return $asString(date, skipQuotes)
   }
 }
 
-function $asTime (date) {
+function $asTime (date, skipQuotes) {
+  const quotes = skipQuotes === true ? '' : '"'
   if (date instanceof Date) {
     const hour = new Intl.DateTimeFormat('en', { hour: 'numeric', hour12: false }).format(date)
     const minute = new Intl.DateTimeFormat('en', { minute: 'numeric' }).format(date)
     const second = new Intl.DateTimeFormat('en', { second: 'numeric' }).format(date)
-    return '"' + $pad2Zeros(hour) + ':' + $pad2Zeros(minute) + ':' + $pad2Zeros(second) + '"'
+    return quotes + $pad2Zeros(hour) + ':' + $pad2Zeros(minute) + ':' + $pad2Zeros(second) + quotes
   } else if (date && typeof date.format === 'function') {
-    return '"' + date.format('HH:mm:ss') + '"'
+    return quotes + date.format('HH:mm:ss') + quotes
   } else {
-    return $asString(date)
+    return $asString(date, skipQuotes)
   }
 }
 
-function $asString (str) {
+function $asString (str, skipQuotes) {
+  const quotes = skipQuotes === true ? '' : '"'
   if (str instanceof Date) {
-    return '"' + str.toISOString() + '"'
+    return quotes + str.toISOString() + quotes
   } else if (str === null) {
-    return '""'
+    return quotes + quotes
   } else if (str instanceof RegExp) {
     str = str.source
   } else if (typeof str !== 'string') {
     str = str.toString()
+  }
+  // If we skipQuotes it means that we are using it as test
+  // no need to test the string length for the render
+  if (skipQuotes) {
+    return str
   }
 
   if (str.length < 42) {
@@ -392,7 +382,7 @@ function $asStringSmall (str) {
       surrogateFound = true
     }
     if (point === 34 || point === 92) {
-      result += str.slice(last, i) + '\\'
+      result += str.slice(last, i) + '\\\\'
       last = i
       found = true
     }
@@ -405,6 +395,7 @@ function $asStringSmall (str) {
   }
   return ((point < 32) || (surrogateFound === true)) ? JSON.stringify(str) : '"' + result + '"'
 }
+`
 
 function addPatternProperties (location) {
   const schema = location.schema
@@ -742,7 +733,7 @@ function buildCode (location, code, laterCode, name) {
     } else if (type === 'integer') {
       code += `
           var rendered = false
-          var t = Number(obj[${sanitized}])
+          var t = $asInteger(obj[${sanitized}])
           if (!isNaN(t)) {
             ${addComma}
             json += ${asString} + ':' + t
@@ -916,7 +907,7 @@ function buildObject (location, code, name) {
   if (schema.nullable) {
     code += `
       if(input === null) {
-        return '${$asNull()}';
+        return 'null';
       }
   `
   }
@@ -955,7 +946,7 @@ function buildArray (location, code, name, key = null) {
   if (schema.nullable) {
     code += `
       if(obj === null) {
-        return '${$asNull()}';
+        return 'null';
       }
     `
   }
@@ -971,7 +962,8 @@ function buildArray (location, code, name, key = null) {
 
   if (schema.items.$ref) {
     if (!schema[fjsCloned]) {
-      schema = clone(location.schema)
+      location.schema = clone(location.schema)
+      schema = location.schema
       schema[fjsCloned] = true
     }
     location = refFinder(schema.items.$ref, location)
@@ -979,9 +971,9 @@ function buildArray (location, code, name, key = null) {
   }
 
   let result = { code: '', laterCode: '' }
+  const accessor = '[i]'
   if (Array.isArray(schema.items)) {
     result = schema.items.reduce((res, item, i) => {
-      const accessor = '[i]'
       const tmpRes = nested(laterCode, name, accessor, mergeLocation(location, { schema: item }), i, true)
       const condition = `i === ${i} && ${buildArrayTypeCondition(item.type, accessor)}`
       return {
@@ -993,13 +985,23 @@ function buildArray (location, code, name, key = null) {
         ${tmpRes.laterCode}`
       }
     }, result)
+
+    if (schema.additionalItems) {
+      const tmpRes = nested(laterCode, name, accessor, mergeLocation(location, { schema: schema.items }), undefined, true)
+      result.code += `
+      else if (i >= ${schema.items.length}) {
+        ${tmpRes.code}
+      }
+      `
+    }
+
     result.code += `
     else {
       throw new Error(\`Item at $\{i} does not match schema definition.\`)
     }
     `
   } else {
-    result = nested(laterCode, name, '[i]', mergeLocation(location, { schema: schema.items }), undefined, true)
+    result = nested(laterCode, name, accessor, mergeLocation(location, { schema: schema.items }), undefined, true)
   }
 
   if (key) {
@@ -1012,9 +1014,11 @@ function buildArray (location, code, name, key = null) {
 
   code += `
     var l = obj.length
-    var w = l - 1
+
     for (var i = 0; i < l; i++) {
-      if (i > 0) {
+      var jsonLastChar = json[json.length - 1]
+
+      if (i > 0 && jsonLastChar !== '[' && jsonLastChar !== ',') {
         json += ','
       }
       ${result.code}
@@ -1119,10 +1123,6 @@ function nested (laterCode, name, key, location, subKey, isArray) {
     const inferredType = inferTypeByKeyword(schema)
     if (inferredType) {
       schema.type = inferredType
-
-      if (inferredType === 'object' && schema.enum && !Object.hasOwnProperty.call(schema, 'additionalProperties')) {
-        schema.additionalProperties = true
-      }
     }
   }
 
@@ -1171,6 +1171,11 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         const anyOfLocations = dereferenceOfRefs(location, 'anyOf')
         anyOfLocations.forEach((location, index) => {
           const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
+          // We need a test serializer as the String serializer will not work with
+          // date/time ajv validations
+          // see: https://github.com/fastify/fast-json-stringify/issues/325
+          const testSerializer = getTestSerializer(location.schema.format)
+          const testValue = testSerializer !== undefined ? `${testSerializer}(obj${accessor}, true)` : `obj${accessor}`
 
           // Since we are only passing the relevant schema to ajv.validate, it needs to be full dereferenced
           // otherwise any $ref pointing to an external schema would result in an error.
@@ -1180,7 +1185,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           // 2. `nested`, through `buildCode`, replaces any reference in object properties with the actual schema
           // (see https://github.com/fastify/fast-json-stringify/blob/6da3b3e8ac24b1ca5578223adedb4083b7adf8db/index.js#L631)
           code += `
-            ${index === 0 ? 'if' : 'else if'}($validateWithAjv(${JSON.stringify(location.schema)}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}($validateWithAjv(${JSON.stringify(location.schema)}, ${testValue}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
@@ -1193,17 +1198,21 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         const oneOfLocations = dereferenceOfRefs(location, 'oneOf')
         oneOfLocations.forEach((location, index) => {
           const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
-
-          // see comment on anyOf about derefencing the schema before calling ajv.validate
+          const testSerializer = getTestSerializer(location.schema.format)
+          const testValue = testSerializer !== undefined ? `${testSerializer}(obj${accessor}, true)` : `obj${accessor}`
+          // see comment on anyOf about dereferencing the schema before calling ajv.validate
           code += `
-            ${index === 0 ? 'if' : 'else if'}($validateWithAjv(${JSON.stringify(location.schema)}, obj${accessor}))
+            ${index === 0 ? 'if' : 'else if'}($validateWithAjv(${JSON.stringify(location.schema)}, ${testValue}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
         })
-        code += `
-          else json+= null
-        `
+
+        if (!isArray) {
+          code += `
+            else json+= null
+          `
+        }
       } else if (isEmpty(schema)) {
         code += `
           json += JSON.stringify(obj${accessor})
@@ -1228,39 +1237,52 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         const nullIndex = type.indexOf('null')
         const sortedTypes = nullIndex !== -1 ? [type[nullIndex]].concat(type.slice(0, nullIndex)).concat(type.slice(nullIndex + 1)) : type
         sortedTypes.forEach((type, index) => {
+          const statement = index === 0 ? 'if' : 'else if'
           const tempSchema = Object.assign({}, schema, { type })
           const nestedResult = nested(laterCode, name, key, mergeLocation(location, { schema: tempSchema }), subKey, isArray)
-
-          if (type === 'string') {
-            code += `
-              ${index === 0 ? 'if' : 'else if'}(obj${accessor} === null || typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || typeof obj${accessor}.toISOString === "function" || obj${accessor} instanceof RegExp || (typeof obj${accessor} === "object" && Object.hasOwnProperty.call(obj${accessor}, "toString")))
-                ${nestedResult.code}
-            `
-          } else if (type === 'null') {
-            code += `
-              ${index === 0 ? 'if' : 'else if'}(obj${accessor} == null)
-              ${nestedResult.code}
-            `
-          } else if (type === 'array') {
-            code += `
-              ${index === 0 ? 'if' : 'else if'}(Array.isArray(obj${accessor}))
-              ${nestedResult.code}
-            `
-          } else if (type === 'integer') {
-            code += `
-              ${index === 0 ? 'if' : 'else if'}(Number.isInteger(obj${accessor}) || obj${accessor} === null)
-              ${nestedResult.code}
-            `
-          } else if (type === 'number') {
-            code += `
-              ${index === 0 ? 'if' : 'else if'}(isNaN(obj${accessor}) === false)
-              ${nestedResult.code}
-            `
-          } else {
-            code += `
-              ${index === 0 ? 'if' : 'else if'}(typeof obj${accessor} === "${type}")
-              ${nestedResult.code}
-            `
+          switch (type) {
+            case 'string': {
+              code += `
+                ${statement}(obj${accessor} === null || typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || typeof obj${accessor}.toISOString === "function" || obj${accessor} instanceof RegExp || (typeof obj${accessor} === "object" && Object.hasOwnProperty.call(obj${accessor}, "toString")))
+                  ${nestedResult.code}
+              `
+              break
+            }
+            case 'null': {
+              code += `
+                ${statement}(obj${accessor} == null)
+                  ${nestedResult.code}
+              `
+              break
+            }
+            case 'array': {
+              code += `
+                ${statement}(Array.isArray(obj${accessor}))
+                  ${nestedResult.code}
+              `
+              break
+            }
+            case 'integer': {
+              code += `
+                ${statement}(Number.isInteger(obj${accessor}) || obj${accessor} === null)
+                  ${nestedResult.code}
+              `
+              break
+            }
+            case 'number': {
+              code += `
+                ${statement}(isNaN(obj${accessor}) === false)
+                  ${nestedResult.code}
+              `
+              break
+            }
+            default: {
+              code += `
+                ${statement}(typeof obj${accessor} === "${type}")
+                  ${nestedResult.code}
+              `
+              break
+            }
           }
           laterCode = nestedResult.laterCode
         })

@@ -22,7 +22,7 @@ test('possibly nullable integer primitive alternative', (t) => {
   const value = stringify({
     data: 4
   })
-  t.is(value, '{"data":4}')
+  t.equal(value, '{"data":4}')
 })
 
 test('possibly nullable number primitive alternative', (t) => {
@@ -43,7 +43,7 @@ test('possibly nullable number primitive alternative', (t) => {
   const value = stringify({
     data: 4
   })
-  t.is(value, '{"data":4}')
+  t.equal(value, '{"data":4}')
 })
 
 test('possibly nullable integer primitive alternative with null value', (t) => {
@@ -64,7 +64,7 @@ test('possibly nullable integer primitive alternative with null value', (t) => {
   const value = stringify({
     data: null
   })
-  t.is(value, '{"data":0}')
+  t.equal(value, '{"data":0}')
 })
 
 test('possibly nullable number primitive alternative with null value', (t) => {
@@ -85,7 +85,7 @@ test('possibly nullable number primitive alternative with null value', (t) => {
   const value = stringify({
     data: null
   })
-  t.is(value, '{"data":0}')
+  t.equal(value, '{"data":0}')
 })
 
 test('nullable integer primitive', (t) => {
@@ -106,7 +106,7 @@ test('nullable integer primitive', (t) => {
   const value = stringify({
     data: 4
   })
-  t.is(value, '{"data":4}')
+  t.equal(value, '{"data":4}')
 })
 
 test('nullable number primitive', (t) => {
@@ -127,7 +127,7 @@ test('nullable number primitive', (t) => {
   const value = stringify({
     data: 4
   })
-  t.is(value, '{"data":4}')
+  t.equal(value, '{"data":4}')
 })
 
 test('nullable primitive with null value', (t) => {
@@ -148,7 +148,7 @@ test('nullable primitive with null value', (t) => {
   const value = stringify({
     data: null
   })
-  t.is(value, '{"data":null}')
+  t.equal(value, '{"data":null}')
 })
 
 test('nullable number primitive with null value', (t) => {
@@ -169,7 +169,7 @@ test('nullable number primitive with null value', (t) => {
   const value = stringify({
     data: null
   })
-  t.is(value, '{"data":null}')
+  t.equal(value, '{"data":null}')
 })
 
 test('possibly null object with multi-type property', (t) => {
@@ -191,19 +191,19 @@ test('possibly null object with multi-type property', (t) => {
   }
   const stringify = build(schema)
 
-  t.is(stringify({
+  t.equal(stringify({
     objectOrNull: {
       stringOrNumber: 'string'
     }
   }), '{"objectOrNull":{"stringOrNumber":"string"}}')
 
-  t.is(stringify({
+  t.equal(stringify({
     objectOrNull: {
       stringOrNumber: 42
     }
   }), '{"objectOrNull":{"stringOrNumber":42}}')
 
-  t.is(stringify({
+  t.equal(stringify({
     objectOrNull: null
   }), '{"objectOrNull":null}')
 })
@@ -229,7 +229,7 @@ test('object with possibly null array of multiple types', (t) => {
     const value = stringify({
       arrayOfStringsAndNumbers: null
     })
-    t.is(value, '{"arrayOfStringsAndNumbers":null}')
+    t.equal(value, '{"arrayOfStringsAndNumbers":null}')
   } catch (e) {
     console.log(e)
     t.fail()
@@ -239,21 +239,21 @@ test('object with possibly null array of multiple types', (t) => {
     const value = stringify({
       arrayOfStringsAndNumbers: ['string1', 'string2']
     })
-    t.is(value, '{"arrayOfStringsAndNumbers":["string1","string2"]}')
+    t.equal(value, '{"arrayOfStringsAndNumbers":["string1","string2"]}')
   } catch (e) {
     console.log(e)
     t.fail()
   }
 
-  t.is(stringify({
+  t.equal(stringify({
     arrayOfStringsAndNumbers: [42, 7]
   }), '{"arrayOfStringsAndNumbers":[42,7]}')
 
-  t.is(stringify({
+  t.equal(stringify({
     arrayOfStringsAndNumbers: ['string1', 42, 7, 'string2']
   }), '{"arrayOfStringsAndNumbers":["string1",42,7,"string2"]}')
 
-  t.is(stringify({
+  t.equal(stringify({
     arrayOfStringsAndNumbers: ['string1', null, 42, 7, 'string2', null]
   }), '{"arrayOfStringsAndNumbers":["string1",null,42,7,"string2",null]}')
 })
@@ -287,7 +287,7 @@ test('object with tuple of multiple types', (t) => {
     const value = stringify({
       fixedTupleOfStringsAndNumbers: ['string1', 42, 7]
     })
-    t.is(value, '{"fixedTupleOfStringsAndNumbers":["string1",42,7]}')
+    t.equal(value, '{"fixedTupleOfStringsAndNumbers":["string1",42,7]}')
   } catch (e) {
     console.log(e)
     t.fail()
@@ -297,7 +297,7 @@ test('object with tuple of multiple types', (t) => {
     const value = stringify({
       fixedTupleOfStringsAndNumbers: ['string1', 42, 'string2']
     })
-    t.is(value, '{"fixedTupleOfStringsAndNumbers":["string1",42,"string2"]}')
+    t.equal(value, '{"fixedTupleOfStringsAndNumbers":["string1",42,"string2"]}')
   } catch (e) {
     console.log(e)
     t.fail()
@@ -334,17 +334,17 @@ test('object with anyOf and multiple types', (t) => {
     const value = stringify({
       objectOrBoolean: { stringOrNumber: 'string' }
     })
-    t.is(value, '{"objectOrBoolean":{"stringOrNumber":"string"}}')
+    t.equal(value, '{"objectOrBoolean":{"stringOrNumber":"string"}}')
   } catch (e) {
     console.log(e)
     t.fail()
   }
 
-  t.is(stringify({
+  t.equal(stringify({
     objectOrBoolean: { stringOrNumber: 42 }
   }), '{"objectOrBoolean":{"stringOrNumber":42}}')
 
-  t.is(stringify({
+  t.equal(stringify({
     objectOrBoolean: true
   }), '{"objectOrBoolean":true}')
 })
@@ -363,7 +363,7 @@ test('string type array can handle dates', (t) => {
     date: new Date('2018-04-20T07:52:31.017Z'),
     dateObject: moment('2018-04-21T07:52:31.017Z')
   })
-  t.is(value, '{"date":"2018-04-20T07:52:31.017Z","dateObject":"2018-04-21T07:52:31.017Z"}')
+  t.equal(value, '{"date":"2018-04-20T07:52:31.017Z","dateObject":"2018-04-21T07:52:31.017Z"}')
 })
 
 test('object that is simultaneously a string and a json', (t) => {
@@ -386,10 +386,10 @@ test('object that is simultaneously a string and a json', (t) => {
 
   const stringify = build(schema)
   const valueStr = stringify({ simultaneously: likeObjectId })
-  t.is(valueStr, '{"simultaneously":"hello"}')
+  t.equal(valueStr, '{"simultaneously":"hello"}')
 
   const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
-  t.is(valueObj, '{"simultaneously":{"foo":"hello"}}')
+  t.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
 
 test('object that is simultaneously a string and a json switched', (t) => {
@@ -412,10 +412,10 @@ test('object that is simultaneously a string and a json switched', (t) => {
 
   const stringify = build(schema)
   const valueStr = stringify({ simultaneously: likeObjectId })
-  t.is(valueStr, '{"simultaneously":{}}')
+  t.equal(valueStr, '{"simultaneously":{}}')
 
   const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
-  t.is(valueObj, '{"simultaneously":{"foo":"hello"}}')
+  t.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
 
 test('should throw an error when type is array and object is null', (t) => {

@@ -12,7 +12,7 @@ function buildTest (schema, toStringify) {
     const stringify = build(schema)
     const output = stringify(toStringify)
 
-    t.deepEqual(JSON.parse(output), toStringify)
+    t.same(JSON.parse(output), toStringify)
     t.equal(output, JSON.stringify(toStringify))
     t.ok(validate(JSON.parse(output)), 'valid schema')
   })
