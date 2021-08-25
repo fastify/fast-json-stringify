@@ -970,9 +970,6 @@ function buildArray (location, code, name, key = null) {
       schema[fjsCloned] = true
     }
     location = refFinder(schema.items.$ref, location)
-    if (location.schema && location.schema.$id) {
-      delete location.schema.$id
-    }
     schema.items = location.schema
   }
 
@@ -1090,9 +1087,6 @@ function dereferenceOfRefs (location, type) {
     let sLocation = mergeLocation(location, { schema: s })
     while (s.$ref) {
       sLocation = refFinder(s.$ref, sLocation)
-      if (sLocation.schema && sLocation.schema.$id) {
-        delete sLocation.schema.$id
-      }
       schema[type][index] = sLocation.schema
       s = schema[type][index]
     }
