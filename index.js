@@ -3,6 +3,7 @@
 /* eslint no-prototype-builtins: 0 */
 
 const Ajv = require('ajv').default
+const ajvFormats = require('ajv-formats')
 const merge = require('deepmerge')
 const clone = require('rfdc')({ proto: true })
 const fjsCloned = Symbol('fast-json-stringify.cloned')
@@ -158,7 +159,9 @@ function build (schema, options) {
      return ${main}
   `
 
-  const dependencies = [new Ajv(options.ajv)]
+  const ajvInstance = new Ajv(options.ajv)
+  ajvFormats(ajvInstance)
+  const dependencies = [ajvInstance]
   const dependenciesName = ['ajv']
   dependenciesName.push(code)
 
@@ -1317,7 +1320,9 @@ module.exports.restore = function (debugModeStr, options = {}) {
   const args = []
   if (debugModeStr.startsWith('ajv')) {
     dependencies.unshift('ajv')
-    args.push(new Ajv(options.ajv))
+    const ajvInstance = new Ajv(options.ajv)
+    ajvFormats(ajvInstance)
+    args.push(ajvInstance)
   }
 
   // eslint-disable-next-line
