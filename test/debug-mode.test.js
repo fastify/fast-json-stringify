@@ -63,3 +63,29 @@ test('to string auto-consistent with ajv', t => {
   const tobe = JSON.stringify({ str: 'Foo' })
   t.same(compiled({ str: 'Foo', void: 'me' }), tobe)
 })
+
+test('to string auto-consistent with ajv-formats', t => {
+  t.plan(3)
+  const debugMode = fjs({
+    title: 'object with multiple types field and format keyword',
+    type: 'object',
+    properties: {
+      str: {
+        anyOf: [{
+          type: 'string',
+          format: 'email'
+        }, {
+          type: 'boolean'
+        }]
+      }
+    }
+  }, { debugMode: 1 })
+  t.type(debugMode, Array)
+
+  const str = debugMode.toString()
+
+  const compiled = fjs.restore(str)
+  const tobe = JSON.stringify({ str: 'foo@bar.com' })
+  t.same(compiled({ str: 'foo@bar.com' }), tobe)
+  t.same(compiled({ str: 'foo' }), JSON.stringify({ str: null }), 'invalid format is ignored')
+})

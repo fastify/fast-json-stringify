@@ -8,11 +8,13 @@ const schema = {
   properties: {
   },
   if: {
+    type: 'object',
     properties: {
       kind: { type: 'string', enum: ['foobar'] }
     }
   },
   then: {
+    type: 'object',
     properties: {
       kind: { type: 'string', enum: ['foobar'] },
       foo: { type: 'string' },
@@ -30,6 +32,7 @@ const schema = {
     }
   },
   else: {
+    type: 'object',
     properties: {
       kind: { type: 'string', enum: ['greeting'] },
       hi: { type: 'string' },
@@ -52,17 +55,20 @@ const nestedIfSchema = {
   type: 'object',
   properties: { },
   if: {
+    type: 'object',
     properties: {
       kind: { type: 'string', enum: ['foobar', 'greeting'] }
     }
   },
   then: {
     if: {
+      type: 'object',
       properties: {
         kind: { type: 'string', enum: ['foobar'] }
       }
     },
     then: {
+      type: 'object',
       properties: {
         kind: { type: 'string', enum: ['foobar'] },
         foo: { type: 'string' },
@@ -80,6 +86,7 @@ const nestedIfSchema = {
       }
     },
     else: {
+      type: 'object',
       properties: {
         kind: { type: 'string', enum: ['greeting'] },
         hi: { type: 'string' },
@@ -88,6 +95,7 @@ const nestedIfSchema = {
     }
   },
   else: {
+    type: 'object',
     properties: {
       kind: { type: 'string', enum: ['alphabet'] },
       a: { type: 'string' },
@@ -100,11 +108,13 @@ const nestedElseSchema = {
   type: 'object',
   properties: { },
   if: {
+    type: 'object',
     properties: {
       kind: { type: 'string', enum: ['foobar'] }
     }
   },
   then: {
+    type: 'object',
     properties: {
       kind: { type: 'string', enum: ['foobar'] },
       foo: { type: 'string' },
@@ -123,11 +133,13 @@ const nestedElseSchema = {
   },
   else: {
     if: {
+      type: 'object',
       properties: {
         kind: { type: 'string', enum: ['greeting'] }
       }
     },
     then: {
+      type: 'object',
       properties: {
         kind: { type: 'string', enum: ['greeting'] },
         hi: { type: 'string' },
@@ -135,6 +147,7 @@ const nestedElseSchema = {
       }
     },
     else: {
+      type: 'object',
       properties: {
         kind: { type: 'string', enum: ['alphabet'] },
         a: { type: 'string' },
@@ -154,11 +167,13 @@ const noElseSchema = {
   properties: {
   },
   if: {
+    type: 'object',
     properties: {
       kind: { type: 'string', enum: ['foobar'] }
     }
   },
   then: {
+    type: 'object',
     properties: {
       kind: { type: 'string', enum: ['foobar'] },
       foo: { type: 'string' },

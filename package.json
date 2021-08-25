@@ -43,8 +43,8 @@
     "webpack": "^5.40.0"
   },
   "dependencies": {
-    "ajv": "^7.2.3",
-    "ajv-formats": "^1.6.1",
+    "ajv": "^8.6.2",
+    "ajv-formats": "^2.1.1",
     "deepmerge": "^4.2.2",
     "rfdc": "^1.2.0",
     "string-similarity": "^4.0.1"

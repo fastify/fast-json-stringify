@@ -108,7 +108,7 @@ test('object with allOf and no schema on the allOf', (t) => {
     build(schema)
     t.fail()
   } catch (e) {
-    t.equal(e.message, 'schema is invalid: data/allOf should NOT have fewer than 1 items')
+    t.equal(e.message, 'schema is invalid: data/allOf must NOT have fewer than 1 items')
   }
 })
 

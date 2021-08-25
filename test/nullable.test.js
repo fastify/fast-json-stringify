@@ -97,16 +97,21 @@ const testSet = {
     items: {}
   }, null, null],
   nullableObject: [{ type: 'object', nullable: true }, null, null],
-  complexObject: [complexObject, complexData, complexExpectedResult]
+  complexObject: [complexObject, complexData, complexExpectedResult, { ajv: { allowUnionTypes: true } }]
 }
 
 Object.keys(testSet).forEach(key => {
   test(`handle nullable:true in ${key} correctly`, (t) => {
     t.plan(1)
 
-    const stringifier = build(testSet[key][0])
-    const data = testSet[key][1]
-    const expected = testSet[key][2]
+    const [
+      schema,
+      data,
+      expected,
+      extraOptions
+    ] = testSet[key]
+
+    const stringifier = build(schema, extraOptions)
     const result = stringifier(data)
     t.same(JSON.parse(result), expected)
   })

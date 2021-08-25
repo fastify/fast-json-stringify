@@ -155,3 +155,42 @@ test('must not mutate items $ref', t => {
   t.equal(value, '[{"name":"foo"}]')
   t.same(schema, clonedSchema)
 })
+
+test('must not mutate items referred by $ref', t => {
+  t.plan(2)
+
+  const firstSchema = {
+    $id: 'example1',
+    type: 'object',
+    properties: {
+      name: {
+        type: 'string'
+      }
+    }
+  }
+
+  const reusedSchema = {
+    $id: 'example2',
+    type: 'object',
+    properties: {
+      name: {
+        oneOf: [
+          {
+            $ref: 'example1'
+          }
+        ]
+      }
+    }
+  }
+
+  const clonedSchema = clone(firstSchema)
+  const stringify = build(reusedSchema, {
+    schema: {
+      [firstSchema.$id]: firstSchema
+    }
+  })
+
+  const value = stringify({ name: { name: 'foo' } })
+  t.equal(value, '{"name":{"name":"foo"}}')
+  t.same(firstSchema, clonedSchema)
+})
