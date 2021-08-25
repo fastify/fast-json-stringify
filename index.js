@@ -11,13 +11,6 @@ const fjsCloned = Symbol('fast-json-stringify.cloned')
 const validate = require('./schema-validator')
 let stringSimilarity = null
 
-let isLong
-try {
-  isLong = require('long').isLong
-} catch (e) {
-  isLong = null
-}
-
 const addComma = `
   if (addComma) {
     json += ','
@@ -75,7 +68,39 @@ function build (schema, options) {
   code += `
     ${asFunctions}
 
-    var isLong = ${isLong ? isLong.toString() : false}
+    
+    /**
+     * Used by schemas that are dependant on calling 'ajv.validate' during runtime,
+     * it stores the value of the '$id' property of the schema (if it has it) inside
+     * a cache which is used to figure out if the schema was compiled into a validator
+     * by ajv on a previous call, if it was then the '$id' string will be used to 
+     * invoke 'ajv.validate', this allows:
+     * 
+     * 1. Schemas that depend on ajv.validate calls to leverage ajv caching system.
+     * 2. To avoid errors, since directly invoking 'ajv.validate' with the same 
+     * schema (that contains an '$id' property) twice will throw an error.
+     */
+    const $validateWithAjv = (function() {
+      const cache = new Set()
+
+      return function (schema, target) {
+        const id = schema.$id
+        
+        if (!id) {
+          return ajv.validate(schema, target)
+        }
+
+        const cached = cache.has(id)
+
+        if (cached) {
+          return ajv.validate(id, target)
+        } else {
+          cache.add(id)
+          return ajv.validate(schema, target)
+        }
+      }
+    })()
+
 
     function parseInteger(int) { return Math.${intParseFunctionName}(int) }
     `
@@ -237,9 +262,7 @@ function $asNull () {
 }
 
 function $asInteger (i) {
-  if (isLong && isLong(i)) {
-    return i.toString()
-  } else if (typeof i === 'bigint') {
+  if (typeof i === 'bigint') {
     return i.toString()
   } else if (Number.isInteger(i)) {
     return $asNumber(i)
@@ -507,22 +530,11 @@ function additionalProperty (location) {
   } else if (type === 'integer') {
     code += `
         var t = Number(obj[keys[i]])
+        if (!isNaN(t)) {
+          ${addComma}
+          json += $asString(keys[i]) + ':' + t
+        }
     `
-    if (isLong) {
-      code += `
-          if (isLong(obj[keys[i]]) || !isNaN(t)) {
-            ${addComma}
-            json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
-          }
-      `
-    } else {
-      code += `
-          if (!isNaN(t)) {
-            ${addComma}
-            json += $asString(keys[i]) + ':' + t
-          }
-      `
-    }
   } else if (type === 'number') {
     code += `
         var t = Number(obj[keys[i]])
@@ -724,33 +736,12 @@ function buildCode (location, code, laterCode, name) {
     } else if (type === 'integer') {
       code += `
           var rendered = false
-      `
-      if (isLong) {
-        code += `
-            if (isLong(obj[${sanitized}])) {
-              ${addComma}
-              json += ${asString} + ':' + obj[${sanitized}].toString()
-              rendered = true
-            } else {
-              var t = Number(obj[${sanitized}])
-              if (!isNaN(t)) {
-                ${addComma}
-                json += ${asString} + ':' + t
-                rendered = true
-              }
-            }
-        `
-      } else {
-        code += `
-            var t = $asInteger(obj[${sanitized}])
-            if (!isNaN(t)) {
-              ${addComma}
-              json += ${asString} + ':' + t
-              rendered = true
-            }
-        `
-      }
-      code += `
+          var t = $asInteger(obj[${sanitized}])
+          if (!isNaN(t)) {
+            ${addComma}
+            json += ${asString} + ':' + t
+            rendered = true
+          }
           if (rendered) {
       `
     } else {
@@ -864,7 +855,7 @@ function addIfThenElse (location, name) {
   let mergedLocation = mergeLocation(location, { schema: merged })
 
   code += `
-    valid = ajv.validate(${JSON.stringify(i)}, obj)
+    valid = $validateWithAjv(${JSON.stringify(i)}, obj)
     if (valid) {
   `
   if (merged.if && merged.then) {
@@ -1203,7 +1194,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           // 2. `nested`, through `buildCode`, replaces any reference in object properties with the actual schema
           // (see https://github.com/fastify/fast-json-stringify/blob/6da3b3e8ac24b1ca5578223adedb4083b7adf8db/index.js#L631)
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(location.schema)}, ${testValue}))
+            ${index === 0 ? 'if' : 'else if'}($validateWithAjv(${JSON.stringify(location.schema)}, ${testValue}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
@@ -1220,7 +1211,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           const testValue = testSerializer !== undefined ? `${testSerializer}(obj${accessor}, true)` : `obj${accessor}`
           // see comment on anyOf about dereferencing the schema before calling ajv.validate
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(location.schema)}, ${testValue}))
+            ${index === 0 ? 'if' : 'else if'}($validateWithAjv(${JSON.stringify(location.schema)}, ${testValue}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode

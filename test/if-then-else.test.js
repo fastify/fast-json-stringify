@@ -325,7 +325,7 @@ t.test('if-then-else', t => {
     t.test(test.name + ' - normal', t => {
       t.plan(1)
 
-      const stringify = build(JSON.parse(JSON.stringify(test.schema)))
+      const stringify = build(JSON.parse(JSON.stringify(test.schema)), { ajv: { strictTypes: false } })
       const serialized = stringify(test.input)
       t.equal(serialized, test.expected)
     })

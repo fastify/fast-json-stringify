@@ -17,7 +17,7 @@ test('possibly nullable integer primitive alternative', (t) => {
     }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { ajv: { allowUnionTypes: true } })
 
   const value = stringify({
     data: 4
