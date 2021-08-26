@@ -135,3 +135,11 @@ const schema11: Schema = {
 }
 
 build(schema11)({ something: 'a string', somethingElse: 42 })
+
+// String schema with format
+const schema12: Schema = {
+  type: 'string',
+  format: 'date-time'
+}
+
+build(schema12)(new Date())
