@@ -285,10 +285,7 @@ function $asDatetime (date, skipQuotes) {
 function $asDate (date, skipQuotes) {
   const quotes = skipQuotes === true ? '' : '"'
   if (date instanceof Date) {
-    const year = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date)
-    const month = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(date)
-    const day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date)
-    return quotes + year + '-' + month + '-' + day + quotes
+    return quotes + new Date(date.getTime() - (date.getTimezoneOffset() * 60000 )).toISOString().slice(0, 10) + quotes
   } else if (date && typeof date.format === 'function') {
     return quotes + date.format('YYYY-MM-DD') + quotes
   } else {
