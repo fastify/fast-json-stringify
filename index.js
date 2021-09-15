@@ -956,9 +956,6 @@ function buildArray (location, code, name, key = null) {
       }
     `
   }
-  code += `
-      var json = '['
-  `
   const laterCode = ''
 
   // default to any items type
@@ -1020,17 +1017,19 @@ function buildArray (location, code, name, key = null) {
 
   code += `
     var l = obj.length
-
+    var jsonOutput=''
+    var jsonLastChar
     for (var i = 0; i < l; i++) {
-      var jsonLastChar = json[json.length - 1]
+      var json = ''
 
-      if (i > 0 && jsonLastChar !== '[' && jsonLastChar !== ',') {
+      if (jsonLastChar && jsonLastChar.length && jsonLastChar !== ',') {
         json += ','
       }
       ${result.code}
+      jsonLastChar = json.slice(-1)
+      jsonOutput += json
     }
-    json += ']'
-    return json
+    return \`[\${jsonOutput}]\`
   }
   ${result.laterCode}
   `
