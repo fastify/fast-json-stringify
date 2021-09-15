@@ -1032,7 +1032,6 @@ function buildArray (location, code, name, key = null) {
       jsonLastChar = json.slice(-1)
       jsonOutput += json
     }
-    // json += ']'
     return \`[\${jsonOutput}]\`
   }
   ${result.laterCode}
