@@ -1017,17 +1017,15 @@ function buildArray (location, code, name, key = null) {
 
   code += `
     var l = obj.length
-    var jsonOutput=''
-    var jsonLastChar
+    var jsonOutput= ''
     for (var i = 0; i < l; i++) {
       var json = ''
-
-      if (jsonLastChar && jsonLastChar.length && jsonLastChar !== ',') {
-        json += ','
-      }
       ${result.code}
-      jsonLastChar = json.slice(-1)
       jsonOutput += json
+
+      if (json.length > 0 && i < l - 1) {
+        jsonOutput += ','
+      }
     }
     return \`[\${jsonOutput}]\`
   }
