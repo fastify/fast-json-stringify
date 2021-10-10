@@ -38,6 +38,21 @@ const schemaCJS = {
   }
 }
 
+const schemaAJVJTD = {
+  properties: {
+    firstName: {
+      type: 'string'
+    },
+    lastName: {
+      type: 'string',
+      nullable: true
+    },
+    age: {
+      type: 'uint8'
+    }
+  }
+}
+
 const arraySchema = {
   title: 'array schema',
   type: 'array',
@@ -48,6 +63,10 @@ const arraySchemaCJS = {
   title: 'array schema',
   type: 'array',
   items: schemaCJS
+}
+
+const arraySchemaAJVJTD = {
+  elements: schemaAJVJTD
 }
 
 const obj = {
@@ -69,6 +88,12 @@ const stringifyArray = FJS(arraySchema)
 const stringifyString = FJS({ type: 'string' })
 let str = ''
 
+const Ajv = require('ajv/dist/jtd')
+const ajv = new Ajv()
+const ajvSerialize = ajv.compileSerializer(schemaAJVJTD)
+const ajvSerializeArray = ajv.compileSerializer(arraySchemaAJVJTD)
+const ajvSerializeString = ajv.compileSerializer({ type: 'string' })
+
 // eslint-disable-next-line
 for (var i = 0; i < 10000; i++) {
   str += i
@@ -89,6 +114,9 @@ suite.add('FJS creation', function () {
 suite.add('CJS creation', function () {
   CJS(schemaCJS)
 })
+suite.add('AJV Serialize creation', function () {
+  ajv.compileSerializer(schemaAJVJTD)
+})
 
 suite.add('JSON.stringify array', function () {
   JSON.stringify(multiArray)
@@ -100,6 +128,10 @@ suite.add('fast-json-stringify array', function () {
 
 suite.add('compile-json-stringify array', function () {
   CJSStringifyArray(multiArray)
+})
+
+suite.add('AJV Serialize array', function () {
+  ajvSerializeArray(multiArray)
 })
 
 suite.add('JSON.stringify long string', function () {
@@ -114,6 +146,10 @@ suite.add('compile-json-stringify long string', function () {
   CJSStringifyString(str)
 })
 
+suite.add('AJV Serialize long string', function () {
+  ajvSerializeString(str)
+})
+
 suite.add('JSON.stringify short string', function () {
   JSON.stringify('hello world')
 })
@@ -126,6 +162,10 @@ suite.add('compile-json-stringify short string', function () {
   CJSStringifyString('hello world')
 })
 
+suite.add('AJV Serialize short string', function () {
+  ajvSerializeString('hello world')
+})
+
 suite.add('JSON.stringify obj', function () {
   JSON.stringify(obj)
 })
@@ -136,6 +176,10 @@ suite.add('fast-json-stringify obj', function () {
 
 suite.add('compile-json-stringify obj', function () {
   CJSStringify(obj)
+})
+
+suite.add('AJV Serialize obj', function () {
+  ajvSerialize(obj)
 })
 
 suite.on('cycle', cycle)
