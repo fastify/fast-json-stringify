@@ -147,6 +147,8 @@ function build (schema, options) {
     return dependenciesName
   }
 
+  referenceSerializersMap.clear()
+
   return (Function.apply(null, dependenciesName).apply(null, dependencies))
 }
 
@@ -973,17 +975,17 @@ function buildArray (location, code, name, key = null) {
       schema[fjsCloned] = true
     }
 
-    if (referenceSerializersMap.has(schema.items.$ref)) {
+    location = refFinder(schema.items.$ref, location)
+    schema.items = location.schema
+
+    if (referenceSerializersMap.has(schema.items)) {
       code += `
-      return ${referenceSerializersMap.get(schema.items.$ref)}(obj)
+      return ${referenceSerializersMap.get(schema.items)}(obj)
       }
       `
       return code
     }
-    referenceSerializersMap.set(schema.items.$ref, name)
-
-    location = refFinder(schema.items.$ref, location)
-    schema.items = location.schema
+    referenceSerializersMap.set(schema.items, name)
   }
 
   let result = { code: '', laterCode: '' }
