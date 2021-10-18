@@ -944,6 +944,8 @@ function buildObject (location, code, name) {
   return code
 }
 
+const functionsWithReferenceCode = new Map()
+
 function buildArray (location, code, name, key = null) {
   let schema = location.schema
   code += `
@@ -969,6 +971,16 @@ function buildArray (location, code, name, key = null) {
       schema = location.schema
       schema[fjsCloned] = true
     }
+
+    if (functionsWithReferenceCode.has(schema.items.$ref)) {
+      code += `
+      return ${functionsWithReferenceCode.get(schema.items.$ref)}(obj)
+      }
+      `
+      return code
+    }
+    functionsWithReferenceCode.set(schema.items.$ref, name)
+
     location = refFinder(schema.items.$ref, location)
     schema.items = location.schema
   }
