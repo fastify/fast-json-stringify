@@ -114,6 +114,24 @@ test('use proper serialize function', t => {
     }
   })
 
-  const value = stringify({ people: { name: 'Elizabeth', children: [{ name: 'Charles' }] }, directory: { name: 'directory 1', subDirectories: [] } })
-  t.equal(value, '{"people":{"name":"Elizabeth","children":[{"name":"Charles"}]},"directory":{"name":"directory 1","subDirectories":[]}}')
+  const value = stringify({
+    people: {
+      name: 'Elizabeth',
+      children: [{
+        name: 'Charles',
+        children: [{ name: 'William', children: [{ name: 'George' }, { name: 'Charlotte' }] }, { name: 'Harry' }]
+      }]
+    },
+    directory: {
+      name: 'directory 1',
+      subDirectories: [
+        { name: 'directory 1.1', subDirectories: [] },
+        {
+          name: 'directory 1.2',
+          subDirectories: [{ name: 'directory 1.2.1' }, { name: 'directory 1.2.2' }]
+        }
+      ]
+    }
+  })
+  t.equal(value, '{"people":{"name":"Elizabeth","children":[{"name":"Charles","children":[{"name":"William","children":[{"name":"George"},{"name":"Charlotte"}]},{"name":"Harry"}]}]},"directory":{"name":"directory 1","subDirectories":[{"name":"directory 1.1","subDirectories":[]},{"name":"directory 1.2","subDirectories":[{"name":"directory 1.2.1","subDirectories":[]},{"name":"directory 1.2.2","subDirectories":[]}]}]}}')
 })
