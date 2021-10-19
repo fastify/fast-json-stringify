@@ -47,7 +47,10 @@ function mergeLocation (source, dest) {
   }
 }
 
+const referenceSerializersMap = new Map()
+
 function build (schema, options) {
+  referenceSerializersMap.clear()
   options = options || {}
   isValidSchema(schema)
   if (options.schema) {
@@ -143,6 +146,8 @@ function build (schema, options) {
     }
     return dependenciesName
   }
+
+  referenceSerializersMap.clear()
 
   return (Function.apply(null, dependenciesName).apply(null, dependencies))
 }
@@ -969,8 +974,18 @@ function buildArray (location, code, name, key = null) {
       schema = location.schema
       schema[fjsCloned] = true
     }
+
     location = refFinder(schema.items.$ref, location)
     schema.items = location.schema
+
+    if (referenceSerializersMap.has(schema.items)) {
+      code += `
+      return ${referenceSerializersMap.get(schema.items)}(obj)
+      }
+      `
+      return code
+    }
+    referenceSerializersMap.set(schema.items, name)
   }
 
   let result = { code: '', laterCode: '' }
