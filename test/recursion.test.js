@@ -135,3 +135,46 @@ test('use proper serialize function', t => {
   })
   t.equal(value, '{"people":{"name":"Elizabeth","children":[{"name":"Charles","children":[{"name":"William","children":[{"name":"George"},{"name":"Charlotte"}]},{"name":"Harry"}]}]},"directory":{"name":"directory 1","subDirectories":[{"name":"directory 1.1","subDirectories":[]},{"name":"directory 1.2","subDirectories":[{"name":"directory 1.2.1","subDirectories":[]},{"name":"directory 1.2.2","subDirectories":[]}]}]}}')
 })
+
+test('can stringify recursive references in object types (issue #365)', t => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      category: {
+        type: 'object',
+        properties: {
+          parent: {
+            $ref: '#/$defs/parent_category'
+          }
+        }
+      }
+    },
+    $defs: {
+      parent_category: {
+        type: 'object',
+        properties: {
+          parent: {
+            $ref: '#/$defs/parent_category'
+          }
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const data = {
+    category: {
+      parent: {
+        parent: {
+          parent: {
+            parent: {}
+          }
+        }
+      }
+    }
+  }
+  const value = stringify(data)
+  t.equal(value, '{"category":{"parent":{"parent":{"parent":{"parent":{}}}}}}')
+})
