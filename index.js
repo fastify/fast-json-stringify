@@ -47,11 +47,11 @@ function mergeLocation (source, dest) {
   }
 }
 
-const referenceSerializersMap = new Map()
+const arrayItemsReferenceSerializersMap = new Map()
 const objectReferenceSerializersMap = new Map()
 
 function build (schema, options) {
-  referenceSerializersMap.clear()
+  arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
   options = options || {}
   isValidSchema(schema)
@@ -149,7 +149,7 @@ function build (schema, options) {
     return dependenciesName
   }
 
-  referenceSerializersMap.clear()
+  arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
 
   return (Function.apply(null, dependenciesName).apply(null, dependencies))
@@ -1000,14 +1000,14 @@ function buildArray (location, code, name, key = null) {
     location = refFinder(schema.items.$ref, location)
     schema.items = location.schema
 
-    if (referenceSerializersMap.has(schema.items)) {
+    if (arrayItemsReferenceSerializersMap.has(schema.items)) {
       code += `
-      return ${referenceSerializersMap.get(schema.items)}(obj)
+      return ${arrayItemsReferenceSerializersMap.get(schema.items)}(obj)
       }
       `
       return code
     }
-    referenceSerializersMap.set(schema.items, name)
+    arrayItemsReferenceSerializersMap.set(schema.items, name)
   }
 
   let result = { code: '', laterCode: '' }
