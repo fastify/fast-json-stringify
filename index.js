@@ -48,9 +48,11 @@ function mergeLocation (source, dest) {
 }
 
 const referenceSerializersMap = new Map()
+const objectReferenceSerializersMap = new Map()
 
 function build (schema, options) {
   referenceSerializersMap.clear()
+  objectReferenceSerializersMap.clear()
   options = options || {}
   isValidSchema(schema)
   if (options.schema) {
@@ -148,6 +150,7 @@ function build (schema, options) {
   }
 
   referenceSerializersMap.clear()
+  objectReferenceSerializersMap.clear()
 
   return (Function.apply(null, dependenciesName).apply(null, dependencies))
 }
@@ -399,51 +402,60 @@ function addPatternProperties (location) {
     } catch (err) {
       throw new Error(`${err.message}. Found at ${regex} matching ${JSON.stringify(pp[regex])}`)
     }
-    code += `
-        if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
-    `
+
+    const ifPpKeyExists = `if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {`
+
     if (type === 'object') {
       code += `${buildObject(ppLocation, '', 'buildObjectPP' + index)}
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) + ':' + buildObjectPP${index}(obj[keys[i]])
       `
     } else if (type === 'array') {
       code += `${buildArray(ppLocation, '', 'buildArrayPP' + index)}
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) + ':' + buildArrayPP${index}(obj[keys[i]])
       `
     } else if (type === 'null') {
       code += `
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) +':null'
       `
     } else if (type === 'string') {
       code += `
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
       `
     } else if (type === 'integer') {
       code += `
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
       `
     } else if (type === 'number') {
       code += `
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]])
       `
     } else if (type === 'boolean') {
       code += `
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]])
       `
     } else if (type === undefined) {
       code += `
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) + ':' + $asAny(obj[keys[i]])
       `
     } else {
       code += `
+        ${ifPpKeyExists}
         throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ' + ${JSON.stringify(type)})
       `
     }
@@ -922,6 +934,16 @@ function buildObject (location, code, name) {
       }
   `
   }
+
+  if (objectReferenceSerializersMap.has(schema)) {
+    code += `
+      return ${objectReferenceSerializersMap.get(schema)}(input)
+    }
+    `
+    return code
+  }
+  objectReferenceSerializersMap.set(schema, name)
+
   code += `
       var obj = ${toJSON('input')}
       var json = '{'
