@@ -141,22 +141,22 @@ test('can stringify recursive references in object types (issue #365)', t => {
 
   const schema = {
     type: 'object',
+    definitions: {
+      parentCategory: {
+        type: 'object',
+        properties: {
+          parent: {
+            $ref: '#/definitions/parentCategory'
+          }
+        }
+      }
+    },
     properties: {
       category: {
         type: 'object',
         properties: {
           parent: {
-            $ref: '#/$defs/parent_category'
-          }
-        }
-      }
-    },
-    $defs: {
-      parent_category: {
-        type: 'object',
-        properties: {
-          parent: {
-            $ref: '#/$defs/parent_category'
+            $ref: '#/definitions/parentCategory'
           }
         }
       }
