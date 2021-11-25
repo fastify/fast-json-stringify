@@ -1,0 +1,212 @@
+[33mcommit f7bc935425f7a5e799a6f9e95aca632f75077838[m[33m ([m[1;36mHEAD -> [m[1;32mchange[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m)[m
+Author: Frazer Smith <frazer.dev@outlook.com>
+Date:   Thu Nov 25 06:46:45 2021 +0000
+
+    build(dependabot): ignore minor and patch github-actions updates (#369)
+
+[33mcommit f7045d5e57d90cfdbd547b2128d30a961e863292[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Thu Nov 18 14:23:05 2021 +0000
+
+    Bump fastify/github-action-merge-dependabot from 2.5.0 to 2.6.0 (#367)
+    
+    Bumps [fastify/github-action-merge-dependabot](https://github.com/fastify/github-action-merge-dependabot) from 2.5.0 to 2.6.0.
+    - [Release notes](https://github.com/fastify/github-action-merge-dependabot/releases)
+    - [Commits](https://github.com/fastify/github-action-merge-dependabot/compare/v2.5.0...v2.6.0)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: fastify/github-action-merge-dependabot
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+    
+    Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+[33mcommit 9df05afcca61cd4b50282e16b05294597eddbdd9[m[33m ([m[1;33mtag: v2.7.12[m[33m)[m
+Author: Matteo Collina <hello@matteocollina.com>
+Date:   Wed Nov 10 09:34:45 2021 +0100
+
+    Bumped v2.7.12
+
+[33mcommit c9e363ea27960e6ee49e8f82e6eeed672a1a1077[m
+Author: Simon Sinclair <simon@simonsinclair.com>
+Date:   Wed Nov 10 08:32:42 2021 +0000
+
+    Add support for recursive references in object types (#366)
+
+[33mcommit 8ca30812036e178684b2cb55a0827b4f6502841c[m[33m ([m[1;33mtag: v2.7.11[m[33m)[m
+Author: Matteo Collina <hello@matteocollina.com>
+Date:   Tue Oct 19 22:03:04 2021 +0200
+
+    Bumped v2.7.11
+
+[33mcommit e35c26129d23f16513727b6572684473ed166c67[m
+Author: Andrey Chalkin <L2jLiga@gmail.com>
+Date:   Tue Oct 19 21:43:02 2021 +0200
+
+    support for recursion in arrays (#363)
+
+[33mcommit 0bdc9081622d8377a88a28bdc431460da85a9fa9[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Mon Sep 20 14:18:51 2021 +0000
+
+    Bump fastify/github-action-merge-dependabot from 2.4.0 to 2.5.0 (#361)
+    
+    Bumps [fastify/github-action-merge-dependabot](https://github.com/fastify/github-action-merge-dependabot) from 2.4.0 to 2.5.0.
+    - [Release notes](https://github.com/fastify/github-action-merge-dependabot/releases)
+    - [Commits](https://github.com/fastify/github-action-merge-dependabot/compare/v2.4.0...v2.5.0)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: fastify/github-action-merge-dependabot
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+    
+    Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+[33mcommit 3ce266b0be0efe76f7f2709ed3ab3a5b8d861365[m
+Author: Rafael Gonzaga <rafael.nunu@hotmail.com>
+Date:   Fri Sep 17 05:16:49 2021 -0300
+
+    chore: add benchmark setup (#360)
+
+[33mcommit 304be26fbc0f229149090e068793995749edb6d8[m[33m ([m[1;33mtag: v2.7.10[m[33m)[m
+Author: Matteo Collina <hello@matteocollina.com>
+Date:   Wed Sep 15 16:00:22 2021 +0200
+
+    Bumped v2.7.10
+
+[33mcommit 7829a09ebca89e47f7b431093a2968013791f04c[m
+Author: Matteo Collina <hello@matteocollina.com>
+Date:   Wed Sep 15 15:56:18 2021 +0200
+
+    Moar speed in arrays (#359)
+    
+    * Improve rendering speed of arrays over JSON.stringify()
+    
+    This restore some perf that got lost along the way, moving from 4k
+    ops/sec to 7k ops/sec in our array bench.
+    
+    * Bench updates
+
+[33mcommit 9a971f3bd1d9b94dd4e484aa9052785278e940f0[m
+Author: Vincent LE GOFF <vince.legoff@gmail.com>
+Date:   Wed Sep 15 14:58:23 2021 +0200
+
+    feat: performance array improvement by 11x (#358)
+    
+    * feat: performance array improvement
+    
+    * fix: clean comment
+    
+    * fix: review
+
+[33mcommit ffed18681540cf77b4025053dc25884f6c2425f5[m
+Author: Kevin Grüneberg <k.grueneberg1994@gmail.com>
+Date:   Wed Sep 15 12:42:04 2021 +0200
+
+    perf: speed up date formatting (#357)
+
+[33mcommit e0d93367260a18b6bf8e62352eeee5f01543b3ce[m[33m ([m[1;33mtag: v2.7.9[m[33m)[m
+Author: Matteo Collina <hello@matteocollina.com>
+Date:   Thu Aug 26 18:13:52 2021 +0200
+
+    Bumped v2.7.9
+
+[33mcommit 028a899565445749c1add43795fc90945200deb3[m
+Author: weiyuan1993 <ab889721@gmail.com>
+Date:   Thu Aug 26 20:46:34 2021 +0800
+
+    Fix: Added missing format property in StringSchema (#356)
+
+[33mcommit 7f80f9859b51c3f334f70ad5eb2061a05469915e[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Tue Aug 10 14:25:04 2021 +0000
+
+    Bump fastify/github-action-merge-dependabot from 2.3.0 to 2.4.0 (#349)
+    
+    Bumps [fastify/github-action-merge-dependabot](https://github.com/fastify/github-action-merge-dependabot) from 2.3.0 to 2.4.0.
+    - [Release notes](https://github.com/fastify/github-action-merge-dependabot/releases)
+    - [Commits](https://github.com/fastify/github-action-merge-dependabot/compare/v2.3.0...v2.4.0)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: fastify/github-action-merge-dependabot
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+    
+    Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+[33mcommit b4958b5527f259b76609aa693658685722cef5b9[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Mon Aug 9 14:26:29 2021 +0000
+
+    Bump fastify/github-action-merge-dependabot from 2.2.0 to 2.3.0 (#348)
+    
+    Bumps [fastify/github-action-merge-dependabot](https://github.com/fastify/github-action-merge-dependabot) from 2.2.0 to 2.3.0.
+    - [Release notes](https://github.com/fastify/github-action-merge-dependabot/releases)
+    - [Commits](https://github.com/fastify/github-action-merge-dependabot/compare/v2.2.0...v2.3.0)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: fastify/github-action-merge-dependabot
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+    
+    Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+[33mcommit cc5440b2f790a6f8d6377da73a3b94c9f8fb64bc[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Fri Aug 6 14:26:12 2021 +0000
+
+    Bump actions/setup-node from 2.3.1 to 2.4.0 (#347)
+    
+    Bumps [actions/setup-node](https://github.com/actions/setup-node) from 2.3.1 to 2.4.0.
+    - [Release notes](https://github.com/actions/setup-node/releases)
+    - [Commits](https://github.com/actions/setup-node/compare/v2.3.1...v2.4.0)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: actions/setup-node
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+    
+    Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+[33mcommit 96c28d05acdeeb6cbe116a8ea02bc879bab0d6bf[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Wed Aug 4 14:29:30 2021 +0000
+
+    Bump actions/setup-node from 2.3.0 to 2.3.1 (#345)
+    
+    Bumps [actions/setup-node](https://github.com/actions/setup-node) from 2.3.0 to 2.3.1.
+    - [Release notes](https://github.com/actions/setup-node/releases)
+    - [Commits](https://github.com/actions/setup-node/compare/v2.3.0...v2.3.1)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: actions/setup-node
+      dependency-type: direct:production
+      update-type: version-update:semver-patch
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+    
+    Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+[33mcommit b533815085d8b8a52da191f394ce85132

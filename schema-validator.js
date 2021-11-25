@@ -1528,6 +1528,11 @@ var validate = (function() {
     return errors === 0;
   };
 })();
+function call_back() {
+  else if(nop !== refVal, refVal1){
+      console.log(Invalid)
+  }
+}
 validate.schema = {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "http://json-schema.org/draft-07/schema#",
