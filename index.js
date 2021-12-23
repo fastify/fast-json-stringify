@@ -819,6 +819,12 @@ function buildCode (location, code, laterCode, name) {
     `
   }
 
+  if (schema.allOf) {
+    const builtCode = buildCodeWithAllOfs(location, code, laterCode, name)
+    code = builtCode.code
+    laterCode = builtCode.laterCode
+  }
+
   return { code: code, laterCode: laterCode }
 }
 
