@@ -19,22 +19,25 @@ fast-json-stringify requires a [JSON Schema Draft 7](https://json-schema.org/spe
 ##### Benchmarks
 
 - Machine: `EX41S-SSD, Intel Core i7, 4Ghz, 64GB RAM, 4C/8T, SSD`.
-- Node.js `v12.16.2`
+- Node.js `v16.9.1`
 
 ```
-FJS creation x 59,805 ops/sec ±0.23% (91 runs sampled)
+FJS creation x 6,040 ops/sec ±1.17% (91 runs sampled)
 
-JSON.stringify array x 5,330 ops/sec ±0.54% (97 runs sampled)
-fast-json-stringify array x 6,995 ops/sec ±0.24% (94 runs sampled)
+JSON.stringify array x 5,519 ops/sec ±0.08% (99 runs sampled)
+fast-json-stringify array x 7,143 ops/sec ±0.14% (97 runs sampled)
 
-JSON.stringify long string x 15,108 ops/sec ±0.13% (100 runs sampled)
-fast-json-stringify long string x 15,089 ops/sec ±0.15% (98 runs sampled)
+JSON.stringify long string x 16,438 ops/sec ±0.32% (98 runs sampled)
+fast-json-stringify long string x 16,457 ops/sec ±0.09% (97 runs sampled)
 
-JSON.stringify short string x 13,214,696 ops/sec ±0.19% (97 runs sampled)
-fast-json-stringify short string x 33,378,500 ops/sec ±0.27% (95 runs sampled)
+JSON.stringify short string x 12,061,258 ops/sec ±0.32% (97 runs sampled)
+fast-json-stringify short string x 35,531,071 ops/sec ±0.17% (94 runs sampled)
 
-JSON.stringify obj x 3,172,653 ops/sec ±0.15% (98 runs sampled)
-fast-json-stringify obj x 13,537,123 ops/sec ±0.19% (95 runs sampled)
+JSON.stringify obj x 3,079,746 ops/sec ±0.09% (95 runs sampled)
+fast-json-stringify obj x 7,721,569 ops/sec ±0.12% (98 runs sampled)
+
+JSON stringify date x 1,149,786 ops/sec ±0.10% (99 runs sampled)
+fast-json-stringify date format x 1,674,498 ops/sec ±0.12% (99 runs sampled)
 ```
 
 #### Table of contents:

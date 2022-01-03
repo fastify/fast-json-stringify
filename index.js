@@ -41,7 +41,12 @@ function mergeLocation (source, dest) {
   }
 }
 
+const arrayItemsReferenceSerializersMap = new Map()
+const objectReferenceSerializersMap = new Map()
+
 function build (schema, options) {
+  arrayItemsReferenceSerializersMap.clear()
+  objectReferenceSerializersMap.clear()
   options = options || {}
   isValidSchema(schema)
   if (options.schema) {
@@ -171,6 +176,9 @@ function build (schema, options) {
     }
     return dependenciesName
   }
+
+  arrayItemsReferenceSerializersMap.clear()
+  objectReferenceSerializersMap.clear()
 
   return (Function.apply(null, dependenciesName).apply(null, dependencies))
 }
@@ -311,10 +319,7 @@ function $asDatetime (date, skipQuotes) {
 function $asDate (date, skipQuotes) {
   const quotes = skipQuotes === true ? '' : '"'
   if (date instanceof Date) {
-    const year = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date)
-    const month = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(date)
-    const day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date)
-    return quotes + year + '-' + month + '-' + day + quotes
+    return quotes + new Date(date.getTime() - (date.getTimezoneOffset() * 60000 )).toISOString().slice(0, 10) + quotes
   } else if (date && typeof date.format === 'function') {
     return quotes + date.format('YYYY-MM-DD') + quotes
   } else {
@@ -423,51 +428,60 @@ function addPatternProperties (location) {
     } catch (err) {
       throw new Error(`${err.message}. Found at ${regex} matching ${JSON.stringify(pp[regex])}`)
     }
-    code += `
-        if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
-    `
+
+    const ifPpKeyExists = `if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {`
+
     if (type === 'object') {
       code += `${buildObject(ppLocation, '', 'buildObjectPP' + index)}
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) + ':' + buildObjectPP${index}(obj[keys[i]])
       `
     } else if (type === 'array') {
       code += `${buildArray(ppLocation, '', 'buildArrayPP' + index)}
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) + ':' + buildArrayPP${index}(obj[keys[i]])
       `
     } else if (type === 'null') {
       code += `
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) +':null'
       `
     } else if (type === 'string') {
       code += `
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
       `
     } else if (type === 'integer') {
       code += `
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
       `
     } else if (type === 'number') {
       code += `
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]])
       `
     } else if (type === 'boolean') {
       code += `
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]])
       `
     } else if (type === undefined) {
       code += `
+          ${ifPpKeyExists}
           ${addComma}
           json += $asString(keys[i]) + ':' + $asAny(obj[keys[i]])
       `
     } else {
       code += `
+        ${ifPpKeyExists}
         throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ' + ${JSON.stringify(type)})
       `
     }
@@ -799,6 +813,12 @@ function buildCode (location, code, laterCode, name) {
     `
   }
 
+  if (schema.allOf) {
+    const builtCode = buildCodeWithAllOfs(location, code, laterCode, name)
+    code = builtCode.code
+    laterCode = builtCode.laterCode
+  }
+
   return { code: code, laterCode: laterCode }
 }
 
@@ -914,6 +934,16 @@ function buildObject (location, code, name) {
       }
   `
   }
+
+  if (objectReferenceSerializersMap.has(schema)) {
+    code += `
+      return ${objectReferenceSerializersMap.get(schema)}(input)
+    }
+    `
+    return code
+  }
+  objectReferenceSerializersMap.set(schema, name)
+
   code += `
       var obj = ${toJSON('input')}
       var json = '{'
@@ -953,9 +983,6 @@ function buildArray (location, code, name, key = null) {
       }
     `
   }
-  code += `
-      var json = '['
-  `
   const laterCode = ''
 
   // default to any items type
@@ -969,8 +996,18 @@ function buildArray (location, code, name, key = null) {
       schema = location.schema
       schema[fjsCloned] = true
     }
+
     location = refFinder(schema.items.$ref, location)
     schema.items = location.schema
+
+    if (arrayItemsReferenceSerializersMap.has(schema.items)) {
+      code += `
+      return ${arrayItemsReferenceSerializersMap.get(schema.items)}(obj)
+      }
+      `
+      return code
+    }
+    arrayItemsReferenceSerializersMap.set(schema.items, name)
   }
 
   let result = { code: '', laterCode: '' }
@@ -1017,17 +1054,17 @@ function buildArray (location, code, name, key = null) {
 
   code += `
     var l = obj.length
-
+    var jsonOutput= ''
     for (var i = 0; i < l; i++) {
-      var jsonLastChar = json[json.length - 1]
-
-      if (i > 0 && jsonLastChar !== '[' && jsonLastChar !== ',') {
-        json += ','
-      }
+      var json = ''
       ${result.code}
+      jsonOutput += json
+
+      if (json.length > 0 && i < l - 1) {
+        jsonOutput += ','
+      }
     }
-    json += ']'
-    return json
+    return \`[\${jsonOutput}]\`
   }
   ${result.laterCode}
   `

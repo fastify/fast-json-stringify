@@ -64,6 +64,7 @@ declare namespace build {
 
   export interface StringSchema extends BaseSchema {
     type: "string";
+    format?: string;
   }
 
   export interface IntegerSchema extends BaseSchema {

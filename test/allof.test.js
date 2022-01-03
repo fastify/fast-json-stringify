@@ -277,6 +277,58 @@ test('object with multiple $refs in allOf', (t) => {
   t.equal(value, '{"id1":1,"id2":2}')
 })
 
+test('allOf with nested allOf in $ref', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'allOf with nested allOf in $ref',
+    type: 'object',
+    definitions: {
+      group: {
+        type: 'object',
+        allOf: [{
+          properties: {
+            id2: {
+              type: 'integer'
+            }
+          }
+        }, {
+          properties: {
+            id3: {
+              type: 'integer'
+            }
+          }
+        }]
+      }
+    },
+    allOf: [
+      {
+        type: 'object',
+        properties: {
+          id1: {
+            type: 'integer'
+          }
+        },
+        required: [
+          'id1'
+        ]
+      },
+      {
+        $ref: '#/definitions/group'
+      }
+    ]
+  }
+
+  const stringify = build(schema)
+  const value = stringify({
+    id1: 1,
+    id2: 2,
+    id3: 3,
+    id4: 4 // extra prop shouldn't be in result
+  })
+  t.equal(value, '{"id1":1,"id2":2,"id3":3}')
+})
+
 test('object with external $refs in allOf', (t) => {
   t.plan(1)
 

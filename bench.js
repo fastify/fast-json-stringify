@@ -69,22 +69,38 @@ const arraySchemaAJVJTD = {
   elements: schemaAJVJTD
 }
 
+const dateFormatSchema = {
+  description: 'Date of birth',
+  type: 'string',
+  format: 'date'
+}
+
+const dateFormatSchemaCJS = {
+  description: 'Date of birth',
+  type: 'string',
+  format: 'date'
+}
+
 const obj = {
   firstName: 'Matteo',
   lastName: 'Collina',
   age: 32
 }
 
+const date = new Date()
+
 const multiArray = []
 
 const CJS = require('compile-json-stringify')
 const CJSStringify = CJS(schemaCJS)
 const CJSStringifyArray = CJS(arraySchemaCJS)
+const CJSStringifyDate = CJS(dateFormatSchemaCJS)
 const CJSStringifyString = CJS({ type: 'string' })
 
 const FJS = require('.')
 const stringify = FJS(schema)
 const stringifyArray = FJS(arraySchema)
+const stringifyDate = FJS(dateFormatSchema)
 const stringifyString = FJS({ type: 'string' })
 let str = ''
 
@@ -180,6 +196,18 @@ suite.add('compile-json-stringify obj', function () {
 
 suite.add('AJV Serialize obj', function () {
   ajvSerialize(obj)
+})
+
+suite.add('JSON stringify date', function () {
+  JSON.stringify(date)
+})
+
+suite.add('fast-json-stringify date format', function () {
+  stringifyDate(date)
+})
+
+suite.add('compile-json-stringify date format', function () {
+  CJSStringifyDate(date)
 })
 
 suite.on('cycle', cycle)
