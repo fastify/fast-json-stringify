@@ -16,7 +16,6 @@ test('nested object in pattern properties for typebox', (t) => {
     object1: Type.Record(Type.String(), nestedSchema),
     object2: Type.Record(Type.String(), nestedSchema)
   })
-  console.dir(RootSchema, null)
   const schema = RootSchema
   const stringify = build(schema)
 

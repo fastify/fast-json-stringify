@@ -921,7 +921,7 @@ function toJSON (variableName) {
   `
 }
 
-function buildObject(location, code, name) {
+function buildObject (location, code, name) {
   const schema = location.schema
 
   code += `
