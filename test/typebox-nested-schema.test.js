@@ -2,10 +2,11 @@
 
 const test = require('tap').test
 const build = require('..')
+const semver = require('semver')
 
-const { Type } = require('@sinclair/typebox')
+test('nested object in pattern properties for typebox', { skip: semver.lt(process.versions.node, '12.0.0') }, (t) => {
+  const { Type } = require('@sinclair/typebox')
 
-test('nested object in pattern properties for typebox', (t) => {
   t.plan(1)
 
   const nestedSchema = Type.Object({
