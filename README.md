@@ -56,7 +56,7 @@ compile-json-stringify date format x 1,086,187 ops/sec ±0.16% (99 runs sampled)
  - <a href="#missingFields">`Missing fields`</a>
  - <a href="#patternProperties">`Pattern Properties`</a>
  - <a href="#additionalProperties">`Additional Properties`</a>
- - <a href="#anyof">`AnyOf`</a>
+ - <a href="#anyof">`AnyOf` and `OneOf`</a>
  - <a href="#ref">`Reuse - $ref`</a>
  - <a href="#long">`Long integers`</a>
  - <a href="#integer">`Integers`</a>
@@ -320,11 +320,11 @@ const obj = {
 console.log(stringify(obj)) // '{"nickname":"nick","matchfoo":"42","otherfoo":"str","matchnum":3,"nomatchstr":"valar morghulis",nomatchint:"313"}'
 ```
 
-#### AnyOf
+#### AnyOf and OneOf
 
-`fast-json-stringify` supports the anyOf keyword as defined by JSON schema. *anyOf* must be an array of valid JSON schemas. The different schemas will be tested in the specified order. The more schemas `stringify` has to try before finding a match, the slower it will be.
+`fast-json-stringify` supports the **anyOf** and **oneOf** keywords as defined by JSON schema. Both must be an array of valid JSON schemas. The different schemas will be tested in the specified order. The more schemas `stringify` has to try before finding a match, the slower it will be.
 
-*anyOf* uses [ajv](https://www.npmjs.com/package/ajv) as a JSON schema validator to find the schema that matches the data. This has an impact on performance—only use it as a last resort.
+*anyOf* and *oneOf* use [ajv](https://www.npmjs.com/package/ajv) as a JSON schema validator to find the schema that matches the data. This has an impact on performance—only use it as a last resort.
 
 Example:
 ```javascript
