@@ -7,6 +7,7 @@ const ajvFormats = require('ajv-formats')
 const merge = require('deepmerge')
 const clone = require('rfdc')({ proto: true })
 const fjsCloned = Symbol('fast-json-stringify.cloned')
+const { randomUUID } = require('crypto')
 
 const validate = require('./schema-validator')
 let stringSimilarity = null
@@ -43,11 +44,17 @@ function mergeLocation (source, dest) {
 
 const arrayItemsReferenceSerializersMap = new Map()
 const objectReferenceSerializersMap = new Map()
+let ajvInstance = null
 
 function build (schema, options) {
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
+
   options = options || {}
+
+  ajvInstance = new Ajv({ ...options.ajv, strictSchema: false })
+  ajvFormats(ajvInstance)
+
   isValidSchema(schema)
   if (options.schema) {
     // eslint-disable-next-line
@@ -72,41 +79,6 @@ function build (schema, options) {
 
   code += `
     ${asFunctions}
-
-    
-    /**
-     * Used by schemas that are dependant on calling 'ajv.validate' during runtime,
-     * it stores the value of the '$id' property of the schema (if it has it) inside
-     * a cache which is used to figure out if the schema was compiled into a validator
-     * by ajv on a previous call, if it was then the '$id' string will be used to 
-     * invoke 'ajv.validate', this allows:
-     * 
-     * 1. Schemas that depend on ajv.validate calls to leverage ajv caching system.
-     * 2. To avoid errors, since directly invoking 'ajv.validate' with the same 
-     * schema (that contains an '$id' property) twice will throw an error.
-     */
-    const $validateWithAjv = (function() {
-      const cache = new Set()
-
-      return function (schema, target) {
-        const id = schema.$id
-        
-        if (!id) {
-          return ajv.validate(schema, target)
-        }
-
-        const cached = cache.has(id)
-
-        if (cached) {
-          return ajv.validate(id, target)
-        } else {
-          cache.add(id)
-          return ajv.validate(schema, target)
-        }
-      }
-    })()
-
-
     function parseInteger(int) { return Math.${intParseFunctionName}(int) }
     `
 
@@ -163,18 +135,17 @@ function build (schema, options) {
     ;
      return ${main}
   `
-
-  const ajvInstance = new Ajv(options.ajv)
-  ajvFormats(ajvInstance)
   const dependencies = [ajvInstance]
   const dependenciesName = ['ajv']
+  ajvInstance = null
+
   dependenciesName.push(code)
 
   if (options.debugMode) {
-    dependenciesName.toString = function () {
-      return dependenciesName.join('\n')
+    return {
+      code: dependenciesName.join('\n'),
+      ajv: dependencies[0]
     }
-    return dependenciesName
   }
 
   arrayItemsReferenceSerializersMap.clear()
@@ -874,8 +845,11 @@ function addIfThenElse (location, name) {
   let merged = merge(copy, then)
   let mergedLocation = mergeLocation(location, { schema: merged })
 
+  const schemaKey = i.$id || randomUUID()
+  ajvInstance.addSchema(i, schemaKey)
+
   code += `
-    valid = $validateWithAjv(${JSON.stringify(i)}, obj)
+    valid = ajv.validate(${JSON.stringify(schemaKey)}, obj)
     if (valid) {
   `
   if (merged.if && merged.then) {
@@ -1224,8 +1198,12 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           // with the actual schema
           // 2. `nested`, through `buildCode`, replaces any reference in object properties with the actual schema
           // (see https://github.com/fastify/fast-json-stringify/blob/6da3b3e8ac24b1ca5578223adedb4083b7adf8db/index.js#L631)
+
+          const schemaKey = location.schema.$id || randomUUID()
+          ajvInstance.addSchema(location.schema, schemaKey)
+
           code += `
-            ${index === 0 ? 'if' : 'else if'}($validateWithAjv(${JSON.stringify(location.schema)}, ${testValue}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(schemaKey)}, ${testValue}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
@@ -1241,8 +1219,12 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           const testSerializer = getTestSerializer(location.schema.format)
           const testValue = testSerializer !== undefined ? `${testSerializer}(obj${accessor}, true)` : `obj${accessor}`
           // see comment on anyOf about dereferencing the schema before calling ajv.validate
+
+          const schemaKey = location.schema.$id || randomUUID()
+          ajvInstance.addSchema(location.schema, schemaKey)
+
           code += `
-            ${index === 0 ? 'if' : 'else if'}($validateWithAjv(${JSON.stringify(location.schema)}, ${testValue}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(schemaKey)}, ${testValue}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
@@ -1352,17 +1334,8 @@ function isEmpty (schema) {
 
 module.exports = build
 
-module.exports.restore = function (debugModeStr, options = {}) {
-  const dependencies = [debugModeStr]
-  const args = []
-  if (debugModeStr.startsWith('ajv')) {
-    dependencies.unshift('ajv')
-    const ajvInstance = new Ajv(options.ajv)
-    ajvFormats(ajvInstance)
-    args.push(ajvInstance)
-  }
-
+module.exports.restore = function ({ code, ajv }) {
   // eslint-disable-next-line
-  return (Function.apply(null, ['ajv', debugModeStr])
-    .apply(null, args))
+  return (Function.apply(null, ['ajv', code])
+    .apply(null, [ajv]))
 }
