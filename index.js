@@ -849,7 +849,7 @@ function addIfThenElse (location, name) {
   ajvInstance.addSchema(i, schemaKey)
 
   code += `
-    valid = ajv.validate(${JSON.stringify(schemaKey)}, obj)
+    valid = ajv.validate("${schemaKey}", obj)
     if (valid) {
   `
   if (merged.if && merged.then) {
@@ -1203,7 +1203,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           ajvInstance.addSchema(location.schema, schemaKey)
 
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(schemaKey)}, ${testValue}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate("${schemaKey}", ${testValue}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
@@ -1224,7 +1224,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           ajvInstance.addSchema(location.schema, schemaKey)
 
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate(${JSON.stringify(schemaKey)}, ${testValue}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate("${schemaKey}", ${testValue}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
