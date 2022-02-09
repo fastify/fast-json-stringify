@@ -43,6 +43,7 @@
     "webpack": "^5.40.0"
   },
   "dependencies": {
+    "@sinclair/typebox": "^0.23.3",
     "ajv": "^8.6.2",
     "ajv-formats": "^2.1.1",
     "deepmerge": "^4.2.2",

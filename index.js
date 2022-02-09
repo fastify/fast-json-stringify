@@ -909,7 +909,7 @@ function buildObject (location, code, name) {
   `
   }
 
-  if (objectReferenceSerializersMap.has(schema)) {
+  if (objectReferenceSerializersMap.has(schema) && objectReferenceSerializersMap.get(schema) !== name) {
     code += `
       return ${objectReferenceSerializersMap.get(schema)}(input)
     }
