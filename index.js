@@ -189,7 +189,7 @@ const numberKeywords = [
 
 /**
  * Infer type based on keyword in order to generate optimized code
- * https://json-schema.org/latest/json-schema-validation.html#rfc.section.6
+ * https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6
  */
 function inferTypeByKeyword (schema) {
   // eslint-disable-next-line
