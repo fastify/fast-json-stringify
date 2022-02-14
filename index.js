@@ -3,6 +3,7 @@
 /* eslint no-prototype-builtins: 0 */
 
 const Ajv = require('ajv')
+const fastUri = require('fast-uri')
 const ajvFormats = require('ajv-formats')
 const merge = require('deepmerge')
 const clone = require('rfdc')({ proto: true })
@@ -52,7 +53,7 @@ function build (schema, options) {
 
   options = options || {}
 
-  ajvInstance = new Ajv({ ...options.ajv, strictSchema: false })
+  ajvInstance = new Ajv({ ...options.ajv, strictSchema: false, uriResolver: fastUri })
   ajvFormats(ajvInstance)
 
   isValidSchema(schema)
