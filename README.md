@@ -56,7 +56,7 @@ compile-json-stringify date format x 1,086,187 ops/sec ±0.16% (99 runs sampled)
  - <a href="#missingFields">`Missing fields`</a>
  - <a href="#patternProperties">`Pattern Properties`</a>
  - <a href="#additionalProperties">`Additional Properties`</a>
- - <a href="#anyof">`AnyOf` and `OneOf`</a>
+ - <a href="#AnyOf-and-OneOf">`AnyOf` and `OneOf`</a>
  - <a href="#ref">`Reuse - $ref`</a>
  - <a href="#long">`Long integers`</a>
  - <a href="#integer">`Integers`</a>
@@ -268,7 +268,7 @@ const stringify = fastJson({
 const obj = {
   nickname: 'nick',
   matchfoo: 42,
-  otherfoo: 'str'
+  otherfoo: 'str',
   matchnum: 3
 }
 
@@ -311,7 +311,7 @@ const stringify = fastJson({
 const obj = {
   nickname: 'nick',
   matchfoo: 42,
-  otherfoo: 'str'
+  otherfoo: 'str',
   matchnum: 3,
   nomatchstr: 'valar morghulis',
   nomatchint: 313
