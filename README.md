@@ -61,6 +61,7 @@ compile-json-stringify date format x 1,086,187 ops/sec ±0.16% (99 runs sampled)
  - <a href="#long">`Long integers`</a>
  - <a href="#integer">`Integers`</a>
  - <a href="#nullable">`Nullable`</a>
+ - <a href="#largearrays">`Large Arrays`</a>
 - <a href="#security">`Security Notice`</a>
 - <a href="#acknowledgements">`Acknowledgements`</a>
 - <a href="#license">`License`</a>
@@ -117,6 +118,7 @@ const stringify = fastJson(mySchema, {
 - `schema`: external schemas references by $ref property. [More details](#ref)
 - `ajv`: [ajv v8 instance's settings](https://ajv.js.org/options.html) for those properties that require `ajv`. [More details](#anyof)
 - `rounding`: setup how the `integer` types will be rounded when not integers. [More details](#integer)
+- `largeArrayMechanism`: settle the mechanism that should be used to handle large (over `20000` items) arrays. [More details](#largearrays)
 
 
 <a name="api"></a>
@@ -581,6 +583,47 @@ Otherwise, instead of raising an error, null values will be coerced as follows:
 - `number` -> `0`
 - `string` -> `""`
 - `boolean` -> `false`
+
+<a name="largearrays"></a>
+#### Large Arrays
+
+Large arrays are, for the scope of this document, defined as arrays containing
+`20000` items or more.
+
+At some point the overhead caused by the default mechanism used by
+`fast-json-stringify` to handle arrays starts increasing exponentially, leading
+to slow overall executions.
+
+In order to improve that the user can set the `largeArrayMechanism` option with
+one of the following values:
+
+- `default` - Default behavior
+- `json-stringify` - This option will remove support for schema validation
+within **large arrays** completely. By doing so the overhead previously
+mentioned is nulled, greatly improving execution time. Mind there's no change
+in behavior for arrays with less than `20000` items
+- `array-join` - This option is a compromise between the last two.
+`fastify-json-stringify` works by concatenating lots of string pieces into the
+final JSON string. With this option set, **large arrays** would be stringified
+by joining their elements' stringified versions using `Array.join`, instead
+of string concatenation
+
+##### Benchmarks
+
+For reference, here goes some benchmarks for comparison over the three
+mechanisms. Benchmarks conducted on an old machine.
+
+- Machine: `ST1000LM024 HN-M 1TB HDD, Intel Core i7-3610QM @ 2.3Ghz, 12GB RAM, 4C/8T`.
+- Node.js `v16.13.1`
+
+```
+JSON.stringify large array x 157 ops/sec ±0.73% (86 runs sampled)
+fast-json-stringify large array default x 48.72 ops/sec ±4.92% (48 runs sampled)
+fast-json-stringify large array json-stringify x 157 ops/sec ±0.76% (86 runs sampled)
+fast-json-stringify large array array-join x 69.04 ops/sec ±4.47% (53 runs sampled)
+compile-json-stringify large array x 175 ops/sec ±4.47% (79 runs sampled)
+AJV Serialize large array x 58.76 ops/sec ±4.59% (60 runs sampled)
+```
 
 <a name="security"></a>
 ## Security notice
