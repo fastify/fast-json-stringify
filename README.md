@@ -613,7 +613,7 @@ of string concatenation
 For reference, here goes some benchmarks for comparison over the three
 mechanisms. Benchmarks conducted on an old machine.
 
-- Machine: `ST1000LM024 HN-M 1TB HDD, Intel Core i7-3610QM @ 2.3Ghz, 12GB RAM, 4C/8T`.
+- Machine: `ST1000LM024 HN-M 1TB HDD, Intel Core i7-3610QM @ 2.3GHz, 12GB RAM, 4C/8T`.
 - Node.js `v16.13.1`
 
 ```
