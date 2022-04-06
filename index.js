@@ -11,7 +11,14 @@ const fjsCloned = Symbol('fast-json-stringify.cloned')
 const { randomUUID } = require('crypto')
 
 const validate = require('./schema-validator')
+
 let stringSimilarity = null
+let largeArrayMechanism = 'default'
+const validLargeArrayMechanisms = [
+  'default',
+  'json-stringify',
+  'array-join'
+]
 
 const addComma = `
   if (addComma) {
@@ -70,6 +77,14 @@ function build (schema, options) {
       intParseFunctionName = options.rounding
     } else {
       throw new Error(`Unsupported integer rounding method ${options.rounding}`)
+    }
+  }
+
+  if (options.largeArrayMechanism) {
+    if (validLargeArrayMechanisms.includes(options.largeArrayMechanism)) {
+      largeArrayMechanism = options.largeArrayMechanism
+    } else {
+      throw new Error(`Unsupported large array mechanism ${options.rounding}`)
     }
   }
 
@@ -1028,7 +1043,9 @@ function buildArray (location, code, name, key = null) {
   }
 
   code += `
-    var l = obj.length
+    var l = obj.length`
+
+  const concatSnippet = `
     var jsonOutput= ''
     for (var i = 0; i < l; i++) {
       var json = ''
@@ -1040,7 +1057,32 @@ function buildArray (location, code, name, key = null) {
       }
     }
     return \`[\${jsonOutput}]\`
+  }`
+
+  switch (largeArrayMechanism) {
+    case 'default':
+      break
+
+    case 'json-stringify':
+      code += `
+      if (l && l >= 20000) {
+        return JSON.stringify(obj)
+      }`
+      break
+
+    case 'array-join':
+      code += `
+      if (l && l >= 20000) {
+        return \`[\${obj.map(${result.mapFnName}).join(',')}]\`
+      }`
+      break
+
+    default:
+      throw new Error(`Unsupported large array mechanism ${largeArrayMechanism}`)
   }
+
+  code += `
+  ${concatSnippet}
   ${result.laterCode}
   `
 
@@ -1148,22 +1190,27 @@ function nested (laterCode, name, key, location, subKey, isArray) {
 
   switch (type) {
     case 'null':
+      funcName = '$asNull'
       code += `
         json += $asNull()
       `
       break
     case 'string': {
+      funcName = '$asString'
       const stringSerializer = getStringSerializer(schema.format)
       code += nullable ? `json += obj${accessor} === null ? null : ${stringSerializer}(obj${accessor})` : `json += ${stringSerializer}(obj${accessor})`
       break
     }
     case 'integer':
+      funcName = '$asInteger'
       code += nullable ? `json += obj${accessor} === null ? null : $asInteger(obj${accessor})` : `json += $asInteger(obj${accessor})`
       break
     case 'number':
+      funcName = '$asNumber'
       code += nullable ? `json += obj${accessor} === null ? null : $asNumber(obj${accessor})` : `json += $asNumber(obj${accessor})`
       break
     case 'boolean':
+      funcName = '$asBoolean'
       code += nullable ? `json += obj${accessor} === null ? null : $asBoolean(obj${accessor})` : `json += $asBoolean(obj${accessor})`
       break
     case 'object':
@@ -1181,6 +1228,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
       `
       break
     case undefined:
+      funcName = '$asNull'
       if ('anyOf' in schema) {
         // beware: dereferenceOfRefs has side effects and changes schema.anyOf
         const anyOfLocations = dereferenceOfRefs(location, 'anyOf')
@@ -1319,7 +1367,8 @@ function nested (laterCode, name, key, location, subKey, isArray) {
 
   return {
     code,
-    laterCode
+    laterCode,
+    mapFnName: funcName
   }
 }
 
@@ -1334,6 +1383,8 @@ function isEmpty (schema) {
 }
 
 module.exports = build
+
+module.exports.validLargeArrayMechanisms = validLargeArrayMechanisms
 
 module.exports.restore = function ({ code, ajv }) {
   // eslint-disable-next-line
