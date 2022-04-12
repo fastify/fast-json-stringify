@@ -16,8 +16,7 @@ let stringSimilarity = null
 let largeArrayMechanism = 'default'
 const validLargeArrayMechanisms = [
   'default',
-  'json-stringify',
-  'array-join'
+  'json-stringify'
 ]
 
 const addComma = `
@@ -1043,9 +1042,12 @@ function buildArray (location, code, name, key = null) {
   }
 
   code += `
-    var l = obj.length`
+    var l = obj.length
+    if (l && l >= 20000) {`
 
   const concatSnippet = `
+    }
+
     var jsonOutput= ''
     for (var i = 0; i < l; i++) {
       var json = ''
@@ -1061,20 +1063,13 @@ function buildArray (location, code, name, key = null) {
 
   switch (largeArrayMechanism) {
     case 'default':
+      code += `
+      return \`[\${obj.map(${result.mapFnName}).join(',')}]\``
       break
 
     case 'json-stringify':
       code += `
-      if (l && l >= 20000) {
-        return JSON.stringify(obj)
-      }`
-      break
-
-    case 'array-join':
-      code += `
-      if (l && l >= 20000) {
-        return \`[\${obj.map(${result.mapFnName}).join(',')}]\`
-      }`
+      return JSON.stringify(obj)`
       break
 
     default:

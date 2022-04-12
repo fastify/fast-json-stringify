@@ -108,9 +108,6 @@ const stringifyArrayDefault = FJS(arraySchema)
 const stringifyArrayJSONStringify = FJS(arraySchema, {
   largeArrayMechanism: 'json-stringify'
 })
-const stringifyArrayArrayJoin = FJS(arraySchema, {
-  largeArrayMechanism: 'array-join'
-})
 const stringifyDate = FJS(dateFormatSchema)
 const stringifyString = FJS({ type: 'string' })
 let str = ''
@@ -187,10 +184,6 @@ suite.add('fast-json-stringify array json-stringify', function () {
   stringifyArrayJSONStringify(multiArray)
 })
 
-suite.add('fast-json-stringify array array-join', function () {
-  stringifyArrayArrayJoin(multiArray)
-})
-
 suite.add('compile-json-stringify array', function () {
   CJSStringifyArray(multiArray)
 })
@@ -209,10 +202,6 @@ suite.add('fast-json-stringify large array default', function () {
 
 suite.add('fast-json-stringify large array json-stringify', function () {
   stringifyArrayJSONStringify(largeArray)
-})
-
-suite.add('fast-json-stringify large array array-join', function () {
-  stringifyArrayArrayJoin(largeArray)
 })
 
 suite.add('compile-json-stringify large array', function () {

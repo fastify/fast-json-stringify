@@ -118,7 +118,7 @@ const stringify = fastJson(mySchema, {
 - `schema`: external schemas references by $ref property. [More details](#ref)
 - `ajv`: [ajv v8 instance's settings](https://ajv.js.org/options.html) for those properties that require `ajv`. [More details](#anyof)
 - `rounding`: setup how the `integer` types will be rounded when not integers. [More details](#integer)
-- `largeArrayMechanism`: settle the mechanism that should be used to handle large (over `20000` items) arrays. [More details](#largearrays)
+- `largeArrayMechanism`: set the mechanism that should be used to handle large (`20000` or more items) arrays. [More details](#largearrays)
 
 
 <a name="api"></a>
@@ -597,16 +597,15 @@ to slow overall executions.
 In order to improve that the user can set the `largeArrayMechanism` option with
 one of the following values:
 
-- `default` - Default behavior
+- `default` - This option is a compromise between performance and feature set by
+still providing the expected functionality out of this lib but giving up some
+possible performance gain. With this option set, **large arrays** would be
+stringified by joining their stringified elements using `Array.join` instead of
+string concatenation for better performance
 - `json-stringify` - This option will remove support for schema validation
 within **large arrays** completely. By doing so the overhead previously
 mentioned is nulled, greatly improving execution time. Mind there's no change
 in behavior for arrays with less than `20000` items
-- `array-join` - This option is a compromise between the last two.
-`fastify-json-stringify` works by concatenating lots of string pieces into the
-final JSON string. With this option set, **large arrays** would be stringified
-by joining their elements' stringified versions using `Array.join`, instead
-of string concatenation
 
 ##### Benchmarks
 
@@ -620,7 +619,6 @@ mechanisms. Benchmarks conducted on an old machine.
 JSON.stringify large array x 157 ops/sec ±0.73% (86 runs sampled)
 fast-json-stringify large array default x 48.72 ops/sec ±4.92% (48 runs sampled)
 fast-json-stringify large array json-stringify x 157 ops/sec ±0.76% (86 runs sampled)
-fast-json-stringify large array array-join x 69.04 ops/sec ±4.47% (53 runs sampled)
 compile-json-stringify large array x 175 ops/sec ±4.47% (79 runs sampled)
 AJV Serialize large array x 58.76 ops/sec ±4.59% (60 runs sampled)
 ```
