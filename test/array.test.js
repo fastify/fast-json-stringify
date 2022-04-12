@@ -5,12 +5,12 @@ const test = require('tap').test
 const validator = require('is-my-json-valid')
 const build = require('..')
 
-function buildTest (schema, toStringify) {
+function buildTest (schema, toStringify, options) {
   test(`render a ${schema.title} as JSON`, (t) => {
     t.plan(3)
 
     const validate = validator(schema)
-    const stringify = build(schema)
+    const stringify = build(schema, options)
     const output = stringify(toStringify)
 
     t.same(JSON.parse(output), toStringify)
@@ -318,4 +318,47 @@ test('object array with anyOf and symbol', (t) => {
     { name: 'name-1', option: 'Bar' }
   ])
   t.equal(value, '[{"name":"name-0","option":"Foo"},{"name":"name-1","option":"Bar"}]')
+})
+
+const largeArray = new Array(2e4).fill({ a: 'test', b: 1 })
+buildTest({
+  title: 'large array with default mechanism',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          a: { type: 'string' },
+          b: { type: 'number' }
+        }
+      }
+    }
+  }
+}, {
+  ids: largeArray
+}, {
+  largeArrayMechanism: 'default'
+})
+
+buildTest({
+  title: 'large array with json-stringify mechanism',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          a: { type: 'string' },
+          b: { type: 'number' }
+        }
+      }
+    }
+  }
+}, {
+  ids: largeArray
+}, {
+  largeArrayMechanism: 'json-stringify'
 })
