@@ -339,6 +339,7 @@ buildTest({
 }, {
   ids: largeArray
 }, {
+  largeArraySize: 2e4,
   largeArrayMechanism: 'default'
 })
 

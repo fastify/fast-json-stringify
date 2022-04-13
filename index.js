@@ -12,6 +12,7 @@ const { randomUUID } = require('crypto')
 
 const validate = require('./schema-validator')
 
+let largeArraySize = 2e4
 let stringSimilarity = null
 let largeArrayMechanism = 'default'
 const validLargeArrayMechanisms = [
@@ -84,6 +85,14 @@ function build (schema, options) {
       largeArrayMechanism = options.largeArrayMechanism
     } else {
       throw new Error(`Unsupported large array mechanism ${options.rounding}`)
+    }
+  }
+
+  if (options.largeArraySize) {
+    if (!Number.isNaN(Number.parseInt(options.largeArraySize, 10))) {
+      largeArraySize = options.largeArraySize
+    } else {
+      throw new Error(`Unsupported large array size. Expected integer-like, got ${options.largeArraySize}`)
     }
   }
 
@@ -1043,7 +1052,7 @@ function buildArray (location, code, name, key = null) {
 
   code += `
     var l = obj.length
-    if (l && l >= 20000) {`
+    if (l && l >= ${largeArraySize}) {`
 
   const concatSnippet = `
     }
