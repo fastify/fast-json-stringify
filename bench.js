@@ -3,6 +3,10 @@
 const benchmark = require('benchmark')
 const suite = new benchmark.Suite()
 
+const STR_LEN = 1e4
+const LARGE_ARRAY_SIZE = 2e4
+const MULTI_ARRAY_LENGHT = 1e3
+
 const schema = {
   title: 'Example Schema',
   type: 'object',
@@ -89,7 +93,8 @@ const obj = {
 
 const date = new Date()
 
-const multiArray = []
+const multiArray = new Array(MULTI_ARRAY_LENGHT)
+const largeArray = new Array(LARGE_ARRAY_SIZE)
 
 const CJS = require('compile-json-stringify')
 const CJSStringify = CJS(schemaCJS)
@@ -99,7 +104,10 @@ const CJSStringifyString = CJS({ type: 'string' })
 
 const FJS = require('.')
 const stringify = FJS(schema)
-const stringifyArray = FJS(arraySchema)
+const stringifyArrayDefault = FJS(arraySchema)
+const stringifyArrayJSONStringify = FJS(arraySchema, {
+  largeArrayMechanism: 'json-stringify'
+})
 const stringifyDate = FJS(dateFormatSchema)
 const stringifyString = FJS({ type: 'string' })
 let str = ''
@@ -110,18 +118,48 @@ const ajvSerialize = ajv.compileSerializer(schemaAJVJTD)
 const ajvSerializeArray = ajv.compileSerializer(arraySchemaAJVJTD)
 const ajvSerializeString = ajv.compileSerializer({ type: 'string' })
 
+const getRandomString = (length) => {
+  if (!Number.isInteger(length)) {
+    throw new Error('Expected integer length')
+  }
+
+  const validCharacters = 'abcdefghijklmnopqrstuvwxyz'
+  const nValidCharacters = 26
+
+  let result = ''
+  for (let i = 0; i < length; ++i) {
+    result += validCharacters[Math.floor(Math.random() * nValidCharacters)]
+  }
+
+  return result[0].toUpperCase() + result.slice(1)
+}
+
 // eslint-disable-next-line
-for (var i = 0; i < 10000; i++) {
+for (let i = 0; i < STR_LEN; i++) {
+  largeArray[i] = {
+    firstName: getRandomString(8),
+    lastName: getRandomString(6),
+    age: Math.ceil(Math.random() * 99)
+  }
+
   str += i
   if (i % 100 === 0) {
     str += '"'
   }
 }
 
+for (let i = STR_LEN; i < LARGE_ARRAY_SIZE; ++i) {
+  largeArray[i] = {
+    firstName: getRandomString(10),
+    lastName: getRandomString(4),
+    age: Math.ceil(Math.random() * 99)
+  }
+}
+
 Number(str)
 
-for (i = 0; i < 1000; i++) {
-  multiArray.push(obj)
+for (let i = 0; i < MULTI_ARRAY_LENGHT; i++) {
+  multiArray[i] = obj
 }
 
 suite.add('FJS creation', function () {
@@ -138,8 +176,12 @@ suite.add('JSON.stringify array', function () {
   JSON.stringify(multiArray)
 })
 
-suite.add('fast-json-stringify array', function () {
-  stringifyArray(multiArray)
+suite.add('fast-json-stringify array default', function () {
+  stringifyArrayDefault(multiArray)
+})
+
+suite.add('fast-json-stringify array json-stringify', function () {
+  stringifyArrayJSONStringify(multiArray)
 })
 
 suite.add('compile-json-stringify array', function () {
@@ -148,6 +190,26 @@ suite.add('compile-json-stringify array', function () {
 
 suite.add('AJV Serialize array', function () {
   ajvSerializeArray(multiArray)
+})
+
+suite.add('JSON.stringify large array', function () {
+  JSON.stringify(largeArray)
+})
+
+suite.add('fast-json-stringify large array default', function () {
+  stringifyArrayDefault(largeArray)
+})
+
+suite.add('fast-json-stringify large array json-stringify', function () {
+  stringifyArrayJSONStringify(largeArray)
+})
+
+suite.add('compile-json-stringify large array', function () {
+  CJSStringifyArray(largeArray)
+})
+
+suite.add('AJV Serialize large array', function () {
+  ajvSerializeArray(largeArray)
 })
 
 suite.add('JSON.stringify long string', function () {
