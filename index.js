@@ -600,12 +600,14 @@ function refFinder (ref, location) {
   const externalSchema = location.externalSchema
   let root = location.root
   let schema = location.schema
+  const nullable = location.nullable || schema.nullable || false
 
   if (externalSchema && externalSchema[ref]) {
     return {
       schema: externalSchema[ref],
       root: externalSchema[ref],
-      externalSchema: externalSchema
+      externalSchema: externalSchema,
+      nullable: nullable
     }
   }
 
@@ -625,7 +627,8 @@ function refFinder (ref, location) {
       return refFinder(schema.$ref, {
         schema: schema,
         root: root,
-        externalSchema: externalSchema
+        externalSchema: externalSchema,
+        nullable: nullable
       })
     }
   }
@@ -653,7 +656,8 @@ function refFinder (ref, location) {
       return {
         schema: dereferenced,
         root: root,
-        externalSchema: externalSchema
+        externalSchema: externalSchema,
+        nullable: nullable
       }
     } else {
       // eslint-disable-next-line
@@ -676,14 +680,20 @@ function refFinder (ref, location) {
     return refFinder(result.$ref, {
       schema: schema,
       root: root,
-      externalSchema: externalSchema
+      externalSchema: externalSchema,
+      nullable: result.nullable || nullable
     })
+  }
+
+  if (nullable) {
+    result.nullable = true
   }
 
   return {
     schema: result,
     root: root,
-    externalSchema: externalSchema
+    externalSchema: externalSchema,
+    nullable: result.nullable
   }
 
   function findBadKey (obj, keys) {

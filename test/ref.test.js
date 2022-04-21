@@ -1249,3 +1249,106 @@ test('Regression 2.5.2', t => {
 
   t.equal(output, '[{"field":"parent","sub":{"field":"joined"}}]')
 })
+
+test('nullable for ref', t => {
+  t.test('no ref nesting', t => {
+    t.plan(2)
+
+    const externalSchema = {
+      external: {
+        o4: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              nullable: false
+            }
+          }
+        }
+      }
+    }
+
+    const schema = {
+      $ref: 'external#/o4',
+      nullable: true
+    }
+
+    const stringify = build(schema, { schema: externalSchema })
+    const output = stringify(null)
+    JSON.parse(output)
+    t.pass()
+
+    // in object mode , null will stringify as an string
+    t.equal(output, 'null')
+  })
+
+  t.test('ref nesting', t => {
+    t.plan(2)
+
+    const refExternalSchema = {
+      refExternal: {
+        o4: {
+          $ref: '#/o5/definitions/foo',
+          nullable: false
+        },
+        o5: {
+          definitions: {
+            foo: {
+              type: 'string',
+              nullable: false
+            }
+          }
+        }
+      }
+    }
+
+    const schema = {
+      $ref: 'refExternal#/o4',
+      nullable: true
+    }
+
+    const stringify = build(schema, { schema: refExternalSchema })
+    const output = stringify(null)
+    JSON.parse(output)
+    t.pass()
+
+    // in string mode , null will stringify as an object
+    t.equal(output, null)
+  })
+
+  t.test('ref nesting but the first is not null', t => {
+    t.plan(2)
+
+    const refExternalSchema = {
+      refExternal: {
+        o4: {
+          $ref: '#/o5/definitions/foo',
+          nullable: true
+        },
+        o5: {
+          definitions: {
+            foo: {
+              type: 'string',
+              nullable: false
+            }
+          }
+        }
+      }
+    }
+
+    const schema = {
+      $ref: 'refExternal#/o4',
+      nullable: false
+    }
+
+    const stringify = build(schema, { schema: refExternalSchema })
+    const output = stringify(null)
+    JSON.parse(output)
+    t.pass()
+
+    // this will return null because of o4.nullable is true
+    t.equal(output, null)
+  })
+
+  t.end()
+})
