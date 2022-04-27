@@ -178,3 +178,68 @@ test('can stringify recursive references in object types (issue #365)', t => {
   const value = stringify(data)
   t.equal(value, '{"category":{"parent":{"parent":{"parent":{"parent":{}}}}}}')
 })
+
+test('can stringify recursive inline $id references (issue #410)', t => {
+  t.plan(1)
+  const schema = {
+    $id: 'Node',
+    type: 'object',
+    properties: {
+      id: {
+        type: 'string'
+      },
+      nodes: {
+        type: 'array',
+        items: {
+          $ref: 'Node'
+        }
+      }
+    },
+    required: [
+      'id',
+      'nodes'
+    ]
+  }
+
+  const stringify = build(schema)
+  const data = {
+    id: '0',
+    nodes: [
+      {
+        id: '1',
+        nodes: [{
+          id: '2',
+          nodes: [
+            { id: '3', nodes: [] },
+            { id: '4', nodes: [] },
+            { id: '5', nodes: [] }
+          ]
+        }]
+      },
+      {
+        id: '6',
+        nodes: [{
+          id: '7',
+          nodes: [
+            { id: '8', nodes: [] },
+            { id: '9', nodes: [] },
+            { id: '10', nodes: [] }
+          ]
+        }]
+      },
+      {
+        id: '11',
+        nodes: [{
+          id: '12',
+          nodes: [
+            { id: '13', nodes: [] },
+            { id: '14', nodes: [] },
+            { id: '15', nodes: [] }
+          ]
+        }]
+      }
+    ]
+  }
+  const value = stringify(data)
+  t.equal(value, '{"id":"0","nodes":[{"id":"1","nodes":[{"id":"2","nodes":[{"id":"3","nodes":[]},{"id":"4","nodes":[]},{"id":"5","nodes":[]}]}]},{"id":"6","nodes":[{"id":"7","nodes":[{"id":"8","nodes":[]},{"id":"9","nodes":[]},{"id":"10","nodes":[]}]}]},{"id":"11","nodes":[{"id":"12","nodes":[{"id":"13","nodes":[]},{"id":"14","nodes":[]},{"id":"15","nodes":[]}]}]}]}')
+})

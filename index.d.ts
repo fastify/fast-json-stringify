@@ -2,6 +2,10 @@ import { Options as AjvOptions } from "ajv"
 declare namespace build {
   interface BaseSchema {
     /**
+     * Schema id
+     */
+    $id?: string
+    /**
      * Schema title
      */
     title?: string;
