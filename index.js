@@ -52,7 +52,7 @@ function mergeLocation (source, dest) {
 
 const arrayItemsReferenceSerializersMap = new Map()
 const objectReferenceSerializersMap = new Map()
-const schemaReferenceMap = new Map() 
+const schemaReferenceMap = new Map()
 
 let ajvInstance = null
 
