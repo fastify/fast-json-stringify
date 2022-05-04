@@ -52,11 +52,14 @@ function mergeLocation (source, dest) {
 
 const arrayItemsReferenceSerializersMap = new Map()
 const objectReferenceSerializersMap = new Map()
+const schemaReferenceMap = new Map()
+
 let ajvInstance = null
 
 function build (schema, options) {
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
+  schemaReferenceMap.clear()
 
   options = options || {}
 
@@ -174,6 +177,7 @@ function build (schema, options) {
 
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
+  schemaReferenceMap.clear()
 
   return (Function.apply(null, dependenciesName).apply(null, dependencies))
 }
@@ -612,8 +616,18 @@ function refFinder (ref, location) {
   // Split file from walk
   ref = ref.split('#')
 
-  // If external file
-  if (ref[0]) {
+  // Check schemaReferenceMap for $id entry
+  if (ref[0] && schemaReferenceMap.has(ref[0])) {
+    schema = schemaReferenceMap.get(ref[0])
+    root = schemaReferenceMap.get(ref[0])
+    if (schema.$ref) {
+      return refFinder(schema.$ref, {
+        schema: schema,
+        root: root,
+        externalSchema: externalSchema
+      })
+    }
+  } else if (ref[0]) { // If external file
     schema = externalSchema[ref[0]]
     root = externalSchema[ref[0]]
 
@@ -921,7 +935,9 @@ function toJSON (variableName) {
 
 function buildObject (location, code, name) {
   const schema = location.schema
-
+  if (schema.$id !== undefined) {
+    schemaReferenceMap.set(schema.$id, schema)
+  }
   code += `
     function ${name} (input) {
   `
@@ -971,6 +987,9 @@ function buildObject (location, code, name) {
 
 function buildArray (location, code, name, key = null) {
   let schema = location.schema
+  if (schema.$id !== undefined) {
+    schemaReferenceMap.set(schema.$id, schema)
+  }
   code += `
     function ${name} (obj) {
   `
