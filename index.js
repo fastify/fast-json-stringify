@@ -609,7 +609,7 @@ function refFinder (ref, location) {
     return {
       schema: externalSchema[ref],
       root: externalSchema[ref],
-      externalSchema: externalSchema
+      externalSchema
     }
   }
 
@@ -622,9 +622,9 @@ function refFinder (ref, location) {
     root = schemaReferenceMap.get(ref[0])
     if (schema.$ref) {
       return refFinder(schema.$ref, {
-        schema: schema,
-        root: root,
-        externalSchema: externalSchema
+        schema,
+        root,
+        externalSchema
       })
     }
   } else if (ref[0]) { // If external file
@@ -637,9 +637,9 @@ function refFinder (ref, location) {
 
     if (schema.$ref) {
       return refFinder(schema.$ref, {
-        schema: schema,
-        root: root,
-        externalSchema: externalSchema
+        schema,
+        root,
+        externalSchema
       })
     }
   }
@@ -666,8 +666,8 @@ function refFinder (ref, location) {
 
       return {
         schema: dereferenced,
-        root: root,
-        externalSchema: externalSchema
+        root,
+        externalSchema
       }
     } else {
       // eslint-disable-next-line
@@ -688,16 +688,16 @@ function refFinder (ref, location) {
 
   if (result.$ref) {
     return refFinder(result.$ref, {
-      schema: schema,
-      root: root,
-      externalSchema: externalSchema
+      schema,
+      root,
+      externalSchema
     })
   }
 
   return {
     schema: result,
-    root: root,
-    externalSchema: externalSchema
+    root,
+    externalSchema
   }
 
   function findBadKey (obj, keys) {
@@ -828,7 +828,7 @@ function buildCode (location, code, laterCode, name) {
     laterCode = builtCode.laterCode
   }
 
-  return { code: code, laterCode: laterCode }
+  return { code, laterCode }
 }
 
 function filterRequired (required, key) {
@@ -852,7 +852,7 @@ function buildCodeWithAllOfs (location, code, laterCode, name) {
     laterCode = builtCode.laterCode
   }
 
-  return { code: code, laterCode: laterCode }
+  return { code, laterCode }
 }
 
 function buildInnerObject (location, name) {
@@ -923,7 +923,7 @@ function addIfThenElse (location, name) {
   code += `
       }
     `
-  return { code: code, laterCode: laterCode }
+  return { code, laterCode }
 }
 
 function toJSON (variableName) {

@@ -261,13 +261,13 @@ t.test('if-then-else', t => {
   const tests = [
     {
       name: 'foobar',
-      schema: schema,
+      schema,
       input: fooBarInput,
       expected: foobarOutput
     },
     {
       name: 'greeting',
-      schema: schema,
+      schema,
       input: greetingInput,
       expected: greetingOutput
     },

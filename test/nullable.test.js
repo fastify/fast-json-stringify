@@ -9,11 +9,11 @@ const nullable = true
 const complexObject = {
   type: 'object',
   properties: {
-    nullableString: { type: 'string', nullable: nullable },
-    nullableNumber: { type: 'number', nullable: nullable },
-    nullableInteger: { type: 'integer', nullable: nullable },
-    nullableBoolean: { type: 'boolean', nullable: nullable },
-    nullableNull: { type: 'null', nullable: nullable },
+    nullableString: { type: 'string', nullable },
+    nullableNumber: { type: 'number', nullable },
+    nullableInteger: { type: 'integer', nullable },
+    nullableBoolean: { type: 'boolean', nullable },
+    nullableNull: { type: 'null', nullable },
     nullableArray: {
       type: 'array',
       nullable: true,
@@ -25,11 +25,11 @@ const complexObject = {
       nullable: false,
       additionalProperties: true,
       properties: {
-        nullableString: { type: 'string', nullable: nullable },
-        nullableNumber: { type: 'number', nullable: nullable },
-        nullableInteger: { type: 'integer', nullable: nullable },
-        nullableBoolean: { type: 'boolean', nullable: nullable },
-        nullableNull: { type: 'null', nullable: nullable },
+        nullableString: { type: 'string', nullable },
+        nullableNumber: { type: 'number', nullable },
+        nullableInteger: { type: 'integer', nullable },
+        nullableBoolean: { type: 'boolean', nullable },
+        nullableNull: { type: 'null', nullable },
         nullableArray: {
           type: 'array',
           nullable: true,
@@ -86,11 +86,11 @@ const complexExpectedResult = {
 }
 
 const testSet = {
-  nullableString: [{ type: 'string', nullable: nullable }, null, null],
-  nullableNumber: [{ type: 'number', nullable: nullable }, null, null],
-  nullableInteger: [{ type: 'integer', nullable: nullable }, null, null],
-  nullableBoolean: [{ type: 'boolean', nullable: nullable }, null, null],
-  nullableNull: [{ type: 'null', nullable: nullable }, null, null],
+  nullableString: [{ type: 'string', nullable }, null, null],
+  nullableNumber: [{ type: 'number', nullable }, null, null],
+  nullableInteger: [{ type: 'integer', nullable }, null, null],
+  nullableBoolean: [{ type: 'boolean', nullable }, null, null],
+  nullableNull: [{ type: 'null', nullable }, null, null],
   nullableArray: [{
     type: 'array',
     nullable: true,
