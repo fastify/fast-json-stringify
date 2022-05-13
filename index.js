@@ -273,6 +273,8 @@ function $asInteger (i) {
     return i.toString()
   } else if (Number.isInteger(i)) {
     return $asNumber(i)
+  } else if (i && typeof i.toJSON === 'function') {
+    return $asInteger(i.toJSON())
   } else {
     /* eslint no-undef: "off" */
     return $asNumber(parseInteger(i))
@@ -280,10 +282,16 @@ function $asInteger (i) {
 }
 
 function $asIntegerNullable (i) {
+  if (i && typeof i.toJSON === 'function') {
+    return $asIntegerNullable(i.toJSON())
+  }
   return i === null ? null : $asInteger(i)
 }
 
 function $asNumber (i) {
+  if (i && typeof i.toJSON === 'function') {
+    return $asNumber(i.toJSON())
+  }
   const num = Number(i)
   if (isNaN(num)) {
     return 'null'
@@ -293,14 +301,23 @@ function $asNumber (i) {
 }
 
 function $asNumberNullable (i) {
+  if (i && typeof i.toJSON === 'function') {
+    return $asNumberNullable(i.toJSON())
+  }
   return i === null ? null : $asNumber(i)
 }
 
 function $asBoolean (bool) {
+  if (bool && typeof bool.toJSON === 'function') {
+    return $asBoolean(bool.toJSON())
+  }
   return bool && 'true' || 'false' // eslint-disable-line
 }
 
 function $asBooleanNullable (bool) {
+  if (bool && typeof bool.toJSON === 'function') {
+    return $asBooleanNullable(bool.toJSON())
+  }
   return bool === null ? null : $asBoolean(bool)
 }
 
@@ -310,6 +327,8 @@ function $asDatetime (date, skipQuotes) {
     return quotes + date.toISOString() + quotes
   } else if (date && typeof date.toISOString === 'function') {
     return quotes + date.toISOString() + quotes
+  } else if (date && typeof date.toJSON === 'function') {
+    return $asDatetime(date.toJSON(), skipQuotes)
   } else {
     return $asString(date, skipQuotes)
   }
@@ -321,6 +340,8 @@ function $asDate (date, skipQuotes) {
     return quotes + new Date(date.getTime() - (date.getTimezoneOffset() * 60000 )).toISOString().slice(0, 10) + quotes
   } else if (date && typeof date.format === 'function') {
     return quotes + date.format('YYYY-MM-DD') + quotes
+  } else if (date && typeof date.toJSON === 'function') {
+    return $asDate(date.toJSON(), skipQuotes)
   } else {
     return $asString(date, skipQuotes)
   }
@@ -335,6 +356,8 @@ function $asTime (date, skipQuotes) {
     return quotes + $pad2Zeros(hour) + ':' + $pad2Zeros(minute) + ':' + $pad2Zeros(second) + quotes
   } else if (date && typeof date.format === 'function') {
     return quotes + date.format('HH:mm:ss') + quotes
+  } else if (date && typeof date.toJSON === 'function') {
+    return $asTime(date.toJSON(), skipQuotes)
   } else {
     return $asString(date, skipQuotes)
   }
@@ -348,6 +371,8 @@ function $asString (str, skipQuotes) {
     return quotes + quotes
   } else if (str instanceof RegExp) {
     str = str.source
+  } else if (str && typeof str.toJSON === 'function') {
+    return $asString(str.toJSON(), skipQuotes)
   } else if (typeof str !== 'string') {
     str = str.toString()
   }
@@ -365,6 +390,9 @@ function $asString (str, skipQuotes) {
 }
 
 function $asStringNullable (str) {
+  if (str && typeof str.toJSON === 'function') {
+    return $asStringNullable(str.toJSON())
+  }
   return str === null ? null : $asString(str)
 }
 
@@ -542,16 +570,16 @@ function additionalProperty (location) {
     `
   } else if (type === 'integer') {
     code += `
-        var t = Number(obj[keys[i]])
-        if (!isNaN(t)) {
+        var t = $asInteger(obj[keys[i]])
+        if (t !== 'null') {
           ${addComma}
           json += $asString(keys[i]) + ':' + t
         }
     `
   } else if (type === 'number') {
     code += `
-        var t = Number(obj[keys[i]])
-        if (!isNaN(t)) {
+        var t = $asNumber(obj[keys[i]])
+        if (t !== 'null') {
           ${addComma}
           json += $asString(keys[i]) + ':' + t
         }
@@ -751,8 +779,8 @@ function buildCode (location, code, laterCode, name) {
 
     if (type === 'number') {
       code += `
-          var t = Number(obj[${sanitized}])
-          if (!isNaN(t)) {
+          var t = $asNumber(obj[${sanitized}])
+          if (t !== 'null') {
             ${addComma}
             json += ${asString} + ':' + t
       `
