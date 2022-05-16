@@ -91,6 +91,21 @@ const obj = {
   age: 32
 }
 
+const objToJSON = {
+  props: {
+    firstName: { toJSON () { return 'Matteo' } },
+    lastName: { toJSON () { return 'Collina' } },
+    age: { toJSON () { return 32 } }
+  },
+  toJSON () {
+    return {
+      firstName: this.props.firstName,
+      lastName: this.props.lastName,
+      age: this.props.age
+    }
+  }
+}
+
 const date = new Date()
 
 const multiArray = new Array(MULTI_ARRAY_LENGHT)
@@ -258,6 +273,14 @@ suite.add('compile-json-stringify obj', function () {
 
 suite.add('AJV Serialize obj', function () {
   ajvSerialize(obj)
+})
+
+suite.add('JSON.stringify obj toJSON', function () {
+  JSON.stringify(objToJSON)
+})
+
+suite.add('fast-json-stringify obj toJSON', function () {
+  stringify(objToJSON)
 })
 
 suite.add('JSON stringify date', function () {
