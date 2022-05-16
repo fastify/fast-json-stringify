@@ -132,7 +132,7 @@ function build (schema, options) {
       code = buildObject(location, code, main)
       break
     case 'string':
-      main = schema.nullable ? '$asStringNullable' : getStringSerializer(schema.format)
+      main = getStringSerializer(schema.format, schema.nullable)
       break
     case 'integer':
       main = schema.nullable ? '$asIntegerNullable' : '$asInteger'
@@ -245,9 +245,9 @@ const stringSerializerMap = {
   time: '$asTime'
 }
 
-function getStringSerializer (format) {
+function getStringSerializer (format, nullable) {
   return stringSerializerMap[format] ||
-  '$asString'
+  (nullable ? '$asStringNullable' : '$asString')
 }
 
 function getTestSerializer (format) {
@@ -767,19 +767,12 @@ function buildCode (location, code, laterCode, name) {
     const sanitized = JSON.stringify(key)
     const asString = JSON.stringify(sanitized)
 
-    if (nullable) {
-      code += `
-        if (obj[${sanitized}] === null) {
-          ${addComma}
-          json += ${asString} + ':null'
-          var rendered = true
-        } else {
-      `
-    }
+    const $asNumber = nullable ? '$asNumberNullable' : '$asNumber'
+    const $asInteger = nullable ? '$asIntegerNullable' : '$asInteger'
 
     if (type === 'number') {
       code += `
-          var t = $asNumber(obj[${sanitized}])
+          var t = ${$asNumber}(obj[${sanitized}])
           if (t !== 'null') {
             ${addComma}
             json += ${asString} + ':' + t
@@ -787,8 +780,8 @@ function buildCode (location, code, laterCode, name) {
     } else if (type === 'integer') {
       code += `
           var rendered = false
-          var t = $asInteger(obj[${sanitized}])
-          if (!isNaN(t)) {
+          var t = ${$asInteger}(obj[${sanitized}])
+          if (t !== 'null') {
             ${addComma}
             json += ${asString} + ':' + t
             rendered = true
@@ -826,12 +819,6 @@ function buildCode (location, code, laterCode, name) {
     code += `
       }
     `
-
-    if (nullable) {
-      code += `
-        }
-      `
-    }
   })
 
   if (required && required.length > 0) {
@@ -1055,6 +1042,8 @@ function buildArray (location, code, name, key = null) {
     arrayItemsReferenceSerializersMap.set(schema.items, name)
   }
 
+  code += `obj = ${toJSON('obj')}`
+
   let result = { code: '', laterCode: '' }
   const accessor = '[i]'
   if (Array.isArray(schema.items)) {
@@ -1247,22 +1236,22 @@ function nested (laterCode, name, key, location, subKey, isArray) {
       `
       break
     case 'string': {
-      funcName = '$asString'
-      const stringSerializer = getStringSerializer(schema.format)
-      code += nullable ? `json += obj${accessor} === null ? null : ${stringSerializer}(obj${accessor})` : `json += ${stringSerializer}(obj${accessor})`
+      funcName = nullable ? '$asStringNullable' : '$asString'
+      const stringSerializer = getStringSerializer(schema.format, nullable)
+      code += `json += ${stringSerializer}(obj${accessor})`
       break
     }
     case 'integer':
-      funcName = '$asInteger'
-      code += nullable ? `json += obj${accessor} === null ? null : $asInteger(obj${accessor})` : `json += $asInteger(obj${accessor})`
+      funcName = nullable ? '$asIntegerNullable' : '$asInteger'
+      code += `json += ${funcName}(obj${accessor})`
       break
     case 'number':
-      funcName = '$asNumber'
-      code += nullable ? `json += obj${accessor} === null ? null : $asNumber(obj${accessor})` : `json += $asNumber(obj${accessor})`
+      funcName = nullable ? '$asNumberNullable' : '$asNumber'
+      code += `json += ${funcName}(obj${accessor})`
       break
     case 'boolean':
-      funcName = '$asBoolean'
-      code += nullable ? `json += obj${accessor} === null ? null : $asBoolean(obj${accessor})` : `json += $asBoolean(obj${accessor})`
+      funcName = nullable ? '$asBooleanNullable' : '$asBoolean'
+      code += `json += ${funcName}(obj${accessor})`
       break
     case 'object':
       funcName = asFuncName(name + key + subKey)
