@@ -305,8 +305,6 @@ test('toJSON supports required types', (t) => {
   t.throws(() => { stringify(invalidInput) })
 })
 
-// TODO add toJSON with $ref
-
 test('use toJSON recursively', (t) => {
   t.plan(2)
   const nullable = true
