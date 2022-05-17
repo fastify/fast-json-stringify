@@ -442,6 +442,7 @@ function addPatternProperties (location) {
         if (properties[keys[i]]) continue
   `
   Object.keys(pp).forEach((regex, index) => {
+    // FIXME do we need to toJSON-ize obj[keys[i]]?
     let ppLocation = mergeLocation(location, { schema: pp[regex] })
     if (pp[regex].$ref) {
       ppLocation = refFinder(pp[regex].$ref, location)
@@ -532,6 +533,7 @@ function additionalProperty (location) {
   let ap = location.schema.additionalProperties
   let code = ''
   if (ap === true) {
+    // FIXME do we need to toJSON-ize obj[keys[i]] beforehand?
     return `
         if (obj[keys[i]] !== undefined && typeof obj[keys[i]] !== 'function' && typeof obj[keys[i]] !== 'symbol') {
           ${addComma}
@@ -759,9 +761,6 @@ function buildCode (location, code, laterCode, name) {
       schema.properties[key] = propertyLocation.schema
     }
 
-    // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
-    // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
-
     const type = schema.properties[key].type
     const nullable = schema.properties[key].nullable
     const sanitized = JSON.stringify(key)
@@ -789,6 +788,8 @@ function buildCode (location, code, laterCode, name) {
           if (rendered) {
       `
     } else {
+      // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
+      // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
       code += `
         if (obj[${sanitized}] !== undefined) {
           ${addComma}
@@ -1044,12 +1045,16 @@ function buildArray (location, code, name, key = null) {
 
   code += `obj = ${toJSON('obj')}`
 
-  let result = { code: '', laterCode: '' }
   const accessor = '[i]'
+  const propName = '$arrItem'
+  let result = {
+    code: `var ${propName} = ` + toJSON(`obj${accessor}`),
+    laterCode: ''
+  }
   if (Array.isArray(schema.items)) {
     result = schema.items.reduce((res, item, i) => {
-      const tmpRes = nested(laterCode, name, accessor, mergeLocation(location, { schema: item }), i, true)
-      const condition = `i === ${i} && ${buildArrayTypeCondition(item.type, accessor)}`
+      const tmpRes = nested(laterCode, name, accessor, mergeLocation(location, { schema: item }), i, true, propName)
+      const condition = `i === ${i} && ${buildArrayTypeCondition(item.type, propName)}`
       return {
         code: `${res.code}
         ${i > 0 ? 'else' : ''} if (${condition}) {
@@ -1061,7 +1066,7 @@ function buildArray (location, code, name, key = null) {
     }, result)
 
     if (schema.additionalItems) {
-      const tmpRes = nested(laterCode, name, accessor, mergeLocation(location, { schema: schema.items }), undefined, true)
+      const tmpRes = nested(laterCode, name, accessor, mergeLocation(location, { schema: schema.items }), undefined, true, propName)
       result.code += `
       else if (i >= ${schema.items.length}) {
         ${tmpRes.code}
@@ -1075,7 +1080,13 @@ function buildArray (location, code, name, key = null) {
     }
     `
   } else {
-    result = nested(laterCode, name, accessor, mergeLocation(location, { schema: schema.items }), undefined, true)
+    const tmpRes = nested(laterCode, name, accessor, mergeLocation(location, { schema: schema.items }), undefined, true, propName)
+    result = Object.assign({}, tmpRes, {
+      code: `
+      ${result.code}
+      ${tmpRes.code}
+    `
+    })
   }
 
   if (key) {
@@ -1129,34 +1140,34 @@ function buildArray (location, code, name, key = null) {
   return code
 }
 
-function buildArrayTypeCondition (type, accessor) {
+function buildArrayTypeCondition (type, propName) {
   let condition
   switch (type) {
     case 'null':
-      condition = `obj${accessor} === null`
+      condition = `${propName} === null`
       break
     case 'string':
-      condition = `typeof obj${accessor} === 'string'`
+      condition = `typeof ${propName} === 'string'`
       break
     case 'integer':
-      condition = `Number.isInteger(obj${accessor})`
+      condition = `Number.isInteger(${propName})`
       break
     case 'number':
-      condition = `Number.isFinite(obj${accessor})`
+      condition = `Number.isFinite(${propName})`
       break
     case 'boolean':
-      condition = `typeof obj${accessor} === 'boolean'`
+      condition = `typeof ${propName} === 'boolean'`
       break
     case 'object':
-      condition = `obj${accessor} && typeof obj${accessor} === 'object' && obj${accessor}.constructor === Object`
+      condition = `${propName} && typeof ${propName} === 'object' && ${propName}.constructor === Object`
       break
     case 'array':
-      condition = `Array.isArray(obj${accessor})`
+      condition = `Array.isArray(${propName})`
       break
     default:
       if (Array.isArray(type)) {
         const conditions = type.map((subType) => {
-          return buildArrayTypeCondition(subType, accessor)
+          return buildArrayTypeCondition(subType, propName)
         })
         condition = `(${conditions.join(' || ')})`
       } else {
@@ -1204,7 +1215,7 @@ function asFuncName (str) {
   return rep
 }
 
-function nested (laterCode, name, key, location, subKey, isArray) {
+function nested (laterCode, name, key, location, subKey, isArray, propName) {
   let code = ''
   let funcName
 
@@ -1228,6 +1239,11 @@ function nested (laterCode, name, key, location, subKey, isArray) {
 
   const accessor = isArray ? key : `[${JSON.stringify(key)}]`
 
+  if (!propName) {
+    propName = asFuncName(`prop${key}${subKey}`)
+    code += `var ${propName} = ` + toJSON(`obj${accessor}`)
+  }
+
   switch (type) {
     case 'null':
       funcName = '$asNull'
@@ -1238,47 +1254,49 @@ function nested (laterCode, name, key, location, subKey, isArray) {
     case 'string': {
       funcName = nullable ? '$asStringNullable' : '$asString'
       const stringSerializer = getStringSerializer(schema.format, nullable)
-      code += `json += ${stringSerializer}(obj${accessor})`
+      code += `json += ${stringSerializer}(${propName})`
       break
     }
     case 'integer':
       funcName = nullable ? '$asIntegerNullable' : '$asInteger'
-      code += `json += ${funcName}(obj${accessor})`
+      code += `json += ${funcName}(${propName})`
       break
     case 'number':
       funcName = nullable ? '$asNumberNullable' : '$asNumber'
-      code += `json += ${funcName}(obj${accessor})`
+      code += `json += ${funcName}(${propName})`
       break
     case 'boolean':
       funcName = nullable ? '$asBooleanNullable' : '$asBoolean'
-      code += `json += ${funcName}(obj${accessor})`
+      code += `json += ${funcName}(${propName})`
       break
     case 'object':
       funcName = asFuncName(name + key + subKey)
       laterCode = buildObject(location, laterCode, funcName)
-      code += `
-        json += ${funcName}(obj${accessor})
-      `
+      code += `json += ${funcName}(${propName})`
       break
     case 'array':
       funcName = asFuncName('$arr' + name + key + subKey) // eslint-disable-line
       laterCode = buildArray(location, laterCode, funcName, key)
-      code += `
-        json += ${funcName}(obj${accessor})
-      `
+      code += `json += ${funcName}(${propName})`
       break
     case undefined:
       funcName = '$asNull'
       if ('anyOf' in schema) {
+        // FIXME ajv.validate doesn’t support toJSON and we’re facing a too long chain of toJSONs to keep up...
+        //  Still looking for a nicer option over here
+        code += `if (Object.values(${propName}).some((p) => p && typeof p.toJSON === 'function'))
+          ${propName} = JSON.parse(JSON.stringify(${propName}))
+        `
+
         // beware: dereferenceOfRefs has side effects and changes schema.anyOf
         const anyOfLocations = dereferenceOfRefs(location, 'anyOf')
         anyOfLocations.forEach((location, index) => {
-          const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
+          const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray, propName)
           // We need a test serializer as the String serializer will not work with
           // date/time ajv validations
           // see: https://github.com/fastify/fast-json-stringify/issues/325
           const testSerializer = getTestSerializer(location.schema.format)
-          const testValue = testSerializer !== undefined ? `${testSerializer}(obj${accessor}, true)` : `obj${accessor}`
+          const testValue = testSerializer !== undefined ? `${testSerializer}(${propName}), true)` : propName
 
           // Since we are only passing the relevant schema to ajv.validate, it needs to be full dereferenced
           // otherwise any $ref pointing to an external schema would result in an error.
@@ -1301,12 +1319,18 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           else json+= null
         `
       } else if ('oneOf' in schema) {
+        // FIXME ajv.validate doesn’t support toJSON and we’re facing a too long chain of toJSONs to keep up...
+        //  Still looking for a nicer option over here
+        code += `if (Object.values(${propName}).some((p) => p && typeof p.toJSON === 'function'))
+          ${propName} = JSON.parse(JSON.stringify(${propName}))
+        `
+
         // beware: dereferenceOfRefs has side effects and changes schema.oneOf
         const oneOfLocations = dereferenceOfRefs(location, 'oneOf')
         oneOfLocations.forEach((location, index) => {
-          const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
+          const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray, propName)
           const testSerializer = getTestSerializer(location.schema.format)
-          const testValue = testSerializer !== undefined ? `${testSerializer}(obj${accessor}, true)` : `obj${accessor}`
+          const testValue = testSerializer !== undefined ? `${testSerializer}(${propName}), true)` : propName
           // see comment on anyOf about dereferencing the schema before calling ajv.validate
 
           const schemaKey = location.schema.$id || randomUUID()
@@ -1326,18 +1350,18 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         }
       } else if (isEmpty(schema)) {
         code += `
-          json += JSON.stringify(obj${accessor})
+          json += JSON.stringify(${propName})
         `
       } else if ('const' in schema) {
         code += `
-          if(ajv.validate(${JSON.stringify(schema)}, obj${accessor}))
+          if(ajv.validate(${JSON.stringify(schema)}, ${propName}))
             json += '${JSON.stringify(schema.const)}'
           else
-            throw new Error(\`Item $\{JSON.stringify(obj${accessor})} does not match schema definition.\`)
+            throw new Error(\`Item $\{JSON.stringify(${propName})} does not match schema definition.\`)
         `
       } else if (schema.type === undefined) {
         code += `
-          json += JSON.stringify(obj${accessor})
+          json += JSON.stringify(${propName})
         `
       } else {
         throw new Error(`${schema.type} unsupported`)
@@ -1350,46 +1374,46 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         sortedTypes.forEach((type, index) => {
           const statement = index === 0 ? 'if' : 'else if'
           const tempSchema = Object.assign({}, schema, { type })
-          const nestedResult = nested(laterCode, name, key, mergeLocation(location, { schema: tempSchema }), subKey, isArray)
+          const nestedResult = nested(laterCode, name, key, mergeLocation(location, { schema: tempSchema }), subKey, isArray, propName)
           switch (type) {
             case 'string': {
               code += `
-                ${statement}(obj${accessor} === null || typeof obj${accessor} === "${type}" || obj${accessor} instanceof Date || typeof obj${accessor}.toISOString === "function" || obj${accessor} instanceof RegExp || (typeof obj${accessor} === "object" && Object.hasOwnProperty.call(obj${accessor}, "toString")))
+                ${statement}(${propName} === null || typeof ${propName} === "${type}" || ${propName} instanceof Date || typeof ${propName}.toISOString === "function" || ${propName} instanceof RegExp || (typeof ${propName} === "object" && Object.hasOwnProperty.call(${propName}, "toString")))
                   ${nestedResult.code}
               `
               break
             }
             case 'null': {
               code += `
-                ${statement}(obj${accessor} == null)
+                ${statement}(${propName} == null)
                   ${nestedResult.code}
               `
               break
             }
             case 'array': {
               code += `
-                ${statement}(Array.isArray(obj${accessor}))
+                ${statement}(Array.isArray(${propName}))
                   ${nestedResult.code}
               `
               break
             }
             case 'integer': {
               code += `
-                ${statement}(Number.isInteger(obj${accessor}) || obj${accessor} === null)
+                ${statement}(Number.isInteger(${propName}) || ${propName} === null)
                   ${nestedResult.code}
               `
               break
             }
             case 'number': {
               code += `
-                ${statement}(isNaN(obj${accessor}) === false)
+                ${statement}(isNaN(${propName}) === false)
                   ${nestedResult.code}
               `
               break
             }
             default: {
               code += `
-                ${statement}(typeof obj${accessor} === "${type}")
+                ${statement}(typeof ${propName} === "${type}")
                   ${nestedResult.code}
               `
               break
