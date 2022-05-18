@@ -2,7 +2,6 @@
 
 ![CI](https://github.com/fastify/fast-json-stringify/workflows/CI/badge.svg)
 [![NPM version](https://img.shields.io/npm/v/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify)
-[![Known Vulnerabilities](https://snyk.io/test/github/fastify/fast-json-stringify/badge.svg)](https://snyk.io/test/github/fastify/fast-json-stringify)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](https://standardjs.com/)
 [![NPM downloads](https://img.shields.io/npm/dm/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify)
 
