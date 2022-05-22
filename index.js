@@ -272,7 +272,7 @@ function $asInteger (i) {
   if (typeof i === 'bigint') {
     return i.toString()
   } else if (Number.isInteger(i)) {
-    return $asNumber(i)
+    return '' + i
   } else {
     /* eslint no-undef: "off" */
     return $asNumber(parseInteger(i))
