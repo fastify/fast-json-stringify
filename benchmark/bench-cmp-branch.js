@@ -9,7 +9,7 @@ const simpleGit = require('simple-git')
 const git = simpleGit(process.cwd())
 
 const COMMAND = 'npm run bench'
-const DEFAULT_BRANCH = 'main'
+const DEFAULT_BRANCH = 'master'
 const PERCENT_THRESHOLD = 5
 
 async function selectBranchName (message, branches) {
