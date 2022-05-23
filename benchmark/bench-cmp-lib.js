@@ -102,7 +102,7 @@ const CJSStringifyArray = CJS(arraySchemaCJS)
 const CJSStringifyDate = CJS(dateFormatSchemaCJS)
 const CJSStringifyString = CJS({ type: 'string' })
 
-const FJS = require('.')
+const FJS = require('..')
 const stringify = FJS(schema)
 const stringifyArrayDefault = FJS(arraySchema)
 const stringifyArrayJSONStringify = FJS(arraySchema, {
