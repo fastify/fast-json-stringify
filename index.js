@@ -53,6 +53,7 @@ function mergeLocation (source, dest) {
 const arrayItemsReferenceSerializersMap = new Map()
 const objectReferenceSerializersMap = new Map()
 const schemaReferenceMap = new Map()
+const ajvInstanceSchemaMap = new Map()
 
 let ajvInstance = null
 
@@ -60,6 +61,7 @@ function build (schema, options) {
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
   schemaReferenceMap.clear()
+  ajvInstanceSchemaMap.clear()
 
   options = options || {}
 
@@ -883,8 +885,7 @@ function addIfThenElse (location, name) {
   let merged = merge(copy, then)
   let mergedLocation = mergeLocation(location, { schema: merged })
 
-  const schemaKey = i.$id || randomUUID()
-  ajvInstance.addSchema(i, schemaKey)
+  const schemaKey = addSchema(i)
 
   code += `
     valid = ajv.validate("${schemaKey}", obj)
@@ -1271,8 +1272,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           // 2. `nested`, through `buildCode`, replaces any reference in object properties with the actual schema
           // (see https://github.com/fastify/fast-json-stringify/blob/6da3b3e8ac24b1ca5578223adedb4083b7adf8db/index.js#L631)
 
-          const schemaKey = location.schema.$id || randomUUID()
-          ajvInstance.addSchema(location.schema, schemaKey)
+          const schemaKey = addSchema(location.schema)
 
           code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate("${schemaKey}", ${testValue}))
@@ -1292,8 +1292,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           const testValue = testSerializer !== undefined ? `${testSerializer}(obj${accessor}, true)` : `obj${accessor}`
           // see comment on anyOf about dereferencing the schema before calling ajv.validate
 
-          const schemaKey = location.schema.$id || randomUUID()
-          ajvInstance.addSchema(location.schema, schemaKey)
+          const schemaKey = addSchema(location.schema)
 
           code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate("${schemaKey}", ${testValue}))
@@ -1403,6 +1402,19 @@ function isEmpty (schema) {
     }
   }
   return true
+}
+
+function addSchema (schema) {
+  const oldbie = ajvInstanceSchemaMap.get(schema)
+  if (oldbie) {
+    return oldbie
+  }
+
+  const key = schema.$id || randomUUID()
+  ajvInstance.addSchema(schema, key)
+  ajvInstanceSchemaMap.set(schema, key)
+
+  return key
 }
 
 module.exports = build
