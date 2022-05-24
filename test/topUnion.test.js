@@ -40,4 +40,5 @@ test('top level union type', (t) => {
   })
 
   t.expectUncaughtException(() => stringify('must-be-failed'))
+  t.autoend()
 })

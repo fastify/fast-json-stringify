@@ -29,6 +29,7 @@ test('deep union type', (t) => {
       schemas: {
         IDirectory: {
           $id: 'IDirectory',
+          $recursiveAnchor: true,
           type: 'object',
           properties: {
             children: {
@@ -36,7 +37,7 @@ test('deep union type', (t) => {
               items: {
                 oneOf: [
                   {
-                    $ref: 'components#/schemas/IDirectory'
+                    $recursiveRef: '#'
                   },
                   {
                     $ref: 'components#/schemas/IImageFile'
@@ -245,4 +246,5 @@ test('deep union type', (t) => {
     }
   ]
   t.equal(JSON.stringify(obj), stringify(obj))
+  t.autoend()
 })
