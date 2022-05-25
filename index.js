@@ -58,19 +58,22 @@ let ajvInstance = null
 
 class Serializer {
   constructor (options = {}) {
-    switch (options.rounding) {
-      case 'floor':
-        this.parseInteger = Math.floor
-        break
-      case 'ceil':
-        this.parseInteger = Math.ceil
-        break
-      case 'round':
-        this.parseInteger = Math.round
-        break
-      default:
-        this.parseInteger = Math.trunc
-        break
+    if (options.rounding !== undefined) {
+      switch (options.rounding) {
+        case 'floor':
+          this.parseInteger = Math.floor
+          break
+        case 'ceil':
+          this.parseInteger = Math.ceil
+          break
+        case 'round':
+          this.parseInteger = Math.round
+          break
+        default:
+          throw new Error(`Unsupported integer rounding method ${options.rounding}`)
+      }
+    } else {
+      this.parseInteger = Math.trunc
     }
   }
 
@@ -80,6 +83,9 @@ class Serializer {
   }
 
   asAny (i) {
+    if (i && typeof i.toJSON === 'function') {
+      i = i.toJSON()
+    }
     return JSON.stringify(i)
   }
 
@@ -88,6 +94,10 @@ class Serializer {
   }
 
   asInteger (i) {
+    if (i && typeof i.toJSON === 'function') {
+      i = i.toJSON()
+    }
+
     if (typeof i === 'bigint') {
       return i.toString()
     } else if (Number.isInteger(i)) {
@@ -99,10 +109,18 @@ class Serializer {
   }
 
   asIntegerNullable (i) {
+    if (i && typeof i.toJSON === 'function') {
+      i = i.toJSON()
+    }
+
     return i === null ? null : this.asInteger(i)
   }
 
   asNumber (i) {
+    if (i && typeof i.toJSON === 'function') {
+      i = i.toJSON()
+    }
+
     const num = Number(i)
     if (isNaN(num)) {
       return 'null'
@@ -112,14 +130,26 @@ class Serializer {
   }
 
   asNumberNullable (i) {
+    if (i && typeof i.toJSON === 'function') {
+      i = i.toJSON()
+    }
+
     return i === null ? null : this.asNumber(i)
   }
 
   asBoolean (bool) {
+    if (bool && typeof bool.toJSON === 'function') {
+      bool = bool.toJSON()
+    }
+
     return bool && 'true' || 'false' // eslint-disable-line
   }
 
   asBooleanNullable (bool) {
+    if (bool && typeof bool.toJSON === 'function') {
+      bool = bool.toJSON()
+    }
+
     return bool === null ? null : this.asBoolean(bool)
   }
 
@@ -160,6 +190,10 @@ class Serializer {
   }
 
   asString (str, skipQuotes) {
+    if (str && typeof str.toJSON === 'function') {
+      str = str.toJSON()
+    }
+
     const quotes = skipQuotes === true ? '' : '"'
     if (str instanceof Date) {
       return quotes + str.toISOString() + quotes
@@ -184,6 +218,10 @@ class Serializer {
   }
 
   asStringNullable (str) {
+    if (str && typeof str.toJSON === 'function') {
+      str = str.toJSON()
+    }
+
     return str === null ? null : this.asString(str)
   }
 
@@ -238,12 +276,6 @@ function build (schema, options) {
     // eslint-disable-next-line
     for (var key of Object.keys(options.schema)) {
       isValidSchema(options.schema[key], key)
-    }
-  }
-
-  if (options.rounding) {
-    if (!['floor', 'ceil', 'round'].includes(options.rounding)) {
-      throw new Error(`Unsupported integer rounding method ${options.rounding}`)
     }
   }
 
@@ -1002,6 +1034,11 @@ function buildArray (location, code, name, key = null) {
   code += `
     function ${name} (obj) {
   `
+
+  code += `
+    obj = ${toJSON('obj')}
+  `
+
   if (schema.nullable) {
     code += `
       if(obj === null) {

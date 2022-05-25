@@ -3,6 +3,104 @@
 const test = require('tap').test
 const build = require('..')
 
+test('use toJSON method on string type', (t) => {
+  t.plan(1)
+
+  const stringify = build({ type: 'string' })
+  const object = {
+    product: { name: 'cola' },
+    toJSON: function () {
+      return this.product.name
+    }
+  }
+
+  t.equal('"cola"', stringify(object))
+})
+
+test('use toJSON method on number type', (t) => {
+  t.plan(1)
+
+  const stringify = build({ type: 'number' })
+  const object = {
+    product: { count: 42 },
+    toJSON: function () {
+      return this.product.count
+    }
+  }
+
+  t.equal('42', stringify(object))
+})
+
+test('use toJSON method on integer type', (t) => {
+  t.plan(1)
+
+  const stringify = build({ type: 'integer' })
+  const object = {
+    product: { count: 42 },
+    toJSON: function () {
+      return this.product.count
+    }
+  }
+
+  t.equal('42', stringify(object))
+})
+
+test('use toJSON method on boolean type', (t) => {
+  t.plan(1)
+
+  const stringify = build({ type: 'boolean' })
+  const object = {
+    product: { isActive: true },
+    toJSON: function () {
+      return this.product.isActive
+    }
+  }
+
+  t.equal('true', stringify(object))
+})
+
+test('use toJSON method on null type', (t) => {
+  t.plan(1)
+
+  const stringify = build({ type: 'null' })
+  const object = {
+    product: { name: null },
+    toJSON: function () {
+      return this.product.name
+    }
+  }
+
+  t.equal('null', stringify(object))
+})
+
+test('use toJSON method on any type', (t) => {
+  t.plan(1)
+
+  const stringify = build({})
+  const object = {
+    product: { name: 'any' },
+    toJSON: function () {
+      return this.product.name
+    }
+  }
+
+  t.equal('"any"', stringify(object))
+})
+
+test('use toJSON method on array type', (t) => {
+  t.plan(1)
+
+  const stringify = build({ type: 'array' })
+  const object = {
+    product: { numbers: [1, 2, 3] },
+    toJSON: function () {
+      return this.product.numbers
+    }
+  }
+
+  t.equal('[1,2,3]', stringify(object))
+})
+
 test('use toJSON method on object types', (t) => {
   t.plan(1)
 
