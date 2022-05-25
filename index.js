@@ -148,7 +148,7 @@ class Serializer {
   asTime (date, skipQuotes) {
     const quotes = skipQuotes === true ? '' : '"'
     if (date instanceof Date) {
-      const hour = new Intl.DateTimeFormat('en', { hour: 'numeric', hour12: false }).format(date)
+      const hour = new Intl.DateTimeFormat('en', { hour: 'numeric', hourCycle: 'h23' }).format(date)
       const minute = new Intl.DateTimeFormat('en', { minute: 'numeric' }).format(date)
       const second = new Intl.DateTimeFormat('en', { second: 'numeric' }).format(date)
       return quotes + this.pad2Zeros(hour) + ':' + this.pad2Zeros(minute) + ':' + this.pad2Zeros(second) + quotes
