@@ -163,12 +163,40 @@ const benchmarks = [
     schema: {
       type: 'object',
       properties: {
-        s: { type: 'string' },
-        n: { type: 'number' },
-        b: { type: 'boolean' }
+        s1: { type: 'string' },
+        n1: { type: 'number' },
+        b1: { type: 'boolean' },
+        s2: { type: 'string' },
+        n2: { type: 'number' },
+        b2: { type: 'boolean' },
+        s3: { type: 'string' },
+        n3: { type: 'number' },
+        b3: { type: 'boolean' },
+        s4: { type: 'string' },
+        n4: { type: 'number' },
+        b4: { type: 'boolean' },
+        s5: { type: 'string' },
+        n5: { type: 'number' },
+        b5: { type: 'boolean' }
       }
     },
-    input: { s: 'hello world', n: 42, b: true }
+    input: {
+      s1: 'hello world',
+      n1: 42,
+      b1: true,
+      s2: 'hello world',
+      n2: 42,
+      b2: true,
+      s3: 'hello world',
+      n3: 42,
+      b3: true,
+      s4: 'hello world',
+      n4: 42,
+      b4: true,
+      s5: 'hello world',
+      n5: 42,
+      b5: true
+    }
   }
 ]
 
