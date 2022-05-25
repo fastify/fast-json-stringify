@@ -56,6 +56,173 @@ const schemaReferenceMap = new Map()
 
 let ajvInstance = null
 
+class Serializer {
+  constructor (options = {}) {
+    switch (options.rounding) {
+      case 'floor':
+        this.parseInteger = Math.floor
+        break
+      case 'ceil':
+        this.parseInteger = Math.ceil
+        break
+      case 'round':
+        this.parseInteger = Math.round
+        break
+      default:
+        this.parseInteger = Math.trunc
+        break
+    }
+  }
+
+  pad2Zeros (num) {
+    const s = '00' + num
+    return s[s.length - 2] + s[s.length - 1]
+  }
+
+  asAny (i) {
+    return JSON.stringify(i)
+  }
+
+  asNull () {
+    return 'null'
+  }
+
+  asInteger (i) {
+    if (typeof i === 'bigint') {
+      return i.toString()
+    } else if (Number.isInteger(i)) {
+      return this.asNumber(i)
+    } else {
+      /* eslint no-undef: "off" */
+      return this.asNumber(this.parseInteger(i))
+    }
+  }
+
+  asIntegerNullable (i) {
+    return i === null ? null : this.asInteger(i)
+  }
+
+  asNumber (i) {
+    const num = Number(i)
+    if (isNaN(num)) {
+      return 'null'
+    } else {
+      return '' + num
+    }
+  }
+
+  asNumberNullable (i) {
+    return i === null ? null : this.asNumber(i)
+  }
+
+  asBoolean (bool) {
+    return bool && 'true' || 'false' // eslint-disable-line
+  }
+
+  asBooleanNullable (bool) {
+    return bool === null ? null : this.asBoolean(bool)
+  }
+
+  asDatetime (date, skipQuotes) {
+    const quotes = skipQuotes === true ? '' : '"'
+    if (date instanceof Date) {
+      return quotes + date.toISOString() + quotes
+    } else if (date && typeof date.toISOString === 'function') {
+      return quotes + date.toISOString() + quotes
+    } else {
+      return this.asString(date, skipQuotes)
+    }
+  }
+
+  asDate (date, skipQuotes) {
+    const quotes = skipQuotes === true ? '' : '"'
+    if (date instanceof Date) {
+      return quotes + new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(0, 10) + quotes
+    } else if (date && typeof date.format === 'function') {
+      return quotes + date.format('YYYY-MM-DD') + quotes
+    } else {
+      return this.asString(date, skipQuotes)
+    }
+  }
+
+  asTime (date, skipQuotes) {
+    const quotes = skipQuotes === true ? '' : '"'
+    if (date instanceof Date) {
+      const hour = new Intl.DateTimeFormat('en', { hour: 'numeric', hour12: false }).format(date)
+      const minute = new Intl.DateTimeFormat('en', { minute: 'numeric' }).format(date)
+      const second = new Intl.DateTimeFormat('en', { second: 'numeric' }).format(date)
+      return quotes + this.pad2Zeros(hour) + ':' + this.pad2Zeros(minute) + ':' + this.pad2Zeros(second) + quotes
+    } else if (date && typeof date.format === 'function') {
+      return quotes + date.format('HH:mm:ss') + quotes
+    } else {
+      return this.asString(date, skipQuotes)
+    }
+  }
+
+  asString (str, skipQuotes) {
+    const quotes = skipQuotes === true ? '' : '"'
+    if (str instanceof Date) {
+      return quotes + str.toISOString() + quotes
+    } else if (str === null) {
+      return quotes + quotes
+    } else if (str instanceof RegExp) {
+      str = str.source
+    } else if (typeof str !== 'string') {
+      str = str.toString()
+    }
+    // If we skipQuotes it means that we are using it as test
+    // no need to test the string length for the render
+    if (skipQuotes) {
+      return str
+    }
+
+    if (str.length < 42) {
+      return this.asStringSmall(str)
+    } else {
+      return JSON.stringify(str)
+    }
+  }
+
+  asStringNullable (str) {
+    return str === null ? null : this.asString(str)
+  }
+
+  // magically escape strings for json
+  // relying on their charCodeAt
+  // everything below 32 needs JSON.stringify()
+  // every string that contain surrogate needs JSON.stringify()
+  // 34 and 92 happens all the time, so we
+  // have a fast case for them
+  asStringSmall (str) {
+    const l = str.length
+    let result = ''
+    let last = 0
+    let found = false
+    let surrogateFound = false
+    let point = 255
+    // eslint-disable-next-line
+    for (var i = 0; i < l && point >= 32; i++) {
+      point = str.charCodeAt(i)
+      if (point >= 0xD800 && point <= 0xDFFF) {
+        // The current character is a surrogate.
+        surrogateFound = true
+      }
+      if (point === 34 || point === 92) {
+        result += str.slice(last, i) + '\\'
+        last = i
+        found = true
+      }
+    }
+
+    if (!found) {
+      result = str
+    } else {
+      result += str.slice(last)
+    }
+    return ((point < 32) || (surrogateFound === true)) ? JSON.stringify(str) : '"' + result + '"'
+  }
+}
+
 function build (schema, options) {
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
@@ -74,11 +241,8 @@ function build (schema, options) {
     }
   }
 
-  let intParseFunctionName = 'trunc'
   if (options.rounding) {
-    if (['floor', 'ceil', 'round'].includes(options.rounding)) {
-      intParseFunctionName = options.rounding
-    } else {
+    if (!['floor', 'ceil', 'round'].includes(options.rounding)) {
       throw new Error(`Unsupported integer rounding method ${options.rounding}`)
     }
   }
@@ -99,15 +263,10 @@ function build (schema, options) {
     }
   }
 
-  /* eslint no-new-func: "off" */
-  let code = `
-    'use strict'
-  `
+  const serializer = new Serializer(options)
 
-  code += `
-    ${asFunctions}
-    function parseInteger(int) { return Math.${intParseFunctionName}(int) }
-    `
+  /* eslint no-new-func: "off" */
+  let code = '\'use strict\''
 
   let location = {
     schema,
@@ -131,55 +290,55 @@ function build (schema, options) {
       main = '$main'
       code = buildObject(location, code, main)
       break
-    case 'string':
-      main = schema.nullable ? '$asStringNullable' : getStringSerializer(schema.format)
-      break
-    case 'integer':
-      main = schema.nullable ? '$asIntegerNullable' : '$asInteger'
-      break
-    case 'number':
-      main = schema.nullable ? '$asNumberNullable' : '$asNumber'
-      break
-    case 'boolean':
-      main = schema.nullable ? '$asBooleanNullable' : '$asBoolean'
-      break
-    case 'null':
-      main = '$asNull'
-      break
     case 'array':
       main = '$main'
       code = buildArray(location, code, main)
       schema = location.schema
       break
+    case 'string':
+      if (schema.nullable) {
+        return serializer.asStringNullable.bind(serializer)
+      }
+
+      switch (schema.format) {
+        case 'date-time': return serializer.asDatetime.bind(serializer)
+        case 'date': return serializer.asDate.bind(serializer)
+        case 'time': return serializer.asTime.bind(serializer)
+        default: return serializer.asString.bind(serializer)
+      }
+    case 'integer':
+      return schema.nullable ? serializer.asIntegerNullable.bind(serializer) : serializer.asInteger.bind(serializer)
+    case 'number':
+      return schema.nullable ? serializer.asNumberNullable.bind(serializer) : serializer.asNumber.bind(serializer)
+    case 'boolean':
+      return schema.nullable ? serializer.asBooleanNullable.bind(serializer) : serializer.asBoolean.bind(serializer)
+    case 'null':
+      return serializer.asNull.bind(serializer)
     case undefined:
-      main = '$asAny'
-      break
+      return serializer.asAny.bind(serializer)
     default:
       throw new Error(`${schema.type} unsupported`)
   }
 
   code += `
-    ;
      return ${main}
   `
-  const dependencies = [ajvInstance]
-  const dependenciesName = ['ajv']
-  ajvInstance = null
 
-  dependenciesName.push(code)
+  const dependenciesName = ['ajv', 'serializer', code]
 
   if (options.debugMode) {
-    return {
-      code: dependenciesName.join('\n'),
-      ajv: dependencies[0]
-    }
+    return { code: dependenciesName.join('\n'), ajv: ajvInstance }
   }
 
+  const contextFunc = new Function('ajv', 'serializer', code)
+  const stringifyFunc = contextFunc(ajvInstance, serializer)
+
+  ajvInstance = null
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
   schemaReferenceMap.clear()
 
-  return (Function.apply(null, dependenciesName).apply(null, dependencies))
+  return stringifyFunc
 }
 
 const objectKeywords = [
@@ -240,169 +399,19 @@ function inferTypeByKeyword (schema) {
 }
 
 const stringSerializerMap = {
-  'date-time': '$asDatetime',
-  date: '$asDate',
-  time: '$asTime'
+  'date-time': 'serializer.asDatetime.bind(serializer)',
+  date: 'serializer.asDate.bind(serializer)',
+  time: 'serializer.asTime.bind(serializer)'
 }
 
 function getStringSerializer (format) {
   return stringSerializerMap[format] ||
-  '$asString'
+  'serializer.asString.bind(serializer)'
 }
 
 function getTestSerializer (format) {
   return stringSerializerMap[format]
 }
-
-const asFunctions = `
-function $pad2Zeros (num) {
-  const s = '00' + num
-  return s[s.length - 2] + s[s.length - 1]
-}
-
-function $asAny (i) {
-  return JSON.stringify(i)
-}
-
-function $asNull () {
-  return 'null'
-}
-
-function $asInteger (i) {
-  if (typeof i === 'bigint') {
-    return i.toString()
-  } else if (Number.isInteger(i)) {
-    return '' + i
-  } else {
-    /* eslint no-undef: "off" */
-    return $asNumber(parseInteger(i))
-  }
-}
-
-function $asIntegerNullable (i) {
-  return i === null ? null : $asInteger(i)
-}
-
-function $asNumber (i) {
-  const num = Number(i)
-  if (isNaN(num)) {
-    return 'null'
-  } else {
-    return '' + num
-  }
-}
-
-function $asNumberNullable (i) {
-  return i === null ? null : $asNumber(i)
-}
-
-function $asBoolean (bool) {
-  return bool && 'true' || 'false' // eslint-disable-line
-}
-
-function $asBooleanNullable (bool) {
-  return bool === null ? null : $asBoolean(bool)
-}
-
-function $asDatetime (date, skipQuotes) {
-  const quotes = skipQuotes === true ? '' : '"'
-  if (date instanceof Date) {
-    return quotes + date.toISOString() + quotes
-  } else if (date && typeof date.toISOString === 'function') {
-    return quotes + date.toISOString() + quotes
-  } else {
-    return $asString(date, skipQuotes)
-  }
-}
-
-function $asDate (date, skipQuotes) {
-  const quotes = skipQuotes === true ? '' : '"'
-  if (date instanceof Date) {
-    return quotes + new Date(date.getTime() - (date.getTimezoneOffset() * 60000 )).toISOString().slice(0, 10) + quotes
-  } else if (date && typeof date.format === 'function') {
-    return quotes + date.format('YYYY-MM-DD') + quotes
-  } else {
-    return $asString(date, skipQuotes)
-  }
-}
-
-function $asTime (date, skipQuotes) {
-  const quotes = skipQuotes === true ? '' : '"'
-  if (date instanceof Date) {
-    const hour = new Intl.DateTimeFormat('en', { hour: 'numeric', hour12: false }).format(date)
-    const minute = new Intl.DateTimeFormat('en', { minute: 'numeric' }).format(date)
-    const second = new Intl.DateTimeFormat('en', { second: 'numeric' }).format(date)
-    return quotes + $pad2Zeros(hour) + ':' + $pad2Zeros(minute) + ':' + $pad2Zeros(second) + quotes
-  } else if (date && typeof date.format === 'function') {
-    return quotes + date.format('HH:mm:ss') + quotes
-  } else {
-    return $asString(date, skipQuotes)
-  }
-}
-
-function $asString (str, skipQuotes) {
-  const quotes = skipQuotes === true ? '' : '"'
-  if (str instanceof Date) {
-    return quotes + str.toISOString() + quotes
-  } else if (str === null) {
-    return quotes + quotes
-  } else if (str instanceof RegExp) {
-    str = str.source
-  } else if (typeof str !== 'string') {
-    str = str.toString()
-  }
-  // If we skipQuotes it means that we are using it as test
-  // no need to test the string length for the render
-  if (skipQuotes) {
-    return str
-  }
-
-  if (str.length < 42) {
-    return $asStringSmall(str)
-  } else {
-    return JSON.stringify(str)
-  }
-}
-
-function $asStringNullable (str) {
-  return str === null ? null : $asString(str)
-}
-
-// magically escape strings for json
-// relying on their charCodeAt
-// everything below 32 needs JSON.stringify()
-// every string that contain surrogate needs JSON.stringify()
-// 34 and 92 happens all the time, so we
-// have a fast case for them
-function $asStringSmall (str) {
-  const l = str.length
-  let result = ''
-  let last = 0
-  let found = false
-  let surrogateFound = false
-  let point = 255
-  // eslint-disable-next-line
-  for (var i = 0; i < l && point >= 32; i++) {
-    point = str.charCodeAt(i)
-    if (point >= 0xD800 && point <= 0xDFFF) {
-      // The current character is a surrogate.
-      surrogateFound = true
-    }
-    if (point === 34 || point === 92) {
-      result += str.slice(last, i) + '\\\\'
-      last = i
-      found = true
-    }
-  }
-
-  if (!found) {
-    result = str
-  } else {
-    result += str.slice(last)
-  }
-  return ((point < 32) || (surrogateFound === true)) ? JSON.stringify(str) : '"' + result + '"'
-}
-`
 
 function addPatternProperties (location) {
   const schema = location.schema
@@ -434,49 +443,49 @@ function addPatternProperties (location) {
       code += `${buildObject(ppLocation, '', 'buildObjectPP' + index)}
           ${ifPpKeyExists}
           ${addComma}
-          json += $asString(keys[i]) + ':' + buildObjectPP${index}(obj[keys[i]])
+          json += serializer.asString(keys[i]) + ':' + buildObjectPP${index}(obj[keys[i]])
       `
     } else if (type === 'array') {
       code += `${buildArray(ppLocation, '', 'buildArrayPP' + index)}
           ${ifPpKeyExists}
           ${addComma}
-          json += $asString(keys[i]) + ':' + buildArrayPP${index}(obj[keys[i]])
+          json += serializer.asString(keys[i]) + ':' + buildArrayPP${index}(obj[keys[i]])
       `
     } else if (type === 'null') {
       code += `
           ${ifPpKeyExists}
           ${addComma}
-          json += $asString(keys[i]) +':null'
+          json += serializer.asString(keys[i]) +':null'
       `
     } else if (type === 'string') {
       code += `
           ${ifPpKeyExists}
           ${addComma}
-          json += $asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
+          json += serializer.asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
       `
     } else if (type === 'integer') {
       code += `
           ${ifPpKeyExists}
           ${addComma}
-          json += $asString(keys[i]) + ':' + $asInteger(obj[keys[i]])
+          json += serializer.asString(keys[i]) + ':' + serializer.asInteger(obj[keys[i]])
       `
     } else if (type === 'number') {
       code += `
           ${ifPpKeyExists}
           ${addComma}
-          json += $asString(keys[i]) + ':' + $asNumber(obj[keys[i]])
+          json += serializer.asString(keys[i]) + ':' + serializer.asNumber(obj[keys[i]])
       `
     } else if (type === 'boolean') {
       code += `
           ${ifPpKeyExists}
           ${addComma}
-          json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]])
+          json += serializer.asString(keys[i]) + ':' + serializer.asBoolean(obj[keys[i]])
       `
     } else if (type === undefined) {
       code += `
           ${ifPpKeyExists}
           ${addComma}
-          json += $asString(keys[i]) + ':' + $asAny(obj[keys[i]])
+          json += serializer.asString(keys[i]) + ':' + serializer.asAny(obj[keys[i]])
       `
     } else {
       code += `
@@ -507,7 +516,7 @@ function additionalProperty (location) {
     return `
         if (obj[keys[i]] !== undefined && typeof obj[keys[i]] !== 'function' && typeof obj[keys[i]] !== 'symbol') {
           ${addComma}
-          json += $asString(keys[i]) + ':' + JSON.stringify(obj[keys[i]])
+          json += serializer.asString(keys[i]) + ':' + JSON.stringify(obj[keys[i]])
         }
     `
   }
@@ -523,29 +532,29 @@ function additionalProperty (location) {
   if (type === 'object') {
     code += `${buildObject(apLocation, '', 'buildObjectAP')}
         ${addComma}
-        json += $asString(keys[i]) + ':' + buildObjectAP(obj[keys[i]])
+        json += serializer.asString(keys[i]) + ':' + buildObjectAP(obj[keys[i]])
     `
   } else if (type === 'array') {
     code += `${buildArray(apLocation, '', 'buildArrayAP')}
         ${addComma}
-        json += $asString(keys[i]) + ':' + buildArrayAP(obj[keys[i]])
+        json += serializer.asString(keys[i]) + ':' + buildArrayAP(obj[keys[i]])
     `
   } else if (type === 'null') {
     code += `
         ${addComma}
-        json += $asString(keys[i]) +':null'
+        json += serializer.asString(keys[i]) +':null'
     `
   } else if (type === 'string') {
     code += `
         ${addComma}
-        json += $asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
+        json += serializer.asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
     `
   } else if (type === 'integer') {
     code += `
         var t = Number(obj[keys[i]])
         if (!isNaN(t)) {
           ${addComma}
-          json += $asString(keys[i]) + ':' + t
+          json += serializer.asString(keys[i]) + ':' + t
         }
     `
   } else if (type === 'number') {
@@ -553,18 +562,18 @@ function additionalProperty (location) {
         var t = Number(obj[keys[i]])
         if (!isNaN(t)) {
           ${addComma}
-          json += $asString(keys[i]) + ':' + t
+          json += serializer.asString(keys[i]) + ':' + t
         }
     `
   } else if (type === 'boolean') {
     code += `
         ${addComma}
-        json += $asString(keys[i]) + ':' + $asBoolean(obj[keys[i]])
+        json += serializer.asString(keys[i]) + ':' + serializer.asBoolean(obj[keys[i]])
     `
   } else if (type === undefined) {
     code += `
         ${addComma}
-        json += $asString(keys[i]) + ':' + $asAny(obj[keys[i]])
+        json += serializer.asString(keys[i]) + ':' + serializer.asAny(obj[keys[i]])
     `
   } else {
     code += `
@@ -759,7 +768,7 @@ function buildCode (location, code, laterCode, name) {
     } else if (type === 'integer') {
       code += `
           var rendered = false
-          var t = $asInteger(obj[${sanitized}])
+          var t = serializer.asInteger(obj[${sanitized}])
           if (!isNaN(t)) {
             ${addComma}
             json += ${asString} + ':' + t
@@ -1215,7 +1224,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
     case 'null':
       funcName = '$asNull'
       code += `
-        json += $asNull()
+        json += serializer.asNull()
       `
       break
     case 'string': {
@@ -1226,15 +1235,15 @@ function nested (laterCode, name, key, location, subKey, isArray) {
     }
     case 'integer':
       funcName = '$asInteger'
-      code += nullable ? `json += obj${accessor} === null ? null : $asInteger(obj${accessor})` : `json += $asInteger(obj${accessor})`
+      code += nullable ? `json += obj${accessor} === null ? null : serializer.asInteger(obj${accessor})` : `json += serializer.asInteger(obj${accessor})`
       break
     case 'number':
       funcName = '$asNumber'
-      code += nullable ? `json += obj${accessor} === null ? null : $asNumber(obj${accessor})` : `json += $asNumber(obj${accessor})`
+      code += nullable ? `json += obj${accessor} === null ? null : serializer.asNumber(obj${accessor})` : `json += serializer.asNumber(obj${accessor})`
       break
     case 'boolean':
       funcName = '$asBoolean'
-      code += nullable ? `json += obj${accessor} === null ? null : $asBoolean(obj${accessor})` : `json += $asBoolean(obj${accessor})`
+      code += nullable ? `json += obj${accessor} === null ? null : serializer.asBoolean(obj${accessor})` : `json += serializer.asBoolean(obj${accessor})`
       break
     case 'object':
       funcName = asFuncName(name + key + subKey)
@@ -1410,7 +1419,8 @@ module.exports = build
 module.exports.validLargeArrayMechanisms = validLargeArrayMechanisms
 
 module.exports.restore = function ({ code, ajv }) {
+  const serializer = new Serializer()
   // eslint-disable-next-line
-  return (Function.apply(null, ['ajv', code])
-    .apply(null, [ajv]))
+  return (Function.apply(null, ['ajv', 'serializer', code])
+    .apply(null, [ajv, serializer]))
 }
