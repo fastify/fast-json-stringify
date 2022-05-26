@@ -74,11 +74,6 @@ class Serializer {
     }
   }
 
-  pad2Zeros (num) {
-    const s = '00' + num
-    return s[s.length - 2] + s[s.length - 1]
-  }
-
   asAny (i) {
     return JSON.stringify(i)
   }
@@ -148,10 +143,7 @@ class Serializer {
   asTime (date, skipQuotes) {
     const quotes = skipQuotes === true ? '' : '"'
     if (date instanceof Date) {
-      const hour = new Intl.DateTimeFormat('en', { hour: 'numeric', hourCycle: 'h23' }).format(date)
-      const minute = new Intl.DateTimeFormat('en', { minute: 'numeric' }).format(date)
-      const second = new Intl.DateTimeFormat('en', { second: 'numeric' }).format(date)
-      return quotes + this.pad2Zeros(hour) + ':' + this.pad2Zeros(minute) + ':' + this.pad2Zeros(second) + quotes
+      return quotes + new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(11, 19) + quotes
     } else if (date && typeof date.format === 'function') {
       return quotes + date.format('HH:mm:ss') + quotes
     } else {
