@@ -64,10 +64,26 @@ const benchmarks = [
     input: 42
   },
   {
+    name: 'formatted date-time',
+    schema: {
+      type: 'string',
+      format: 'date-time'
+    },
+    input: new Date()
+  },
+  {
     name: 'formatted date',
     schema: {
       type: 'string',
       format: 'date'
+    },
+    input: new Date()
+  },
+  {
+    name: 'formatted time',
+    schema: {
+      type: 'string',
+      format: 'time'
     },
     input: new Date()
   },
