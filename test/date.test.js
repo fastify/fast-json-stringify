@@ -97,6 +97,27 @@ test('render a date in a string when format is time as kk:mm:ss', (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
+test('render a midnight time', (t) => {
+  t.plan(3)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'time'
+  }
+  const midnight = new Date(new Date().setHours(24))
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(midnight)
+
+  validate(JSON.parse(output))
+  t.equal(validate.errors, null)
+
+  t.equal(output, `"${moment(midnight).format('HH:mm:ss')}"`)
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
 test('verify padding for rendered date in a string when format is time', (t) => {
   t.plan(3)
 
