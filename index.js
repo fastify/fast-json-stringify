@@ -753,7 +753,6 @@ function buildCode (location, code, laterCode, name) {
         if (obj[${sanitized}] === null) {
           ${addComma}
           json += ${asString} + ':null'
-          var rendered = true
         } else {
       `
     }
@@ -767,14 +766,10 @@ function buildCode (location, code, laterCode, name) {
       `
     } else if (type === 'integer') {
       code += `
-          var rendered = false
           var t = serializer.asInteger(obj[${sanitized}])
           if (!isNaN(t)) {
             ${addComma}
             json += ${asString} + ':' + t
-            rendered = true
-          }
-          if (rendered) {
       `
     } else {
       code += `
