@@ -5,7 +5,7 @@ const suite = new benchmark.Suite()
 
 const STR_LEN = 1e4
 const LARGE_ARRAY_SIZE = 2e4
-const MULTI_ARRAY_LENGHT = 1e3
+const MULTI_ARRAY_LENGTH = 1e3
 
 const schema = {
   title: 'Example Schema',
@@ -93,7 +93,7 @@ const obj = {
 
 const date = new Date()
 
-const multiArray = new Array(MULTI_ARRAY_LENGHT)
+const multiArray = new Array(MULTI_ARRAY_LENGTH)
 const largeArray = new Array(LARGE_ARRAY_SIZE)
 
 const CJS = require('compile-json-stringify')
@@ -158,7 +158,7 @@ for (let i = STR_LEN; i < LARGE_ARRAY_SIZE; ++i) {
 
 Number(str)
 
-for (let i = 0; i < MULTI_ARRAY_LENGHT; i++) {
+for (let i = 0; i < MULTI_ARRAY_LENGTH; i++) {
   multiArray[i] = obj
 }
 
