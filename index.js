@@ -723,7 +723,7 @@ function buildCode (location, code, laterCode, name) {
   }
 
   const schema = location.schema
-  let required = schema.required
+  const required = schema.required || []
 
   Object.keys(schema.properties || {}).forEach((key, i, a) => {
     let propertyLocation = mergeLocation(location, { schema: schema.properties[key] })
@@ -777,14 +777,12 @@ function buildCode (location, code, laterCode, name) {
 
     const defaultValue = schema.properties[key].default
     if (defaultValue !== undefined) {
-      required = filterRequired(required, key)
       code += `
       } else {
         ${addComma}
         json += ${asString} + ':' + ${JSON.stringify(JSON.stringify(defaultValue))}
       `
-    } else if (required && required.indexOf(key) !== -1) {
-      required = filterRequired(required, key)
+    } else if (required.includes(key)) {
       code += `
       } else {
         throw new Error('${sanitized} is required!')
@@ -802,20 +800,9 @@ function buildCode (location, code, laterCode, name) {
     }
   })
 
-  if (required && required.length > 0) {
-    code += 'var required = ['
-    // eslint-disable-next-line
-    for (var i = 0; i < required.length; i++) {
-      if (i > 0) {
-        code += ','
-      }
-      code += `${JSON.stringify(required[i])}`
-    }
-    code += `]
-      for (var i = 0; i < required.length; i++) {
-        if (obj[required[i]] === undefined) throw new Error('"' + required[i] + '" is required!')
-      }
-    `
+  for (const requiredProperty of required) {
+    if (schema.properties && schema.properties[requiredProperty] !== undefined) continue
+    code += `if (obj['${requiredProperty}'] === undefined) throw new Error('"${requiredProperty}" is required!')\n`
   }
 
   if (schema.allOf) {
@@ -825,13 +812,6 @@ function buildCode (location, code, laterCode, name) {
   }
 
   return { code, laterCode }
-}
-
-function filterRequired (required, key) {
-  if (!required) {
-    return required
-  }
-  return required.filter(k => k !== key)
 }
 
 function buildCodeWithAllOfs (location, code, laterCode, name) {
