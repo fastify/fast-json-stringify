@@ -116,3 +116,67 @@ Object.keys(testSet).forEach(key => {
     t.same(JSON.parse(result), expected)
   })
 })
+
+test('handle nullable number correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'number',
+    nullable: true
+  }
+  const stringify = build(schema)
+
+  const data = null
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('handle nullable integer correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'integer',
+    nullable: true
+  }
+  const stringify = build(schema)
+
+  const data = null
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('handle nullable boolean correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'boolean',
+    nullable: true
+  }
+  const stringify = build(schema)
+
+  const data = null
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('handle nullable string correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string',
+    nullable: true
+  }
+  const stringify = build(schema)
+
+  const data = null
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})

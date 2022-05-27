@@ -94,7 +94,7 @@ class Serializer {
   }
 
   asIntegerNullable (i) {
-    return i === null ? null : this.asInteger(i)
+    return i === null ? 'null' : this.asInteger(i)
   }
 
   asNumber (i) {
@@ -107,7 +107,7 @@ class Serializer {
   }
 
   asNumberNullable (i) {
-    return i === null ? null : this.asNumber(i)
+    return i === null ? 'null' : this.asNumber(i)
   }
 
   asBoolean (bool) {
@@ -115,7 +115,7 @@ class Serializer {
   }
 
   asBooleanNullable (bool) {
-    return bool === null ? null : this.asBoolean(bool)
+    return bool === null ? 'null' : this.asBoolean(bool)
   }
 
   asDatetime (date, skipQuotes) {
@@ -176,7 +176,7 @@ class Serializer {
   }
 
   asStringNullable (str) {
-    return str === null ? null : this.asString(str)
+    return str === null ? 'null' : this.asString(str)
   }
 
   // magically escape strings for json
