@@ -63,7 +63,7 @@ test('patternProperties - string coerce', (t) => {
 })
 
 test('patternProperties - number coerce', (t) => {
-  t.plan(1)
+  t.plan(2)
   const stringify = build({
     title: 'check number coerce',
     type: 'object',
@@ -75,8 +75,16 @@ test('patternProperties - number coerce', (t) => {
     }
   })
 
-  const obj = { foo: true, ofoo: '42', xfoo: 'string', arrfoo: [1, 2], objfoo: { num: 42 } }
-  t.equal(stringify(obj), '{"foo":1,"ofoo":42,"xfoo":null,"arrfoo":null,"objfoo":null}')
+  const coercibleValues = { foo: true, ofoo: '42' }
+  t.equal(stringify(coercibleValues), '{"foo":1,"ofoo":42}')
+
+  const incoercibleValues = { xfoo: 'string', arrfoo: [1, 2], objfoo: { num: 42 } }
+  try {
+    stringify(incoercibleValues)
+    t.fail('should throw an error')
+  } catch (err) {
+    t.ok(err)
+  }
 })
 
 test('patternProperties - boolean coerce', (t) => {

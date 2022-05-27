@@ -261,7 +261,7 @@ buildTest({
   readonly: true
 })
 
-test('skip or coerce numbers and integers that are not numbers', (t) => {
+test('throw an error or coerce numbers and integers that are not numbers', (t) => {
   const stringify = build({
     title: 'basic',
     type: 'object',
@@ -275,14 +275,14 @@ test('skip or coerce numbers and integers that are not numbers', (t) => {
     }
   })
 
-  let result = stringify({
-    age: 'hello  ',
-    distance: 'long'
-  })
+  try {
+    stringify({ age: 'hello  ', distance: 'long' })
+    t.fail('should throw an error')
+  } catch (err) {
+    t.ok(err)
+  }
 
-  t.same(JSON.parse(result), {})
-
-  result = stringify({
+  const result = stringify({
     age: '42',
     distance: true
   })
