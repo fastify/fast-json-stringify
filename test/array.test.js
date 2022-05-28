@@ -344,7 +344,7 @@ buildTest({
 })
 
 buildTest({
-  title: 'large array with json-stringify mechanism',
+  title: 'large array of objects with json-stringify mechanism',
   type: 'object',
   properties: {
     ids: {
@@ -362,4 +362,84 @@ buildTest({
   ids: largeArray
 }, {
   largeArrayMechanism: 'json-stringify'
+})
+
+buildTest({
+  title: 'large array of strings with default mechanism',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: { type: 'string' }
+    }
+  }
+}, {
+  ids: new Array(2e4).fill('string')
+}, {
+  largeArraySize: 2e4,
+  largeArrayMechanism: 'default'
+})
+
+buildTest({
+  title: 'large array of numbers with default mechanism',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: { type: 'number' }
+    }
+  }
+}, {
+  ids: new Array(2e4).fill(42)
+}, {
+  largeArraySize: 2e4,
+  largeArrayMechanism: 'default'
+})
+
+buildTest({
+  title: 'large array of integers with default mechanism',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: { type: 'integer' }
+    }
+  }
+}, {
+  ids: new Array(2e4).fill(42)
+}, {
+  largeArraySize: 2e4,
+  largeArrayMechanism: 'default'
+})
+
+buildTest({
+  title: 'large array of booleans with default mechanism',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: { type: 'boolean' }
+    }
+  }
+}, {
+  ids: new Array(2e4).fill(true)
+}, {
+  largeArraySize: 2e4,
+  largeArrayMechanism: 'default'
+})
+
+buildTest({
+  title: 'large array of null values with default mechanism',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: { type: 'null' }
+    }
+  }
+}, {
+  ids: new Array(2e4).fill(null)
+}, {
+  largeArraySize: 2e4,
+  largeArrayMechanism: 'default'
 })
