@@ -286,7 +286,7 @@ console.log(stringify(obj)) // '{"matchfoo":"42","otherfoo":"str","matchnum":3,"
 If *additionalProperties* is not present or is set to `false`, every property that is not explicitly listed in the *properties* and *patternProperties* objects,will be ignored, as described in <a href="#missingFields">Missing fields</a>.
 Missing fields are ignored to avoid having to rewrite objects before serializing. However, other schema rules would throw in similar situations.
 If *additionalProperties* is set to `true`, it will be used by `JSON.stringify` to stringify the additional properties. If you want to achieve maximum performance, we strongly encourage you to use a fixed schema where possible.
-The additional properties will always be serialzied at the end of the object.
+The additional properties will always be serialized at the end of the object.
 Example:
 ```javascript
 const stringify = fastJson({
