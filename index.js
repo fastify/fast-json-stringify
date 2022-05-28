@@ -134,6 +134,10 @@ class Serializer {
     }
   }
 
+  asDatetimeNullable (date, skipQuotes) {
+    return date === null ? 'null' : this.asDatetime(date, skipQuotes)
+  }
+
   asDate (date, skipQuotes) {
     const quotes = skipQuotes === true ? '' : '"'
     if (date instanceof Date) {
@@ -145,6 +149,10 @@ class Serializer {
     }
   }
 
+  asDateNullable (date, skipQuotes) {
+    return date === null ? 'null' : this.asDate(date, skipQuotes)
+  }
+
   asTime (date, skipQuotes) {
     const quotes = skipQuotes === true ? '' : '"'
     if (date instanceof Date) {
@@ -154,6 +162,10 @@ class Serializer {
     } else {
       return this.asString(date, skipQuotes)
     }
+  }
+
+  asTimeNullable (date, skipQuotes) {
+    return date === null ? 'null' : this.asTime(date, skipQuotes)
   }
 
   asString (str, skipQuotes) {
@@ -293,15 +305,11 @@ function build (schema, options) {
       schema = location.schema
       break
     case 'string':
-      if (schema.nullable) {
-        return serializer.asStringNullable.bind(serializer)
-      }
-
       switch (schema.format) {
-        case 'date-time': return serializer.asDatetime.bind(serializer)
-        case 'date': return serializer.asDate.bind(serializer)
-        case 'time': return serializer.asTime.bind(serializer)
-        default: return serializer.asString.bind(serializer)
+        case 'date-time': return schema.nullable ? serializer.asDatetimeNullable.bind(serializer) : serializer.asDatetime.bind(serializer)
+        case 'date': return schema.nullable ? serializer.asDateNullable.bind(serializer) : serializer.asDate.bind(serializer)
+        case 'time': return schema.nullable ? serializer.asTimeNullable.bind(serializer) : serializer.asTime.bind(serializer)
+        default: return schema.nullable ? serializer.asStringNullable.bind(serializer) : serializer.asString.bind(serializer)
       }
     case 'integer':
       return schema.nullable ? serializer.asIntegerNullable.bind(serializer) : serializer.asInteger.bind(serializer)

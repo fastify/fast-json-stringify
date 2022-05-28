@@ -180,3 +180,54 @@ test('handle nullable string correctly', (t) => {
   t.same(result, JSON.stringify(data))
   t.same(JSON.parse(result), data)
 })
+
+test('handle nullable date-time correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string',
+    format: 'date-time',
+    nullable: true
+  }
+  const stringify = build(schema)
+
+  const data = null
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('handle nullable date correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string',
+    format: 'date',
+    nullable: true
+  }
+  const stringify = build(schema)
+
+  const data = null
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('handle nullable time correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string',
+    format: 'time',
+    nullable: true
+  }
+  const stringify = build(schema)
+
+  const data = null
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
