@@ -86,10 +86,15 @@ class Serializer {
     if (typeof i === 'bigint') {
       return i.toString()
     } else if (Number.isInteger(i)) {
-      return this.asNumber(i)
+      return '' + i
     } else {
       /* eslint no-undef: "off" */
-      return this.asNumber(this.parseInteger(i))
+      const integer = this.parseInteger(i)
+      if (Number.isNaN(integer)) {
+        throw new Error(`The value "${i}" cannot be converted to an integer.`)
+      } else {
+        return '' + integer
+      }
     }
   }
 
@@ -99,8 +104,8 @@ class Serializer {
 
   asNumber (i) {
     const num = Number(i)
-    if (isNaN(num)) {
-      return 'null'
+    if (Number.isNaN(num)) {
+      throw new Error(`The value "${i}" cannot be converted to a number.`)
     } else {
       return '' + num
     }
@@ -725,7 +730,7 @@ function buildCode (location, code, laterCode, name) {
   const schema = location.schema
   const required = schema.required || []
 
-  Object.keys(schema.properties || {}).forEach((key, i, a) => {
+  Object.keys(schema.properties || {}).forEach((key) => {
     let propertyLocation = mergeLocation(location, { schema: schema.properties[key] })
     if (schema.properties[key].$ref) {
       propertyLocation = refFinder(schema.properties[key].$ref, location)
@@ -735,45 +740,18 @@ function buildCode (location, code, laterCode, name) {
     // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
     // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
 
-    const type = schema.properties[key].type
-    const nullable = schema.properties[key].nullable
     const sanitized = JSON.stringify(key)
     const asString = JSON.stringify(sanitized)
 
-    if (nullable) {
-      code += `
-        if (obj[${sanitized}] === null) {
-          ${addComma}
-          json += ${asString} + ':null'
-        } else {
+    code += `
+      if (obj[${sanitized}] !== undefined) {
+        ${addComma}
+        json += ${asString} + ':'
       `
-    }
 
-    if (type === 'number') {
-      code += `
-          var t = Number(obj[${sanitized}])
-          if (!isNaN(t)) {
-            ${addComma}
-            json += ${asString} + ':' + t
-      `
-    } else if (type === 'integer') {
-      code += `
-          var t = serializer.asInteger(obj[${sanitized}])
-          if (!isNaN(t)) {
-            ${addComma}
-            json += ${asString} + ':' + t
-      `
-    } else {
-      code += `
-        if (obj[${sanitized}] !== undefined) {
-          ${addComma}
-          json += ${asString} + ':'
-        `
-
-      const result = nested(laterCode, name, key, mergeLocation(propertyLocation, { schema: schema.properties[key] }), undefined, false)
-      code += result.code
-      laterCode = result.laterCode
-    }
+    const result = nested(laterCode, name, key, mergeLocation(propertyLocation, { schema: schema.properties[key] }), undefined, false)
+    code += result.code
+    laterCode = result.laterCode
 
     const defaultValue = schema.properties[key].default
     if (defaultValue !== undefined) {
@@ -792,12 +770,6 @@ function buildCode (location, code, laterCode, name) {
     code += `
       }
     `
-
-    if (nullable) {
-      code += `
-        }
-      `
-    }
   })
 
   for (const requiredProperty of required) {
