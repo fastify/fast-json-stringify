@@ -297,11 +297,11 @@ function build (schema, options) {
   switch (schema.type) {
     case 'object':
       main = '$main'
-      code = buildObject(location, code, main)
+      code = buildObject(location, code, main, main)
       break
     case 'array':
       main = '$main'
-      code = buildArray(location, code, main)
+      code = buildArray(location, code, main, main)
       schema = location.schema
       break
     case 'string':
@@ -449,13 +449,13 @@ function addPatternProperties (location) {
     const ifPpKeyExists = `if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {`
 
     if (type === 'object') {
-      code += `${buildObject(ppLocation, '', 'buildObjectPP' + index)}
+      code += `${buildObject(ppLocation, '', 'buildObjectPP' + index, 'buildObjectPP' + index)}
           ${ifPpKeyExists}
           ${addComma}
           json += serializer.asString(keys[i]) + ':' + buildObjectPP${index}(obj[keys[i]])
       `
     } else if (type === 'array') {
-      code += `${buildArray(ppLocation, '', 'buildArrayPP' + index)}
+      code += `${buildArray(ppLocation, '', 'buildArrayPP' + index, 'buildArrayPP' + index)}
           ${ifPpKeyExists}
           ${addComma}
           json += serializer.asString(keys[i]) + ':' + buildArrayPP${index}(obj[keys[i]])
@@ -539,12 +539,12 @@ function additionalProperty (location) {
   const format = ap.format
   const stringSerializer = getStringSerializer(format)
   if (type === 'object') {
-    code += `${buildObject(apLocation, '', 'buildObjectAP')}
+    code += `${buildObject(apLocation, '', 'buildObjectAP', 'buildObjectAP')}
         ${addComma}
         json += serializer.asString(keys[i]) + ':' + buildObjectAP(obj[keys[i]])
     `
   } else if (type === 'array') {
-    code += `${buildArray(apLocation, '', 'buildArrayAP')}
+    code += `${buildArray(apLocation, '', 'buildArrayAP', 'buildArrayAP')}
         ${addComma}
         json += serializer.asString(keys[i]) + ':' + buildArrayAP(obj[keys[i]])
     `
@@ -734,7 +734,7 @@ function refFinder (ref, location) {
   }
 }
 
-function buildCode (location, code, laterCode, name) {
+function buildCode (location, code, laterCode, locationPath) {
   if (location.schema.$ref) {
     location = refFinder(location.schema.$ref, location)
   }
@@ -761,7 +761,7 @@ function buildCode (location, code, laterCode, name) {
         json += ${asString} + ':'
       `
 
-    const result = nested(laterCode, name, key, mergeLocation(propertyLocation, { schema: schema.properties[key] }), undefined, false)
+    const result = nested(laterCode, locationPath, key, mergeLocation(propertyLocation, { schema: schema.properties[key] }), undefined, false)
     code += result.code
     laterCode = result.laterCode
 
@@ -790,7 +790,7 @@ function buildCode (location, code, laterCode, name) {
   }
 
   if (schema.allOf) {
-    const builtCode = buildCodeWithAllOfs(location, code, laterCode, name)
+    const builtCode = buildCodeWithAllOfs(location, code, laterCode, locationPath)
     code = builtCode.code
     laterCode = builtCode.laterCode
   }
@@ -798,15 +798,15 @@ function buildCode (location, code, laterCode, name) {
   return { code, laterCode }
 }
 
-function buildCodeWithAllOfs (location, code, laterCode, name) {
+function buildCodeWithAllOfs (location, code, laterCode, locationPath) {
   if (location.schema.allOf) {
     location.schema.allOf.forEach((ss) => {
-      const builtCode = buildCodeWithAllOfs(mergeLocation(location, { schema: ss }), code, laterCode, name)
+      const builtCode = buildCodeWithAllOfs(mergeLocation(location, { schema: ss }), code, laterCode, locationPath)
       code = builtCode.code
       laterCode = builtCode.laterCode
     })
   } else {
-    const builtCode = buildCode(location, code, laterCode, name)
+    const builtCode = buildCode(location, code, laterCode, locationPath)
 
     code = builtCode.code
     laterCode = builtCode.laterCode
@@ -815,9 +815,9 @@ function buildCodeWithAllOfs (location, code, laterCode, name) {
   return { code, laterCode }
 }
 
-function buildInnerObject (location, name) {
+function buildInnerObject (location, locationPath) {
   const schema = location.schema
-  const result = buildCodeWithAllOfs(location, '', '', name)
+  const result = buildCodeWithAllOfs(location, '', '', locationPath)
   if (schema.patternProperties) {
     result.code += addPatternProperties(location)
   } else if (schema.additionalProperties && !schema.patternProperties) {
@@ -826,7 +826,7 @@ function buildInnerObject (location, name) {
   return result
 }
 
-function addIfThenElse (location, name) {
+function addIfThenElse (location, locationPath) {
   let code = ''
   let r
   let laterCode = ''
@@ -851,12 +851,12 @@ function addIfThenElse (location, name) {
     if (valid) {
   `
   if (merged.if && merged.then) {
-    innerR = addIfThenElse(mergedLocation, name + 'Then')
+    innerR = addIfThenElse(mergedLocation, locationPath + 'Then')
     code += innerR.code
     laterCode = innerR.laterCode
   }
 
-  r = buildInnerObject(mergedLocation, name + 'Then')
+  r = buildInnerObject(mergedLocation, locationPath + 'Then')
   code += r.code
   laterCode += r.laterCode
 
@@ -871,12 +871,12 @@ function addIfThenElse (location, name) {
     `
 
   if (merged.if && merged.then) {
-    innerR = addIfThenElse(mergedLocation, name + 'Else')
+    innerR = addIfThenElse(mergedLocation, locationPath + 'Else')
     code += innerR.code
     laterCode += innerR.laterCode
   }
 
-  r = buildInnerObject(mergedLocation, name + 'Else')
+  r = buildInnerObject(mergedLocation, locationPath + 'Else')
   code += r.code
   laterCode += r.laterCode
 
@@ -893,13 +893,14 @@ function toJSON (variableName) {
   `
 }
 
-function buildObject (location, code, name) {
+function buildObject (location, code, functionName, locationPath) {
   const schema = location.schema
   if (schema.$id !== undefined) {
     schemaReferenceMap.set(schema.$id, schema)
   }
   code += `
-    function ${name} (input) {
+    function ${functionName} (input) {
+      // ${locationPath}
   `
   if (schema.nullable) {
     code += `
@@ -909,14 +910,14 @@ function buildObject (location, code, name) {
   `
   }
 
-  if (objectReferenceSerializersMap.has(schema) && objectReferenceSerializersMap.get(schema) !== name) {
+  if (objectReferenceSerializersMap.has(schema) && objectReferenceSerializersMap.get(schema) !== functionName) {
     code += `
       return ${objectReferenceSerializersMap.get(schema)}(input)
     }
     `
     return code
   }
-  objectReferenceSerializersMap.set(schema, name)
+  objectReferenceSerializersMap.set(schema, functionName)
 
   code += `
       var obj = ${toJSON('input')}
@@ -929,9 +930,9 @@ function buildObject (location, code, name) {
     code += `
       var valid
     `
-    r = addIfThenElse(location, name)
+    r = addIfThenElse(location, locationPath)
   } else {
-    r = buildInnerObject(location, name)
+    r = buildInnerObject(location, locationPath)
   }
 
   // Removes the comma if is the last element of the string (in case there are not properties)
@@ -945,13 +946,14 @@ function buildObject (location, code, name) {
   return code
 }
 
-function buildArray (location, code, name, key = null) {
+function buildArray (location, code, functionName, locationPath, key = null) {
   let schema = location.schema
   if (schema.$id !== undefined) {
     schemaReferenceMap.set(schema.$id, schema)
   }
   code += `
-    function ${name} (obj) {
+    function ${functionName} (obj) {
+      // ${locationPath}
   `
   if (schema.nullable) {
     code += `
@@ -984,14 +986,14 @@ function buildArray (location, code, name, key = null) {
       `
       return code
     }
-    arrayItemsReferenceSerializersMap.set(schema.items, name)
+    arrayItemsReferenceSerializersMap.set(schema.items, functionName)
   }
 
   let result = { code: '', laterCode: '' }
   const accessor = '[i]'
   if (Array.isArray(schema.items)) {
     result = schema.items.reduce((res, item, i) => {
-      const tmpRes = nested(laterCode, name, accessor, mergeLocation(location, { schema: item }), i, true)
+      const tmpRes = nested(laterCode, locationPath, accessor, mergeLocation(location, { schema: item }), i, true)
       const condition = `i === ${i} && ${buildArrayTypeCondition(item.type, accessor)}`
       return {
         code: `${res.code}
@@ -1004,7 +1006,7 @@ function buildArray (location, code, name, key = null) {
     }, result)
 
     if (schema.additionalItems) {
-      const tmpRes = nested(laterCode, name, accessor, mergeLocation(location, { schema: schema.items }), undefined, true)
+      const tmpRes = nested(laterCode, locationPath, accessor, mergeLocation(location, { schema: schema.items }), undefined, true)
       result.code += `
       else if (i >= ${schema.items.length}) {
         ${tmpRes.code}
@@ -1018,7 +1020,7 @@ function buildArray (location, code, name, key = null) {
     }
     `
   } else {
-    result = nested(laterCode, name, accessor, mergeLocation(location, { schema: schema.items }), undefined, true)
+    result = nested(laterCode, locationPath, accessor, mergeLocation(location, { schema: schema.items }), undefined, true)
   }
 
   if (key) {
@@ -1120,21 +1122,12 @@ function dereferenceOfRefs (location, type) {
   return locations
 }
 
-let strNameCounter = 0
-function asFuncName (str) {
-  // only allow chars that can work
-  let rep = str.replace(/[^a-zA-Z0-9$_]/g, '')
-
-  if (rep.length === 0) {
-    return 'anan' + strNameCounter++
-  } else if (rep !== str) {
-    rep += strNameCounter++
-  }
-
-  return rep
+let genFuncNameCounter = 0
+function generateFuncName () {
+  return 'anonymous' + genFuncNameCounter++
 }
 
-function nested (laterCode, name, key, location, subKey, isArray) {
+function nested (laterCode, locationPath, key, location, subKey, isArray) {
   subKey = subKey || ''
 
   let schema = location.schema
@@ -1182,13 +1175,13 @@ function nested (laterCode, name, key, location, subKey, isArray) {
       code += `json += ${funcName}(obj${accessor})`
       break
     case 'object':
-      funcName = asFuncName(name + key + subKey)
-      laterCode = buildObject(location, laterCode, funcName)
+      funcName = generateFuncName()
+      laterCode = buildObject(location, laterCode, funcName, locationPath + key + subKey)
       code += `json += ${funcName}(obj${accessor})`
       break
     case 'array':
-      funcName = asFuncName('$arr' + name + key + subKey) // eslint-disable-line
-      laterCode = buildArray(location, laterCode, funcName, key)
+      funcName = generateFuncName()
+      laterCode = buildArray(location, laterCode, funcName, locationPath + key + subKey, key)
       code += `json += ${funcName}(obj${accessor})`
       break
     case undefined:
@@ -1196,7 +1189,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         // beware: dereferenceOfRefs has side effects and changes schema.anyOf
         const locations = dereferenceOfRefs(location, schema.anyOf ? 'anyOf' : 'oneOf')
         locations.forEach((location, index) => {
-          const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
+          const nestedResult = nested(laterCode, locationPath, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
           // We need a test serializer as the String serializer will not work with
           // date/time ajv validations
           // see: https://github.com/fastify/fast-json-stringify/issues/325
@@ -1252,7 +1245,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
         sortedTypes.forEach((type, index) => {
           const statement = index === 0 ? 'if' : 'else if'
           const tempSchema = Object.assign({}, schema, { type })
-          const nestedResult = nested(laterCode, name, key, mergeLocation(location, { schema: tempSchema }), subKey, isArray)
+          const nestedResult = nested(laterCode, locationPath, key, mergeLocation(location, { schema: tempSchema }), subKey, isArray)
           switch (type) {
             case 'string': {
               code += `
