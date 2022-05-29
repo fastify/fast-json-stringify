@@ -40,6 +40,25 @@ test('render a date in a string when format is date-format as ISOString', (t) =>
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
+test('render a nullable date in a string when format is date-format as ISOString', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'date-time',
+    nullable: true
+  }
+  const toStringify = new Date()
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, JSON.stringify(toStringify))
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
 test('render a date in a string when format is date as YYYY-MM-DD', (t) => {
   t.plan(2)
 
@@ -47,6 +66,25 @@ test('render a date in a string when format is date as YYYY-MM-DD', (t) => {
     title: 'a date in a string',
     type: 'string',
     format: 'date'
+  }
+  const toStringify = new Date()
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, `"${moment(toStringify).format('YYYY-MM-DD')}"`)
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('render a nullable date in a string when format is date as YYYY-MM-DD', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'date',
+    nullable: true
   }
   const toStringify = new Date()
 
@@ -83,6 +121,28 @@ test('render a date in a string when format is time as kk:mm:ss', (t) => {
     title: 'a date in a string',
     type: 'string',
     format: 'time'
+  }
+  const toStringify = new Date()
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  validate(JSON.parse(output))
+  t.equal(validate.errors, null)
+
+  t.equal(output, `"${moment(toStringify).format('HH:mm:ss')}"`)
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('render a nullable date in a string when format is time as kk:mm:ss', (t) => {
+  t.plan(3)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'time',
+    nullable: true
   }
   const toStringify = new Date()
 
