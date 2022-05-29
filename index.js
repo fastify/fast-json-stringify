@@ -1192,11 +1192,10 @@ function nested (laterCode, name, key, location, subKey, isArray) {
       code += `json += ${funcName}(obj${accessor})`
       break
     case undefined:
-      funcName = 'serializer.asNull.bind(serializer)'
-      if ('anyOf' in schema) {
+      if (schema.anyOf || schema.oneOf) {
         // beware: dereferenceOfRefs has side effects and changes schema.anyOf
-        const anyOfLocations = dereferenceOfRefs(location, 'anyOf')
-        anyOfLocations.forEach((location, index) => {
+        const locations = dereferenceOfRefs(location, schema.anyOf ? 'anyOf' : 'oneOf')
+        locations.forEach((location, index) => {
           const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
           // We need a test serializer as the String serializer will not work with
           // date/time ajv validations
@@ -1211,27 +1210,6 @@ function nested (laterCode, name, key, location, subKey, isArray) {
           // with the actual schema
           // 2. `nested`, through `buildCode`, replaces any reference in object properties with the actual schema
           // (see https://github.com/fastify/fast-json-stringify/blob/6da3b3e8ac24b1ca5578223adedb4083b7adf8db/index.js#L631)
-
-          const schemaKey = location.schema.$id || randomUUID()
-          ajvInstance.addSchema(location.schema, schemaKey)
-
-          code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate("${schemaKey}", ${testValue}))
-              ${nestedResult.code}
-          `
-          laterCode = nestedResult.laterCode
-        })
-        code += `
-          else json+= null
-        `
-      } else if ('oneOf' in schema) {
-        // beware: dereferenceOfRefs has side effects and changes schema.oneOf
-        const oneOfLocations = dereferenceOfRefs(location, 'oneOf')
-        oneOfLocations.forEach((location, index) => {
-          const nestedResult = nested(laterCode, name, key, location, subKey !== '' ? subKey : 'i' + index, isArray)
-          const testSerializer = getTestSerializer(location.schema.format)
-          const testValue = testSerializer !== undefined ? `${testSerializer}(obj${accessor}, true)` : `obj${accessor}`
-          // see comment on anyOf about dereferencing the schema before calling ajv.validate
 
           const schemaKey = location.schema.$id || randomUUID()
           ajvInstance.addSchema(location.schema, schemaKey)
