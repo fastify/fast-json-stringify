@@ -1029,43 +1029,30 @@ function buildArray (location, code, name, key = null) {
     `
   }
 
-  code += `
-    var l = obj.length
-    if (l && l >= ${largeArraySize}) {`
-
-  const concatSnippet = `
+  code += 'const arrayLength = obj.length\n'
+  if (largeArrayMechanism !== 'default') {
+    if (largeArrayMechanism === 'json-stringify') {
+      code += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
+    } else {
+      throw new Error(`Unsupported large array mechanism ${largeArrayMechanism}`)
     }
+  }
 
-    var jsonOutput= ''
-    for (var i = 0; i < l; i++) {
-      var json = ''
+  code += `
+    let jsonOutput= ''
+    for (let i = 0; i < arrayLength; i++) {
+      let json = ''
       ${result.code}
       jsonOutput += json
 
-      if (json.length > 0 && i < l - 1) {
+      if (json.length > 0 && i < arrayLength - 1) {
         jsonOutput += ','
       }
     }
     return \`[\${jsonOutput}]\`
   }`
 
-  switch (largeArrayMechanism) {
-    case 'default':
-      code += `
-      return \`[\${obj.map((value) => ${result.mapFnName}(value)).join(',')}]\``
-      break
-
-    case 'json-stringify':
-      code += `
-      return JSON.stringify(obj)`
-      break
-
-    default:
-      throw new Error(`Unsupported large array mechanism ${largeArrayMechanism}`)
-  }
-
   code += `
-  ${concatSnippet}
   ${result.laterCode}
   `
 
@@ -1148,9 +1135,6 @@ function asFuncName (str) {
 }
 
 function nested (laterCode, name, key, location, subKey, isArray) {
-  let code = ''
-  let funcName
-
   subKey = subKey || ''
 
   let schema = location.schema
@@ -1171,9 +1155,11 @@ function nested (laterCode, name, key, location, subKey, isArray) {
 
   const accessor = isArray ? key : `[${JSON.stringify(key)}]`
 
+  let code = ''
+  let funcName
+
   switch (type) {
     case 'null':
-      funcName = 'serializer.asNull.bind(serializer)'
       code += `
         json += serializer.asNull()
       `
@@ -1343,11 +1329,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
       }
   }
 
-  return {
-    code,
-    laterCode,
-    mapFnName: funcName
-  }
+  return { code, laterCode }
 }
 
 function isEmpty (schema) {
