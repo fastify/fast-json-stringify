@@ -409,9 +409,13 @@ const stringSerializerMap = {
   time: 'serializer.asTime.bind(serializer)'
 }
 
-function getStringSerializer (format) {
-  return stringSerializerMap[format] ||
-  'serializer.asString.bind(serializer)'
+function getStringSerializer (format, nullable) {
+  switch (format) {
+    case 'date-time': return nullable ? 'serializer.asDatetimeNullable.bind(serializer)' : 'serializer.asDatetime.bind(serializer)'
+    case 'date': return nullable ? 'serializer.asDateNullable.bind(serializer)' : 'serializer.asDate.bind(serializer)'
+    case 'time': return nullable ? 'serializer.asTimeNullable.bind(serializer)' : 'serializer.asTime.bind(serializer)'
+    default: return nullable ? 'serializer.asStringNullable.bind(serializer)' : 'serializer.asString.bind(serializer)'
+  }
 }
 
 function getTestSerializer (format) {
@@ -1025,43 +1029,30 @@ function buildArray (location, code, name, key = null) {
     `
   }
 
-  code += `
-    var l = obj.length
-    if (l && l >= ${largeArraySize}) {`
-
-  const concatSnippet = `
+  code += 'const arrayLength = obj.length\n'
+  if (largeArrayMechanism !== 'default') {
+    if (largeArrayMechanism === 'json-stringify') {
+      code += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
+    } else {
+      throw new Error(`Unsupported large array mechanism ${largeArrayMechanism}`)
     }
+  }
 
-    var jsonOutput= ''
-    for (var i = 0; i < l; i++) {
-      var json = ''
+  code += `
+    let jsonOutput= ''
+    for (let i = 0; i < arrayLength; i++) {
+      let json = ''
       ${result.code}
       jsonOutput += json
 
-      if (json.length > 0 && i < l - 1) {
+      if (json.length > 0 && i < arrayLength - 1) {
         jsonOutput += ','
       }
     }
     return \`[\${jsonOutput}]\`
   }`
 
-  switch (largeArrayMechanism) {
-    case 'default':
-      code += `
-      return \`[\${obj.map(${result.mapFnName}).join(',')}]\``
-      break
-
-    case 'json-stringify':
-      code += `
-      return JSON.stringify(obj)`
-      break
-
-    default:
-      throw new Error(`Unsupported large array mechanism ${largeArrayMechanism}`)
-  }
-
   code += `
-  ${concatSnippet}
   ${result.laterCode}
   `
 
@@ -1144,9 +1135,6 @@ function asFuncName (str) {
 }
 
 function nested (laterCode, name, key, location, subKey, isArray) {
-  let code = ''
-  let funcName
-
   subKey = subKey || ''
 
   let schema = location.schema
@@ -1167,47 +1155,44 @@ function nested (laterCode, name, key, location, subKey, isArray) {
 
   const accessor = isArray ? key : `[${JSON.stringify(key)}]`
 
+  let code = ''
+  let funcName
+
   switch (type) {
     case 'null':
-      funcName = '$asNull'
       code += `
         json += serializer.asNull()
       `
       break
     case 'string': {
-      funcName = '$asString'
-      const stringSerializer = getStringSerializer(schema.format)
-      code += nullable ? `json += obj${accessor} === null ? null : ${stringSerializer}(obj${accessor})` : `json += ${stringSerializer}(obj${accessor})`
+      funcName = getStringSerializer(schema.format, nullable)
+      code += `json += ${funcName}(obj${accessor})`
       break
     }
     case 'integer':
-      funcName = '$asInteger'
-      code += nullable ? `json += obj${accessor} === null ? null : serializer.asInteger(obj${accessor})` : `json += serializer.asInteger(obj${accessor})`
+      funcName = nullable ? 'serializer.asIntegerNullable.bind(serializer)' : 'serializer.asInteger.bind(serializer)'
+      code += `json += ${funcName}(obj${accessor})`
       break
     case 'number':
-      funcName = '$asNumber'
-      code += nullable ? `json += obj${accessor} === null ? null : serializer.asNumber(obj${accessor})` : `json += serializer.asNumber(obj${accessor})`
+      funcName = nullable ? 'serializer.asNumberNullable.bind(serializer)' : 'serializer.asNumber.bind(serializer)'
+      code += `json += ${funcName}(obj${accessor})`
       break
     case 'boolean':
-      funcName = '$asBoolean'
-      code += nullable ? `json += obj${accessor} === null ? null : serializer.asBoolean(obj${accessor})` : `json += serializer.asBoolean(obj${accessor})`
+      funcName = nullable ? 'serializer.asBooleanNullable.bind(serializer)' : 'serializer.asBoolean.bind(serializer)'
+      code += `json += ${funcName}(obj${accessor})`
       break
     case 'object':
       funcName = asFuncName(name + key + subKey)
       laterCode = buildObject(location, laterCode, funcName)
-      code += `
-        json += ${funcName}(obj${accessor})
-      `
+      code += `json += ${funcName}(obj${accessor})`
       break
     case 'array':
       funcName = asFuncName('$arr' + name + key + subKey) // eslint-disable-line
       laterCode = buildArray(location, laterCode, funcName, key)
-      code += `
-        json += ${funcName}(obj${accessor})
-      `
+      code += `json += ${funcName}(obj${accessor})`
       break
     case undefined:
-      funcName = '$asNull'
+      funcName = 'serializer.asNull.bind(serializer)'
       if ('anyOf' in schema) {
         // beware: dereferenceOfRefs has side effects and changes schema.anyOf
         const anyOfLocations = dereferenceOfRefs(location, 'anyOf')
@@ -1344,11 +1329,7 @@ function nested (laterCode, name, key, location, subKey, isArray) {
       }
   }
 
-  return {
-    code,
-    laterCode,
-    mapFnName: funcName
-  }
+  return { code, laterCode }
 }
 
 function isEmpty (schema) {

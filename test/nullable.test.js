@@ -231,3 +231,216 @@ test('handle nullable time correctly', (t) => {
   t.same(result, JSON.stringify(data))
   t.same(JSON.parse(result), data)
 })
+
+test('large array of nullable strings with default mechanism', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: {
+          type: 'string',
+          nullable: true
+        }
+      }
+    }
+  }
+
+  const options = {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default'
+  }
+
+  const stringify = build(schema, options)
+
+  const data = { ids: new Array(2e4).fill(null) }
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('large array of nullable date-time strings with default mechanism', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: {
+          type: 'string',
+          format: 'date-time',
+          nullable: true
+        }
+      }
+    }
+  }
+
+  const options = {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default'
+  }
+
+  const stringify = build(schema, options)
+
+  const data = { ids: new Array(2e4).fill(null) }
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('large array of nullable date-time strings with default mechanism', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: {
+          type: 'string',
+          format: 'date',
+          nullable: true
+        }
+      }
+    }
+  }
+
+  const options = {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default'
+  }
+
+  const stringify = build(schema, options)
+
+  const data = { ids: new Array(2e4).fill(null) }
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('large array of nullable date-time strings with default mechanism', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: {
+          type: 'string',
+          format: 'time',
+          nullable: true
+        }
+      }
+    }
+  }
+
+  const options = {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default'
+  }
+
+  const stringify = build(schema, options)
+
+  const data = { ids: new Array(2e4).fill(null) }
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('large array of nullable numbers with default mechanism', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: {
+          type: 'number',
+          nullable: true
+        }
+      }
+    }
+  }
+
+  const options = {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default'
+  }
+
+  const stringify = build(schema, options)
+
+  const data = { ids: new Array(2e4).fill(null) }
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('large array of nullable integers with default mechanism', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: {
+          type: 'integer',
+          nullable: true
+        }
+      }
+    }
+  }
+
+  const options = {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default'
+  }
+
+  const stringify = build(schema, options)
+
+  const data = { ids: new Array(2e4).fill(null) }
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('large array of nullable booleans with default mechanism', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: {
+          type: 'boolean',
+          nullable: true
+        }
+      }
+    }
+  }
+
+  const options = {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default'
+  }
+
+  const stringify = build(schema, options)
+
+  const data = { ids: new Array(2e4).fill(null) }
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
