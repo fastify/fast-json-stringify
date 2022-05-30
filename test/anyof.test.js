@@ -1,5 +1,6 @@
 'use strict'
 
+const { DateTime } = require('luxon')
 const { test } = require('tap')
 const build = require('..')
 
@@ -466,6 +467,90 @@ test('anyOf object with field date-time of type string with format or null', (t)
   t.equal(withOneOfStringify({
     prop: toStringify
   }), `{"prop":"${toStringify.toISOString()}"}`)
+})
+
+test('anyOf object with nested field date-time of type string with format or null', (t) => {
+  t.plan(1)
+  const withOneOfSchema = {
+    type: 'object',
+    properties: {
+      prop: {
+        anyOf: [{
+          type: 'object',
+          properties: {
+            nestedProp: {
+              type: 'string',
+              format: 'date-time'
+            }
+          }
+        }]
+      }
+    }
+  }
+
+  const withOneOfStringify = build(withOneOfSchema)
+
+  const data = {
+    prop: { nestedProp: new Date() }
+  }
+
+  t.equal(withOneOfStringify(data), JSON.stringify(data))
+})
+
+test('anyOf object with nested field date of type string with format or null', (t) => {
+  t.plan(1)
+  const withOneOfSchema = {
+    type: 'object',
+    properties: {
+      prop: {
+        anyOf: [{
+          type: 'object',
+          properties: {
+            nestedProp: {
+              type: 'string',
+              format: 'date'
+            }
+          }
+        }]
+      }
+    }
+  }
+
+  const withOneOfStringify = build(withOneOfSchema)
+
+  const data = {
+    prop: { nestedProp: new Date() }
+  }
+
+  t.equal(withOneOfStringify(data), `{"prop":{"nestedProp":"${DateTime.fromJSDate(data.prop.nestedProp).toISODate()}"}}`)
+})
+
+test('anyOf object with nested field time of type string with format or null', (t) => {
+  t.plan(1)
+  const withOneOfSchema = {
+    type: 'object',
+    properties: {
+      prop: {
+        anyOf: [{
+          type: 'object',
+          properties: {
+            nestedProp: {
+              type: 'string',
+              format: 'time'
+            }
+          }
+        }]
+      }
+    }
+  }
+
+  const withOneOfStringify = build(withOneOfSchema)
+
+  const data = {
+    prop: { nestedProp: new Date() }
+  }
+
+  t.equal(withOneOfStringify(data), `{"prop":{"nestedProp":"${DateTime.fromJSDate(data.prop.nestedProp).toFormat('HH:mm:ss')}"}}`)
 })
 
 test('anyOf object with field date of type string with format or null', (t) => {
