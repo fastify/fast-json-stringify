@@ -199,60 +199,6 @@ test('verify padding for rendered date in a string when format is time', (t) => 
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('render a moment.js instance in a string when format is date-time as ISOString', (t) => {
-  t.plan(2)
-
-  const schema = {
-    title: 'a moment.js object in a string',
-    type: 'string',
-    format: 'date-time'
-  }
-  const toStringify = moment()
-
-  const validate = validator(schema)
-  const stringify = build(schema)
-  const output = stringify(toStringify)
-
-  t.equal(output, JSON.stringify(toStringify))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
-})
-
-test('render a moment.js instance in a string when format is date as YYYY-MM-DD', (t) => {
-  t.plan(2)
-
-  const schema = {
-    title: 'a moment.js object in a string',
-    type: 'string',
-    format: 'date'
-  }
-  const toStringify = moment()
-
-  const validate = validator(schema)
-  const stringify = build(schema)
-  const output = stringify(toStringify)
-
-  t.equal(output, `"${toStringify.format('YYYY-MM-DD')}"`)
-  t.ok(validate(JSON.parse(output)), 'valid schema')
-})
-
-test('render a moment.js instance in a string when format is time as HH:mm:ss', (t) => {
-  t.plan(2)
-
-  const schema = {
-    title: 'a moment.js object in a string',
-    type: 'string',
-    format: 'time'
-  }
-  const toStringify = moment()
-
-  const validate = validator(schema)
-  const stringify = build(schema)
-  const output = stringify(toStringify)
-
-  t.equal(output, `"${toStringify.format('HH:mm:ss')}"`)
-  t.ok(validate(JSON.parse(output)), 'valid schema')
-})
-
 test('render a nested object in a string when type is date-format as ISOString', (t) => {
   t.plan(2)
 
@@ -266,7 +212,7 @@ test('render a nested object in a string when type is date-format as ISOString',
       }
     }
   }
-  const toStringify = { date: moment() }
+  const toStringify = { date: new Date() }
 
   const validate = validator(schema)
   const stringify = build(schema)
