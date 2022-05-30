@@ -98,5 +98,5 @@ test('to string auto-consistent with ajv-formats', t => {
   const compiled = fjs.restore(debugMode)
   const tobe = JSON.stringify({ str: 'foo@bar.com' })
   t.same(compiled({ str: 'foo@bar.com' }), tobe)
-  t.same(compiled({ str: 'foo' }), JSON.stringify({ str: null }), 'invalid format is ignored')
+  t.throws(() => compiled({ str: 'foo' }))
 })

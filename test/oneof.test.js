@@ -104,11 +104,7 @@ test('object with field of type string and coercion disable ', (t) => {
     }
   }
   const stringify = build(schema)
-
-  const value = stringify({
-    str: 1
-  })
-  t.equal(value, '{"str":null}')
+  t.throws(() => stringify({ str: 1 }))
 })
 
 test('object with field of type string and coercion enable ', (t) => {
@@ -403,7 +399,7 @@ test('oneOf object with field of type string with format or null', (t) => {
 })
 
 test('one array item match oneOf types', (t) => {
-  t.plan(1)
+  t.plan(3)
 
   const schema = {
     type: 'object',
@@ -429,15 +425,13 @@ test('one array item match oneOf types', (t) => {
 
   const stringify = build(schema)
 
-  const responseWithMappedType = stringify({
-    data: [false, 'foo']
-  })
-
-  t.equal('{"data":["foo"]}', responseWithMappedType)
+  t.equal(stringify({ data: ['foo'] }), '{"data":["foo"]}')
+  t.equal(stringify({ data: [1] }), '{"data":[1]}')
+  t.throws(() => stringify({ data: [false, 'foo'] }))
 })
 
 test('some array items match oneOf types', (t) => {
-  t.plan(1)
+  t.plan(2)
 
   const schema = {
     type: 'object',
@@ -463,11 +457,8 @@ test('some array items match oneOf types', (t) => {
 
   const stringify = build(schema)
 
-  const responseWithMappedTypes = stringify({
-    data: [false, 'foo', true, 5]
-  })
-
-  t.equal('{"data":["foo",5]}', responseWithMappedTypes)
+  t.equal(stringify({ data: ['foo', 5] }), '{"data":["foo",5]}')
+  t.throws(() => stringify({ data: [false, 'foo', true, 5] }))
 })
 
 test('all array items does not match oneOf types', (t) => {
@@ -497,9 +488,5 @@ test('all array items does not match oneOf types', (t) => {
 
   const stringify = build(schema)
 
-  const emptyResponse = stringify({
-    data: [null, false, true, undefined, [], {}]
-  })
-
-  t.equal('{"data":[]}', emptyResponse)
+  t.throws(() => stringify({ data: [null, false, true, undefined, [], {}] }))
 })

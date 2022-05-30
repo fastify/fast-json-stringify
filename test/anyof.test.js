@@ -113,11 +113,7 @@ test('object with field of type string and coercion disable ', (t) => {
     }
   }
   const stringify = build(schema)
-
-  const value = stringify({
-    str: 1
-  })
-  t.equal(value, '{"str":null}')
+  t.throws(() => stringify({ str: 1 }))
 })
 
 test('object with field of type string and coercion enable ', (t) => {
@@ -224,7 +220,7 @@ test('symbol value in schema', (t) => {
   t.equal(stringify({ value: 'foo' }), '{"value":"foo"}')
   t.equal(stringify({ value: 'bar' }), '{"value":"bar"}')
   t.equal(stringify({ value: 'baz' }), '{"value":"baz"}')
-  t.equal(stringify({ value: 'qux' }), '{"value":null}')
+  t.throws(() => stringify({ value: 'qux' }))
 })
 
 test('anyOf and $ref together', (t) => {
@@ -513,7 +509,5 @@ test('anyOf object with invalid field date of type string with format or null', 
   }
 
   const withOneOfStringify = build(withOneOfSchema)
-  t.equal(withOneOfStringify({
-    prop: toStringify
-  }), '{"prop":null}')
+  t.throws(() => withOneOfStringify({ prop: toStringify }))
 })

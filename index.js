@@ -1214,11 +1214,9 @@ function nested (laterCode, locationPath, key, location, subKey, isArray) {
           laterCode = nestedResult.laterCode
         })
 
-        if (!isArray) {
-          code += `
-            else json+= null
-          `
-        }
+        code += `
+          else throw new Error(\`The value $\{JSON.stringify(obj${accessor})} does not match schema definition.\`)
+        `
       } else if (isEmpty(schema)) {
         code += `
           json += JSON.stringify(obj${accessor})
