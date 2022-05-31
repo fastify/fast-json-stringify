@@ -432,5 +432,5 @@ test('should throw an error when type is array and object is null', (t) => {
   }
 
   const stringify = build(schema)
-  t.throws(() => stringify({ arr: null }), new TypeError('Property \'arr\' should be of type array, received \'null\' instead.'))
+  t.throws(() => stringify({ arr: null }), new TypeError('The value \'null\' does not match schema definition.'))
 })
