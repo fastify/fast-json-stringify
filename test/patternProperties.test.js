@@ -127,7 +127,7 @@ test('patternProperties - object coerce', (t) => {
 })
 
 test('patternProperties - array coerce', (t) => {
-  t.plan(1)
+  t.plan(2)
   const stringify = build({
     title: 'check array coerce',
     type: 'object',
@@ -142,6 +142,9 @@ test('patternProperties - array coerce', (t) => {
     }
   })
 
-  const obj = { foo: 'true', ofoo: 0, arrfoo: [1, 2], objfoo: { tyrion: 'lannister' } }
-  t.equal(stringify(obj), '{"foo":["t","r","u","e"],"ofoo":[],"arrfoo":["1","2"],"objfoo":[]}')
+  const coercibleValues = { arrfoo: [1, 2] }
+  t.equal(stringify(coercibleValues), '{"arrfoo":["1","2"]}')
+
+  const incoercibleValues = { foo: 'true', ofoo: 0, objfoo: { tyrion: 'lannister' } }
+  t.throws(() => stringify(incoercibleValues))
 })
