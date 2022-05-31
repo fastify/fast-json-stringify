@@ -233,6 +233,29 @@ function build (schema, options) {
   ajvInstance = new Ajv({ ...options.ajv, strictSchema: false, uriResolver: fastUri })
   ajvFormats(ajvInstance)
 
+  const validateDateTimeFormat = ajvFormats.get('date-time').validate
+  const validateDateFormat = ajvFormats.get('date').validate
+  const validateTimeFormat = ajvFormats.get('time').validate
+
+  ajvInstance.addKeyword({
+    keyword: 'fjs_date_type',
+    validate: (schema, date) => {
+      if (date instanceof Date) {
+        return true
+      }
+      if (schema === 'date-time') {
+        return validateDateTimeFormat(date)
+      }
+      if (schema === 'date') {
+        return validateDateFormat(date)
+      }
+      if (schema === 'time') {
+        return validateTimeFormat(date)
+      }
+      return false
+    }
+  })
+
   isValidSchema(schema)
   if (options.schema) {
     // eslint-disable-next-line
@@ -367,12 +390,6 @@ function inferTypeByKeyword (schema) {
   return schema.type
 }
 
-const stringSerializerMap = {
-  'date-time': 'serializer.asDatetime.bind(serializer)',
-  date: 'serializer.asDate.bind(serializer)',
-  time: 'serializer.asTime.bind(serializer)'
-}
-
 function getStringSerializer (format, nullable) {
   switch (format) {
     case 'date-time': return nullable ? 'serializer.asDatetimeNullable.bind(serializer)' : 'serializer.asDatetime.bind(serializer)'
@@ -380,10 +397,6 @@ function getStringSerializer (format, nullable) {
     case 'time': return nullable ? 'serializer.asTimeNullable.bind(serializer)' : 'serializer.asTime.bind(serializer)'
     default: return nullable ? 'serializer.asStringNullable.bind(serializer)' : 'serializer.asString.bind(serializer)'
   }
-}
-
-function getTestSerializer (format) {
-  return stringSerializerMap[format]
 }
 
 function addPatternProperties (location) {
@@ -1150,25 +1163,25 @@ function buildValue (laterCode, locationPath, input, location, isArray) {
         const locations = dereferenceOfRefs(location, schema.anyOf ? 'anyOf' : 'oneOf')
         locations.forEach((location, index) => {
           const nestedResult = buildValue(laterCode, locationPath + 'i' + index, input, location, isArray)
-          // We need a test serializer as the String serializer will not work with
-          // date/time ajv validations
-          // see: https://github.com/fastify/fast-json-stringify/issues/325
-          const testSerializer = getTestSerializer(location.schema.format)
-          const testValue = testSerializer !== undefined ? `${testSerializer}(${input}, true)` : `${input}`
-
           // Since we are only passing the relevant schema to ajv.validate, it needs to be full dereferenced
           // otherwise any $ref pointing to an external schema would result in an error.
           // Full dereference of the schema happens as side effect of two functions:
           // 1. `dereferenceOfRefs` loops through the `schema.anyOf`` array and replaces any top level reference
           // with the actual schema
-          // 2. `nested`, through `buildCode`, replaces any reference in object properties with the actual schema
+          // 2. `buildValue`, through `buildCode`, replaces any reference in object properties with the actual schema
           // (see https://github.com/fastify/fast-json-stringify/blob/6da3b3e8ac24b1ca5578223adedb4083b7adf8db/index.js#L631)
 
+          // Ajv does not support js date format. In order to properly validate objects containing a date,
+          // it needs to replace all occurrences of the string date format with a custom keyword fjs_date_type.
+          // (see https://github.com/fastify/fast-json-stringify/pull/441)
+          const extendedSchema = clone(location.schema)
+          extendDateTimeType(extendedSchema)
+
           const schemaKey = location.schema.$id || randomUUID()
-          ajvInstance.addSchema(location.schema, schemaKey)
+          ajvInstance.addSchema(extendedSchema, schemaKey)
 
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate("${schemaKey}", ${testValue}))
+            ${index === 0 ? 'if' : 'else if'}(ajv.validate("${schemaKey}", ${input}))
               ${nestedResult.code}
           `
           laterCode = nestedResult.laterCode
@@ -1259,6 +1272,19 @@ function buildValue (laterCode, locationPath, input, location, isArray) {
   }
 
   return { code, laterCode }
+}
+
+function extendDateTimeType (schema) {
+  if (schema.type === 'string' && ['date-time', 'date', 'time'].includes(schema.format)) {
+    schema.fjs_date_type = schema.format
+    delete schema.type
+    delete schema.format
+  }
+  for (const property in schema) {
+    if (typeof schema[property] === 'object') {
+      extendDateTimeType(schema[property])
+    }
+  }
 }
 
 function isEmpty (schema) {
