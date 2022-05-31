@@ -1175,7 +1175,7 @@ function buildValue (laterCode, locationPath, input, location, isArray) {
         })
 
         code += `
-          else throw new Error(\`The value $\{JSON.stringify(obj${accessor})} does not match schema definition.\`)
+          else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
         `
       } else if (isEmpty(schema)) {
         code += `
