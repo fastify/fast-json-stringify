@@ -1,6 +1,5 @@
 'use strict'
 
-const moment = require('moment')
 const test = require('tap').test
 const validator = require('is-my-json-valid')
 const build = require('..')
@@ -175,27 +174,6 @@ test('invalid items throw', (t) => {
   }
   const stringify = build(schema)
   t.throws(() => stringify({ args: ['invalid'] }))
-})
-
-test('moment array', (t) => {
-  t.plan(1)
-  const schema = {
-    type: 'object',
-    properties: {
-      times: {
-        type: 'array',
-        items: {
-          type: 'string',
-          format: 'date-time'
-        }
-      }
-    }
-  }
-  const stringify = build(schema)
-  const value = stringify({
-    times: [moment('2018-04-21T07:52:31.017Z')]
-  })
-  t.equal(value, '{"times":["2018-04-21T07:52:31.017Z"]}')
 })
 
 buildTest({

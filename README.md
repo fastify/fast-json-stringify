@@ -6,8 +6,8 @@
 [![NPM downloads](https://img.shields.io/npm/dm/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify)
 
 
-__fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads.  
-Its performance advantage shrinks as your payload grows.  
+__fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads.
+Its performance advantage shrinks as your payload grows.
 It pairs well with [__flatstr__](https://www.npmjs.com/package/flatstr), which triggers a V8 optimization that improves performance when eventually converting the string to a `Buffer`.
 
 
@@ -159,18 +159,17 @@ And nested ones, too.
 
 **Note**: In the case of string formatted Date and not Date Object, there will be no manipulation on it. It should be properly formatted.
 
-Example with a MomentJS object:
+Example with a Date object:
 
 ```javascript
-const moment = require('moment')
-
 const stringify = fastJson({
   title: 'Example Schema with string date-time field',
   type: 'string',
   format: 'date-time'
 })
 
-console.log(stringify(moment())) // '"YYYY-MM-DDTHH:mm:ss.sssZ"'
+const date = new Date()
+console.log(stringify(date)) // '"YYYY-MM-DDTHH:mm:ss.sssZ"'
 ```
 
 

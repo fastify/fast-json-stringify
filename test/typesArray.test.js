@@ -1,7 +1,6 @@
 'use strict'
 
 const test = require('tap').test
-const moment = require('moment')
 const build = require('..')
 
 test('possibly nullable integer primitive alternative', (t) => {
@@ -361,7 +360,7 @@ test('string type array can handle dates', (t) => {
   const stringify = build(schema)
   const value = stringify({
     date: new Date('2018-04-20T07:52:31.017Z'),
-    dateObject: moment('2018-04-21T07:52:31.017Z')
+    dateObject: new Date('2018-04-21T07:52:31.017Z')
   })
   t.equal(value, '{"date":"2018-04-20T07:52:31.017Z","dateObject":"2018-04-21T07:52:31.017Z"}')
 })

@@ -1,7 +1,7 @@
 'use strict'
 
 const test = require('tap').test
-const moment = require('moment')
+const { DateTime } = require('luxon')
 const validator = require('is-my-json-valid')
 const build = require('..')
 
@@ -73,7 +73,7 @@ test('render a date in a string when format is date as YYYY-MM-DD', (t) => {
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, `"${moment(toStringify).format('YYYY-MM-DD')}"`)
+  t.equal(output, `"${DateTime.fromJSDate(toStringify).toISODate()}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -92,7 +92,7 @@ test('render a nullable date in a string when format is date as YYYY-MM-DD', (t)
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, `"${moment(toStringify).format('YYYY-MM-DD')}"`)
+  t.equal(output, `"${DateTime.fromJSDate(toStringify).toISODate()}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -110,7 +110,7 @@ test('verify padding for rendered date in a string when format is date', (t) => 
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, `"${moment(toStringify).format('YYYY-MM-DD')}"`)
+  t.equal(output, `"${DateTime.fromJSDate(toStringify).toISODate()}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -131,7 +131,7 @@ test('render a date in a string when format is time as kk:mm:ss', (t) => {
   validate(JSON.parse(output))
   t.equal(validate.errors, null)
 
-  t.equal(output, `"${moment(toStringify).format('HH:mm:ss')}"`)
+  t.equal(output, `"${DateTime.fromJSDate(toStringify).toFormat('HH:mm:ss')}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -153,7 +153,7 @@ test('render a nullable date in a string when format is time as kk:mm:ss', (t) =
   validate(JSON.parse(output))
   t.equal(validate.errors, null)
 
-  t.equal(output, `"${moment(toStringify).format('HH:mm:ss')}"`)
+  t.equal(output, `"${DateTime.fromJSDate(toStringify).toFormat('HH:mm:ss')}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -174,7 +174,7 @@ test('render a midnight time', (t) => {
   validate(JSON.parse(output))
   t.equal(validate.errors, null)
 
-  t.equal(output, `"${moment(midnight).format('HH:mm:ss')}"`)
+  t.equal(output, `"${DateTime.fromJSDate(midnight).toFormat('HH:mm:ss')}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -195,61 +195,7 @@ test('verify padding for rendered date in a string when format is time', (t) => 
   validate(JSON.parse(output))
   t.equal(validate.errors, null)
 
-  t.equal(output, `"${moment(toStringify).format('HH:mm:ss')}"`)
-  t.ok(validate(JSON.parse(output)), 'valid schema')
-})
-
-test('render a moment.js instance in a string when format is date-time as ISOString', (t) => {
-  t.plan(2)
-
-  const schema = {
-    title: 'a moment.js object in a string',
-    type: 'string',
-    format: 'date-time'
-  }
-  const toStringify = moment()
-
-  const validate = validator(schema)
-  const stringify = build(schema)
-  const output = stringify(toStringify)
-
-  t.equal(output, JSON.stringify(toStringify))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
-})
-
-test('render a moment.js instance in a string when format is date as YYYY-MM-DD', (t) => {
-  t.plan(2)
-
-  const schema = {
-    title: 'a moment.js object in a string',
-    type: 'string',
-    format: 'date'
-  }
-  const toStringify = moment()
-
-  const validate = validator(schema)
-  const stringify = build(schema)
-  const output = stringify(toStringify)
-
-  t.equal(output, `"${toStringify.format('YYYY-MM-DD')}"`)
-  t.ok(validate(JSON.parse(output)), 'valid schema')
-})
-
-test('render a moment.js instance in a string when format is time as HH:mm:ss', (t) => {
-  t.plan(2)
-
-  const schema = {
-    title: 'a moment.js object in a string',
-    type: 'string',
-    format: 'time'
-  }
-  const toStringify = moment()
-
-  const validate = validator(schema)
-  const stringify = build(schema)
-  const output = stringify(toStringify)
-
-  t.equal(output, `"${toStringify.format('HH:mm:ss')}"`)
+  t.equal(output, `"${DateTime.fromJSDate(toStringify).toFormat('HH:mm:ss')}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -266,7 +212,7 @@ test('render a nested object in a string when type is date-format as ISOString',
       }
     }
   }
-  const toStringify = { date: moment() }
+  const toStringify = { date: new Date() }
 
   const validate = validator(schema)
   const stringify = build(schema)

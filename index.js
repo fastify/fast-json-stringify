@@ -127,11 +127,8 @@ class Serializer {
     const quotes = skipQuotes === true ? '' : '"'
     if (date instanceof Date) {
       return quotes + date.toISOString() + quotes
-    } else if (date && typeof date.toISOString === 'function') {
-      return quotes + date.toISOString() + quotes
-    } else {
-      return this.asString(date, skipQuotes)
     }
+    return this.asString(date, skipQuotes)
   }
 
   asDatetimeNullable (date, skipQuotes) {
@@ -142,11 +139,8 @@ class Serializer {
     const quotes = skipQuotes === true ? '' : '"'
     if (date instanceof Date) {
       return quotes + new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(0, 10) + quotes
-    } else if (date && typeof date.format === 'function') {
-      return quotes + date.format('YYYY-MM-DD') + quotes
-    } else {
-      return this.asString(date, skipQuotes)
     }
+    return this.asString(date, skipQuotes)
   }
 
   asDateNullable (date, skipQuotes) {
@@ -157,11 +151,8 @@ class Serializer {
     const quotes = skipQuotes === true ? '' : '"'
     if (date instanceof Date) {
       return quotes + new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(11, 19) + quotes
-    } else if (date && typeof date.format === 'function') {
-      return quotes + date.format('HH:mm:ss') + quotes
-    } else {
-      return this.asString(date, skipQuotes)
     }
+    return this.asString(date, skipQuotes)
   }
 
   asTimeNullable (date, skipQuotes) {
