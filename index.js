@@ -303,7 +303,7 @@ function build (schema, options) {
     schema.type = inferTypeByKeyword(schema)
   }
 
-  const { code, laterCode } = buildValue('', 'main', 'input', location, false)
+  const { code, laterCode } = buildValue('', 'main', 'input', location)
   const contextFunctionCode = `
     'use strict'
     function main (input) {
@@ -738,7 +738,7 @@ function buildCode (location, code, laterCode, locationPath) {
         json += ${asString} + ':'
       `
 
-    const result = buildValue(laterCode, locationPath + key, `obj[${JSON.stringify(key)}]`, mergeLocation(propertyLocation, { schema: schema.properties[key] }), false)
+    const result = buildValue(laterCode, locationPath + key, `obj[${JSON.stringify(key)}]`, mergeLocation(propertyLocation, { schema: schema.properties[key] }))
     code += result.code
     laterCode = result.laterCode
 
@@ -970,7 +970,7 @@ function buildArray (location, code, functionName, locationPath, isObjectPropert
   const accessor = '[i]'
   if (Array.isArray(schema.items)) {
     result = schema.items.reduce((res, item, i) => {
-      const tmpRes = buildValue(laterCode, locationPath + accessor + i, 'obj[i]', mergeLocation(location, { schema: item }), true)
+      const tmpRes = buildValue(laterCode, locationPath + accessor + i, 'obj[i]', mergeLocation(location, { schema: item }))
       const condition = `i === ${i} && ${buildArrayTypeCondition(item.type, accessor)}`
       return {
         code: `${res.code}
@@ -983,7 +983,7 @@ function buildArray (location, code, functionName, locationPath, isObjectPropert
     }, result)
 
     if (schema.additionalItems) {
-      const tmpRes = buildValue(laterCode, locationPath + accessor, 'obj[i]', mergeLocation(location, { schema: schema.items }), true)
+      const tmpRes = buildValue(laterCode, locationPath + accessor, 'obj[i]', mergeLocation(location, { schema: schema.items }))
       result.code += `
       else if (i >= ${schema.items.length}) {
         ${tmpRes.code}
@@ -997,7 +997,7 @@ function buildArray (location, code, functionName, locationPath, isObjectPropert
     }
     `
   } else {
-    result = buildValue(laterCode, locationPath + accessor, 'obj[i]', mergeLocation(location, { schema: schema.items }), true)
+    result = buildValue(laterCode, locationPath + accessor, 'obj[i]', mergeLocation(location, { schema: schema.items }))
   }
 
   if (isObjectProperty) {
@@ -1104,7 +1104,7 @@ function generateFuncName () {
   return 'anonymous' + genFuncNameCounter++
 }
 
-function buildValue (laterCode, locationPath, input, location, isArray) {
+function buildValue (laterCode, locationPath, input, location) {
   let schema = location.schema
 
   if (schema.$ref) {
@@ -1162,7 +1162,7 @@ function buildValue (laterCode, locationPath, input, location, isArray) {
         // beware: dereferenceOfRefs has side effects and changes schema.anyOf
         const locations = dereferenceOfRefs(location, schema.anyOf ? 'anyOf' : 'oneOf')
         locations.forEach((location, index) => {
-          const nestedResult = buildValue(laterCode, locationPath + 'i' + index, input, location, isArray)
+          const nestedResult = buildValue(laterCode, locationPath + 'i' + index, input, location)
           // Since we are only passing the relevant schema to ajv.validate, it needs to be full dereferenced
           // otherwise any $ref pointing to an external schema would result in an error.
           // Full dereference of the schema happens as side effect of two functions:
@@ -1216,7 +1216,7 @@ function buildValue (laterCode, locationPath, input, location, isArray) {
         sortedTypes.forEach((type, index) => {
           const statement = index === 0 ? 'if' : 'else if'
           const tempSchema = Object.assign({}, schema, { type })
-          const nestedResult = buildValue(laterCode, locationPath, input, mergeLocation(location, { schema: tempSchema }), isArray)
+          const nestedResult = buildValue(laterCode, locationPath, input, mergeLocation(location, { schema: tempSchema }))
           switch (type) {
             case 'string': {
               code += `
