@@ -408,103 +408,56 @@ function addPatternProperties (location) {
       for (var i = 0; i < keys.length; i++) {
         if (properties[keys[i]]) continue
   `
+  let laterCode = ''
+
   Object.keys(pp).forEach((regex, index) => {
     let ppLocation = mergeLocation(location, { schema: pp[regex] })
     if (pp[regex].$ref) {
       ppLocation = refFinder(pp[regex].$ref, location)
       pp[regex] = ppLocation.schema
     }
-    const type = pp[regex].type
-    const format = pp[regex].format
-    const stringSerializer = getStringSerializer(format)
+
     try {
       RegExp(regex)
     } catch (err) {
       throw new Error(`${err.message}. Found at ${regex} matching ${JSON.stringify(pp[regex])}`)
     }
 
-    const ifPpKeyExists = `if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {`
-
-    if (type === 'object') {
-      code += `${buildObject(ppLocation, '', 'buildObjectPP' + index, 'buildObjectPP' + index)}
-          ${ifPpKeyExists}
-          ${addComma}
-          json += serializer.asString(keys[i]) + ':' + buildObjectPP${index}(obj[keys[i]])
-      `
-    } else if (type === 'array') {
-      code += `${buildArray(ppLocation, '', 'buildArrayPP' + index, 'buildArrayPP' + index)}
-          ${ifPpKeyExists}
-          ${addComma}
-          json += serializer.asString(keys[i]) + ':' + buildArrayPP${index}(obj[keys[i]])
-      `
-    } else if (type === 'null') {
-      code += `
-          ${ifPpKeyExists}
-          ${addComma}
-          json += serializer.asString(keys[i]) +':null'
-      `
-    } else if (type === 'string') {
-      code += `
-          ${ifPpKeyExists}
-          ${addComma}
-          json += serializer.asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
-      `
-    } else if (type === 'integer') {
-      code += `
-          ${ifPpKeyExists}
-          ${addComma}
-          json += serializer.asString(keys[i]) + ':' + serializer.asInteger(obj[keys[i]])
-      `
-    } else if (type === 'number') {
-      code += `
-          ${ifPpKeyExists}
-          ${addComma}
-          json += serializer.asString(keys[i]) + ':' + serializer.asNumber(obj[keys[i]])
-      `
-    } else if (type === 'boolean') {
-      code += `
-          ${ifPpKeyExists}
-          ${addComma}
-          json += serializer.asString(keys[i]) + ':' + serializer.asBoolean(obj[keys[i]])
-      `
-    } else if (type === undefined) {
-      code += `
-          ${ifPpKeyExists}
-          ${addComma}
-          json += serializer.asString(keys[i]) + ':' + serializer.asAny(obj[keys[i]])
-      `
-    } else {
-      code += `
-        ${ifPpKeyExists}
-        throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ' + ${JSON.stringify(type)})
-      `
-    }
-
+    const valueCode = buildValue('', '', 'obj[keys[i]]', ppLocation)
+    laterCode += valueCode.laterCode
     code += `
-          continue
-        }
+      if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
+        ${addComma}
+        json += serializer.asString(keys[i]) + ':'
+        ${valueCode.code}
+        continue
+      }
     `
   })
   if (schema.additionalProperties) {
-    code += additionalProperty(location)
+    const additionalPropertyCode = additionalProperty(location)
+    code += additionalPropertyCode.code
+    laterCode += additionalPropertyCode.laterCode
   }
 
   code += `
       }
   `
-  return code
+  return { code, laterCode }
 }
 
 function additionalProperty (location) {
   let ap = location.schema.additionalProperties
   let code = ''
   if (ap === true) {
-    return `
+    code += `
         if (obj[keys[i]] !== undefined && typeof obj[keys[i]] !== 'function' && typeof obj[keys[i]] !== 'symbol') {
           ${addComma}
           json += serializer.asString(keys[i]) + ':' + JSON.stringify(obj[keys[i]])
         }
     `
+
+    return { code, laterCode: '' }
   }
   let apLocation = mergeLocation(location, { schema: ap })
   if (ap.$ref) {
@@ -512,72 +465,29 @@ function additionalProperty (location) {
     ap = apLocation.schema
   }
 
-  const type = ap.type
-  const format = ap.format
-  const stringSerializer = getStringSerializer(format)
-  if (type === 'object') {
-    code += `${buildObject(apLocation, '', 'buildObjectAP', 'buildObjectAP')}
-        ${addComma}
-        json += serializer.asString(keys[i]) + ':' + buildObjectAP(obj[keys[i]])
-    `
-  } else if (type === 'array') {
-    code += `${buildArray(apLocation, '', 'buildArrayAP', 'buildArrayAP')}
-        ${addComma}
-        json += serializer.asString(keys[i]) + ':' + buildArrayAP(obj[keys[i]])
-    `
-  } else if (type === 'null') {
-    code += `
-        ${addComma}
-        json += serializer.asString(keys[i]) +':null'
-    `
-  } else if (type === 'string') {
-    code += `
-        ${addComma}
-        json += serializer.asString(keys[i]) + ':' + ${stringSerializer}(obj[keys[i]])
-    `
-  } else if (type === 'integer') {
-    code += `
-        var t = Number(obj[keys[i]])
-        if (!isNaN(t)) {
-          ${addComma}
-          json += serializer.asString(keys[i]) + ':' + t
-        }
-    `
-  } else if (type === 'number') {
-    code += `
-        var t = Number(obj[keys[i]])
-        if (!isNaN(t)) {
-          ${addComma}
-          json += serializer.asString(keys[i]) + ':' + t
-        }
-    `
-  } else if (type === 'boolean') {
-    code += `
-        ${addComma}
-        json += serializer.asString(keys[i]) + ':' + serializer.asBoolean(obj[keys[i]])
-    `
-  } else if (type === undefined) {
-    code += `
-        ${addComma}
-        json += serializer.asString(keys[i]) + ':' + serializer.asAny(obj[keys[i]])
-    `
-  } else {
-    code += `
-        throw new Error('Cannot coerce ' + obj[keys[i]] + ' to ' + ${JSON.stringify(type)})
-    `
-  }
-  return code
+  const valueCode = buildValue('', '', 'obj[keys[i]]', apLocation)
+
+  code += `
+    ${addComma}
+    json += serializer.asString(keys[i]) + ':'
+    ${valueCode.code}
+  `
+
+  return { code, laterCode: valueCode.laterCode }
 }
 
 function addAdditionalProperties (location) {
-  return `
+  const additionalPropertyCode = additionalProperty(location)
+  const code = `
       var properties = ${JSON.stringify(location.schema.properties)} || {}
       var keys = Object.keys(obj)
       for (var i = 0; i < keys.length; i++) {
         if (properties[keys[i]]) continue
-        ${additionalProperty(location)}
+        ${additionalPropertyCode.code}
       }
   `
+
+  return { code, laterCode: additionalPropertyCode.laterCode }
 }
 
 function idFinder (schema, searchedId) {
@@ -796,9 +706,13 @@ function buildInnerObject (location, locationPath) {
   const schema = location.schema
   const result = buildCodeWithAllOfs(location, '', '', locationPath)
   if (schema.patternProperties) {
-    result.code += addPatternProperties(location)
+    const { code, laterCode } = addPatternProperties(location)
+    result.code += code
+    result.laterCode += laterCode
   } else if (schema.additionalProperties && !schema.patternProperties) {
-    result.code += addAdditionalProperties(location)
+    const { code, laterCode } = addAdditionalProperties(location)
+    result.code += code
+    result.laterCode += laterCode
   }
   return result
 }
@@ -923,7 +837,7 @@ function buildObject (location, code, functionName, locationPath) {
   return code
 }
 
-function buildArray (location, code, functionName, locationPath, isObjectProperty = false) {
+function buildArray (location, code, functionName, locationPath) {
   let schema = location.schema
   if (schema.$id !== undefined) {
     schemaReferenceMap.set(schema.$id, schema)
@@ -1000,13 +914,11 @@ function buildArray (location, code, functionName, locationPath, isObjectPropert
     result = buildValue(laterCode, locationPath + accessor, 'obj[i]', mergeLocation(location, { schema: schema.items }))
   }
 
-  if (isObjectProperty) {
-    code += `
-    if(!Array.isArray(obj)) {
+  code += `
+    if (!Array.isArray(obj)) {
       throw new TypeError(\`The value '$\{obj}' does not match schema definition.\`)
     }
-    `
-  }
+  `
 
   code += 'const arrayLength = obj.length\n'
   if (largeArrayMechanism !== 'default') {
@@ -1154,7 +1066,7 @@ function buildValue (laterCode, locationPath, input, location) {
       break
     case 'array':
       funcName = generateFuncName()
-      laterCode = buildArray(location, laterCode, funcName, locationPath, true)
+      laterCode = buildArray(location, laterCode, funcName, locationPath)
       code += `json += ${funcName}(${input})`
       break
     case undefined:
