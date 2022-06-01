@@ -1211,8 +1211,17 @@ function buildValue (laterCode, locationPath, input, location, isArray) {
       break
     default:
       if (Array.isArray(type)) {
-        const nullIndex = type.indexOf('null')
-        const sortedTypes = nullIndex !== -1 ? [type[nullIndex]].concat(type.slice(0, nullIndex)).concat(type.slice(nullIndex + 1)) : type
+        let sortedTypes = type
+        const nullable = schema.nullable === true || type.includes('null')
+
+        if (nullable) {
+          sortedTypes = sortedTypes.filter(type => type !== 'null')
+          code += `
+            if (${input} === null) {
+              json += null
+            } else {`
+        }
+
         sortedTypes.forEach((type, index) => {
           const statement = index === 0 ? 'if' : 'else if'
           const tempSchema = Object.assign({}, schema, { type })
@@ -1220,14 +1229,7 @@ function buildValue (laterCode, locationPath, input, location, isArray) {
           switch (type) {
             case 'string': {
               code += `
-                ${statement}(${input} === null || typeof ${input} === "${type}" || ${input} instanceof Date || typeof ${input}.toISOString === "function" || ${input} instanceof RegExp || (typeof ${input} === "object" && Object.hasOwnProperty.call(${input}, "toString")))
-                  ${nestedResult.code}
-              `
-              break
-            }
-            case 'null': {
-              code += `
-                ${statement}(${input} == null)
+                ${statement}(${input} === null || typeof ${input} === "${type}" || ${input} instanceof Date || ${input} instanceof RegExp || (typeof ${input} === "object" && Object.hasOwnProperty.call(${input}, "toString")))
                   ${nestedResult.code}
               `
               break
@@ -1246,16 +1248,9 @@ function buildValue (laterCode, locationPath, input, location, isArray) {
               `
               break
             }
-            case 'number': {
-              code += `
-                ${statement}(isNaN(${input}) === false)
-                  ${nestedResult.code}
-              `
-              break
-            }
             default: {
               code += `
-                ${statement}(typeof ${input} === "${type}")
+                ${statement}(typeof ${input} === "${type}" || ${input} === null)
                   ${nestedResult.code}
               `
               break
@@ -1264,8 +1259,14 @@ function buildValue (laterCode, locationPath, input, location, isArray) {
           laterCode = nestedResult.laterCode
         })
         code += `
-          else json+= null
+          else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
         `
+
+        if (nullable) {
+          code += `
+            }
+          `
+        }
       } else {
         throw new Error(`${type} unsupported`)
       }

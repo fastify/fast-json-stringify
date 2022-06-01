@@ -87,6 +87,27 @@ test('possibly nullable number primitive alternative with null value', (t) => {
   t.equal(value, '{"data":0}')
 })
 
+test('possibly nullable number primitive alternative with null value', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'simple object with multi-type nullable primitive',
+    type: 'object',
+    properties: {
+      data: {
+        type: ['boolean']
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  const value = stringify({
+    data: null
+  })
+  t.equal(value, '{"data":false}')
+})
+
 test('nullable integer primitive', (t) => {
   t.plan(1)
 
@@ -433,4 +454,21 @@ test('should throw an error when type is array and object is null', (t) => {
 
   const stringify = build(schema)
   t.throws(() => stringify({ arr: null }), new TypeError('The value \'null\' does not match schema definition.'))
+})
+
+test('throw an error if none of types matches', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'simple object with multi-type nullable primitive',
+    type: 'object',
+    properties: {
+      data: {
+        type: ['number', 'boolean']
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  t.throws(() => stringify({ data: 'string' }), 'The value "string" does not match schema definition.')
 })
