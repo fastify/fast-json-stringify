@@ -676,35 +676,102 @@ function buildCode (location, code, laterCode, locationPath) {
     code += `if (obj['${requiredProperty}'] === undefined) throw new Error('"${requiredProperty}" is required!')\n`
   }
 
-  if (schema.allOf) {
-    const builtCode = buildCodeWithAllOfs(location, code, laterCode, locationPath)
-    code = builtCode.code
-    laterCode = builtCode.laterCode
-  }
-
   return { code, laterCode }
 }
 
-function buildCodeWithAllOfs (location, code, laterCode, locationPath) {
-  if (location.schema.allOf) {
-    location.schema.allOf.forEach((ss) => {
-      const builtCode = buildCodeWithAllOfs(mergeLocation(location, { schema: ss }), code, laterCode, locationPath)
-      code = builtCode.code
-      laterCode = builtCode.laterCode
-    })
-  } else {
-    const builtCode = buildCode(location, code, laterCode, locationPath)
+function mergeAllOfSchema (location, schema, mergedSchema) {
+  for (let allOfSchema of schema.allOf) {
+    if (allOfSchema.$ref) {
+      allOfSchema = refFinder(allOfSchema.$ref, mergeLocation(location, { schema: allOfSchema })).schema
+    }
 
-    code = builtCode.code
-    laterCode = builtCode.laterCode
+    let allOfSchemaType = allOfSchema.type
+    if (allOfSchemaType === undefined) {
+      allOfSchemaType = inferTypeByKeyword(allOfSchema)
+    }
+
+    if (allOfSchemaType !== undefined) {
+      if (
+        mergedSchema.type !== undefined &&
+        mergedSchema.type !== allOfSchemaType
+      ) {
+        throw new Error('allOf schemas have different type values')
+      }
+      mergedSchema.type = allOfSchemaType
+    }
+
+    if (allOfSchema.format !== undefined) {
+      if (
+        mergedSchema.format !== undefined &&
+        mergedSchema.format !== allOfSchema.format
+      ) {
+        throw new Error('allOf schemas have different format values')
+      }
+      mergedSchema.format = allOfSchema.format
+    }
+
+    if (allOfSchema.nullable !== undefined) {
+      if (
+        mergedSchema.nullable !== undefined &&
+        mergedSchema.nullable !== allOfSchema.nullable
+      ) {
+        throw new Error('allOf schemas have different nullable values')
+      }
+      mergedSchema.nullable = allOfSchema.nullable
+    }
+
+    if (allOfSchema.properties !== undefined) {
+      if (mergedSchema.properties === undefined) {
+        mergedSchema.properties = {}
+      }
+      Object.assign(mergedSchema.properties, allOfSchema.properties)
+    }
+
+    if (allOfSchema.additionalProperties !== undefined) {
+      if (mergedSchema.additionalProperties === undefined) {
+        mergedSchema.additionalProperties = {}
+      }
+      Object.assign(mergedSchema.additionalProperties, allOfSchema.additionalProperties)
+    }
+
+    if (allOfSchema.patternProperties !== undefined) {
+      if (mergedSchema.patternProperties === undefined) {
+        mergedSchema.patternProperties = {}
+      }
+      Object.assign(mergedSchema.patternProperties, allOfSchema.patternProperties)
+    }
+
+    if (allOfSchema.required !== undefined) {
+      if (mergedSchema.required === undefined) {
+        mergedSchema.required = []
+      }
+      mergedSchema.required.push(...allOfSchema.required)
+    }
+
+    if (allOfSchema.oneOf !== undefined) {
+      if (mergedSchema.oneOf === undefined) {
+        mergedSchema.oneOf = []
+      }
+      mergedSchema.oneOf.push(...allOfSchema.oneOf)
+    }
+
+    if (allOfSchema.anyOf !== undefined) {
+      if (mergedSchema.anyOf === undefined) {
+        mergedSchema.anyOf = []
+      }
+      mergedSchema.anyOf.push(...allOfSchema.anyOf)
+    }
+
+    if (allOfSchema.allOf !== undefined) {
+      mergeAllOfSchema(location, allOfSchema, mergedSchema)
+    }
   }
-
-  return { code, laterCode }
+  delete mergedSchema.allOf
 }
 
 function buildInnerObject (location, locationPath) {
   const schema = location.schema
-  const result = buildCodeWithAllOfs(location, '', '', locationPath)
+  const result = buildCode(location, '', '', locationPath)
   if (schema.patternProperties) {
     const { code, laterCode } = addPatternProperties(location)
     result.code += code
@@ -1028,6 +1095,13 @@ function buildValue (laterCode, locationPath, input, location) {
     if (inferredType) {
       schema.type = inferredType
     }
+  }
+
+  if (schema.allOf) {
+    const mergedSchema = clone(schema)
+    mergeAllOfSchema(location, schema, mergedSchema)
+    schema = mergedSchema
+    location.schema = mergedSchema
   }
 
   const type = schema.type
