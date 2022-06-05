@@ -431,10 +431,215 @@ test('ref external - plain name fragment', (t) => {
     type: 'object',
     properties: {
       first: {
-        $ref: '#first-schema'
+        $ref: 'first#first-schema'
       },
       second: {
-        $ref: '#second-schema'
+        $ref: 'second#second-schema'
+      }
+    }
+  }
+
+  const object = {
+    first: {
+      str: 'test'
+    },
+    second: {
+      int: 42
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  JSON.parse(output)
+  t.pass()
+
+  t.equal(output, '{"first":{"str":"test"},"second":{"int":42}}')
+})
+
+test('external reference to $id', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    first: {
+      $id: 'external-reference',
+      type: 'object',
+      properties: {
+        str: {
+          type: 'string'
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      first: {
+        $ref: 'external-reference'
+      }
+    }
+  }
+
+  const object = { first: { str: 'test' } }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  JSON.parse(output)
+  t.pass()
+
+  t.equal(output, '{"first":{"str":"test"}}')
+})
+
+test('external reference to key#id', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    first: {
+      $id: '#external-reference',
+      type: 'object',
+      properties: {
+        str: {
+          type: 'string'
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      first: {
+        $ref: 'first#external-reference'
+      }
+    }
+  }
+
+  const object = { first: { str: 'test' } }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  JSON.parse(output)
+  t.pass()
+
+  t.equal(output, '{"first":{"str":"test"}}')
+})
+
+test('external and inner reference', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    first: {
+      $id: 'external-reference',
+      $ref: '#external-reference',
+      definitions: {
+        inner: {
+          $id: '#external-reference',
+          type: 'object',
+          properties: {
+            str: {
+              type: 'string'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      first: {
+        $ref: 'external-reference'
+      }
+    }
+  }
+
+  const object = { first: { str: 'test' } }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  JSON.parse(output)
+  t.pass()
+
+  t.equal(output, '{"first":{"str":"test"}}')
+})
+
+test('external reference to key', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    first: {
+      $id: 'external-reference',
+      type: 'object',
+      properties: {
+        str: {
+          type: 'string'
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      first: {
+        $ref: 'first'
+      }
+    }
+  }
+
+  const object = { first: { str: 'test' } }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  JSON.parse(output)
+  t.pass()
+
+  t.equal(output, '{"first":{"str":"test"}}')
+})
+
+test('ref external - plain name fragment', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    first: {
+      $id: 'first-schema',
+      type: 'object',
+      properties: {
+        str: {
+          type: 'string'
+        }
+      }
+    },
+    second: {
+      definitions: {
+        second: {
+          $id: 'second-schema',
+          type: 'object',
+          properties: {
+            int: {
+              type: 'integer'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    title: 'object with $ref to external plain name fragment',
+    type: 'object',
+    properties: {
+      first: {
+        $ref: 'first-schema'
+      },
+      second: {
+        $ref: 'second-schema'
       }
     }
   }
@@ -503,7 +708,7 @@ test('ref external - duplicate plain name fragment', (t) => {
         $ref: 'external#duplicateSchema'
       },
       other: {
-        $ref: '#otherSchema'
+        $ref: 'other#otherSchema'
       }
     }
   }
@@ -893,7 +1098,7 @@ test('ref in root external multiple times', (t) => {
   const schema = {
     title: 'object with $ref in root schema',
     type: 'object',
-    $ref: 'numbers#/definitions/num'
+    $ref: 'numbers'
   }
 
   const object = { int: 42 }
@@ -978,32 +1183,6 @@ test('ref to nested ref definition', (t) => {
   t.equal(output, '{"foo":"foo"}')
 })
 
-test('ref in definition with exact match', (t) => {
-  t.plan(2)
-
-  const externalSchema = {
-    '#/definitions/foo': {
-      type: 'string'
-    }
-  }
-
-  const schema = {
-    type: 'object',
-    properties: {
-      foo: { $ref: '#/definitions/foo' }
-    }
-  }
-
-  const object = { foo: 'foo' }
-  const stringify = build(schema, { schema: externalSchema })
-  const output = stringify(object)
-
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"foo":"foo"}')
-})
-
 test('Bad key', t => {
   t.test('Find match', t => {
     t.plan(1)
@@ -1026,7 +1205,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "porjectId", did you mean "projectId"?')
+      t.equal(err.message, 'Cannot find reference "#/definitions/porjectId"')
     }
   })
 
@@ -1051,7 +1230,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "foobar"')
+      t.equal(err.message, 'Cannot find reference "#/definitions/foobar"')
     }
   })
 
@@ -1081,7 +1260,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "porjectId", did you mean "projectId"?')
+      t.equal(err.message, 'Cannot find reference "external#/definitions/porjectId"')
     }
   })
 
@@ -1111,7 +1290,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "foobar"')
+      t.equal(err.message, 'Cannot find reference "external#/definitions/foobar"')
     }
   })
 
@@ -1141,7 +1320,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "deifnitions", did you mean "definitions"?')
+      t.equal(err.message, 'Cannot find reference "external#/deifnitions/projectId"')
     }
   })
 
@@ -1166,7 +1345,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "deifnitions", did you mean "definitions"?')
+      t.equal(err.message, 'Cannot find reference "#/deifnitions/projectId"')
     }
   })
 
@@ -1196,7 +1375,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "extrenal", did you mean "external"?')
+      t.equal(err.message, 'Cannot find reference "extrenal#/definitions/projectId"')
     }
   })
 
