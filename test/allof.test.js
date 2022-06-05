@@ -402,14 +402,12 @@ test('object with external $refs in allOf', (t) => {
       }
     },
     second: {
-      definitions: {
-        id2: {
-          $id: '#id2',
-          type: 'object',
-          properties: {
-            id2: {
-              type: 'integer'
-            }
+      id2: {
+        $id: '#id2',
+        type: 'object',
+        properties: {
+          id2: {
+            type: 'integer'
           }
         }
       }
@@ -424,7 +422,7 @@ test('object with external $refs in allOf', (t) => {
         $ref: 'first#/definitions/id1'
       },
       {
-        $ref: 'second#/definitions/id2'
+        $ref: 'second#id2'
       }
     ]
   }

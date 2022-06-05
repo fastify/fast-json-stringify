@@ -13,6 +13,7 @@ const { randomUUID } = require('crypto')
 const validate = require('./schema-validator')
 
 let largeArraySize = 2e4
+let stringSimilarity = null
 let largeArrayMechanism = 'default'
 const validLargeArrayMechanisms = [
   'default',
@@ -44,7 +45,6 @@ function isValidSchema (schema, name) {
 function mergeLocation (source, dest) {
   return {
     schema: dest.schema || source.schema,
-    schemaRef: dest.schemaRef || source.schemaRef,
     root: dest.root || source.root,
     externalSchema: dest.externalSchema || source.externalSchema
   }
@@ -55,7 +55,6 @@ const objectReferenceSerializersMap = new Map()
 const schemaReferenceMap = new Map()
 
 let ajvInstance = null
-let schemaRefResolver = null
 
 class Serializer {
   constructor (options = {}) {
@@ -224,40 +223,6 @@ class Serializer {
   }
 }
 
-function getSchema (ref, location) {
-  let ajvSchema
-  let schemaRef
-
-  if (ref[0] === '#') {
-    schemaRef = location.schemaRef + ref
-  } else {
-    schemaRef = ref
-    location.schemaRef = ref.split('#')[0]
-  }
-
-  try {
-    ajvSchema = schemaRefResolver.getSchema(schemaRef)
-  } catch (error) {
-    throw new Error(`Cannot find reference "${ref}"`)
-  }
-
-  if (ajvSchema === undefined) {
-    throw new Error(`Cannot find reference "${ref}"`)
-  }
-
-  let schema = ajvSchema.schema
-  if (schema.$ref !== undefined) {
-    schema = getSchema(schema.$ref, location).schema
-  }
-
-  return {
-    root: schema,
-    schema,
-    schemaRef: location.schemaRef,
-    externalSchema: location.externalSchema
-  }
-}
-
 function build (schema, options) {
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
@@ -291,28 +256,11 @@ function build (schema, options) {
     }
   })
 
-  schemaRefResolver = new Ajv()
-  const mainSchemaRef = schema.$id || randomUUID()
-
   isValidSchema(schema)
-  schemaRefResolver.addSchema(schema, mainSchemaRef)
   if (options.schema) {
-    for (const key of Object.keys(options.schema)) {
-      const externalSchema = options.schema[key]
-      isValidSchema(externalSchema, key)
-
-      if (externalSchema.$id !== undefined) {
-        if (externalSchema.$id[0] === '#') {
-          schemaRefResolver.addSchema(externalSchema, key + externalSchema.$id)
-        } else {
-          schemaRefResolver.addSchema(externalSchema)
-          if (externalSchema.$id !== key) {
-            schemaRefResolver.addSchema({ $ref: externalSchema.$id }, key)
-          }
-        }
-      } else {
-        schemaRefResolver.addSchema(externalSchema, key)
-      }
+    // eslint-disable-next-line
+    for (var key of Object.keys(options.schema)) {
+      isValidSchema(options.schema[key], key)
     }
   }
 
@@ -342,13 +290,12 @@ function build (schema, options) {
 
   let location = {
     schema,
-    schemaRef: mainSchemaRef,
     root: schema,
     externalSchema: options.schema
   }
 
   if (schema.$ref) {
-    location = getSchema(schema.$ref, location)
+    location = refFinder(schema.$ref, location)
     schema = location.schema
   }
 
@@ -379,7 +326,6 @@ function build (schema, options) {
   const stringifyFunc = contextFunc(ajvInstance, serializer)
 
   ajvInstance = null
-  schemaRefResolver = null
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
   schemaReferenceMap.clear()
@@ -467,7 +413,7 @@ function addPatternProperties (location) {
   Object.keys(pp).forEach((regex, index) => {
     let ppLocation = mergeLocation(location, { schema: pp[regex] })
     if (pp[regex].$ref) {
-      ppLocation = getSchema(pp[regex].$ref, location)
+      ppLocation = refFinder(pp[regex].$ref, location)
       pp[regex] = ppLocation.schema
     }
 
@@ -515,7 +461,7 @@ function additionalProperty (location) {
   }
   let apLocation = mergeLocation(location, { schema: ap })
   if (ap.$ref) {
-    apLocation = getSchema(ap.$ref, location)
+    apLocation = refFinder(ap.$ref, location)
     ap = apLocation.schema
   }
 
@@ -544,9 +490,140 @@ function addAdditionalProperties (location) {
   return { code, laterCode: additionalPropertyCode.laterCode }
 }
 
+function idFinder (schema, searchedId) {
+  let objSchema
+  const explore = (schema, searchedId) => {
+    Object.keys(schema || {}).forEach((key, i, a) => {
+      if (key === '$id' && schema[key] === searchedId) {
+        objSchema = schema
+      } else if (objSchema === undefined && typeof schema[key] === 'object') {
+        explore(schema[key], searchedId)
+      }
+    })
+  }
+  explore(schema, searchedId)
+  return objSchema
+}
+
+function refFinder (ref, location) {
+  const externalSchema = location.externalSchema
+  let root = location.root
+  let schema = location.schema
+
+  if (externalSchema && externalSchema[ref]) {
+    return {
+      schema: externalSchema[ref],
+      root: externalSchema[ref],
+      externalSchema
+    }
+  }
+
+  // Split file from walk
+  ref = ref.split('#')
+
+  // Check schemaReferenceMap for $id entry
+  if (ref[0] && schemaReferenceMap.has(ref[0])) {
+    schema = schemaReferenceMap.get(ref[0])
+    root = schemaReferenceMap.get(ref[0])
+    if (schema.$ref) {
+      return refFinder(schema.$ref, {
+        schema,
+        root,
+        externalSchema
+      })
+    }
+  } else if (ref[0]) { // If external file
+    schema = externalSchema[ref[0]]
+    root = externalSchema[ref[0]]
+
+    if (schema === undefined) {
+      findBadKey(externalSchema, [ref[0]])
+    }
+
+    if (schema.$ref) {
+      return refFinder(schema.$ref, {
+        schema,
+        root,
+        externalSchema
+      })
+    }
+  }
+
+  let code = 'return schema'
+  // If it has a path
+  if (ref[1]) {
+    // ref[1] could contain a JSON pointer - ex: /definitions/num
+    // or plain name fragment id without suffix # - ex: customId
+    const walk = ref[1].split('/')
+    if (walk.length === 1) {
+      const targetId = `#${ref[1]}`
+      let dereferenced = idFinder(schema, targetId)
+      if (dereferenced === undefined && !ref[0]) {
+        // eslint-disable-next-line
+        for (var key of Object.keys(externalSchema)) {
+          dereferenced = idFinder(externalSchema[key], targetId)
+          if (dereferenced !== undefined) {
+            root = externalSchema[key]
+            break
+          }
+        }
+      }
+
+      return {
+        schema: dereferenced,
+        root,
+        externalSchema
+      }
+    } else {
+      // eslint-disable-next-line
+      for (var i = 1; i < walk.length; i++) {
+        code += `[${JSON.stringify(walk[i])}]`
+      }
+    }
+  }
+  let result
+  try {
+    result = (new Function('schema', code))(root)
+  } catch (err) {}
+
+  if (result === undefined && ref[1]) {
+    const walk = ref[1].split('/')
+    findBadKey(schema, walk.slice(1))
+  }
+
+  if (result.$ref) {
+    return refFinder(result.$ref, {
+      schema,
+      root,
+      externalSchema
+    })
+  }
+
+  return {
+    schema: result,
+    root,
+    externalSchema
+  }
+
+  function findBadKey (obj, keys) {
+    if (keys.length === 0) return null
+    const key = keys.shift()
+    if (obj[key] === undefined) {
+      stringSimilarity = stringSimilarity || require('string-similarity')
+      const { bestMatch } = stringSimilarity.findBestMatch(key, Object.keys(obj))
+      if (bestMatch.rating >= 0.5) {
+        throw new Error(`Cannot find reference ${JSON.stringify(key)}, did you mean ${JSON.stringify(bestMatch.target)}?`)
+      } else {
+        throw new Error(`Cannot find reference ${JSON.stringify(key)}`)
+      }
+    }
+    return findBadKey(obj[key], keys)
+  }
+}
+
 function buildCode (location, code, laterCode, locationPath) {
   if (location.schema.$ref) {
-    location = getSchema(location.schema.$ref, location)
+    location = refFinder(location.schema.$ref, location)
   }
 
   const schema = location.schema
@@ -555,7 +632,7 @@ function buildCode (location, code, laterCode, locationPath) {
   Object.keys(schema.properties || {}).forEach((key) => {
     let propertyLocation = mergeLocation(location, { schema: schema.properties[key] })
     if (schema.properties[key].$ref) {
-      propertyLocation = getSchema(schema.properties[key].$ref, location)
+      propertyLocation = refFinder(schema.properties[key].$ref, location)
       schema.properties[key] = propertyLocation.schema
     }
 
@@ -605,7 +682,7 @@ function buildCode (location, code, laterCode, locationPath) {
 function mergeAllOfSchema (location, schema, mergedSchema) {
   for (let allOfSchema of schema.allOf) {
     if (allOfSchema.$ref) {
-      allOfSchema = getSchema(allOfSchema.$ref, mergeLocation(location, { schema: allOfSchema })).schema
+      allOfSchema = refFinder(allOfSchema.$ref, mergeLocation(location, { schema: allOfSchema })).schema
     }
 
     let allOfSchemaType = allOfSchema.type
@@ -857,7 +934,7 @@ function buildArray (location, code, functionName, locationPath) {
       schema[fjsCloned] = true
     }
 
-    location = getSchema(schema.items.$ref, location)
+    location = refFinder(schema.items.$ref, location)
     schema.items = location.schema
 
     if (arrayItemsReferenceSerializersMap.has(schema.items)) {
@@ -991,7 +1068,7 @@ function dereferenceOfRefs (location, type) {
     // follow the refs
     let sLocation = mergeLocation(location, { schema: s })
     while (s.$ref) {
-      sLocation = getSchema(s.$ref, sLocation)
+      sLocation = refFinder(s.$ref, sLocation)
       schema[type][index] = sLocation.schema
       s = schema[type][index]
     }
@@ -1010,7 +1087,7 @@ function buildValue (laterCode, locationPath, input, location) {
   let schema = location.schema
 
   if (schema.$ref) {
-    schema = getSchema(schema.$ref, location)
+    schema = refFinder(schema.$ref, location)
   }
 
   if (schema.type === undefined) {
