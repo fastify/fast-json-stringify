@@ -832,11 +832,19 @@ function toJSON (variableName) {
   `
 }
 
-function buildObject (location, functionName, locationPath) {
+function buildObject (location, locationPath) {
   const schema = location.schema
   if (schema.$id !== undefined) {
     schemaReferenceMap.set(schema.$id, schema)
   }
+
+  if (objectReferenceSerializersMap.has(schema)) {
+    return objectReferenceSerializersMap.get(schema)
+  }
+
+  const functionName = generateFuncName()
+  objectReferenceSerializersMap.set(schema, functionName)
+
   let functionCode = `
     function ${functionName} (input) {
       // ${locationPath}
@@ -848,16 +856,6 @@ function buildObject (location, functionName, locationPath) {
       }
   `
   }
-
-  if (objectReferenceSerializersMap.has(schema) && objectReferenceSerializersMap.get(schema) !== functionName) {
-    functionCode += `
-      return ${objectReferenceSerializersMap.get(schema)}(input)
-    }
-    `
-    contextFunctions.push(functionCode)
-    return
-  }
-  objectReferenceSerializersMap.set(schema, functionName)
 
   functionCode += `
       var obj = ${toJSON('input')}
@@ -883,23 +881,13 @@ function buildObject (location, functionName, locationPath) {
   `
 
   contextFunctions.push(functionCode)
+  return functionName
 }
 
-function buildArray (location, functionName, locationPath) {
+function buildArray (location, locationPath) {
   let schema = location.schema
   if (schema.$id !== undefined) {
     schemaReferenceMap.set(schema.$id, schema)
-  }
-  let functionCode = `
-    function ${functionName} (obj) {
-      // ${locationPath}
-  `
-  if (schema.nullable) {
-    functionCode += `
-      if(obj === null) {
-        return 'null';
-      }
-    `
   }
 
   // default to any items type
@@ -916,16 +904,26 @@ function buildArray (location, functionName, locationPath) {
 
     location = refFinder(schema.items.$ref, location)
     schema.items = location.schema
+  }
 
-    if (arrayItemsReferenceSerializersMap.has(schema.items)) {
-      functionCode += `
-      return ${arrayItemsReferenceSerializersMap.get(schema.items)}(obj)
+  if (arrayItemsReferenceSerializersMap.has(schema.items)) {
+    return arrayItemsReferenceSerializersMap.get(schema.items)
+  }
+
+  const functionName = generateFuncName()
+  arrayItemsReferenceSerializersMap.set(schema.items, functionName)
+
+  let functionCode = `
+    function ${functionName} (obj) {
+      // ${locationPath}
+  `
+
+  if (schema.nullable) {
+    functionCode += `
+      if (obj === null) {
+        return 'null';
       }
-      `
-      contextFunctions.push(functionCode)
-      return
-    }
-    arrayItemsReferenceSerializersMap.set(schema.items, functionName)
+    `
   }
 
   let result = { code: '' }
@@ -990,6 +988,7 @@ function buildArray (location, functionName, locationPath) {
   }`
 
   contextFunctions.push(functionCode)
+  return functionName
 }
 
 function buildArrayTypeCondition (type, accessor) {
@@ -1109,13 +1108,11 @@ function buildValue (locationPath, input, location) {
       code += `json += ${funcName}(${input})`
       break
     case 'object':
-      funcName = generateFuncName()
-      buildObject(location, funcName, locationPath)
+      funcName = buildObject(location, locationPath)
       code += `json += ${funcName}(${input})`
       break
     case 'array':
-      funcName = generateFuncName()
-      buildArray(location, funcName, locationPath)
+      funcName = buildArray(location, locationPath)
       code += `json += ${funcName}(${input})`
       break
     case undefined:
