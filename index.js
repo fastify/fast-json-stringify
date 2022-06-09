@@ -55,6 +55,7 @@ const objectReferenceSerializersMap = new Map()
 const schemaReferenceMap = new Map()
 
 let ajvInstance = null
+let contextFunctions = null
 
 class Serializer {
   constructor (options = {}) {
@@ -228,6 +229,7 @@ function build (schema, options) {
   objectReferenceSerializersMap.clear()
   schemaReferenceMap.clear()
 
+  contextFunctions = []
   options = options || {}
 
   ajvInstance = new Ajv({ ...options.ajv, strictSchema: false, uriResolver: fastUri })
@@ -303,15 +305,15 @@ function build (schema, options) {
     schema.type = inferTypeByKeyword(schema)
   }
 
-  const { code, laterCode } = buildValue('', 'main', 'input', location)
+  const code = buildValue('main', 'input', location)
+
   const contextFunctionCode = `
-    'use strict'
     function main (input) {
       let json = ''
       ${code}
       return json
     }
-    ${laterCode}
+    ${contextFunctions.join('\n')}
     return main
     `
 
@@ -326,6 +328,7 @@ function build (schema, options) {
   const stringifyFunc = contextFunc(ajvInstance, serializer)
 
   ajvInstance = null
+  contextFunctions = null
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
   schemaReferenceMap.clear()
@@ -408,7 +411,6 @@ function addPatternProperties (location) {
       for (var i = 0; i < keys.length; i++) {
         if (properties[keys[i]]) continue
   `
-  let laterCode = ''
 
   Object.keys(pp).forEach((regex, index) => {
     let ppLocation = mergeLocation(location, { schema: pp[regex] })
@@ -423,27 +425,24 @@ function addPatternProperties (location) {
       throw new Error(`${err.message}. Found at ${regex} matching ${JSON.stringify(pp[regex])}`)
     }
 
-    const valueCode = buildValue('', '', 'obj[keys[i]]', ppLocation)
-    laterCode += valueCode.laterCode
+    const valueCode = buildValue('', 'obj[keys[i]]', ppLocation)
     code += `
       if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
         ${addComma}
         json += serializer.asString(keys[i]) + ':'
-        ${valueCode.code}
+        ${valueCode}
         continue
       }
     `
   })
   if (schema.additionalProperties) {
-    const additionalPropertyCode = additionalProperty(location)
-    code += additionalPropertyCode.code
-    laterCode += additionalPropertyCode.laterCode
+    code += additionalProperty(location)
   }
 
   code += `
       }
   `
-  return { code, laterCode }
+  return code
 }
 
 function additionalProperty (location) {
@@ -457,7 +456,7 @@ function additionalProperty (location) {
         }
     `
 
-    return { code, laterCode: '' }
+    return code
   }
   let apLocation = mergeLocation(location, { schema: ap })
   if (ap.$ref) {
@@ -465,29 +464,26 @@ function additionalProperty (location) {
     ap = apLocation.schema
   }
 
-  const valueCode = buildValue('', '', 'obj[keys[i]]', apLocation)
+  const valueCode = buildValue('', 'obj[keys[i]]', apLocation)
 
   code += `
     ${addComma}
     json += serializer.asString(keys[i]) + ':'
-    ${valueCode.code}
+    ${valueCode}
   `
 
-  return { code, laterCode: valueCode.laterCode }
+  return code
 }
 
 function addAdditionalProperties (location) {
-  const additionalPropertyCode = additionalProperty(location)
-  const code = `
+  return `
       var properties = ${JSON.stringify(location.schema.properties)} || {}
       var keys = Object.keys(obj)
       for (var i = 0; i < keys.length; i++) {
         if (properties[keys[i]]) continue
-        ${additionalPropertyCode.code}
+        ${additionalProperty(location)}
       }
   `
-
-  return { code, laterCode: additionalPropertyCode.laterCode }
 }
 
 function idFinder (schema, searchedId) {
@@ -621,13 +617,15 @@ function refFinder (ref, location) {
   }
 }
 
-function buildCode (location, code, laterCode, locationPath) {
+function buildCode (location, locationPath) {
   if (location.schema.$ref) {
     location = refFinder(location.schema.$ref, location)
   }
 
   const schema = location.schema
   const required = schema.required || []
+
+  let code = ''
 
   Object.keys(schema.properties || {}).forEach((key) => {
     let propertyLocation = mergeLocation(location, { schema: schema.properties[key] })
@@ -648,9 +646,7 @@ function buildCode (location, code, laterCode, locationPath) {
         json += ${asString} + ':'
       `
 
-    const result = buildValue(laterCode, locationPath + key, `obj[${JSON.stringify(key)}]`, mergeLocation(propertyLocation, { schema: schema.properties[key] }))
-    code += result.code
-    laterCode = result.laterCode
+    code += buildValue(locationPath + key, `obj[${JSON.stringify(key)}]`, mergeLocation(propertyLocation, { schema: schema.properties[key] }))
 
     const defaultValue = schema.properties[key].default
     if (defaultValue !== undefined) {
@@ -676,7 +672,7 @@ function buildCode (location, code, laterCode, locationPath) {
     code += `if (obj['${requiredProperty}'] === undefined) throw new Error('"${requiredProperty}" is required!')\n`
   }
 
-  return { code, laterCode }
+  return code
 }
 
 function mergeAllOfSchema (location, schema, mergedSchema) {
@@ -771,24 +767,17 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
 
 function buildInnerObject (location, locationPath) {
   const schema = location.schema
-  const result = buildCode(location, '', '', locationPath)
+  let code = buildCode(location, locationPath)
   if (schema.patternProperties) {
-    const { code, laterCode } = addPatternProperties(location)
-    result.code += code
-    result.laterCode += laterCode
+    code += addPatternProperties(location)
   } else if (schema.additionalProperties && !schema.patternProperties) {
-    const { code, laterCode } = addAdditionalProperties(location)
-    result.code += code
-    result.laterCode += laterCode
+    code += addAdditionalProperties(location)
   }
-  return result
+  return code
 }
 
 function addIfThenElse (location, locationPath) {
   let code = ''
-  let r
-  let laterCode = ''
-  let innerR
 
   const schema = location.schema
   const copy = merge({}, schema)
@@ -809,14 +798,10 @@ function addIfThenElse (location, locationPath) {
     if (valid) {
   `
   if (merged.if && merged.then) {
-    innerR = addIfThenElse(mergedLocation, locationPath + 'Then')
-    code += innerR.code
-    laterCode = innerR.laterCode
+    code += addIfThenElse(mergedLocation, locationPath + 'Then')
   }
 
-  r = buildInnerObject(mergedLocation, locationPath + 'Then')
-  code += r.code
-  laterCode += r.laterCode
+  code += buildInnerObject(mergedLocation, locationPath + 'Then')
 
   code += `
     }
@@ -829,19 +814,15 @@ function addIfThenElse (location, locationPath) {
     `
 
   if (merged.if && merged.then) {
-    innerR = addIfThenElse(mergedLocation, locationPath + 'Else')
-    code += innerR.code
-    laterCode += innerR.laterCode
+    code += addIfThenElse(mergedLocation, locationPath + 'Else')
   }
 
-  r = buildInnerObject(mergedLocation, locationPath + 'Else')
-  code += r.code
-  laterCode += r.laterCode
+  code += buildInnerObject(mergedLocation, locationPath + 'Else')
 
   code += `
       }
     `
-  return { code, laterCode }
+  return code
 }
 
 function toJSON (variableName) {
@@ -851,76 +832,75 @@ function toJSON (variableName) {
   `
 }
 
-function buildObject (location, code, functionName, locationPath) {
+function buildObject (location, functionName, locationPath) {
   const schema = location.schema
   if (schema.$id !== undefined) {
     schemaReferenceMap.set(schema.$id, schema)
   }
-  code += `
+  let functionCode = `
     function ${functionName} (input) {
       // ${locationPath}
   `
   if (schema.nullable) {
-    code += `
-      if(input === null) {
+    functionCode += `
+      if (input === null) {
         return 'null';
       }
   `
   }
 
   if (objectReferenceSerializersMap.has(schema) && objectReferenceSerializersMap.get(schema) !== functionName) {
-    code += `
+    functionCode += `
       return ${objectReferenceSerializersMap.get(schema)}(input)
     }
     `
-    return code
+    contextFunctions.push(functionCode)
+    return
   }
   objectReferenceSerializersMap.set(schema, functionName)
 
-  code += `
+  functionCode += `
       var obj = ${toJSON('input')}
       var json = '{'
       var addComma = false
   `
 
-  let r
+  let rCode
   if (schema.if && schema.then) {
-    code += `
+    functionCode += `
       var valid
     `
-    r = addIfThenElse(location, locationPath)
+    rCode = addIfThenElse(location, locationPath)
   } else {
-    r = buildInnerObject(location, locationPath)
+    rCode = buildInnerObject(location, locationPath)
   }
 
   // Removes the comma if is the last element of the string (in case there are not properties)
-  code += `${r.code}
+  functionCode += `${rCode}
       json += '}'
       return json
     }
-    ${r.laterCode}
   `
 
-  return code
+  contextFunctions.push(functionCode)
 }
 
-function buildArray (location, code, functionName, locationPath) {
+function buildArray (location, functionName, locationPath) {
   let schema = location.schema
   if (schema.$id !== undefined) {
     schemaReferenceMap.set(schema.$id, schema)
   }
-  code += `
+  let functionCode = `
     function ${functionName} (obj) {
       // ${locationPath}
   `
   if (schema.nullable) {
-    code += `
+    functionCode += `
       if(obj === null) {
         return 'null';
       }
     `
   }
-  const laterCode = ''
 
   // default to any items type
   if (!schema.items) {
@@ -938,36 +918,35 @@ function buildArray (location, code, functionName, locationPath) {
     schema.items = location.schema
 
     if (arrayItemsReferenceSerializersMap.has(schema.items)) {
-      code += `
+      functionCode += `
       return ${arrayItemsReferenceSerializersMap.get(schema.items)}(obj)
       }
       `
-      return code
+      contextFunctions.push(functionCode)
+      return
     }
     arrayItemsReferenceSerializersMap.set(schema.items, functionName)
   }
 
-  let result = { code: '', laterCode: '' }
+  let result = { code: '' }
   const accessor = '[i]'
   if (Array.isArray(schema.items)) {
     result = schema.items.reduce((res, item, i) => {
-      const tmpRes = buildValue(laterCode, locationPath + accessor + i, 'obj[i]', mergeLocation(location, { schema: item }))
+      const tmpRes = buildValue(locationPath + accessor + i, 'obj[i]', mergeLocation(location, { schema: item }))
       const condition = `i === ${i} && ${buildArrayTypeCondition(item.type, accessor)}`
       return {
         code: `${res.code}
         ${i > 0 ? 'else' : ''} if (${condition}) {
-          ${tmpRes.code}
-        }`,
-        laterCode: `${res.laterCode}
-        ${tmpRes.laterCode}`
+          ${tmpRes}
+        }`
       }
     }, result)
 
     if (schema.additionalItems) {
-      const tmpRes = buildValue(laterCode, locationPath + accessor, 'obj[i]', mergeLocation(location, { schema: schema.items }))
+      const tmpRes = buildValue(locationPath + accessor, 'obj[i]', mergeLocation(location, { schema: schema.items }))
       result.code += `
       else if (i >= ${schema.items.length}) {
-        ${tmpRes.code}
+        ${tmpRes}
       }
       `
     }
@@ -978,25 +957,25 @@ function buildArray (location, code, functionName, locationPath) {
     }
     `
   } else {
-    result = buildValue(laterCode, locationPath + accessor, 'obj[i]', mergeLocation(location, { schema: schema.items }))
+    result.code = buildValue(locationPath + accessor, 'obj[i]', mergeLocation(location, { schema: schema.items }))
   }
 
-  code += `
+  functionCode += `
     if (!Array.isArray(obj)) {
       throw new TypeError(\`The value '$\{obj}' does not match schema definition.\`)
     }
   `
 
-  code += 'const arrayLength = obj.length\n'
+  functionCode += 'const arrayLength = obj.length\n'
   if (largeArrayMechanism !== 'default') {
     if (largeArrayMechanism === 'json-stringify') {
-      code += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
+      functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
     } else {
       throw new Error(`Unsupported large array mechanism ${largeArrayMechanism}`)
     }
   }
 
-  code += `
+  functionCode += `
     let jsonOutput= ''
     for (let i = 0; i < arrayLength; i++) {
       let json = ''
@@ -1010,11 +989,7 @@ function buildArray (location, code, functionName, locationPath) {
     return \`[\${jsonOutput}]\`
   }`
 
-  code += `
-  ${result.laterCode}
-  `
-
-  return code
+  contextFunctions.push(functionCode)
 }
 
 function buildArrayTypeCondition (type, accessor) {
@@ -1083,7 +1058,7 @@ function generateFuncName () {
   return 'anonymous' + genFuncNameCounter++
 }
 
-function buildValue (laterCode, locationPath, input, location) {
+function buildValue (locationPath, input, location) {
   let schema = location.schema
 
   if (schema.$ref) {
@@ -1135,12 +1110,12 @@ function buildValue (laterCode, locationPath, input, location) {
       break
     case 'object':
       funcName = generateFuncName()
-      laterCode = buildObject(location, laterCode, funcName, locationPath)
+      buildObject(location, funcName, locationPath)
       code += `json += ${funcName}(${input})`
       break
     case 'array':
       funcName = generateFuncName()
-      laterCode = buildArray(location, laterCode, funcName, locationPath)
+      buildArray(location, funcName, locationPath)
       code += `json += ${funcName}(${input})`
       break
     case undefined:
@@ -1148,7 +1123,7 @@ function buildValue (laterCode, locationPath, input, location) {
         // beware: dereferenceOfRefs has side effects and changes schema.anyOf
         const locations = dereferenceOfRefs(location, schema.anyOf ? 'anyOf' : 'oneOf')
         locations.forEach((location, index) => {
-          const nestedResult = buildValue(laterCode, locationPath + 'i' + index, input, location)
+          const nestedResult = buildValue(locationPath + 'i' + index, input, location)
           // Since we are only passing the relevant schema to ajv.validate, it needs to be full dereferenced
           // otherwise any $ref pointing to an external schema would result in an error.
           // Full dereference of the schema happens as side effect of two functions:
@@ -1168,9 +1143,8 @@ function buildValue (laterCode, locationPath, input, location) {
 
           code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate("${schemaKey}", ${input}))
-              ${nestedResult.code}
+              ${nestedResult}
           `
-          laterCode = nestedResult.laterCode
         })
 
         code += `
@@ -1211,38 +1185,37 @@ function buildValue (laterCode, locationPath, input, location) {
         sortedTypes.forEach((type, index) => {
           const statement = index === 0 ? 'if' : 'else if'
           const tempSchema = Object.assign({}, schema, { type })
-          const nestedResult = buildValue(laterCode, locationPath, input, mergeLocation(location, { schema: tempSchema }))
+          const nestedResult = buildValue(locationPath, input, mergeLocation(location, { schema: tempSchema }))
           switch (type) {
             case 'string': {
               code += `
                 ${statement}(${input} === null || typeof ${input} === "${type}" || ${input} instanceof Date || ${input} instanceof RegExp || (typeof ${input} === "object" && Object.hasOwnProperty.call(${input}, "toString")))
-                  ${nestedResult.code}
+                  ${nestedResult}
               `
               break
             }
             case 'array': {
               code += `
                 ${statement}(Array.isArray(${input}))
-                  ${nestedResult.code}
+                  ${nestedResult}
               `
               break
             }
             case 'integer': {
               code += `
                 ${statement}(Number.isInteger(${input}) || ${input} === null)
-                  ${nestedResult.code}
+                  ${nestedResult}
               `
               break
             }
             default: {
               code += `
                 ${statement}(typeof ${input} === "${type}" || ${input} === null)
-                  ${nestedResult.code}
+                  ${nestedResult}
               `
               break
             }
           }
-          laterCode = nestedResult.laterCode
         })
         code += `
           else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
@@ -1258,7 +1231,7 @@ function buildValue (laterCode, locationPath, input, location) {
       }
   }
 
-  return { code, laterCode }
+  return code
 }
 
 function extendDateTimeType (schema) {
