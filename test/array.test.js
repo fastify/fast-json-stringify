@@ -218,6 +218,35 @@ test('array items is a list of schema and additionalItems is true, just the desc
   t.equal(result, '{"foo":["foo","bar",1]}')
 })
 
+test('array items is a list of schema and additionalItems is true, just the described item is validated', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        type: 'array',
+        items: [
+          {
+            type: 'string'
+          },
+          {
+            type: 'number'
+          }
+        ],
+        additionalItems: true
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const result = stringify({
+    foo: ['foo']
+  })
+
+  t.equal(result, '{"foo":["foo"]}')
+})
+
 test('array items is a list of schema and additionalItems is false', (t) => {
   t.plan(1)
 
