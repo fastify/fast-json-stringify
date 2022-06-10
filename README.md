@@ -62,6 +62,8 @@ compile-json-stringify date format x 1,086,187 ops/sec ±0.16% (99 runs sampled)
  - <a href="#nullable">`Nullable`</a>
  - <a href="#largearrays">`Large Arrays`</a>
 - <a href="#security">`Security Notice`</a>
+- <a href="#debug">`Debug Mode`</a>
+- <a href="#standalone">`Standalone Mode`</a>
 - <a href="#acknowledgements">`Acknowledgements`</a>
 - <a href="#license">`License`</a>
 
