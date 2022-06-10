@@ -1,4 +1,4 @@
-import { Options as AjvOptions } from "ajv"
+import Ajv, { Options as AjvOptions } from "ajv"
 declare namespace build {
   interface BaseSchema {
     /**
@@ -157,7 +157,28 @@ declare namespace build {
      * Optionally configure how the integer will be rounded
      */
     rounding?: 'ceil' | 'floor' | 'round'
+    /**
+     * @depercated 
+     * Enable debug mode. Please use `mode: "debug"` instead
+     */
+    debugMode?: boolean
+    /**
+     * Running mode of fast-json-stringify
+     */
+    mode?: 'debug' | 'standalone'
   }
+}
+
+interface DebugOption extends build.Options {
+  mode: 'debug'
+}
+
+interface DepercateDebugOption extends build.Options {
+  debugMode: true
+}
+
+interface StandaloneOption extends build.Options {
+  mode: 'standalone'
 }
 
 /**
@@ -165,6 +186,9 @@ declare namespace build {
  * @param schema The schema used to stringify values
  * @param options The options to use (optional)
  */
+declare function build(schema: build.AnySchema, options: DebugOption): { code: string, ajv: Ajv };
+declare function build(schema: build.AnySchema, options: DepercateDebugOption): { code: string, ajv: Ajv };
+declare function build(schema: build.AnySchema, options: StandaloneOption): string;
 declare function build(schema: build.AnySchema, options?: build.Options): (doc: any) => any;
 declare function build(schema: build.StringSchema, options?: build.Options): (doc: string) => string;
 declare function build(schema: build.IntegerSchema | build.NumberSchema, options?: build.Options): (doc: number) => string;
