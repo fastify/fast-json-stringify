@@ -62,6 +62,8 @@ compile-json-stringify date format x 1,086,187 ops/sec ±0.16% (99 runs sampled)
  - <a href="#nullable">`Nullable`</a>
  - <a href="#largearrays">`Large Arrays`</a>
 - <a href="#security">`Security Notice`</a>
+- <a href="#debug">`Debug Mode`</a>
+- <a href="#standalone">`Standalone Mode`</a>
 - <a href="#acknowledgements">`Acknowledgements`</a>
 - <a href="#license">`License`</a>
 
@@ -663,13 +665,37 @@ const debugCompiled = fastJson({
       type: 'string'
     }
   }
-}, { debugMode: true })
+}, { mode: 'debug' })
 
-console.log(debugCompiled) // it is an array of functions that can create your `stringify` function
-console.log(debugCompiled.toString()) // print a "ready to read" string function, you can save it to a file
+console.log(debugCompiled) // it is a object contain code, ajv instance
+const rawString = debugCompiled.code // it is the generated code
+console.log(rawString) 
 
-const rawString = debugCompiled.toString()
-const stringify = fastJson.restore(rawString) // use the generated string to get back the `stringify` function
+const stringify = fastJson.restore(debugCompiled) // use the generated string to get back the `stringify` function
+console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"Foo"}'
+```
+
+<a name="standalone"></a>
+### Standalone Mode
+
+The standalone mode is used to compile the code that can be directly run by `node`
+itself. You need to install `fast-json-stringify`, `ajv`, `fast-uri` and `ajv-formats`
+in order to let the standalone code works.
+
+```js
+const fs = require('fs')
+const code = fastJson({
+  title: 'default string',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
+    }
+  }
+}, { mode: 'standalone' })
+
+fs.writeFileSync('stringify.js', code)
+const stringify = require('stringify.js')
 console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"Foo"}'
 ```
 
