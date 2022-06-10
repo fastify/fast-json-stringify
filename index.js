@@ -926,45 +926,21 @@ function buildArray (location, locationPath) {
     `
   }
 
-  let result = { code: '' }
-  const accessor = '[i]'
-  if (Array.isArray(schema.items)) {
-    result = schema.items.reduce((res, item, i) => {
-      const tmpRes = buildValue(locationPath + accessor + i, 'obj[i]', mergeLocation(location, { schema: item }))
-      const condition = `i === ${i} && ${buildArrayTypeCondition(item.type, accessor)}`
-      return {
-        code: `${res.code}
-        ${i > 0 ? 'else' : ''} if (${condition}) {
-          ${tmpRes}
-        }`
-      }
-    }, result)
-
-    if (schema.additionalItems) {
-      const tmpRes = buildValue(locationPath + accessor, 'obj[i]', mergeLocation(location, { schema: schema.items }))
-      result.code += `
-      else if (i >= ${schema.items.length}) {
-        ${tmpRes}
-      }
-      `
-    }
-
-    result.code += `
-    else {
-      throw new Error(\`Item at $\{i} does not match schema definition.\`)
-    }
-    `
-  } else {
-    result.code = buildValue(locationPath + accessor, 'obj[i]', mergeLocation(location, { schema: schema.items }))
-  }
-
   functionCode += `
     if (!Array.isArray(obj)) {
       throw new TypeError(\`The value '$\{obj}' does not match schema definition.\`)
     }
+    const arrayLength = obj.length
   `
 
-  functionCode += 'const arrayLength = obj.length\n'
+  if (!schema.additionalItems) {
+    functionCode += `
+      if (arrayLength > ${schema.items.length}) {
+        throw new Error(\`Item at ${schema.items.length} does not match schema definition.\`)
+      }
+    `
+  }
+
   if (largeArrayMechanism !== 'default') {
     if (largeArrayMechanism === 'json-stringify') {
       functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
@@ -974,16 +950,54 @@ function buildArray (location, locationPath) {
   }
 
   functionCode += `
-    let jsonOutput= ''
-    for (let i = 0; i < arrayLength; i++) {
-      let json = ''
-      ${result.code}
-      jsonOutput += json
+    let jsonOutput = ''
+  `
 
-      if (json.length > 0 && i < arrayLength - 1) {
-        jsonOutput += ','
-      }
+  const accessor = '[i]'
+  if (Array.isArray(schema.items)) {
+    for (let i = 0; i < schema.items.length; i++) {
+      const item = schema.items[i]
+      const tmpRes = buildValue(locationPath + accessor + i, `obj[${i}]`, mergeLocation(location, { schema: item }))
+      functionCode += `
+        if (${i} < arrayLength) {
+          if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
+            let json = ''
+            ${tmpRes}
+            jsonOutput += json
+            if (${i} < arrayLength - 1) {
+              jsonOutput += ','
+            }
+          } else {
+            throw new Error(\`Item at ${i} does not match schema definition.\`)
+          }
+        }
+        `
     }
+
+    if (schema.additionalItems) {
+      functionCode += `
+        for (let i = ${schema.items.length}; i < arrayLength; i++) {
+          let json = JSON.stringify(obj[i])
+          jsonOutput += json
+          if (i < arrayLength - 1) {
+            jsonOutput += ','
+          }
+        }`
+    }
+  } else {
+    const code = buildValue(locationPath + accessor, 'obj[i]', mergeLocation(location, { schema: schema.items }))
+    functionCode += `
+      for (let i = 0; i < arrayLength; i++) {
+        let json = ''
+        ${code}
+        jsonOutput += json
+        if (i < arrayLength - 1) {
+          jsonOutput += ','
+        }
+      }`
+  }
+
+  functionCode += `
     return \`[\${jsonOutput}]\`
   }`
 
