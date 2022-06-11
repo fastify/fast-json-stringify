@@ -21,9 +21,10 @@ function build (opts, schema) {
 const tmpDir = 'test/fixtures'
 
 test('activate standalone mode', async (t) => {
-  t.plan(2)
+  t.plan(3)
   const code = build({ mode: 'standalone' })
   t.type(code, 'string')
+  t.equal(code.indexOf('ajv'), -1)
 
   const destionation = path.resolve(tmpDir, 'standalone.js')
 
@@ -37,7 +38,7 @@ test('activate standalone mode', async (t) => {
 })
 
 test('test ajv schema', async (t) => {
-  t.plan(2)
+  t.plan(3)
   const code = build({ mode: 'standalone' }, {
     type: 'object',
     properties: {
@@ -86,6 +87,7 @@ test('test ajv schema', async (t) => {
     }
   })
   t.type(code, 'string')
+  t.equal(code.indexOf('ajv') > 0, true)
 
   const destionation = path.resolve(tmpDir, 'standalone2.js')
 
