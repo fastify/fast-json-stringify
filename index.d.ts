@@ -187,7 +187,7 @@ interface StandaloneOption extends build.Options {
  * @param options The options to use (optional)
  */
 declare function build(schema: build.AnySchema, options: DebugOption): { code: string, ajv: Ajv };
-declare function build(schema: build.AnySchema, options: DepercateDebugOption): { code: string, ajv: Ajv };
+declare function build(schema: build.AnySchema, options: DeprecateDebugOption): { code: string, ajv: Ajv };
 declare function build(schema: build.AnySchema, options: StandaloneOption): string;
 declare function build(schema: build.AnySchema, options?: build.Options): (doc: any) => any;
 declare function build(schema: build.StringSchema, options?: build.Options): (doc: string) => string;
