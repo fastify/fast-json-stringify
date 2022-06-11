@@ -14,7 +14,7 @@ function buildStandaloneCode (options, ajvInstance, contextFunctionCode) {
   const shouldUseAjv = contextFunctionCode.indexOf('ajv') !== -1
   // we need to export the custom json schema
   let ajvSchemasCode = ''
-  if(shouldUseAjv) {
+  if (shouldUseAjv) {
     ajvSchemasCode += `const ajv = buildAjv(${JSON.stringify(options.ajv || {})})\n`
     for (const [id, schema] of Object.entries(ajvInstance.schemas)) {
       // should skip ajv default schema
