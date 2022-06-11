@@ -158,7 +158,7 @@ declare namespace build {
      */
     rounding?: 'ceil' | 'floor' | 'round'
     /**
-     * @depercated 
+     * @deprecated 
      * Enable debug mode. Please use `mode: "debug"` instead
      */
     debugMode?: boolean
