@@ -173,7 +173,7 @@ interface DebugOption extends build.Options {
   mode: 'debug'
 }
 
-interface DepercateDebugOption extends build.Options {
+interface DeprecateDebugOption extends build.Options {
   debugMode: true
 }
 
