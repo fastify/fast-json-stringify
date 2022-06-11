@@ -11,7 +11,6 @@ function buildStandaloneCode (options, ajvInstance, contextFunctionCode) {
   } else {
     defaultAjvSchema = defaultMeta.$id || defaultMeta.id
   }
-  console.log(defaultAjvSchema)
   // we need to export the custom json schema
   let ajvSchemasCode = ''
   for (const [id, schema] of Object.entries(ajvInstance.schemas)) {
