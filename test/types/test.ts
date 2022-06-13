@@ -1,3 +1,4 @@
+import Ajv from 'ajv'
 import build, { Schema } from '../..'
 
 // Number schemas
@@ -143,3 +144,10 @@ const schema12: Schema = {
 }
 
 build(schema12)(new Date())
+
+let str: string, ajv: Ajv
+str = build(schema1, { debugMode: true }).code
+ajv = build(schema1, { debugMode: true }).ajv
+str = build(schema1, { mode: 'debug' }).code
+ajv = build(schema1, { mode: 'debug' }).ajv
+str = build(schema1, { mode: 'standalone' })
