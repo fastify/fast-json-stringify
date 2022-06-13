@@ -81,10 +81,13 @@ function resolveRef (location, ref) {
 const arrayItemsReferenceSerializersMap = new Map()
 const objectReferenceSerializersMap = new Map()
 
+let rootSchemaId = null
 let ajvInstance = null
 let contextFunctions = null
 
 function build (schema, options) {
+  schema = clone(schema)
+
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
 
@@ -92,12 +95,11 @@ function build (schema, options) {
   options = options || {}
 
   ajvInstance = buildAjv(options.ajv)
-
-  const schemaId = schema.$id || randomUUID()
+  rootSchemaId = schema.$id || randomUUID()
 
   isValidSchema(schema)
   extendDateTimeType(schema)
-  ajvInstance.addSchema(schema, schemaId)
+  ajvInstance.addSchema(schema, rootSchemaId)
 
   if (options.schema) {
     for (const key of Object.keys(options.schema)) {
@@ -107,15 +109,23 @@ function build (schema, options) {
 
       if (externalSchema.$id !== undefined) {
         if (externalSchema.$id[0] === '#') {
-          ajvInstance.addSchema(externalSchema, key + externalSchema.$id)
+          if (ajvInstance.getSchema(key + externalSchema.$id) === undefined) {
+            ajvInstance.addSchema(externalSchema, key + externalSchema.$id)
+          }
         } else {
-          ajvInstance.addSchema(externalSchema)
+          if (ajvInstance.getSchema(externalSchema.$id) === undefined) {
+            ajvInstance.addSchema(externalSchema)
+          }
           if (externalSchema.$id !== key) {
-            ajvInstance.addSchema({ $ref: externalSchema.$id }, key)
+            if (ajvInstance.getSchema(key) === undefined) {
+              ajvInstance.addSchema({ $ref: externalSchema.$id }, key)
+            }
           }
         }
       } else {
-        ajvInstance.addSchema(externalSchema, key)
+        if (ajvInstance.getSchema(key) === undefined) {
+          ajvInstance.addSchema(externalSchema, key)
+        }
       }
     }
   }
@@ -144,7 +154,7 @@ function build (schema, options) {
 
   const serializer = new Serializer(options)
 
-  const location = { schema, schemaId, jsonPointer: '#' }
+  const location = { schema, schemaId: rootSchemaId, jsonPointer: '#' }
   const code = buildValue(location, 'input')
 
   const contextFunctionCode = `
@@ -178,6 +188,7 @@ function build (schema, options) {
   const stringifyFunc = contextFunc(ajvInstance, serializer)
 
   ajvInstance = null
+  rootSchemaId = null
   contextFunctions = null
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
@@ -562,9 +573,10 @@ function buildObject (location) {
   const functionName = generateFuncName()
   objectReferenceSerializersMap.set(schema, functionName)
 
+  const schemaId = location.schemaId === rootSchemaId ? '' : location.schemaId
   let functionCode = `
     function ${functionName} (input) {
-      // ${location.schemaId + location.jsonPointer}
+      // ${schemaId + location.jsonPointer}
   `
   if (schema.nullable) {
     functionCode += `
@@ -627,9 +639,10 @@ function buildArray (location) {
   const functionName = generateFuncName()
   arrayItemsReferenceSerializersMap.set(schema.items, functionName)
 
+  const schemaId = location.schemaId === rootSchemaId ? '' : location.schemaId
   let functionCode = `
     function ${functionName} (obj) {
-      // ${location.schemaId + location.jsonPointer}
+      // ${schemaId + location.jsonPointer}
   `
 
   if (schema.nullable) {
