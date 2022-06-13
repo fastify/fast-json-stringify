@@ -136,19 +136,9 @@ function build (schema, options) {
   }
 
   if (options.mode === 'standalone') {
-    return `
-'use strict'
-
-const Serializer = require('fast-json-stringify/serializer')
-const buildAjv = require('fast-json-stringify/ajv')
-
-const serializer = new Serializer(${JSON.stringify(options || {})})
-const ajv = buildAjv(${JSON.stringify(options.ajv || {})})
-
-${contextFunctionCode.replace('return main', '')}
-
-module.exports = main
-    `
+    // lazy load
+    const buildStandaloneCode = require('./standalone')
+    return buildStandaloneCode(options, ajvInstance, contextFunctionCode)
   }
 
   /* eslint no-new-func: "off" */
