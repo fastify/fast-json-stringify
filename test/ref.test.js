@@ -532,11 +532,11 @@ test('external and inner reference', (t) => {
 
   const externalSchema = {
     first: {
-      $id: 'external-reference',
-      $ref: '#external-reference',
+      $id: 'reference',
+      $ref: '#reference',
       definitions: {
         inner: {
-          $id: '#external-reference',
+          $id: '#reference',
           type: 'object',
           properties: {
             str: {
@@ -552,7 +552,7 @@ test('external and inner reference', (t) => {
     type: 'object',
     properties: {
       first: {
-        $ref: 'external-reference'
+        $ref: 'reference'
       }
     }
   }
@@ -587,7 +587,7 @@ test('external reference to key', (t) => {
     type: 'object',
     properties: {
       first: {
-        $ref: 'first'
+        $ref: 'external-reference'
       }
     }
   }
@@ -1511,6 +1511,8 @@ test('issue #350', (t) => {
 })
 
 test('deep union type', (t) => {
+  t.plan(1)
+
   const stringify = build({
     schema: {
       type: 'array',
@@ -1753,5 +1755,4 @@ test('deep union type', (t) => {
     }
   ]
   t.equal(JSON.stringify(obj), stringify(obj))
-  t.autoend()
 })

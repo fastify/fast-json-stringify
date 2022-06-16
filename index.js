@@ -108,24 +108,13 @@ function build (schema, options) {
       extendDateTimeType(externalSchema)
 
       if (externalSchema.$id !== undefined) {
-        if (externalSchema.$id[0] === '#') {
-          if (ajvInstance.getSchema(key + externalSchema.$id) === undefined) {
-            ajvInstance.addSchema(externalSchema, key + externalSchema.$id)
-          }
+        if (externalSchema.$id[0] === '#') { // relative URI
+          ajvInstance.addSchema(externalSchema, key + externalSchema.$id)
         } else {
-          if (ajvInstance.getSchema(externalSchema.$id) === undefined) {
-            ajvInstance.addSchema(externalSchema)
-          }
-          if (externalSchema.$id !== key) {
-            if (ajvInstance.getSchema(key) === undefined) {
-              ajvInstance.addSchema({ $ref: externalSchema.$id }, key)
-            }
-          }
+          ajvInstance.addSchema(externalSchema)
         }
       } else {
-        if (ajvInstance.getSchema(key) === undefined) {
-          ajvInstance.addSchema(externalSchema, key)
-        }
+        ajvInstance.addSchema(externalSchema, key)
       }
     }
   }
