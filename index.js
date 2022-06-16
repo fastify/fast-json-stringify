@@ -102,6 +102,8 @@ function build (schema, options) {
   ajvInstance.addSchema(schema, rootSchemaId)
 
   if (options.schema) {
+    options.schema = clone(options.schema)
+
     for (const key of Object.keys(options.schema)) {
       const externalSchema = options.schema[key]
       isValidSchema(externalSchema, key)

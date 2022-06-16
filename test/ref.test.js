@@ -1756,3 +1756,69 @@ test('deep union type', (t) => {
   ]
   t.equal(JSON.stringify(obj), stringify(obj))
 })
+
+test('ref with same id in properties', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    ObjectId: {
+      $id: 'ObjectId',
+      type: 'string'
+    },
+    File: {
+      $id: 'File',
+      type: 'object',
+      properties: {
+        _id: { $ref: 'ObjectId' },
+        name: { type: 'string' },
+        owner: { $ref: 'ObjectId' }
+      }
+    }
+  }
+
+  t.test('anyOf', (t) => {
+    t.plan(1)
+
+    const schema = {
+      $id: 'Article',
+      type: 'object',
+      properties: {
+        _id: { $ref: 'ObjectId' },
+        image: {
+          anyOf: [
+            { $ref: 'File' },
+            { type: 'null' }
+          ]
+        }
+      }
+    }
+
+    const stringify = build(schema, { schema: externalSchema })
+    const output = stringify({ _id: 'foo', image: { _id: 'bar', name: 'hello', owner: 'baz' } })
+
+    t.equal(output, '{"_id":"foo","image":{"_id":"bar","name":"hello","owner":"baz"}}')
+  })
+
+  t.test('oneOf', (t) => {
+    t.plan(1)
+
+    const schema = {
+      $id: 'Article',
+      type: 'object',
+      properties: {
+        _id: { $ref: 'ObjectId' },
+        image: {
+          oneOf: [
+            { $ref: 'File' },
+            { type: 'null' }
+          ]
+        }
+      }
+    }
+
+    const stringify = build(schema, { schema: externalSchema })
+    const output = stringify({ _id: 'foo', image: { _id: 'bar', name: 'hello', owner: 'baz' } })
+
+    t.equal(output, '{"_id":"foo","image":{"_id":"bar","name":"hello","owner":"baz"}}')
+  })
+})
