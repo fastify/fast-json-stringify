@@ -1249,3 +1249,102 @@ test('Regression 2.5.2', t => {
 
   t.equal(output, '[{"field":"parent","sub":{"field":"joined"}}]')
 })
+
+test('ref with same id in properties', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    ObjectId: {
+      $id: 'ObjectId',
+      type: 'string'
+    },
+    File: {
+      $id: 'File',
+      type: 'object',
+      properties: {
+        _id: { $ref: 'ObjectId' },
+        name: { type: 'string' },
+        owner: { $ref: 'ObjectId' }
+      }
+    }
+  }
+
+  t.test('anyOf', (t) => {
+    t.plan(1)
+
+    const schema = {
+      $id: 'Article',
+      type: 'object',
+      properties: {
+        _id: { $ref: 'ObjectId' },
+        image: {
+          anyOf: [
+            { $ref: 'File' },
+            { type: 'null' }
+          ]
+        }
+      }
+    }
+
+    const stringify = build(schema, { schema: externalSchema })
+    const output = stringify({ _id: 'foo', image: { _id: 'bar', name: 'hello', owner: 'baz' } })
+
+    t.equal(output, '{"_id":"foo","image":{"_id":"bar","name":"hello","owner":"baz"}}')
+  })
+
+  t.test('oneOf', (t) => {
+    t.plan(1)
+
+    const schema = {
+      $id: 'Article',
+      type: 'object',
+      properties: {
+        _id: { $ref: 'ObjectId' },
+        image: {
+          oneOf: [
+            { $ref: 'File' },
+            { type: 'null' }
+          ]
+        }
+      }
+    }
+
+    const stringify = build(schema, { schema: externalSchema })
+    const output = stringify({ _id: 'foo', image: { _id: 'bar', name: 'hello', owner: 'baz' } })
+
+    t.equal(output, '{"_id":"foo","image":{"_id":"bar","name":"hello","owner":"baz"}}')
+  })
+})
+
+test('dedup id', (t) => {
+  t.plan(1)
+
+  try {
+    const externalSchema = {
+      ObjectId: {
+        $id: 'ObjectId',
+        type: 'string'
+      }
+    }
+
+    const schema = {
+      type: 'object',
+      properties: {
+        image: {
+          anyOf: [
+            { $ref: 'ObjectId' },
+            {
+              $id: 'ObjectId',
+              type: 'number'
+            }
+          ]
+        }
+      }
+    }
+
+    build(schema, { schema: externalSchema })
+    t.fail('should not be here')
+  } catch (err) {
+    t.pass('should fail when $id reference to multiple schema')
+  }
+})

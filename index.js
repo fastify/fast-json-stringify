@@ -52,6 +52,7 @@ function mergeLocation (source, dest) {
 const arrayItemsReferenceSerializersMap = new Map()
 const objectReferenceSerializersMap = new Map()
 const schemaReferenceMap = new Map()
+const dedupRefsMap = new Map()
 
 let ajvInstance = null
 let contextFunctions = null
@@ -234,7 +235,7 @@ function addPatternProperties (location) {
     let ppLocation = mergeLocation(location, { schema: pp[regex] })
     if (pp[regex].$ref) {
       ppLocation = refFinder(pp[regex].$ref, location)
-      pp[regex] = ppLocation.schema
+      pp[regex] = dedupIdsRefs(ppLocation.schema)
     }
 
     try {
@@ -253,6 +254,8 @@ function addPatternProperties (location) {
       }
     `
   })
+  dedupRefsMap.clear()
+
   if (schema.additionalProperties) {
     code += additionalProperty(location)
   }
@@ -447,9 +450,10 @@ function buildCode (location, locationPath) {
 
   Object.keys(schema.properties || {}).forEach((key) => {
     let propertyLocation = mergeLocation(location, { schema: schema.properties[key] })
-    if (schema.properties[key].$ref) {
-      propertyLocation = refFinder(schema.properties[key].$ref, location)
-      schema.properties[key] = propertyLocation.schema
+    const ref = schema.properties[key].$ref
+    if (ref) {
+      propertyLocation = refFinder(ref, location)
+      schema.properties[key] = dedupIdsRefs(key, ref, propertyLocation.schema)
     }
 
     // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
@@ -484,6 +488,7 @@ function buildCode (location, locationPath) {
       }
     `
   })
+  dedupRefsMap.clear()
 
   for (const requiredProperty of required) {
     if (schema.properties && schema.properties[requiredProperty] !== undefined) continue
@@ -882,6 +887,26 @@ function dereferenceOfRefs (location, type) {
   })
 
   return locations
+}
+
+function dedupIdsRefs (key, refs, schema) {
+  const arr = dedupRefsMap.get(refs) || []
+  arr.push(key)
+  dedupRefsMap.set(refs, [key])
+
+  // we dedup the same $ref only and clear the $id after the first one.
+  // so, it can keep track the duplicate $id when it trying to resolve
+  // difference schema.
+  // however, it will not works for $id in nested properties.
+  if (arr.length > 1) {
+    // we need to check if we face the recursive schema
+    if (!objectReferenceSerializersMap.has(schema) && !arrayItemsReferenceSerializersMap.has(schema)) {
+      schema = clone(schema)
+      delete schema.$id
+    }
+  }
+
+  return schema
 }
 
 let genFuncNameCounter = 0
