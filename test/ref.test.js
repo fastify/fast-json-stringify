@@ -1316,13 +1316,56 @@ test('ref with same id in properties', (t) => {
   })
 })
 
-test('dedup id', (t) => {
-  t.plan(1)
+test('dedup refs id', (t) => {
+  t.plan(3)
 
-  try {
+  const externalSchema = {
+    ObjectId: {
+      $id: 'ObjectId',
+      type: 'string'
+    },
+    String: {
+      $id: 'String',
+      type: 'string'
+    }
+  }
+
+  t.test('should treat same $id but not reference by $ref as different schema', (t) => {
+    t.plan(1)
+
+    try {
+      const schema = {
+        type: 'object',
+        properties: {
+          image: {
+            anyOf: [
+              { $ref: 'ObjectId' },
+              {
+                $id: 'ObjectId',
+                type: 'number'
+              }
+            ]
+          }
+        }
+      }
+
+      build(schema, { schema: externalSchema })
+      t.fail('should not be here')
+    } catch (err) {
+      t.pass('should fail when $id reference to multiple schema')
+    }
+  })
+
+  t.test('same id refs cross anyOf', (t) => {
+    t.plan(4)
+
     const externalSchema = {
       ObjectId: {
         $id: 'ObjectId',
+        type: 'string'
+      },
+      String: {
+        $id: 'String',
         type: 'string'
       }
     }
@@ -1330,21 +1373,84 @@ test('dedup id', (t) => {
     const schema = {
       type: 'object',
       properties: {
+        _id: { $ref: 'ObjectId' },
         image: {
           anyOf: [
-            { $ref: 'ObjectId' },
-            {
-              $id: 'ObjectId',
-              type: 'number'
-            }
+            { type: 'object', properties: { foo: { $ref: 'String' } }, required: ['foo'] },
+            { type: 'object', properties: { bar: { $ref: 'String' } }, required: ['bar'] },
+            { type: 'object', properties: { baz: { $ref: 'String' } }, required: ['baz'] },
+            { $ref: 'ObjectId' }
           ]
         }
       }
     }
 
-    build(schema, { schema: externalSchema })
-    t.fail('should not be here')
-  } catch (err) {
-    t.pass('should fail when $id reference to multiple schema')
-  }
+    const stringify = build(schema, { schema: externalSchema })
+
+    {
+      const output = stringify({ _id: 'foo', image: { foo: 'hello' } })
+      t.equal(output, '{"_id":"foo","image":{"foo":"hello"}}')
+    }
+    {
+      const output = stringify({ _id: 'foo', image: { bar: 'hello' } })
+      t.equal(output, '{"_id":"foo","image":{"bar":"hello"}}')
+    }
+    {
+      const output = stringify({ _id: 'foo', image: { baz: 'hello' } })
+      t.equal(output, '{"_id":"foo","image":{"baz":"hello"}}')
+    }
+    {
+      const output = stringify({ _id: 'foo', image: 'hello' })
+      t.equal(output, '{"_id":"foo","image":"hello"}')
+    }
+  })
+
+  t.test('same id refs cross oneOf', (t) => {
+    t.plan(4)
+
+    const externalSchema = {
+      ObjectId: {
+        $id: 'ObjectId',
+        type: 'string'
+      },
+      String: {
+        $id: 'String',
+        type: 'string'
+      }
+    }
+
+    const schema = {
+      type: 'object',
+      properties: {
+        _id: { $ref: 'ObjectId' },
+        image: {
+          oneOf: [
+            { type: 'object', properties: { foo: { $ref: 'String' } }, required: ['foo'] },
+            { type: 'object', properties: { bar: { $ref: 'String' } }, required: ['bar'] },
+            { type: 'object', properties: { baz: { $ref: 'String' } }, required: ['baz'] },
+            { $ref: 'ObjectId' }
+          ]
+        }
+      }
+    }
+
+    const stringify = build(schema, { schema: externalSchema })
+
+    {
+      const output = stringify({ _id: 'foo', image: { foo: 'hello' } })
+      t.equal(output, '{"_id":"foo","image":{"foo":"hello"}}')
+    }
+    {
+      const output = stringify({ _id: 'foo', image: { bar: 'hello' } })
+      t.equal(output, '{"_id":"foo","image":{"bar":"hello"}}')
+    }
+    {
+      const output = stringify({ _id: 'foo', image: { baz: 'hello' } })
+      t.equal(output, '{"_id":"foo","image":{"baz":"hello"}}')
+    }
+    {
+      const output = stringify({ _id: 'foo', image: 'hello' })
+      t.equal(output, '{"_id":"foo","image":"hello"}')
+    }
+  })
 })

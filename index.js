@@ -52,7 +52,7 @@ function mergeLocation (source, dest) {
 const arrayItemsReferenceSerializersMap = new Map()
 const objectReferenceSerializersMap = new Map()
 const schemaReferenceMap = new Map()
-const dedupRefsMap = new Map()
+const dedupRefsSet = new Set()
 
 let ajvInstance = null
 let contextFunctions = null
@@ -61,6 +61,7 @@ function build (schema, options) {
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
   schemaReferenceMap.clear()
+  dedupRefsSet.clear()
 
   contextFunctions = []
   options = options || {}
@@ -151,6 +152,7 @@ function build (schema, options) {
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
   schemaReferenceMap.clear()
+  dedupRefsSet.clear()
 
   return stringifyFunc
 }
@@ -235,7 +237,7 @@ function addPatternProperties (location) {
     let ppLocation = mergeLocation(location, { schema: pp[regex] })
     if (pp[regex].$ref) {
       ppLocation = refFinder(pp[regex].$ref, location)
-      pp[regex] = dedupIdsRefs(ppLocation.schema)
+      pp[regex] = ppLocation.schema
     }
 
     try {
@@ -254,7 +256,6 @@ function addPatternProperties (location) {
       }
     `
   })
-  dedupRefsMap.clear()
 
   if (schema.additionalProperties) {
     code += additionalProperty(location)
@@ -329,7 +330,7 @@ function refFinder (ref, location) {
 
   if (externalSchema && externalSchema[ref]) {
     return {
-      schema: externalSchema[ref],
+      schema: dedupIdsRefs(ref, externalSchema[ref]),
       root: externalSchema[ref],
       externalSchema
     }
@@ -453,7 +454,7 @@ function buildCode (location, locationPath) {
     const ref = schema.properties[key].$ref
     if (ref) {
       propertyLocation = refFinder(ref, location)
-      schema.properties[key] = dedupIdsRefs(key, ref, propertyLocation.schema)
+      schema.properties[key] = propertyLocation.schema
     }
 
     // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
@@ -488,7 +489,6 @@ function buildCode (location, locationPath) {
       }
     `
   })
-  dedupRefsMap.clear()
 
   for (const requiredProperty of required) {
     if (schema.properties && schema.properties[requiredProperty] !== undefined) continue
@@ -889,22 +889,20 @@ function dereferenceOfRefs (location, type) {
   return locations
 }
 
-function dedupIdsRefs (key, refs, schema) {
-  const arr = dedupRefsMap.get(refs) || []
-  arr.push(key)
-  dedupRefsMap.set(refs, [key])
-
+function dedupIdsRefs (refs, schema) {
   // we dedup the same $ref only and clear the $id after the first one.
   // so, it can keep track the duplicate $id when it trying to resolve
   // difference schema.
   // however, it will not works for $id in nested properties.
-  if (arr.length > 1) {
+  if (dedupRefsSet.has(refs)) {
     // we need to check if we face the recursive schema
     if (!objectReferenceSerializersMap.has(schema) && !arrayItemsReferenceSerializersMap.has(schema)) {
       schema = clone(schema)
       delete schema.$id
     }
   }
+
+  dedupRefsSet.add(refs)
 
   return schema
 }
