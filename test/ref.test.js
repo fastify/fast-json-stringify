@@ -1317,7 +1317,7 @@ test('ref with same id in properties', (t) => {
 })
 
 test('dedup refs id', (t) => {
-  t.plan(3)
+  t.plan(5)
 
   const externalSchema = {
     ObjectId: {
@@ -1337,6 +1337,7 @@ test('dedup refs id', (t) => {
       const schema = {
         type: 'object',
         properties: {
+          _id: { $ref: 'ObjectId' },
           image: {
             anyOf: [
               { $ref: 'ObjectId' },
@@ -1451,6 +1452,74 @@ test('dedup refs id', (t) => {
     {
       const output = stringify({ _id: 'foo', image: 'hello' })
       t.equal(output, '{"_id":"foo","image":"hello"}')
+    }
+  })
+
+  t.test('same id refs cross multiple anyOf', (t) => {
+    t.plan(1)
+
+    const externalSchema = {
+      ObjectId: {
+        $id: 'ObjectId',
+        type: 'string'
+      }
+    }
+
+    const schema = {
+      type: 'object',
+      properties: {
+        _id: { $ref: 'ObjectId' },
+        image: {
+          anyOf: [
+            { $ref: 'ObjectId' }
+          ]
+        },
+        owner: {
+          anyOf: [
+            { $ref: 'ObjectId' }
+          ]
+        }
+      }
+    }
+
+    const stringify = build(schema, { schema: externalSchema })
+    {
+      const output = stringify({ _id: 'foo', image: 'hello', owner: 'world' })
+      t.equal(output, '{"_id":"foo","image":"hello","owner":"world"}')
+    }
+  })
+
+  t.test('same id refs cross multiple oneOf', (t) => {
+    t.plan(1)
+
+    const externalSchema = {
+      ObjectId: {
+        $id: 'ObjectId',
+        type: 'string'
+      }
+    }
+
+    const schema = {
+      type: 'object',
+      properties: {
+        _id: { $ref: 'ObjectId' },
+        image: {
+          oneOf: [
+            { $ref: 'ObjectId' }
+          ]
+        },
+        owner: {
+          oneOf: [
+            { $ref: 'ObjectId' }
+          ]
+        }
+      }
+    }
+
+    const stringify = build(schema, { schema: externalSchema })
+    {
+      const output = stringify({ _id: 'foo', image: 'hello', owner: 'world' })
+      t.equal(output, '{"_id":"foo","image":"hello","owner":"world"}')
     }
   })
 })

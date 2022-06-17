@@ -53,6 +53,7 @@ const arrayItemsReferenceSerializersMap = new Map()
 const objectReferenceSerializersMap = new Map()
 const schemaReferenceMap = new Map()
 const dedupRefsSet = new Set()
+let dedupTrack = []
 
 let ajvInstance = null
 let contextFunctions = null
@@ -62,6 +63,7 @@ function build (schema, options) {
   objectReferenceSerializersMap.clear()
   schemaReferenceMap.clear()
   dedupRefsSet.clear()
+  dedupTrack = []
 
   contextFunctions = []
   options = options || {}
@@ -153,6 +155,7 @@ function build (schema, options) {
   objectReferenceSerializersMap.clear()
   schemaReferenceMap.clear()
   dedupRefsSet.clear()
+  dedupTrack = []
 
   return stringifyFunc
 }
@@ -600,6 +603,8 @@ function buildInnerObject (location, locationPath) {
 }
 
 function addIfThenElse (location, locationPath) {
+  dedupTrack.push('ifThenElse')
+
   let code = ''
 
   const schema = location.schema
@@ -645,6 +650,9 @@ function addIfThenElse (location, locationPath) {
   code += `
       }
     `
+
+  dedupTrack.pop()
+
   return code
 }
 
@@ -889,7 +897,7 @@ function dereferenceOfRefs (location, type) {
   return locations
 }
 
-function dedupIdsRefs (refs, schema) {
+function _dedupIdsRefs (refs, schema) {
   // we dedup the same $ref only and clear the $id after the first one.
   // so, it can keep track the duplicate $id when it trying to resolve
   // difference schema.
@@ -905,6 +913,15 @@ function dedupIdsRefs (refs, schema) {
   dedupRefsSet.add(refs)
 
   return schema
+}
+
+function _dummyDedupIdsRefs (_, schema) {
+  return schema
+}
+
+function dedupIdsRefs (refs, schema) {
+  // we should ignore the $refs in root schema
+  return dedupTrack.join(',') === '' ? _dummyDedupIdsRefs(refs, schema) : _dedupIdsRefs(refs, schema)
 }
 
 let genFuncNameCounter = 0
@@ -972,6 +989,7 @@ function buildValue (locationPath, input, location) {
       break
     case undefined:
       if (schema.anyOf || schema.oneOf) {
+        dedupTrack.push(schema.anyOf ? 'anyOf' : 'oneOf')
         // beware: dereferenceOfRefs has side effects and changes schema.anyOf
         const locations = dereferenceOfRefs(location, schema.anyOf ? 'anyOf' : 'oneOf')
         locations.forEach((location, index) => {
@@ -998,6 +1016,8 @@ function buildValue (locationPath, input, location) {
               ${nestedResult}
           `
         })
+
+        dedupTrack.pop()
 
         code += `
           else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
