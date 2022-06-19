@@ -109,14 +109,13 @@ function build (schema, options) {
       isValidSchema(externalSchema, key)
       extendDateTimeType(externalSchema)
 
-      if (externalSchema.$id !== undefined) {
-        if (externalSchema.$id[0] === '#') { // relative URI
-          ajvInstance.addSchema(externalSchema, key + externalSchema.$id)
-        } else {
-          ajvInstance.addSchema(externalSchema)
-        }
-      } else {
-        ajvInstance.addSchema(externalSchema, key)
+      let schemaKey = externalSchema.$id || key
+      if (externalSchema.$id !== undefined && externalSchema.$id[0] === '#') {
+        schemaKey = key + externalSchema.$id // relative URI
+      }
+
+      if (ajvInstance.getSchema(schemaKey) === undefined) {
+        ajvInstance.addSchema(externalSchema, schemaKey)
       }
     }
   }
