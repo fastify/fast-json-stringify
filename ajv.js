@@ -7,7 +7,7 @@ const ajvFormats = require('ajv-formats')
 module.exports = buildAjv
 
 function buildAjv (options) {
-  const ajvInstance = new Ajv({ ...options, strictSchema: false, uriResolver: fastUri })
+  const ajvInstance = new Ajv({ ...options, strictSchema: false, validateSchema: false, uriResolver: fastUri })
   ajvFormats(ajvInstance)
 
   const validateDateTimeFormat = ajvFormats.get('date-time').validate

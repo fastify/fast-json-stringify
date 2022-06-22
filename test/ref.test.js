@@ -431,10 +431,215 @@ test('ref external - plain name fragment', (t) => {
     type: 'object',
     properties: {
       first: {
-        $ref: '#first-schema'
+        $ref: 'first#first-schema'
       },
       second: {
-        $ref: '#second-schema'
+        $ref: 'second#second-schema'
+      }
+    }
+  }
+
+  const object = {
+    first: {
+      str: 'test'
+    },
+    second: {
+      int: 42
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  JSON.parse(output)
+  t.pass()
+
+  t.equal(output, '{"first":{"str":"test"},"second":{"int":42}}')
+})
+
+test('external reference to $id', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    first: {
+      $id: 'external-reference',
+      type: 'object',
+      properties: {
+        str: {
+          type: 'string'
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      first: {
+        $ref: 'external-reference'
+      }
+    }
+  }
+
+  const object = { first: { str: 'test' } }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  JSON.parse(output)
+  t.pass()
+
+  t.equal(output, '{"first":{"str":"test"}}')
+})
+
+test('external reference to key#id', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    first: {
+      $id: '#external-reference',
+      type: 'object',
+      properties: {
+        str: {
+          type: 'string'
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      first: {
+        $ref: 'first#external-reference'
+      }
+    }
+  }
+
+  const object = { first: { str: 'test' } }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  JSON.parse(output)
+  t.pass()
+
+  t.equal(output, '{"first":{"str":"test"}}')
+})
+
+test('external and inner reference', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    first: {
+      $id: 'reference',
+      $ref: '#reference',
+      definitions: {
+        inner: {
+          $id: '#reference',
+          type: 'object',
+          properties: {
+            str: {
+              type: 'string'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      first: {
+        $ref: 'reference'
+      }
+    }
+  }
+
+  const object = { first: { str: 'test' } }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  JSON.parse(output)
+  t.pass()
+
+  t.equal(output, '{"first":{"str":"test"}}')
+})
+
+test('external reference to key', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    first: {
+      $id: 'external-reference',
+      type: 'object',
+      properties: {
+        str: {
+          type: 'string'
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      first: {
+        $ref: 'external-reference'
+      }
+    }
+  }
+
+  const object = { first: { str: 'test' } }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  JSON.parse(output)
+  t.pass()
+
+  t.equal(output, '{"first":{"str":"test"}}')
+})
+
+test('ref external - plain name fragment', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    first: {
+      $id: 'first-schema',
+      type: 'object',
+      properties: {
+        str: {
+          type: 'string'
+        }
+      }
+    },
+    second: {
+      definitions: {
+        second: {
+          $id: 'second-schema',
+          type: 'object',
+          properties: {
+            int: {
+              type: 'integer'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    title: 'object with $ref to external plain name fragment',
+    type: 'object',
+    properties: {
+      first: {
+        $ref: 'first-schema'
+      },
+      second: {
+        $ref: 'second-schema'
       }
     }
   }
@@ -503,7 +708,7 @@ test('ref external - duplicate plain name fragment', (t) => {
         $ref: 'external#duplicateSchema'
       },
       other: {
-        $ref: '#otherSchema'
+        $ref: 'other#otherSchema'
       }
     }
   }
@@ -893,7 +1098,7 @@ test('ref in root external multiple times', (t) => {
   const schema = {
     title: 'object with $ref in root schema',
     type: 'object',
-    $ref: 'numbers#/definitions/num'
+    $ref: 'numbers'
   }
 
   const object = { int: 42 }
@@ -978,32 +1183,6 @@ test('ref to nested ref definition', (t) => {
   t.equal(output, '{"foo":"foo"}')
 })
 
-test('ref in definition with exact match', (t) => {
-  t.plan(2)
-
-  const externalSchema = {
-    '#/definitions/foo': {
-      type: 'string'
-    }
-  }
-
-  const schema = {
-    type: 'object',
-    properties: {
-      foo: { $ref: '#/definitions/foo' }
-    }
-  }
-
-  const object = { foo: 'foo' }
-  const stringify = build(schema, { schema: externalSchema })
-  const output = stringify(object)
-
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"foo":"foo"}')
-})
-
 test('Bad key', t => {
   t.test('Find match', t => {
     t.plan(1)
@@ -1026,7 +1205,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "porjectId", did you mean "projectId"?')
+      t.equal(err.message, 'Cannot find reference "#/definitions/porjectId"')
     }
   })
 
@@ -1051,7 +1230,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "foobar"')
+      t.equal(err.message, 'Cannot find reference "#/definitions/foobar"')
     }
   })
 
@@ -1081,7 +1260,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "porjectId", did you mean "projectId"?')
+      t.equal(err.message, 'Cannot find reference "external#/definitions/porjectId"')
     }
   })
 
@@ -1111,7 +1290,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "foobar"')
+      t.equal(err.message, 'Cannot find reference "external#/definitions/foobar"')
     }
   })
 
@@ -1141,7 +1320,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "deifnitions", did you mean "definitions"?')
+      t.equal(err.message, 'Cannot find reference "external#/deifnitions/projectId"')
     }
   })
 
@@ -1166,7 +1345,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "deifnitions", did you mean "definitions"?')
+      t.equal(err.message, 'Cannot find reference "#/deifnitions/projectId"')
     }
   })
 
@@ -1196,7 +1375,7 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "extrenal", did you mean "external"?')
+      t.equal(err.message, 'Cannot find reference "extrenal#/definitions/projectId"')
     }
   })
 
@@ -1248,4 +1427,398 @@ test('Regression 2.5.2', t => {
   const output = stringify([{ field: 'parent', sub: { field: 'joined' } }])
 
   t.equal(output, '[{"field":"parent","sub":{"field":"joined"}}]')
+})
+
+test('Reference through multiple definitions', (t) => {
+  t.plan(2)
+
+  const schema = {
+    $ref: '#/definitions/A',
+    definitions: {
+      A: {
+        type: 'object',
+        additionalProperties: false,
+        properties: { a: { anyOf: [{ $ref: '#/definitions/B' }] } },
+        required: ['a']
+      },
+      B: {
+        type: 'object',
+        properties: { b: { anyOf: [{ $ref: '#/definitions/C' }] } },
+        required: ['b'],
+        additionalProperties: false
+      },
+      C: {
+        type: 'object',
+        properties: { c: { type: 'string', const: 'd' } },
+        required: ['c'],
+        additionalProperties: false
+      }
+    }
+  }
+
+  const object = { a: { b: { c: 'd' } } }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  JSON.parse(output)
+  t.pass()
+
+  t.equal(output, JSON.stringify(object))
+})
+
+test('issue #350', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'Example Schema',
+    type: 'object',
+    properties: {
+      firstName: { $ref: '#foo' },
+      lastName: { $ref: '#foo' },
+      nested: {
+        type: 'object',
+        properties: {
+          firstName: { $ref: '#foo' },
+          lastName: { $ref: '#foo' }
+        }
+      }
+    },
+    definitions: {
+      foo: {
+        $id: '#foo',
+        type: 'string'
+      }
+    }
+  }
+
+  const object = {
+    firstName: 'Matteo',
+    lastName: 'Collina',
+    nested: {
+      firstName: 'Matteo',
+      lastName: 'Collina'
+    }
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  JSON.parse(output)
+  t.pass()
+
+  t.equal(output, JSON.stringify(object))
+})
+
+test('deep union type', (t) => {
+  t.plan(1)
+
+  const stringify = build({
+    schema: {
+      type: 'array',
+      items: {
+        oneOf: [
+          {
+            $ref: 'components#/schemas/IDirectory'
+          },
+          {
+            $ref: 'components#/schemas/IImageFile'
+          },
+          {
+            $ref: 'components#/schemas/ITextFile'
+          },
+          {
+            $ref: 'components#/schemas/IZipFile'
+          }
+        ]
+      },
+      nullable: false
+    },
+    components: {
+      schemas: {
+        IDirectory: {
+          $id: 'IDirectory',
+          $recursiveAnchor: true,
+          type: 'object',
+          properties: {
+            children: {
+              type: 'array',
+              items: {
+                oneOf: [
+                  {
+                    $recursiveRef: '#'
+                  },
+                  {
+                    $ref: 'components#/schemas/IImageFile'
+                  },
+                  {
+                    $ref: 'components#/schemas/ITextFile'
+                  },
+                  {
+                    $ref: 'components#/schemas/IZipFile'
+                  }
+                ]
+              },
+              nullable: false
+            },
+            type: {
+              type: 'string',
+              nullable: false
+            },
+            id: {
+              type: 'string',
+              nullable: false
+            },
+            name: {
+              type: 'string',
+              nullable: false
+            }
+          },
+          nullable: false,
+          required: [
+            'children',
+            'type',
+            'id',
+            'name'
+          ]
+        },
+        IImageFile: {
+          $id: 'IImageFile',
+          type: 'object',
+          properties: {
+            width: {
+              type: 'number',
+              nullable: false
+            },
+            height: {
+              type: 'number',
+              nullable: false
+            },
+            url: {
+              type: 'string',
+              nullable: false
+            },
+            extension: {
+              type: 'string',
+              nullable: false
+            },
+            size: {
+              type: 'number',
+              nullable: false
+            },
+            type: {
+              type: 'string',
+              nullable: false
+            },
+            id: {
+              type: 'string',
+              nullable: false
+            },
+            name: {
+              type: 'string',
+              nullable: false
+            }
+          },
+          nullable: false,
+          required: [
+            'width',
+            'height',
+            'url',
+            'extension',
+            'size',
+            'type',
+            'id',
+            'name'
+          ]
+        },
+        ITextFile: {
+          $id: 'ITextFile',
+          type: 'object',
+          properties: {
+            content: {
+              type: 'string',
+              nullable: false
+            },
+            extension: {
+              type: 'string',
+              nullable: false
+            },
+            size: {
+              type: 'number',
+              nullable: false
+            },
+            type: {
+              type: 'string',
+              nullable: false
+            },
+            id: {
+              type: 'string',
+              nullable: false
+            },
+            name: {
+              type: 'string',
+              nullable: false
+            }
+          },
+          nullable: false,
+          required: [
+            'content',
+            'extension',
+            'size',
+            'type',
+            'id',
+            'name'
+          ]
+        },
+        IZipFile: {
+          $id: 'IZipFile',
+          type: 'object',
+          properties: {
+            files: {
+              type: 'number',
+              nullable: false
+            },
+            extension: {
+              type: 'string',
+              nullable: false
+            },
+            size: {
+              type: 'number',
+              nullable: false
+            },
+            type: {
+              type: 'string',
+              nullable: false
+            },
+            id: {
+              type: 'string',
+              nullable: false
+            },
+            name: {
+              type: 'string',
+              nullable: false
+            }
+          },
+          nullable: false,
+          required: [
+            'files',
+            'extension',
+            'size',
+            'type',
+            'id',
+            'name'
+          ]
+        }
+      }
+    }
+  })
+
+  const obj = [
+    {
+      type: 'directory',
+      id: '7b1068a4-dd6e-474a-8d85-09a2d77639cb',
+      name: 'ixcWGOKI',
+      children: [
+        {
+          type: 'directory',
+          id: '5883e17c-b207-46d4-ad2d-be72249711ce',
+          name: 'vecQwFGS',
+          children: []
+        },
+        {
+          type: 'file',
+          id: '670b6556-a610-4a48-8a16-9c2da97a0d18',
+          name: 'eStFddzX',
+          extension: 'jpg',
+          size: 7,
+          width: 300,
+          height: 1200,
+          url: 'https://github.com/samchon/typescript-json'
+        },
+        {
+          type: 'file',
+          id: '85dc796d-9593-4833-b1a1-addc8ebf74ea',
+          name: 'kTdUfwRJ',
+          extension: 'ts',
+          size: 86,
+          content: 'console.log("Hello world");'
+        },
+        {
+          type: 'file',
+          id: '8933c86a-7a1e-4d4a-b0a6-17d6896fdf89',
+          name: 'NBPkefUG',
+          extension: 'zip',
+          size: 22,
+          files: 20
+        }
+      ]
+    }
+  ]
+  t.equal(JSON.stringify(obj), stringify(obj))
+})
+
+test('ref with same id in properties', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    ObjectId: {
+      $id: 'ObjectId',
+      type: 'string'
+    },
+    File: {
+      $id: 'File',
+      type: 'object',
+      properties: {
+        _id: { $ref: 'ObjectId' },
+        name: { type: 'string' },
+        owner: { $ref: 'ObjectId' }
+      }
+    }
+  }
+
+  t.test('anyOf', (t) => {
+    t.plan(1)
+
+    const schema = {
+      $id: 'Article',
+      type: 'object',
+      properties: {
+        _id: { $ref: 'ObjectId' },
+        image: {
+          anyOf: [
+            { $ref: 'File' },
+            { type: 'null' }
+          ]
+        }
+      }
+    }
+
+    const stringify = build(schema, { schema: externalSchema })
+    const output = stringify({ _id: 'foo', image: { _id: 'bar', name: 'hello', owner: 'baz' } })
+
+    t.equal(output, '{"_id":"foo","image":{"_id":"bar","name":"hello","owner":"baz"}}')
+  })
+
+  t.test('oneOf', (t) => {
+    t.plan(1)
+
+    const schema = {
+      $id: 'Article',
+      type: 'object',
+      properties: {
+        _id: { $ref: 'ObjectId' },
+        image: {
+          oneOf: [
+            { $ref: 'File' },
+            { type: 'null' }
+          ]
+        }
+      }
+    }
+
+    const stringify = build(schema, { schema: externalSchema })
+    const output = stringify({ _id: 'foo', image: { _id: 'bar', name: 'hello', owner: 'baz' } })
+
+    t.equal(output, '{"_id":"foo","image":{"_id":"bar","name":"hello","owner":"baz"}}')
+  })
 })
