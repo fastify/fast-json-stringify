@@ -523,8 +523,9 @@ function addIfThenElse (location) {
 
   if (thenSchema.if && thenSchema.then) {
     code += addIfThenElse(thenLocation)
+  } else {
+    code += buildInnerObject(thenLocation)
   }
-  code += buildInnerObject(thenLocation)
   code += `
     }
   `
@@ -538,8 +539,9 @@ function addIfThenElse (location) {
 
   if (elseSchema.if && elseSchema.then) {
     code += addIfThenElse(elseLocation)
+  } else {
+    code += buildInnerObject(elseLocation)
   }
-  code += buildInnerObject(elseLocation)
   code += `
       }
     `
@@ -582,15 +584,13 @@ function buildObject (location) {
       var addComma = false
   `
 
-  let rCode
   if (schema.if && schema.then) {
-    rCode = addIfThenElse(location)
+    functionCode += addIfThenElse(location)
   } else {
-    rCode = buildInnerObject(location)
+    functionCode += buildInnerObject(location)
   }
 
-  // Removes the comma if is the last element of the string (in case there are not properties)
-  functionCode += `${rCode}
+  functionCode += `
       json += '}'
       return json
     }
