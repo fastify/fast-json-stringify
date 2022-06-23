@@ -102,10 +102,10 @@ function build (schema, options) {
   ajvInstance.addSchema(schema, rootSchemaId)
 
   if (options.schema) {
-    options.schema = clone(options.schema)
+    const externalSchemas = clone(options.schema)
 
-    for (const key of Object.keys(options.schema)) {
-      const externalSchema = options.schema[key]
+    for (const key of Object.keys(externalSchemas)) {
+      const externalSchema = externalSchemas[key]
       isValidSchema(externalSchema, key)
       extendDateTimeType(externalSchema)
 

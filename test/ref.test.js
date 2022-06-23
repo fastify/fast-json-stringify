@@ -1,5 +1,7 @@
 'use strict'
 
+const clone = require('rfdc')({ proto: true })
+
 const test = require('tap').test
 const build = require('..')
 
@@ -1821,4 +1823,71 @@ test('ref with same id in properties', (t) => {
 
     t.equal(output, '{"_id":"foo","image":{"_id":"bar","name":"hello","owner":"baz"}}')
   })
+})
+
+test('Should not modify external schemas', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    uuid: {
+      format: 'uuid',
+      $id: 'UUID',
+      type: 'string'
+    },
+    Entity: {
+      $id: 'Entity',
+      type: 'object',
+      properties: {
+        id: { $ref: 'UUID' },
+        id2: { $ref: 'UUID' }
+      }
+    }
+  }
+
+  const options = { schema: externalSchema }
+  const optionsClone = clone(options)
+
+  const stringify = build({ $ref: 'Entity' }, options)
+
+  const data = { id: 'a4e4c954-9f5f-443a-aa65-74d95732249a' }
+  const output = stringify(data)
+
+  t.equal(output, JSON.stringify(data))
+  t.same(options, optionsClone)
+})
+
+test('input schema is not mutated', (t) => {
+  t.plan(3)
+
+  const schema = {
+    title: 'object with $ref',
+    type: 'object',
+    definitions: {
+      def: { type: 'string' }
+    },
+    properties: {
+      obj: {
+        $ref: '#/definitions/def'
+      }
+    }
+  }
+
+  const clonedSchema = JSON.parse(JSON.stringify(schema))
+
+  const object = {
+    obj: 'test'
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  try {
+    JSON.parse(output)
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  t.equal(output, '{"obj":"test"}')
+  t.same(schema, clonedSchema)
 })
