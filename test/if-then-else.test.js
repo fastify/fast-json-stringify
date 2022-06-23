@@ -333,3 +333,38 @@ t.test('if-then-else', t => {
 
   t.end()
 })
+
+t.test('nested if/then', t => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: { a: { type: 'string' } },
+    if: {
+      type: 'object',
+      properties: { foo: { type: 'string' } }
+    },
+    then: {
+      properties: { bar: { type: 'string' } },
+      if: {
+        type: 'object',
+        properties: { foo1: { type: 'string' } }
+      },
+      then: {
+        properties: { bar1: { type: 'string' } }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  t.equal(
+    stringify({ a: 'A', foo: 'foo', bar: 'bar' }),
+    JSON.stringify({ a: 'A', bar: 'bar' })
+  )
+
+  t.equal(
+    stringify({ a: 'A', foo: 'foo', bar: 'bar', foo1: 'foo1', bar1: 'bar1' }),
+    JSON.stringify({ a: 'A', bar: 'bar', bar1: 'bar1' })
+  )
+})
