@@ -2,8 +2,7 @@
 
 const { spawn } = require('child_process')
 
-const chalk = require('chalk')
-const inquirer = require('inquirer')
+const cliSelect = require('cli-select')
 const simpleGit = require('simple-git')
 
 const git = simpleGit(process.cwd())
@@ -11,24 +10,27 @@ const git = simpleGit(process.cwd())
 const COMMAND = 'npm run bench'
 const DEFAULT_BRANCH = 'master'
 const PERCENT_THRESHOLD = 5
+const greyColor = '\x1b[30m'
+const redColor = '\x1b[31m'
+const greenColor = '\x1b[32m'
+const resetColor = '\x1b[0m'
 
 async function selectBranchName (message, branches) {
-  const result = await inquirer.prompt([{
+  console.log(message)
+  const result = await cliSelect({
     type: 'list',
     name: 'branch',
-    choices: branches,
-    loop: false,
-    pageSize: 20,
-    message
-  }])
-  return result.branch
+    values: branches
+  })
+  console.log(result.value)
+  return result.value
 }
 
 async function executeCommandOnBranch (command, branch) {
-  console.log(chalk.grey(`Checking out "${branch}"`))
+  console.log(`${greyColor}Checking out "${branch}"${resetColor}`)
   await git.checkout(branch)
 
-  console.log(chalk.grey(`Execute "${command}"`))
+  console.log(`${greyColor}Execute "${command}"${resetColor}`)
   const childProcess = spawn(command, { stdio: 'pipe', shell: true })
 
   let result = ''
@@ -74,9 +76,9 @@ function compareResults (featureBranch, mainBranch) {
       const message = alignedName + percentString.padStart(7, '.')
 
       if (roundedPercent > PERCENT_THRESHOLD) {
-        console.log(chalk.green(message))
+        console.log(`${greenColor}${message}${resetColor}`)
       } else if (roundedPercent < -PERCENT_THRESHOLD) {
-        console.log(chalk.red(message))
+        console.log(`${redColor}${message}${resetColor}`)
       } else {
         console.log(message)
       }
@@ -110,5 +112,5 @@ function compareResults (featureBranch, mainBranch) {
   await git.checkout(currentBranch.commit)
   await git.checkout(currentBranch.name)
 
-  console.log(chalk.gray(`Back to ${currentBranch.name} ${currentBranch.commit}`))
+  console.log(`${greyColor}Back to ${currentBranch.name} ${currentBranch.commit}${resetColor}`)
 })()
