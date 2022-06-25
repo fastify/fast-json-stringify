@@ -309,9 +309,11 @@ function additionalProperty (location) {
 
     return code
   }
-  const apLocation = ap.$ref
-    ? resolveRef(location, ap.$ref)
-    : mergeLocation(location, 'additionalProperties')
+
+  let apLocation = mergeLocation(location, 'additionalProperties')
+  if (apLocation.schema.$ref) {
+    apLocation = resolveRef(apLocation, apLocation.schema.$ref)
+  }
 
   const valueCode = buildValue(apLocation, 'obj[keys[i]]')
 
