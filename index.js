@@ -297,7 +297,7 @@ function addPatternProperties (location) {
 }
 
 function additionalProperty (location) {
-  let ap = location.schema.additionalProperties
+  const ap = location.schema.additionalProperties
   let code = ''
   if (ap === true) {
     code += `
@@ -309,11 +309,9 @@ function additionalProperty (location) {
 
     return code
   }
-  let apLocation = mergeLocation(location, 'additionalProperties')
-  if (ap.$ref) {
-    apLocation = resolveRef(location, ap.$ref)
-    ap = apLocation.schema
-  }
+  const apLocation = ap.$ref
+    ? resolveRef(location, ap.$ref)
+    : mergeLocation(location, 'additionalProperties')
 
   const valueCode = buildValue(apLocation, 'obj[keys[i]]')
 
