@@ -484,6 +484,14 @@ test('merging objects with own __proto__', function (t) {
   t.end()
 })
 
+test('merging objects with own prototype', function (t) {
+  const user = {}
+  const malicious = JSON.parse('{ "prototype": { "admin": true } }')
+  const mergedObject = merge(user, malicious)
+  t.notOk(mergedObject.admin, 'the destination should have an unmodified prototype')
+  t.end()
+})
+
 test('merging objects with plain and non-plain properties', function (t) {
   const parent = {
     parentKey: 'should be undefined'
