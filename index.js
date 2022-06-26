@@ -2,7 +2,7 @@
 
 /* eslint no-prototype-builtins: 0 */
 
-const merge = require('deepmerge')
+const merge = require('./merge')
 const clone = require('rfdc')({ proto: true })
 const fjsCloned = Symbol('fast-json-stringify.cloned')
 const { randomUUID } = require('crypto')
@@ -503,7 +503,7 @@ function buildInnerObject (location) {
 }
 
 function addIfThenElse (location) {
-  const schema = merge({}, location.schema)
+  const schema = clone(location.schema)
   const thenSchema = schema.then
   const elseSchema = schema.else || { additionalProperties: true }
 
