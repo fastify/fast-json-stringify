@@ -6,6 +6,10 @@ function isMergeableObject (value) {
   return typeof value === 'object' && value !== null && !(value instanceof RegExp) && !(value instanceof Date)
 }
 
+function map (entry) {
+  return isMergeableObject(entry) ? merge(Array.isArray(entry) ? [] : {}, entry) : entry
+}
+
 function mergeObject (target, source) {
   const result = {}
   if (isMergeableObject(target)) {
@@ -13,10 +17,10 @@ function mergeObject (target, source) {
     let i, il
     for (i = 0, il = keys.length; i < il; ++i) {
       const key = keys[i]
-      result[key] = isMergeableObject(target[key]) ? merge(Array.isArray(target[key]) ? [] : {}, target[key]) : target[key]
+      result[key] = map(target[key])
     }
   } else if (typeof target !== 'object' || target === null) {
-    return isMergeableObject(source) ? merge(Array.isArray(source) ? [] : {}, source) : source
+    return map(source)
   }
 
   const keys = Object.keys(source)
@@ -32,13 +36,9 @@ function mergeObject (target, source) {
         continue
       }
     }
-    result[key] = isMergeableObject(source[key]) ? merge(Array.isArray(source[key]) ? [] : {}, source[key]) : source[key]
+    result[key] = map(source[key])
   }
   return result
-}
-
-function map (entry) {
-  return isMergeableObject(entry) ? merge(Array.isArray(entry) ? [] : {}, entry) : entry
 }
 
 function merge (target, source) {
@@ -46,7 +46,7 @@ function merge (target, source) {
   const targetIsArray = Array.isArray(target)
 
   if (sourceIsArray !== targetIsArray) {
-    return isMergeableObject(source) ? merge(Array.isArray(source) ? [] : {}, source) : source
+    return map(source)
   } else if (sourceIsArray) {
     const tl = target.length
     const sl = source.length
