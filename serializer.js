@@ -34,7 +34,7 @@ module.exports = class Serializer {
     } else {
       /* eslint no-undef: "off" */
       const integer = this.parseInteger(i)
-      if (Number.isNaN(integer)) {
+      if (Number.isNaN(integer) || !Number.isFinite(integer)) {
         throw new Error(`The value "${i}" cannot be converted to an integer.`)
       } else {
         return '' + integer
@@ -48,8 +48,10 @@ module.exports = class Serializer {
 
   asNumber (i) {
     const num = Number(i)
-    if (Number.isNaN(num) || !Number.isFinite(num)) {
+    if (Number.isNaN(num)) {
       throw new Error(`The value "${i}" cannot be converted to a number.`)
+    } else if (!Number.isFinite(num)) {
+      return null
     } else {
       return '' + num
     }
