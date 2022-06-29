@@ -1891,3 +1891,38 @@ test('input schema is not mutated', (t) => {
   t.equal(output, '{"obj":"test"}')
   t.same(schema, clonedSchema)
 })
+
+test('anyOf inside allOf', (t) => {
+  t.plan(1)
+
+  const schema = {
+    anyOf: [
+      {
+        type: 'object',
+        allOf: [
+          {
+            properties: {
+              a: {
+                anyOf: [
+                  { const: 'A1' },
+                  { const: 'A2' }
+                ]
+              }
+            }
+          },
+          {
+            properties: {
+              b: { const: 'B' }
+            }
+          }
+        ]
+      }
+    ]
+  }
+
+  const object = { a: 'A1', b: 'B' }
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  t.equal(output, JSON.stringify(object))
+})
