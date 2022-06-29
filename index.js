@@ -493,6 +493,7 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
   mergedSchema.$id = `merged_${randomUUID()}`
   ajvInstance.addSchema(mergedSchema)
   location.schemaId = mergedSchema.$id
+  location.jsonPointer = '#'
 }
 
 function buildInnerObject (location) {
