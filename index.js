@@ -489,6 +489,10 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
     }
   }
   delete mergedSchema.allOf
+
+  mergedSchema.$id = `merged_${randomUUID()}`
+  ajvInstance.addSchema(mergedSchema)
+  location.schemaId = mergedSchema.$id
 }
 
 function buildInnerObject (location) {
