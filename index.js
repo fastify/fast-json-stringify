@@ -2,7 +2,7 @@
 
 /* eslint no-prototype-builtins: 0 */
 
-const merge = require('deepmerge')
+const merge = require('@fastify/deepmerge')()
 const clone = require('rfdc')({ proto: true })
 const fjsCloned = Symbol('fast-json-stringify.cloned')
 const { randomUUID } = require('crypto')
