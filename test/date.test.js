@@ -308,7 +308,7 @@ test('serializing null value', t => {
   })
 
   t.test('type::array', t => {
-    t.plan(3)
+    t.plan(6)
 
     t.test('format::date-time', t => {
       t.plan(2)
@@ -348,13 +348,13 @@ test('serializing null value', t => {
       t.notOk(validate(JSON.parse(output)), 'an empty string is not a date format')
     })
 
-    t.test('format::time', t => {
+    t.test('format::date', t => {
       t.plan(2)
 
       const prop = {
         updatedAt: {
           type: ['string'],
-          format: 'time'
+          format: 'date'
         }
       }
 
@@ -364,7 +364,66 @@ test('serializing null value', t => {
       } = serialize(createSchema(prop), input)
 
       t.equal(output, '{"updatedAt":""}')
-      t.notOk(validate(JSON.parse(output)), 'an empty string is not a time format')
+      t.notOk(validate(JSON.parse(output)), 'an empty string is not a date format')
+    })
+
+    t.test('format::time, Date object', t => {
+      t.plan(1)
+
+      const schema = {
+        oneOf: [
+          {
+            type: 'object',
+            properties: {
+              updatedAt: {
+                type: ['string', 'number'],
+                format: 'time'
+              }
+            }
+          }
+        ]
+      }
+
+      const date = new Date()
+      const input = { updatedAt: date }
+      const { output } = serialize(schema, input)
+
+      t.equal(output, JSON.stringify({ updatedAt: DateTime.fromJSDate(date).toFormat('HH:mm:ss') }))
+    })
+
+    t.test('format::time, Date object', t => {
+      t.plan(1)
+
+      const schema = {
+        oneOf: [
+          {
+            type: ['string', 'number'],
+            format: 'time'
+          }
+        ]
+      }
+
+      const date = new Date()
+      const { output } = serialize(schema, date)
+
+      t.equal(output, `"${DateTime.fromJSDate(date).toFormat('HH:mm:ss')}"`)
+    })
+
+    t.test('format::time, Date object', t => {
+      t.plan(1)
+
+      const schema = {
+        oneOf: [
+          {
+            type: ['string', 'number'],
+            format: 'time'
+          }
+        ]
+      }
+
+      const { output } = serialize(schema, 42)
+
+      t.equal(output, JSON.stringify(42))
     })
   })
 
@@ -428,4 +487,20 @@ test('serializing null value', t => {
       t.ok(validate(JSON.parse(output)), 'valid schema')
     })
   })
+})
+
+test('Validate Date object as string type', (t) => {
+  t.plan(1)
+
+  const schema = {
+    oneOf: [
+      { type: 'string' }
+    ]
+  }
+  const toStringify = new Date()
+
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, JSON.stringify(toStringify))
 })

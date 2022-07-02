@@ -243,15 +243,6 @@ function inferTypeByKeyword (schema) {
   return schema.type
 }
 
-function getStringSerializer (format, nullable) {
-  switch (format) {
-    case 'date-time': return nullable ? 'serializer.asDatetimeNullable.bind(serializer)' : 'serializer.asDatetime.bind(serializer)'
-    case 'date': return nullable ? 'serializer.asDateNullable.bind(serializer)' : 'serializer.asDate.bind(serializer)'
-    case 'time': return nullable ? 'serializer.asTimeNullable.bind(serializer)' : 'serializer.asTime.bind(serializer)'
-    default: return nullable ? 'serializer.asStringNullable.bind(serializer)' : 'serializer.asString.bind(serializer)'
-  }
-}
-
 function addPatternProperties (location) {
   const schema = location.schema
   const pp = schema.patternProperties
@@ -482,6 +473,16 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
         mergedSchema.anyOf = []
       }
       mergedSchema.anyOf.push(...allOfSchema.anyOf)
+    }
+
+    if (allOfSchema.fjs_type !== undefined) {
+      if (
+        mergedSchema.fjs_type !== undefined &&
+        mergedSchema.fjs_type !== allOfSchema.fjs_type
+      ) {
+        throw new Error('allOf schemas have different fjs_type values')
+      }
+      mergedSchema.fjs_type = allOfSchema.fjs_type
     }
 
     if (allOfSchema.allOf !== undefined) {
@@ -790,20 +791,22 @@ function buildValue (location, input) {
     location.schema = mergedSchema
   }
 
-  const type = schema.type
+  let type = schema.type
   const nullable = schema.nullable === true
 
   let code = ''
   let funcName
 
+  if (schema.fjs_type === 'string' && schema.format === undefined && Array.isArray(schema.type) && schema.type.length === 2) {
+    type = 'string'
+  }
+
   switch (type) {
     case 'null':
-      code += `
-        json += serializer.asNull()
-      `
+      code += 'json += serializer.asNull()'
       break
     case 'string': {
-      funcName = getStringSerializer(schema.format, nullable)
+      funcName = nullable ? 'serializer.asStringNullable.bind(serializer)' : 'serializer.asString.bind(serializer)'
       code += `json += ${funcName}(${input})`
       break
     }
@@ -820,7 +823,15 @@ function buildValue (location, input) {
       code += `json += ${funcName}(${input})`
       break
     case 'object':
-      funcName = buildObject(location)
+      if (schema.format === 'date-time') {
+        funcName = nullable ? 'serializer.asDateTimeNullable.bind(serializer)' : 'serializer.asDateTime.bind(serializer)'
+      } else if (schema.format === 'date') {
+        funcName = nullable ? 'serializer.asDateNullable.bind(serializer)' : 'serializer.asDate.bind(serializer)'
+      } else if (schema.format === 'time') {
+        funcName = nullable ? 'serializer.asTimeNullable.bind(serializer)' : 'serializer.asTime.bind(serializer)'
+      } else {
+        funcName = buildObject(location)
+      }
       code += `json += ${funcName}(${input})`
       break
     case 'array':
@@ -828,11 +839,7 @@ function buildValue (location, input) {
       code += `json += ${funcName}(${input})`
       break
     case undefined:
-      if (schema.fjs_date_type) {
-        funcName = getStringSerializer(schema.fjs_date_type, nullable)
-        code += `json += ${funcName}(${input})`
-        break
-      } else if (schema.anyOf || schema.oneOf) {
+      if (schema.anyOf || schema.oneOf) {
         // beware: dereferenceOfRefs has side effects and changes schema.anyOf
         const type = schema.anyOf ? 'anyOf' : 'oneOf'
         const anyOfLocation = mergeLocation(location, type)
@@ -890,7 +897,7 @@ function buildValue (location, input) {
           switch (type) {
             case 'string': {
               code += `
-                ${statement}(${input} === null || typeof ${input} === "${type}" || ${input} instanceof Date || ${input} instanceof RegExp || (typeof ${input} === "object" && Object.hasOwnProperty.call(${input}, "toString")))
+                ${statement}(${input} === null || typeof ${input} === "${type}" || ${input} instanceof RegExp || (typeof ${input} === "object" && Object.hasOwnProperty.call(${input}, "toString")))
                   ${nestedResult}
               `
               break
@@ -907,6 +914,20 @@ function buildValue (location, input) {
                 ${statement}(Number.isInteger(${input}) || ${input} === null)
                   ${nestedResult}
               `
+              break
+            }
+            case 'object': {
+              if (schema.fjs_type) {
+                code += `
+                  ${statement}(${input} instanceof Date || ${input} === null)
+                    ${nestedResult}
+                `
+              } else {
+                code += `
+                  ${statement}(typeof ${input} === "object" || ${input} === null)
+                    ${nestedResult}
+                `
+              }
               break
             }
             default: {
@@ -936,15 +957,21 @@ function buildValue (location, input) {
 }
 
 // Ajv does not support js date format. In order to properly validate objects containing a date,
-// it needs to replace all occurrences of the string date format with a custom keyword fjs_date_type.
+// it needs to replace all occurrences of the string date format with a custom keyword fjs_type.
 // (see https://github.com/fastify/fast-json-stringify/pull/441)
 function extendDateTimeType (schema) {
   if (schema === null) return
 
-  if (schema.type === 'string' && ['date-time', 'date', 'time'].includes(schema.format)) {
-    schema.fjs_date_type = schema.format
-    delete schema.type
-    delete schema.format
+  if (schema.type === 'string') {
+    schema.fjs_type = 'string'
+    schema.type = ['string', 'object']
+  } else if (
+    Array.isArray(schema.type) &&
+    schema.type.includes('string') &&
+    !schema.type.includes('object')
+  ) {
+    schema.fjs_type = 'string'
+    schema.type.push('object')
   }
   for (const property in schema) {
     if (typeof schema[property] === 'object') {
