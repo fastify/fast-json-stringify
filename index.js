@@ -55,7 +55,7 @@ function resolveRef (location, ref) {
   }
 
   const schemaId = ref.slice(0, hashIndex) || location.schemaId
-  const jsonPointer = ref.slice(hashIndex)
+  const jsonPointer = ref.slice(hashIndex) || '#'
 
   const schemaRef = schemaId + jsonPointer
 

@@ -1926,3 +1926,30 @@ test('anyOf inside allOf', (t) => {
 
   t.equal(output, JSON.stringify(object))
 })
+
+test('anyOf inside allOf', (t) => {
+  t.plan(1)
+
+  const externalSchema = {
+    FooSchema: {
+      $id: 'FooSchema',
+      type: 'object',
+      properties: {
+        type: {
+          anyOf: [
+            { type: 'string', const: 'bar' },
+            { type: 'string', const: 'baz' }
+          ]
+        }
+      }
+    }
+  }
+
+  const schema = { $ref: 'FooSchema' }
+
+  const object = { type: 'bar' }
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  t.equal(output, JSON.stringify(object))
+})
