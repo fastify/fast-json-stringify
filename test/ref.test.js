@@ -1927,7 +1927,7 @@ test('anyOf inside allOf', (t) => {
   t.equal(output, JSON.stringify(object))
 })
 
-test('anyOf inside allOf', (t) => {
+test('should resolve absolute $refs', (t) => {
   t.plan(1)
 
   const externalSchema = {
