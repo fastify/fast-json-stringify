@@ -504,3 +504,24 @@ test('Validate Date object as string type', (t) => {
 
   t.equal(output, JSON.stringify(toStringify))
 })
+
+test('nullable date', (t) => {
+  t.plan(1)
+
+  const schema = {
+    anyOf: [
+      {
+        format: 'date',
+        type: 'string',
+        nullable: true
+      }
+    ]
+  }
+
+  const stringify = build(schema)
+
+  const data = new Date()
+  const result = stringify(data)
+
+  t.same(result, `"${DateTime.fromJSDate(data).toISODate()}"`)
+})
