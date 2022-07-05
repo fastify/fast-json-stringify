@@ -49,9 +49,9 @@
     "webpack": "^5.40.0"
   },
   "dependencies": {
+    "@fastify/deepmerge": "^1.0.0",
     "ajv": "^8.10.0",
     "ajv-formats": "^2.1.1",
-    "deepmerge": "^4.2.2",
     "fast-uri": "^2.1.0",
     "rfdc": "^1.2.0"
   },
