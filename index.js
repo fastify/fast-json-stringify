@@ -772,6 +772,10 @@ function generateFuncName () {
 function buildValue (location, input) {
   let schema = location.schema
 
+  if (typeof schema === 'boolean') {
+    return `json += JSON.stringify(${input})`
+  }
+
   if (schema.$ref) {
     location = resolveRef(location, schema.$ref)
     schema = location.schema
