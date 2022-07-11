@@ -359,3 +359,16 @@ test('render a single quote as JSON', (t) => {
   t.equal(output, JSON.stringify(toStringify))
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
+
+test('returns JSON.stringify if schema type is boolean', t => {
+  t.plan(1)
+
+  const schema = {
+    type: 'array',
+    items: true
+  }
+
+  const array = [1, true, 'test']
+  const stringify = build(schema)
+  t.equal(stringify(array), JSON.stringify(array))
+})
