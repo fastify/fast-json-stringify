@@ -525,3 +525,18 @@ test('nullable date', (t) => {
 
   t.same(result, `"${DateTime.fromJSDate(data).toISODate()}"`)
 })
+
+test('Luxon Date stringify', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'string',
+    format: 'date-time'
+  }
+
+  const date = DateTime.now()
+  const stringify = build(schema)
+  const output = stringify(date)
+
+  t.equal(output, `"${date.toISO()}"`)
+})

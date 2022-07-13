@@ -901,7 +901,7 @@ function buildValue (location, input) {
           switch (type) {
             case 'string': {
               code += `
-                ${statement}(${input} === null || typeof ${input} === "${type}" || ${input} instanceof RegExp || (typeof ${input} === "object" && Object.hasOwnProperty.call(${input}, "toString")))
+                ${statement}(${input} === null || typeof ${input} === "${type}" || ${input} instanceof RegExp || (typeof ${input} === "object" && ((!(${input} instanceof Date) && typeof ${input}["toString"] === "function" && ${input}.__proto__.constructor.name !== "Object") || Object.hasOwnProperty.call(${input}, "toString"))))
                   ${nestedResult}
               `
               break
