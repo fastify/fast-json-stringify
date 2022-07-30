@@ -444,3 +444,23 @@ test('large array of nullable booleans with default mechanism', (t) => {
   t.same(result, JSON.stringify(data))
   t.same(JSON.parse(result), data)
 })
+
+test('nullable type in the schema', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: ['object', 'null'],
+    properties: {
+      foo: {
+        type: 'string'
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  const data = { foo: 'bar' }
+
+  t.same(stringify(data), JSON.stringify(data))
+  t.same(stringify(null), JSON.stringify(null))
+})
