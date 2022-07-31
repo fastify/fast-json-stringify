@@ -464,3 +464,37 @@ test('nullable type in the schema', (t) => {
   t.same(stringify(data), JSON.stringify(data))
   t.same(stringify(null), JSON.stringify(null))
 })
+
+test('throw an error if the value doesn\'t match the type', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['data'],
+    properties: {
+      data: {
+        type: 'array',
+        minItems: 1,
+        items: {
+          oneOf: [
+            {
+              type: 'string'
+            },
+            {
+              type: 'number'
+            }
+          ]
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  const validData = { data: [1, 'testing'] }
+  t.equal(stringify(validData), JSON.stringify(validData))
+
+  const invalidData = { data: [false, 'testing'] }
+  t.throws(() => stringify(invalidData))
+})
