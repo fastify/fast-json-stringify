@@ -498,3 +498,46 @@ test('throw an error if the value doesn\'t match the type', (t) => {
   const invalidData = { data: [false, 'testing'] }
   t.throws(() => stringify(invalidData))
 })
+
+test('nullable value in oneOf', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      data: {
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'integer', minimum: 1 }
+              },
+              additionalProperties: false,
+              required: ['id']
+            }
+          },
+          {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                job: { type: 'string', nullable: true }
+              },
+              additionalProperties: false,
+              required: ['job']
+            }
+          }
+        ]
+      }
+    },
+    required: ['data'],
+    additionalProperties: false
+  }
+
+  const stringify = build(schema)
+
+  const data = { data: [{ job: null }] }
+  t.equal(stringify(data), JSON.stringify(data))
+})
