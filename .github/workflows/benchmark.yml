@@ -11,15 +11,15 @@ jobs:
     permissions:
       contents: read
     outputs:
-      PR-BENCH-12: ${{ steps.benchmark-pr.outputs.BENCH_RESULT12 }}
       PR-BENCH-14: ${{ steps.benchmark-pr.outputs.BENCH_RESULT14 }}
       PR-BENCH-16: ${{ steps.benchmark-pr.outputs.BENCH_RESULT16 }}
-      MAIN-BENCH-12: ${{ steps.benchmark-main.outputs.BENCH_RESULT12 }}
+      PR-BENCH-18: ${{ steps.benchmark-pr.outputs.BENCH_RESULT18 }}
       MAIN-BENCH-14: ${{ steps.benchmark-main.outputs.BENCH_RESULT14 }}
       MAIN-BENCH-16: ${{ steps.benchmark-main.outputs.BENCH_RESULT16 }}
+      MAIN-BENCH-18: ${{ steps.benchmark-main.outputs.BENCH_RESULT18 }}
     strategy:
       matrix:
-        node-version: [12, 14, 16]
+        node-version: [14, 16, 18]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -75,18 +75,6 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           message: |
-            **Node**: 12
-            **PR**:
-            ```
-            ${{ needs.benchmark.outputs.PR-BENCH-12 }}
-            ```
-            **MAIN**:
-            ```
-            ${{ needs.benchmark.outputs.MAIN-BENCH-12 }}
-            ```
-            
-            ---
-            
             **Node**: 14
             **PR**:
             ```
@@ -107,6 +95,18 @@ jobs:
             **MAIN**:
             ```
             ${{ needs.benchmark.outputs.MAIN-BENCH-16 }}
+            ```
+            
+            ---
+            
+            **Node**: 18
+            **PR**:
+            ```
+            ${{ needs.benchmark.outputs.PR-BENCH-18 }}
+            ```
+            **MAIN**:
+            ```
+            ${{ needs.benchmark.outputs.MAIN-BENCH-18 }}
             ```
             
       - uses: actions-ecosystem/action-remove-labels@v1
