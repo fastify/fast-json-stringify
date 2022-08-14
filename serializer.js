@@ -74,6 +74,9 @@ module.exports = class Serializer {
     if (date instanceof Date) {
       return '"' + date.toISOString() + '"'
     }
+    if (typeof date === 'string') {
+      return '"' + date + '"'
+    }
     throw new Error(`The value "${date}" cannot be converted to a date-time.`)
   }
 
@@ -86,6 +89,9 @@ module.exports = class Serializer {
     if (date instanceof Date) {
       return '"' + new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(0, 10) + '"'
     }
+    if (typeof date === 'string') {
+      return '"' + date + '"'
+    }
     throw new Error(`The value "${date}" cannot be converted to a date.`)
   }
 
@@ -97,6 +103,9 @@ module.exports = class Serializer {
     if (date === null) return '""'
     if (date instanceof Date) {
       return '"' + new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(11, 19) + '"'
+    }
+    if (typeof date === 'string') {
+      return '"' + date + '"'
     }
     throw new Error(`The value "${date}" cannot be converted to a time.`)
   }

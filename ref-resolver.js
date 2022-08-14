@@ -11,8 +11,10 @@ class RefResolver {
     if (schema.$id !== undefined && schema.$id.charAt(0) !== '#') {
       schemaId = schema.$id
     }
-    this.insertSchemaBySchemaId(schema, schemaId)
-    this.insertSchemaSubschemas(schema, schemaId)
+    if (this.getSchema(schemaId) === undefined) {
+      this.insertSchemaBySchemaId(schema, schemaId)
+      this.insertSchemaSubschemas(schema, schemaId)
+    }
   }
 
   getSchema (schemaId, jsonPointer = '#') {

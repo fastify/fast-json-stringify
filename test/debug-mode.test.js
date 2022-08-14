@@ -2,7 +2,8 @@
 
 const test = require('tap').test
 const fjs = require('..')
-const Ajv = require('ajv').default
+
+const Validator = require('../validator')
 
 function build (opts) {
   return fjs({
@@ -22,7 +23,7 @@ test('activate debug mode', t => {
   const debugMode = build({ debugMode: true })
 
   t.type(debugMode, 'object')
-  t.ok(debugMode.ajv instanceof Ajv)
+  t.ok(debugMode.validator instanceof Validator)
   t.type(debugMode.code, 'string')
 })
 
@@ -33,7 +34,7 @@ test('activate debug mode truthy', t => {
 
   t.type(debugMode, 'object')
   t.type(debugMode.code, 'string')
-  t.ok(debugMode.ajv instanceof Ajv)
+  t.ok(debugMode.validator instanceof Validator)
 })
 
 test('to string auto-consistent', t => {
@@ -42,7 +43,7 @@ test('to string auto-consistent', t => {
 
   t.type(debugMode, 'object')
   t.type(debugMode.code, 'string')
-  t.ok(debugMode.ajv instanceof Ajv)
+  t.ok(debugMode.validator instanceof Validator)
 
   const compiled = fjs.restore(debugMode)
   const tobe = JSON.stringify({ firstName: 'Foo' })
@@ -68,7 +69,7 @@ test('to string auto-consistent with ajv', t => {
 
   t.type(debugMode, 'object')
   t.type(debugMode.code, 'string')
-  t.ok(debugMode.ajv instanceof Ajv)
+  t.ok(debugMode.validator instanceof Validator)
 
   const compiled = fjs.restore(debugMode)
   const tobe = JSON.stringify({ str: 'Foo' })
