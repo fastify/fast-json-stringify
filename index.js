@@ -818,168 +818,205 @@ function buildValue (location, input) {
     type = 'string'
   }
 
-  switch (type) {
-    case 'null':
-      code += 'json += serializer.asNull()'
-      break
-    case 'string': {
-      funcName = nullable ? 'serializer.asStringNullable.bind(serializer)' : 'serializer.asString.bind(serializer)'
-      code += `json += ${funcName}(${input})`
-      break
+  if ('const' in schema) {
+    const stringifiedSchema = JSON.stringify(schema.const)
+    let compareFn = ''
+    switch (type) {
+      case 'boolean':
+        compareFn = `${schema.const} === ${input}`
+        break
+      case 'string':
+        compareFn = `'${schema.const}' === ${input}`
+        break
+      case 'number':
+        compareFn = `${schema.const} === ${input}`
+        break
+      case 'null':
+        compareFn = `${schema.const} === ${input}`
+        break
+      default:
+        compareFn = `'${stringifiedSchema}' === JSON.stringify(${input})`
+        break
     }
-    case 'integer':
-      funcName = nullable ? 'serializer.asIntegerNullable.bind(serializer)' : 'serializer.asInteger.bind(serializer)'
-      code += `json += ${funcName}(${input})`
-      break
-    case 'number':
-      funcName = nullable ? 'serializer.asNumberNullable.bind(serializer)' : 'serializer.asNumber.bind(serializer)'
-      code += `json += ${funcName}(${input})`
-      break
-    case 'boolean':
-      funcName = nullable ? 'serializer.asBooleanNullable.bind(serializer)' : 'serializer.asBoolean.bind(serializer)'
-      code += `json += ${funcName}(${input})`
-      break
-    case 'object':
-      if (schema.format === 'date-time') {
-        funcName = nullable ? 'serializer.asDateTimeNullable.bind(serializer)' : 'serializer.asDateTime.bind(serializer)'
-      } else if (schema.format === 'date') {
-        funcName = nullable ? 'serializer.asDateNullable.bind(serializer)' : 'serializer.asDate.bind(serializer)'
-      } else if (schema.format === 'time') {
-        funcName = nullable ? 'serializer.asTimeNullable.bind(serializer)' : 'serializer.asTime.bind(serializer)'
-      } else if ('const' in schema) {
-        const stringifiedSchema = JSON.stringify(schema.const)
-        code += `
-          if('${stringifiedSchema}' === JSON.stringify(${input}))
+
+    code += `
+          if(${compareFn}) 
             json += '${stringifiedSchema}'
           else
             throw new Error(\`Item $\{JSON.stringify(${input})} does not match schema definition.\`)
         `
-        break
-      } else {
-        funcName = buildObject(location)
-      }
-      code += `json += ${funcName}(${input})`
-      break
-    case 'array':
-      funcName = buildArray(location)
-      code += `json += ${funcName}(${input})`
-      break
-    case undefined:
-      if (schema.anyOf || schema.oneOf) {
-        // beware: dereferenceOfRefs has side effects and changes schema.anyOf
-        const type = schema.anyOf ? 'anyOf' : 'oneOf'
-        const anyOfLocation = mergeLocation(location, type)
+  } else switchTypeSchema()
 
-        for (let index = 0; index < location.schema[type].length; index++) {
-          const optionLocation = mergeLocation(anyOfLocation, index)
-          const schemaRef = optionLocation.schemaId + optionLocation.jsonPointer
-          const nestedResult = buildValue(optionLocation, input)
-          code += `
+  return code
+
+  function switchTypeSchema () {
+    switch (type) {
+      case 'null':
+        code += 'json += serializer.asNull()'
+        break
+      case 'string': {
+        funcName = nullable
+          ? 'serializer.asStringNullable.bind(serializer)'
+          : 'serializer.asString.bind(serializer)'
+        code += `json += ${funcName}(${input})`
+        break
+      }
+      case 'integer':
+        funcName = nullable
+          ? 'serializer.asIntegerNullable.bind(serializer)'
+          : 'serializer.asInteger.bind(serializer)'
+        code += `json += ${funcName}(${input})`
+        break
+      case 'number':
+        funcName = nullable
+          ? 'serializer.asNumberNullable.bind(serializer)'
+          : 'serializer.asNumber.bind(serializer)'
+        code += `json += ${funcName}(${input})`
+        break
+      case 'boolean':
+        funcName = nullable
+          ? 'serializer.asBooleanNullable.bind(serializer)'
+          : 'serializer.asBoolean.bind(serializer)'
+        code += `json += ${funcName}(${input})`
+        break
+      case 'object':
+        if (schema.format === 'date-time') {
+          funcName = nullable
+            ? 'serializer.asDateTimeNullable.bind(serializer)'
+            : 'serializer.asDateTime.bind(serializer)'
+        } else if (schema.format === 'date') {
+          funcName = nullable
+            ? 'serializer.asDateNullable.bind(serializer)'
+            : 'serializer.asDate.bind(serializer)'
+        } else if (schema.format === 'time') {
+          funcName = nullable
+            ? 'serializer.asTimeNullable.bind(serializer)'
+            : 'serializer.asTime.bind(serializer)'
+        } else {
+          funcName = buildObject(location)
+        }
+        code += `json += ${funcName}(${input})`
+        break
+      case 'array':
+        funcName = buildArray(location)
+        code += `json += ${funcName}(${input})`
+        break
+      case undefined:
+        if (schema.anyOf || schema.oneOf) {
+          // beware: dereferenceOfRefs has side effects and changes schema.anyOf
+          const type = schema.anyOf ? 'anyOf' : 'oneOf'
+          const anyOfLocation = mergeLocation(location, type)
+
+          for (let index = 0; index < location.schema[type].length; index++) {
+            const optionLocation = mergeLocation(anyOfLocation, index)
+            const schemaRef = optionLocation.schemaId + optionLocation.jsonPointer
+            const nestedResult = buildValue(optionLocation, input)
+            code += `
             ${index === 0 ? 'if' : 'else if'}(ajv.validate("${schemaRef}", ${input}))
               ${nestedResult}
           `
-        }
+          }
 
-        code += `
+          code += `
           else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
         `
-      } else if (isEmpty(schema)) {
-        code += `
+        } else if (isEmpty(schema)) {
+          code += `
           json += JSON.stringify(${input})
         `
-      } else if ('const' in schema) {
-        code += `
+        } else if ('const' in schema) {
+          code += `
           if(ajv.validate(${JSON.stringify(schema)}, ${input}))
             json += '${JSON.stringify(schema.const)}'
           else
             throw new Error(\`Item $\{JSON.stringify(${input})} does not match schema definition.\`)
         `
-      } else if (schema.type === undefined) {
-        code += `
+        } else if (schema.type === undefined) {
+          code += `
           json += JSON.stringify(${input})
         `
-      } else {
-        throw new Error(`${schema.type} unsupported`)
-      }
-      break
-    default:
-      if (Array.isArray(type)) {
-        let sortedTypes = type
-        const nullable = schema.nullable === true || type.includes('null')
+        } else {
+          throw new Error(`${schema.type} unsupported`)
+        }
+        break
 
-        if (nullable) {
-          sortedTypes = sortedTypes.filter(type => type !== 'null')
-          code += `
+      default:
+        if (Array.isArray(type)) {
+          let sortedTypes = type
+          const nullable = schema.nullable === true || type.includes('null')
+
+          if (nullable) {
+            sortedTypes = sortedTypes.filter(type => type !== 'null')
+            code += `
             if (${input} === null) {
               json += null
             } else {`
-        }
+          }
 
-        const locationClone = clone(location)
-        sortedTypes.forEach((type, index) => {
-          const statement = index === 0 ? 'if' : 'else if'
-          locationClone.schema.type = type
-          const nestedResult = buildValue(locationClone, input)
-          switch (type) {
-            case 'string': {
-              code += `
+          const locationClone = clone(location)
+          sortedTypes.forEach((type, index) => {
+            const statement = index === 0 ? 'if' : 'else if'
+            locationClone.schema.type = type
+            const nestedResult = buildValue(locationClone, input)
+            switch (type) {
+              case 'string': {
+                code += `
                 ${statement}(${input} === null || typeof ${input} === "${type}" || ${input} instanceof RegExp || (typeof ${input} === "object" && Object.hasOwnProperty.call(${input}, "toString")))
                   ${nestedResult}
               `
-              break
-            }
-            case 'array': {
-              code += `
+                break
+              }
+              case 'array': {
+                code += `
                 ${statement}(Array.isArray(${input}))
                   ${nestedResult}
               `
-              break
-            }
-            case 'integer': {
-              code += `
+                break
+              }
+              case 'integer': {
+                code += `
                 ${statement}(Number.isInteger(${input}) || ${input} === null)
                   ${nestedResult}
               `
-              break
-            }
-            case 'object': {
-              if (schema.fjs_type) {
-                code += `
+                break
+              }
+              case 'object': {
+                if (schema.fjs_type) {
+                  code += `
                   ${statement}(${input} instanceof Date || ${input} === null)
                     ${nestedResult}
                 `
-              } else {
-                code += `
+                } else {
+                  code += `
                   ${statement}(typeof ${input} === "object" || ${input} === null)
                     ${nestedResult}
                 `
+                }
+                break
               }
-              break
-            }
-            default: {
-              code += `
+              default: {
+                code += `
                 ${statement}(typeof ${input} === "${type}" || ${input} === null)
                   ${nestedResult}
               `
-              break
+                break
+              }
             }
-          }
-        })
-        code += `
+          })
+          code += `
           else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
         `
 
-        if (nullable) {
-          code += `
+          if (nullable) {
+            code += `
             }
           `
+          }
+        } else {
+          throw new Error(`${type} unsupported`)
         }
-      } else {
-        throw new Error(`${type} unsupported`)
-      }
+    }
   }
-
-  return code
 }
 
 // Ajv does not support js date format. In order to properly validate objects containing a date,

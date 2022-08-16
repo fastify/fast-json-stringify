@@ -137,12 +137,61 @@ test('schema with const and invalid object', (t) => {
 
   const stringify = build(schema)
   try {
-    const result = stringify({
+    stringify({
       foo: { foo: 'baz' }
     })
-    console.log({ result })
   } catch (err) {
     t.match(err.message, /^Item .* does not match schema definition/, 'Given object has invalid const value')
+    t.ok(err)
+  }
+})
+
+test('schema with const and invalid number', t => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: { const: 1 }
+    }
+  }
+
+  const stringify = build(schema)
+  try {
+    stringify({
+      foo: 2
+    })
+  } catch (err) {
+    t.match(
+      err.message,
+      /^Item .* does not match schema definition/,
+      'Given object has invalid const value'
+    )
+    t.ok(err)
+  }
+})
+
+test('schema with const and invalid string', t => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: { const: 'hello' }
+    }
+  }
+
+  const stringify = build(schema)
+  try {
+    stringify({
+      foo: 'hell'
+    })
+  } catch (err) {
+    t.match(
+      err.message,
+      /^Item .* does not match schema definition/,
+      'Given object has invalid const value'
+    )
     t.ok(err)
   }
 })

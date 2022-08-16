@@ -255,6 +255,18 @@ const benchmarks = [
     input: {
       foo: { bar: 'baz' }
     }
+  },
+  {
+    name: 'object with const null property',
+    schema: {
+      type: 'object',
+      properties: {
+        foo: { const: null }
+      }
+    },
+    input: {
+      foo: null
+    }
   }
 ]
 
@@ -264,10 +276,10 @@ async function runBenchmark (benchmark) {
   return new Promise((resolve, reject) => {
     let result = null
     worker.on('error', reject)
-    worker.on('message', (benchResult) => {
+    worker.on('message', benchResult => {
       result = benchResult
     })
-    worker.on('exit', (code) => {
+    worker.on('exit', code => {
       if (code === 0) {
         resolve(result)
       } else {
