@@ -240,6 +240,11 @@ function inferTypeByKeyword (schema) {
   for (var keyword of numberKeywords) {
     if (keyword in schema) return 'number'
   }
+
+  if (schema.const && typeof schema.const !== 'object') {
+    return typeof schema.const
+  }
+
   return schema.type
 }
 

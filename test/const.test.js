@@ -24,6 +24,66 @@ test('schema with const string', (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
+test('schema with const bool', t => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: { const: true }
+    }
+  }
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify({
+    foo: true
+  })
+
+  t.equal(output, '{"foo":true}')
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('schema with const number', t => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: { const: 1 }
+    }
+  }
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify({
+    foo: 1
+  })
+
+  t.equal(output, '{"foo":1}')
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('schema with const null', t => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: { const: null }
+    }
+  }
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify({
+    foo: null
+  })
+
+  t.equal(output, '{"foo":null}')
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
 test('schema with const object', (t) => {
   t.plan(2)
 
