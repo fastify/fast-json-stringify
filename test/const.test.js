@@ -84,6 +84,26 @@ test('schema with const null', t => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
+test('schema with const array', t => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: { const: [1, 2, 3] }
+    }
+  }
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify({
+    foo: [1, 2, 3]
+  })
+
+  t.equal(output, '{"foo":[1,2,3]}')
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
 test('schema with const object', (t) => {
   t.plan(2)
 
@@ -117,9 +137,10 @@ test('schema with const and invalid object', (t) => {
 
   const stringify = build(schema)
   try {
-    stringify({
+    const result = stringify({
       foo: { foo: 'baz' }
     })
+    console.log({ result })
   } catch (err) {
     t.match(err.message, /^Item .* does not match schema definition/, 'Given object has invalid const value')
     t.ok(err)

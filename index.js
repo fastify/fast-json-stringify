@@ -241,8 +241,16 @@ function inferTypeByKeyword (schema) {
     if (keyword in schema) return 'number'
   }
 
-  if (schema.const && typeof schema.const !== 'object') {
-    return typeof schema.const
+  if (schema.const) {
+    if (typeof schema.const !== 'object') {
+      return typeof schema.const
+    } else if (schema.const === null) {
+      return 'null'
+    } else if (Array.isArray(schema.const)) {
+      return 'array'
+    } else {
+      return 'object'
+    }
   }
 
   return schema.type
@@ -838,6 +846,15 @@ function buildValue (location, input) {
         funcName = nullable ? 'serializer.asDateNullable.bind(serializer)' : 'serializer.asDate.bind(serializer)'
       } else if (schema.format === 'time') {
         funcName = nullable ? 'serializer.asTimeNullable.bind(serializer)' : 'serializer.asTime.bind(serializer)'
+      } else if ('const' in schema) {
+        const stringifiedSchema = JSON.stringify(schema.const)
+        code += `
+          if('${stringifiedSchema}' === JSON.stringify(${input}))
+            json += '${stringifiedSchema}'
+          else
+            throw new Error(\`Item $\{JSON.stringify(${input})} does not match schema definition.\`)
+        `
+        break
       } else {
         funcName = buildObject(location)
       }
