@@ -111,8 +111,14 @@ function build (schema, options) {
       }
 
       if (refResolver.getSchema(schemaKey) === undefined) {
-        ajvInstance.addSchema(externalSchema, schemaKey)
         refResolver.addSchema(externalSchema, key)
+      }
+
+      if (
+        ajvInstance.refs[schemaKey] === undefined &&
+        ajvInstance.schemas[schemaKey] === undefined
+      ) {
+        ajvInstance.addSchema(externalSchema, schemaKey)
       }
     }
   }
