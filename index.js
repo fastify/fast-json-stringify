@@ -359,7 +359,7 @@ function buildCode (location) {
 
     const sanitized = JSON.stringify(key)
     const asString = JSON.stringify(sanitized)
-    const isRequired = schema.required !== undefined && schema.required.findIndex(item => item === key) !== -1
+    const isRequired = schema.required !== undefined && schema.required.indexOf(key) !== -1
     const isConst = schema.properties[key].const !== undefined
     // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
     // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
