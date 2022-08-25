@@ -241,16 +241,6 @@ function inferTypeByKeyword (schema) {
     if (keyword in schema) return 'number'
   }
 
-  if (schema.const) {
-    if (typeof schema.const !== 'object') {
-      return typeof schema.const
-    } else if (schema.const === null) {
-      return 'null'
-    } else if (Array.isArray(schema.const)) {
-      return 'array'
-    }
-  }
-
   return schema.type
 }
 
@@ -827,6 +817,7 @@ function buildValue (location, input) {
     code += `
             json += '${stringifiedSchema}'
         `
+    return code
   } else switchTypeSchema()
 
   return code
