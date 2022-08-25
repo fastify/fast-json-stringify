@@ -248,8 +248,6 @@ function inferTypeByKeyword (schema) {
       return 'null'
     } else if (Array.isArray(schema.const)) {
       return 'array'
-    } else {
-      return 'object'
     }
   }
 
@@ -359,11 +357,12 @@ function buildCode (location) {
       schema.properties[key] = propertyLocation.schema
     }
 
-    // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
-    // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
-
     const sanitized = JSON.stringify(key)
     const asString = JSON.stringify(sanitized)
+    const isRequired = schema.required !== undefined && schema.required.findIndex(item => item === key) !== -1
+    const isConst = schema.properties[key].const !== undefined
+    // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
+    // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
 
     code += `
       if (obj[${sanitized}] !== undefined) {
@@ -373,14 +372,18 @@ function buildCode (location) {
 
     code += buildValue(propertyLocation, `obj[${JSON.stringify(key)}]`)
 
-    const defaultValue = schema.properties[key].default
+    let defaultValue = schema.properties[key].default
+    if (isRequired) {
+      defaultValue = defaultValue !== undefined ? defaultValue : schema.properties[key].const
+    }
+
     if (defaultValue !== undefined) {
       code += `
       } else {
         ${addComma}
         json += ${asString} + ':' + ${JSON.stringify(JSON.stringify(defaultValue))}
       `
-    } else if (required.includes(key)) {
+    } else if (required.includes(key) && !isConst) {
       code += `
       } else {
         throw new Error('${sanitized} is required!')
@@ -820,30 +823,9 @@ function buildValue (location, input) {
 
   if ('const' in schema) {
     const stringifiedSchema = JSON.stringify(schema.const)
-    let compareFn = ''
-    switch (type) {
-      case 'boolean':
-        compareFn = `${schema.const} === ${input}`
-        break
-      case 'string':
-        compareFn = `'${schema.const}' === ${input}`
-        break
-      case 'number':
-        compareFn = `${schema.const} === ${input}`
-        break
-      case 'null':
-        compareFn = `${schema.const} === ${input}`
-        break
-      default:
-        compareFn = `'${stringifiedSchema}' === JSON.stringify(${input})`
-        break
-    }
 
     code += `
-          if(${compareFn}) 
             json += '${stringifiedSchema}'
-          else
-            throw new Error(\`Item $\{JSON.stringify(${input})} does not match schema definition.\`)
         `
   } else switchTypeSchema()
 
@@ -1046,7 +1028,7 @@ function extendDateTimeType (schema) {
 function isEmpty (schema) {
   // eslint-disable-next-line
   for (var key in schema) {
-    if (schema.hasOwnProperty(key) && schema[key] !== undefined) {
+    if (Object.prototype.hasOwnProperty.call(schema, key) && schema[key] !== undefined) {
       return false
     }
   }
