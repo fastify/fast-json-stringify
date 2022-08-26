@@ -387,7 +387,7 @@ function buildCode (location) {
         JSON.stringify(constValue)
       )}
       `
-    } else if (required.includes(key)) {
+    } else if (isRequired) {
       code += `
       } else {
         throw new Error('${sanitized} is required!')
