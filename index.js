@@ -932,7 +932,7 @@ function buildValue (location, input) {
           switch (type) {
             case 'string': {
               code += `
-                ${statement}(${input} === null || typeof ${input} === "${type}" || ${input} instanceof RegExp || (typeof ${input} === "object" && Object.hasOwnProperty.call(${input}, "toString")))
+                ${statement}(${input} === null || typeof ${input} === "${type}" || ${input} instanceof RegExp || (typeof ${input} === "object" && Object.prototype.hasOwnProperty.call(${input}, "toString")))
                   ${nestedResult}
               `
               break
@@ -1018,7 +1018,10 @@ function extendDateTimeType (schema) {
 function isEmpty (schema) {
   // eslint-disable-next-line
   for (var key in schema) {
-    if (schema.hasOwnProperty(key) && schema[key] !== undefined) {
+    if (
+      Object.prototype.hasOwnProperty.call(schema, key) &&
+      schema[key] !== undefined
+    ) {
       return false
     }
   }
