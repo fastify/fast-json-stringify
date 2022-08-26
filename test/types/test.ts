@@ -151,15 +151,3 @@ ajv = build(schema1, { debugMode: true }).ajv
 str = build(schema1, { mode: 'debug' }).code
 ajv = build(schema1, { mode: 'debug' }).ajv
 str = build(schema1, { mode: 'standalone' })
-
-const schema13 = {
-  type: 'object',
-  properties: {
-    foo: {
-      const:'bar'
-    }
-  },
-  additionalProperties: false
-} as const
-
-build(schema13)({'foo': 'bar'})
