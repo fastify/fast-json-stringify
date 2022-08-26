@@ -1,4 +1,6 @@
 import Ajv, { Options as AjvOptions } from "ajv"
+import {FromSchema, JSONSchema} from 'json-schema-to-ts'
+
 declare namespace build {
   interface BaseSchema {
     /**
@@ -190,6 +192,7 @@ declare function build(schema: build.AnySchema, options: DebugOption): { code: s
 declare function build(schema: build.AnySchema, options: DeprecateDebugOption): { code: string, ajv: Ajv };
 declare function build(schema: build.AnySchema, options: StandaloneOption): string;
 declare function build(schema: build.AnySchema, options?: build.Options): (doc: any) => any;
+declare function build<TSchema extends JSONSchema>(schema: TSchema, options?: build.Options): (doc: FromSchema<TSchema>) => any;
 declare function build(schema: build.StringSchema, options?: build.Options): (doc: string) => string;
 declare function build(schema: build.IntegerSchema | build.NumberSchema, options?: build.Options): (doc: number) => string;
 declare function build(schema: build.NullSchema, options?: build.Options): (doc: null) => "null";
