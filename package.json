@@ -63,7 +63,7 @@
     ]
   },
   "runkitExampleFilename": "example.js",
-    "tsd": {
+  "tsd": {
     "directory": "test/types"
   }
 }
