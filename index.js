@@ -13,7 +13,10 @@ const buildAjv = require('./ajv')
 
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
-const validLargeArrayMechanisms = ['default', 'json-stringify']
+const validLargeArrayMechanisms = [
+  'default',
+  'json-stringify'
+]
 
 const addComma = `
   if (addComma) {
@@ -31,9 +34,7 @@ function isValidSchema (schema, name) {
       name = ''
     }
     const first = validate.errors[0]
-    const err = new Error(
-      `${name}schema is invalid: data${first.instancePath} ${first.message}`
-    )
+    const err = new Error(`${name}schema is invalid: data${first.instancePath} ${first.message}`)
     err.errors = isValidSchema.errors
     throw err
   }
@@ -121,9 +122,7 @@ function build (schema, options) {
 
   if (options.rounding) {
     if (!['floor', 'ceil', 'round'].includes(options.rounding)) {
-      throw new Error(
-        `Unsupported integer rounding method ${options.rounding}`
-      )
+      throw new Error(`Unsupported integer rounding method ${options.rounding}`)
     }
   }
 
@@ -139,9 +138,7 @@ function build (schema, options) {
     if (!Number.isNaN(Number.parseInt(options.largeArraySize, 10))) {
       largeArraySize = options.largeArraySize
     } else {
-      throw new Error(
-        `Unsupported large array size. Expected integer-like, got ${options.largeArraySize}`
-      )
+      throw new Error(`Unsupported large array size. Expected integer-like, got ${options.largeArraySize}`)
     }
   }
 
@@ -208,7 +205,11 @@ const arrayKeywords = [
   'contains'
 ]
 
-const stringKeywords = ['maxLength', 'minLength', 'pattern']
+const stringKeywords = [
+  'maxLength',
+  'minLength',
+  'pattern'
+]
 
 const numberKeywords = [
   'multipleOf',
@@ -239,7 +240,6 @@ function inferTypeByKeyword (schema) {
   for (var keyword of numberKeywords) {
     if (keyword in schema) return 'number'
   }
-
   return schema.type
 }
 
@@ -253,11 +253,8 @@ function addPatternProperties (location) {
         if (properties[keys[i]]) continue
   `
 
-  const patternPropertiesLocation = mergeLocation(
-    location,
-    'patternProperties'
-  )
-  Object.keys(pp).forEach(regex => {
+  const patternPropertiesLocation = mergeLocation(location, 'patternProperties')
+  Object.keys(pp).forEach((regex) => {
     let ppLocation = mergeLocation(patternPropertiesLocation, regex)
     if (pp[regex].$ref) {
       ppLocation = resolveRef(ppLocation, pp[regex].$ref)
@@ -267,11 +264,7 @@ function addPatternProperties (location) {
     try {
       RegExp(regex)
     } catch (err) {
-      throw new Error(
-        `${err.message}. Found at ${regex} matching ${JSON.stringify(
-          pp[regex]
-        )}`
-      )
+      throw new Error(`${err.message}. Found at ${regex} matching ${JSON.stringify(pp[regex])}`)
     }
 
     const valueCode = buildValue(ppLocation, 'obj[keys[i]]')
@@ -346,18 +339,19 @@ function buildCode (location) {
   let code = ''
 
   const propertiesLocation = mergeLocation(location, 'properties')
-  Object.keys(schema.properties || {}).forEach(key => {
+  Object.keys(schema.properties || {}).forEach((key) => {
     let propertyLocation = mergeLocation(propertiesLocation, key)
     if (schema.properties[key].$ref) {
       propertyLocation = resolveRef(location, schema.properties[key].$ref)
       schema.properties[key] = propertyLocation.schema
     }
 
+    const sanitized = JSON.stringify(key)
+    const asString = JSON.stringify(sanitized)
+
     // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
     // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
 
-    const sanitized = JSON.stringify(key)
-    const asString = JSON.stringify(sanitized)
     const isRequired = schema.required !== undefined && schema.required.indexOf(key) !== -1
     const isConst = schema.properties[key].const !== undefined
 
@@ -400,7 +394,7 @@ function buildCode (location) {
   })
 
   for (const requiredProperty of required) {
-    if (schema.properties && schema.properties[requiredProperty] !== undefined) { continue }
+    if (schema.properties && schema.properties[requiredProperty] !== undefined) continue
     code += `if (obj['${requiredProperty}'] === undefined) throw new Error('"${requiredProperty}" is required!')\n`
   }
 
@@ -464,20 +458,14 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
       if (mergedSchema.additionalProperties === undefined) {
         mergedSchema.additionalProperties = {}
       }
-      Object.assign(
-        mergedSchema.additionalProperties,
-        allOfSchema.additionalProperties
-      )
+      Object.assign(mergedSchema.additionalProperties, allOfSchema.additionalProperties)
     }
 
     if (allOfSchema.patternProperties !== undefined) {
       if (mergedSchema.patternProperties === undefined) {
         mergedSchema.patternProperties = {}
       }
-      Object.assign(
-        mergedSchema.patternProperties,
-        allOfSchema.patternProperties
-      )
+      Object.assign(mergedSchema.patternProperties, allOfSchema.patternProperties)
     }
 
     if (allOfSchema.required !== undefined) {
@@ -694,9 +682,7 @@ function buildArray (location) {
     if (largeArrayMechanism === 'json-stringify') {
       functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
     } else {
-      throw new Error(
-        `Unsupported large array mechanism ${largeArrayMechanism}`
-      )
+      throw new Error(`Unsupported large array mechanism ${largeArrayMechanism}`)
     }
   }
 
@@ -781,7 +767,7 @@ function buildArrayTypeCondition (type, accessor) {
       break
     default:
       if (Array.isArray(type)) {
-        const conditions = type.map(subType => {
+        const conditions = type.map((subType) => {
           return buildArrayTypeCondition(subType, accessor)
         })
         condition = `(${conditions.join(' || ')})`
@@ -829,12 +815,7 @@ function buildValue (location, input) {
   let code = ''
   let funcName
 
-  if (
-    schema.fjs_type === 'string' &&
-    schema.format === undefined &&
-    Array.isArray(schema.type) &&
-    schema.type.length === 2
-  ) {
+  if (schema.fjs_type === 'string' && schema.format === undefined && Array.isArray(schema.type) && schema.type.length === 2) {
     type = 'string'
   }
 
@@ -1018,10 +999,7 @@ function extendDateTimeType (schema) {
 function isEmpty (schema) {
   // eslint-disable-next-line
   for (var key in schema) {
-    if (
-      Object.prototype.hasOwnProperty.call(schema, key) &&
-      schema[key] !== undefined
-    ) {
+    if (Object.prototype.hasOwnProperty.call(schema, key) && schema[key] !== undefined) {
       return false
     }
   }
@@ -1035,8 +1013,6 @@ module.exports.validLargeArrayMechanisms = validLargeArrayMechanisms
 module.exports.restore = function ({ code, ajv }) {
   const serializer = new Serializer()
   // eslint-disable-next-line
-  return Function.apply(null, ["ajv", "serializer", code]).apply(null, [
-    ajv,
-    serializer
-  ])
+  return Function.apply(null, ["ajv", "serializer", code])
+    .apply(null, [ajv, serializer])
 }

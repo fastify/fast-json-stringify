@@ -61,21 +61,19 @@ const stringify = fastJson({
   }
 })
 
-console.log(
-  stringify({
-    firstName: 'Matteo',
-    lastName: 'Collina',
-    age: 32,
-    now: new Date(),
-    reg: /"([^"]|\\")*"/,
-    foo: 'hello',
-    numfoo: 42,
-    test: 42,
-    strtest: '23',
-    arr: [{ str: 'stark' }, { str: 'lannister' }],
-    obj: { bool: true },
-    notmatch: 'valar morghulis',
-    notmatchobj: { a: true },
-    notmatchnum: 42
-  })
-)
+console.log(stringify({
+  firstName: 'Matteo',
+  lastName: 'Collina',
+  age: 32,
+  now: new Date(),
+  reg: /"([^"]|\\")*"/,
+  foo: 'hello',
+  numfoo: 42,
+  test: 42,
+  strtest: '23',
+  arr: [{ str: 'stark' }, { str: 'lannister' }],
+  obj: { bool: true },
+  notmatch: 'valar morghulis',
+  notmatchobj: { a: true },
+  notmatchnum: 42
+}))
