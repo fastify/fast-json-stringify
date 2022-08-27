@@ -1013,6 +1013,6 @@ module.exports.validLargeArrayMechanisms = validLargeArrayMechanisms
 module.exports.restore = function ({ code, ajv }) {
   const serializer = new Serializer()
   // eslint-disable-next-line
-  return Function.apply(null, ["ajv", "serializer", code])
+  return Function.apply(null, ['ajv', 'serializer', code])
     .apply(null, [ajv, serializer])
 }
