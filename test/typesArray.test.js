@@ -438,6 +438,35 @@ test('object that is simultaneously a string and a json switched', (t) => {
   t.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
 
+test('class instance that is simultaneously a string and a json', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      simultaneously: {
+        type: ['string', 'object'],
+        properties: {
+          foo: { type: 'string' }
+        }
+      }
+    }
+  }
+
+  class Test {
+    toString () { return 'hello' }
+  }
+
+  const likeObjectId = new Test()
+
+  const stringify = build(schema)
+  const valueStr = stringify({ simultaneously: likeObjectId })
+  t.equal(valueStr, '{"simultaneously":"hello"}')
+
+  const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
+  t.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
+})
+
 test('should throw an error when type is array and object is null', (t) => {
   t.plan(1)
   const schema = {
