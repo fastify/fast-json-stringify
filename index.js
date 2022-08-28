@@ -352,9 +352,6 @@ function buildCode (location) {
     // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
     // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
 
-    const isRequired = schema.required !== undefined && schema.required.indexOf(key) !== -1
-    const isConst = schema.properties[key].const !== undefined
-
     code += `
       if (obj[${sanitized}] !== undefined) {
         ${addComma}
@@ -364,24 +361,14 @@ function buildCode (location) {
     code += buildValue(propertyLocation, `obj[${JSON.stringify(key)}]`)
 
     const defaultValue = schema.properties[key].default
-    const constValue = schema.properties[key].const
 
     if (defaultValue !== undefined) {
       code += `
       } else {
         ${addComma}
-        json += ${asString} + ':' + ${JSON.stringify(
-        JSON.stringify(defaultValue)
-      )}
+        json += ${asString} + ':' + ${JSON.stringify(JSON.stringify(defaultValue))}
       `
-    } else if (isRequired && isConst) {
-      code += `
-      } else {
-        json += ${asString} + ':' + ${JSON.stringify(
-        JSON.stringify(constValue)
-      )}
-      `
-    } else if (isRequired) {
+    } else if (required.includes(key)) {
       code += `
       } else {
         throw new Error('${sanitized} is required!')
@@ -810,7 +797,7 @@ function buildValue (location, input) {
   }
 
   let type = schema.type
-  const nullable = schema.nullable === true
+  const nullable = schema.nullable === true || (Array.isArray(type) && type.includes('null'))
 
   let code = ''
   let funcName
@@ -820,6 +807,12 @@ function buildValue (location, input) {
   }
 
   if ('const' in schema) {
+    if (nullable) {
+      code += `
+        json += ${input} === null ? 'null' : '${JSON.stringify(schema.const)}'
+      `
+      return code
+    }
     code += `json += '${JSON.stringify(schema.const)}'`
     return code
   }
@@ -1013,6 +1006,6 @@ module.exports.validLargeArrayMechanisms = validLargeArrayMechanisms
 module.exports.restore = function ({ code, ajv }) {
   const serializer = new Serializer()
   // eslint-disable-next-line
-  return Function.apply(null, ['ajv', 'serializer', code])
-    .apply(null, [ajv, serializer])
+  return (Function.apply(null, ['ajv', 'serializer', code])
+    .apply(null, [ajv, serializer]))
 }
