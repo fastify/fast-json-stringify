@@ -213,6 +213,60 @@ const benchmarks = [
       n5: 42,
       b5: true
     }
+  },
+  {
+    name: 'object with const string property',
+    schema: {
+      type: 'object',
+      properties: {
+        a: { const: 'const string' }
+      }
+    },
+    input: { a: 'const string' }
+  },
+  {
+    name: 'object with const number property',
+    schema: {
+      type: 'object',
+      properties: {
+        a: { const: 1 }
+      }
+    },
+    input: { a: 1 }
+  },
+  {
+    name: 'object with const bool property',
+    schema: {
+      type: 'object',
+      properties: {
+        a: { const: true }
+      }
+    },
+    input: { a: true }
+  },
+  {
+    name: 'object with const object property',
+    schema: {
+      type: 'object',
+      properties: {
+        foo: { const: { bar: 'baz' } }
+      }
+    },
+    input: {
+      foo: { bar: 'baz' }
+    }
+  },
+  {
+    name: 'object with const null property',
+    schema: {
+      type: 'object',
+      properties: {
+        foo: { const: null }
+      }
+    },
+    input: {
+      foo: null
+    }
   }
 ]
 

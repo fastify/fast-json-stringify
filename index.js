@@ -361,6 +361,7 @@ function buildCode (location) {
     code += buildValue(propertyLocation, `obj[${JSON.stringify(key)}]`)
 
     const defaultValue = schema.properties[key].default
+
     if (defaultValue !== undefined) {
       code += `
       } else {
@@ -796,13 +797,24 @@ function buildValue (location, input) {
   }
 
   let type = schema.type
-  const nullable = schema.nullable === true
+  const nullable = schema.nullable === true || (Array.isArray(type) && type.includes('null'))
 
   let code = ''
   let funcName
 
   if (schema.fjs_type === 'string' && schema.format === undefined && Array.isArray(schema.type) && schema.type.length === 2) {
     type = 'string'
+  }
+
+  if ('const' in schema) {
+    if (nullable) {
+      code += `
+        json += ${input} === null ? 'null' : '${JSON.stringify(schema.const)}'
+      `
+      return code
+    }
+    code += `json += '${JSON.stringify(schema.const)}'`
+    return code
   }
 
   switch (type) {
@@ -864,13 +876,6 @@ function buildValue (location, input) {
       } else if (isEmpty(schema)) {
         code += `
           json += JSON.stringify(${input})
-        `
-      } else if ('const' in schema) {
-        code += `
-          if(ajv.validate(${JSON.stringify(schema)}, ${input}))
-            json += '${JSON.stringify(schema.const)}'
-          else
-            throw new Error(\`Item $\{JSON.stringify(${input})} does not match schema definition.\`)
         `
       } else if (schema.type === undefined) {
         code += `
