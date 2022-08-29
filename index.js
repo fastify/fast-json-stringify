@@ -9,6 +9,7 @@ const { randomUUID } = require('crypto')
 
 const validate = require('./schema-validator')
 const Serializer = require('./serializer')
+const RefResolver = require('./ref-resolver')
 const buildAjv = require('./ajv')
 
 let largeArraySize = 2e4
@@ -57,20 +58,12 @@ function resolveRef (location, ref) {
   const schemaId = ref.slice(0, hashIndex) || location.schemaId
   const jsonPointer = ref.slice(hashIndex) || '#'
 
-  const schemaRef = schemaId + jsonPointer
+  const schema = refResolver.getSchema(schemaId, jsonPointer)
 
-  let ajvSchema
-  try {
-    ajvSchema = ajvInstance.getSchema(schemaRef)
-  } catch (error) {
+  if (schema === undefined) {
     throw new Error(`Cannot find reference "${ref}"`)
   }
 
-  if (ajvSchema === undefined) {
-    throw new Error(`Cannot find reference "${ref}"`)
-  }
-
-  const schema = ajvSchema.schema
   if (schema.$ref !== undefined) {
     return resolveRef({ schema, schemaId, jsonPointer }, schema.$ref)
   }
@@ -83,6 +76,7 @@ const objectReferenceSerializersMap = new Map()
 
 let rootSchemaId = null
 let ajvInstance = null
+let refResolver = null
 let contextFunctions = null
 
 function build (schema, options) {
@@ -95,11 +89,13 @@ function build (schema, options) {
   options = options || {}
 
   ajvInstance = buildAjv(options.ajv)
+  refResolver = new RefResolver()
   rootSchemaId = schema.$id || randomUUID()
 
   isValidSchema(schema)
   extendDateTimeType(schema)
   ajvInstance.addSchema(schema, rootSchemaId)
+  refResolver.addSchema(schema, rootSchemaId)
 
   if (options.schema) {
     const externalSchemas = clone(options.schema)
@@ -114,7 +110,14 @@ function build (schema, options) {
         schemaKey = key + externalSchema.$id // relative URI
       }
 
-      if (ajvInstance.getSchema(schemaKey) === undefined) {
+      if (refResolver.getSchema(schemaKey) === undefined) {
+        refResolver.addSchema(externalSchema, key)
+      }
+
+      if (
+        ajvInstance.refs[schemaKey] === undefined &&
+        ajvInstance.schemas[schemaKey] === undefined
+      ) {
         ajvInstance.addSchema(externalSchema, schemaKey)
       }
     }
@@ -178,6 +181,7 @@ function build (schema, options) {
   const stringifyFunc = contextFunc(ajvInstance, serializer)
 
   ajvInstance = null
+  refResolver = null
   rootSchemaId = null
   contextFunctions = null
   arrayItemsReferenceSerializersMap.clear()
@@ -494,6 +498,7 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
 
   mergedSchema.$id = `merged_${randomUUID()}`
   ajvInstance.addSchema(mergedSchema)
+  refResolver.addSchema(mergedSchema)
   location.schemaId = mergedSchema.$id
   location.jsonPointer = '#'
 }
