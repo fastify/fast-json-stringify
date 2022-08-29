@@ -9,8 +9,8 @@ const { randomUUID } = require('crypto')
 
 const validate = require('./schema-validator')
 const Serializer = require('./serializer')
+const Validator = require('./validator')
 const RefResolver = require('./ref-resolver')
-const buildAjv = require('./ajv')
 
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
@@ -75,51 +75,31 @@ const arrayItemsReferenceSerializersMap = new Map()
 const objectReferenceSerializersMap = new Map()
 
 let rootSchemaId = null
-let ajvInstance = null
 let refResolver = null
+let validator = null
 let contextFunctions = null
 
 function build (schema, options) {
-  schema = clone(schema)
-
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
 
   contextFunctions = []
   options = options || {}
 
-  ajvInstance = buildAjv(options.ajv)
   refResolver = new RefResolver()
+  validator = new Validator(options.ajv)
+
   rootSchemaId = schema.$id || randomUUID()
 
   isValidSchema(schema)
-  extendDateTimeType(schema)
-  ajvInstance.addSchema(schema, rootSchemaId)
+  validator.addSchema(schema, rootSchemaId)
   refResolver.addSchema(schema, rootSchemaId)
 
   if (options.schema) {
-    const externalSchemas = clone(options.schema)
-
-    for (const key of Object.keys(externalSchemas)) {
-      const externalSchema = externalSchemas[key]
-      isValidSchema(externalSchema, key)
-      extendDateTimeType(externalSchema)
-
-      let schemaKey = externalSchema.$id || key
-      if (externalSchema.$id !== undefined && externalSchema.$id[0] === '#') {
-        schemaKey = key + externalSchema.$id // relative URI
-      }
-
-      if (refResolver.getSchema(schemaKey) === undefined) {
-        refResolver.addSchema(externalSchema, key)
-      }
-
-      if (
-        ajvInstance.refs[schemaKey] === undefined &&
-        ajvInstance.schemas[schemaKey] === undefined
-      ) {
-        ajvInstance.addSchema(externalSchema, schemaKey)
-      }
+    for (const key of Object.keys(options.schema)) {
+      isValidSchema(options.schema[key], key)
+      validator.addSchema(options.schema[key], key)
+      refResolver.addSchema(options.schema[key], key)
     }
   }
 
@@ -160,28 +140,28 @@ function build (schema, options) {
     return main
     `
 
-  const dependenciesName = ['ajv', 'serializer', contextFunctionCode]
+  const dependenciesName = ['validator', 'serializer', contextFunctionCode]
 
   if (options.debugMode) {
     options.mode = 'debug'
   }
 
   if (options.mode === 'debug') {
-    return { code: dependenciesName.join('\n'), ajv: ajvInstance }
+    return { code: dependenciesName.join('\n'), validator, ajv: validator.ajv }
   }
 
   if (options.mode === 'standalone') {
     // lazy load
     const buildStandaloneCode = require('./standalone')
-    return buildStandaloneCode(options, ajvInstance, contextFunctionCode)
+    return buildStandaloneCode(options, validator, contextFunctionCode)
   }
 
   /* eslint no-new-func: "off" */
-  const contextFunc = new Function('ajv', 'serializer', contextFunctionCode)
-  const stringifyFunc = contextFunc(ajvInstance, serializer)
+  const contextFunc = new Function('validator', 'serializer', contextFunctionCode)
+  const stringifyFunc = contextFunc(validator, serializer)
 
-  ajvInstance = null
   refResolver = null
+  validator = null
   rootSchemaId = null
   contextFunctions = null
   arrayItemsReferenceSerializersMap.clear()
@@ -345,9 +325,8 @@ function buildCode (location) {
   const propertiesLocation = mergeLocation(location, 'properties')
   Object.keys(schema.properties || {}).forEach((key) => {
     let propertyLocation = mergeLocation(propertiesLocation, key)
-    if (schema.properties[key].$ref) {
-      propertyLocation = resolveRef(location, schema.properties[key].$ref)
-      schema.properties[key] = propertyLocation.schema
+    if (propertyLocation.$ref) {
+      propertyLocation = resolveRef(location, propertyLocation.$ref)
     }
 
     const sanitized = JSON.stringify(key)
@@ -364,8 +343,7 @@ function buildCode (location) {
 
     code += buildValue(propertyLocation, `obj[${JSON.stringify(key)}]`)
 
-    const defaultValue = schema.properties[key].default
-
+    const defaultValue = propertyLocation.schema.default
     if (defaultValue !== undefined) {
       code += `
       } else {
@@ -480,16 +458,6 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
       mergedSchema.anyOf.push(...allOfSchema.anyOf)
     }
 
-    if (allOfSchema.fjs_type !== undefined) {
-      if (
-        mergedSchema.fjs_type !== undefined &&
-        mergedSchema.fjs_type !== allOfSchema.fjs_type
-      ) {
-        throw new Error('allOf schemas have different fjs_type values')
-      }
-      mergedSchema.fjs_type = allOfSchema.fjs_type
-    }
-
     if (allOfSchema.allOf !== undefined) {
       mergeAllOfSchema(location, allOfSchema, mergedSchema)
     }
@@ -497,7 +465,7 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
   delete mergedSchema.allOf
 
   mergedSchema.$id = `merged_${randomUUID()}`
-  ajvInstance.addSchema(mergedSchema)
+  validator.addSchema(mergedSchema)
   refResolver.addSchema(mergedSchema)
   location.schemaId = mergedSchema.$id
   location.jsonPointer = '#'
@@ -527,7 +495,7 @@ function addIfThenElse (location) {
   const ifSchemaRef = ifLocation.schemaId + ifLocation.jsonPointer
 
   let code = `
-    if (ajv.validate("${ifSchemaRef}", obj)) {
+    if (validator.validate("${ifSchemaRef}", obj)) {
   `
 
   const thenLocation = mergeLocation(location, 'then')
@@ -801,15 +769,11 @@ function buildValue (location, input) {
     location.schema = mergedSchema
   }
 
-  let type = schema.type
+  const type = schema.type
   const nullable = schema.nullable === true || (Array.isArray(type) && type.includes('null'))
 
   let code = ''
   let funcName
-
-  if (schema.fjs_type === 'string' && schema.format === undefined && Array.isArray(schema.type) && schema.type.length === 2) {
-    type = 'string'
-  }
 
   if ('const' in schema) {
     if (nullable) {
@@ -827,7 +791,15 @@ function buildValue (location, input) {
       code += 'json += serializer.asNull()'
       break
     case 'string': {
-      funcName = nullable ? 'serializer.asStringNullable.bind(serializer)' : 'serializer.asString.bind(serializer)'
+      if (schema.format === 'date-time') {
+        funcName = nullable ? 'serializer.asDateTimeNullable.bind(serializer)' : 'serializer.asDateTime.bind(serializer)'
+      } else if (schema.format === 'date') {
+        funcName = nullable ? 'serializer.asDateNullable.bind(serializer)' : 'serializer.asDate.bind(serializer)'
+      } else if (schema.format === 'time') {
+        funcName = nullable ? 'serializer.asTimeNullable.bind(serializer)' : 'serializer.asTime.bind(serializer)'
+      } else {
+        funcName = nullable ? 'serializer.asStringNullable.bind(serializer)' : 'serializer.asString.bind(serializer)'
+      }
       code += `json += ${funcName}(${input})`
       break
     }
@@ -844,15 +816,7 @@ function buildValue (location, input) {
       code += `json += ${funcName}(${input})`
       break
     case 'object':
-      if (schema.format === 'date-time') {
-        funcName = nullable ? 'serializer.asDateTimeNullable.bind(serializer)' : 'serializer.asDateTime.bind(serializer)'
-      } else if (schema.format === 'date') {
-        funcName = nullable ? 'serializer.asDateNullable.bind(serializer)' : 'serializer.asDate.bind(serializer)'
-      } else if (schema.format === 'time') {
-        funcName = nullable ? 'serializer.asTimeNullable.bind(serializer)' : 'serializer.asTime.bind(serializer)'
-      } else {
-        funcName = buildObject(location)
-      }
+      funcName = buildObject(location)
       code += `json += ${funcName}(${input})`
       break
     case 'array':
@@ -870,7 +834,7 @@ function buildValue (location, input) {
           const schemaRef = optionLocation.schemaId + optionLocation.jsonPointer
           const nestedResult = buildValue(optionLocation, input)
           code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate("${schemaRef}", ${input}))
+            ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}))
               ${nestedResult}
           `
         }
@@ -881,6 +845,13 @@ function buildValue (location, input) {
       } else if (isEmpty(schema)) {
         code += `
           json += JSON.stringify(${input})
+        `
+      } else if ('const' in schema) {
+        code += `
+          if(validator.validate(${JSON.stringify(schema)}, ${input}))
+            json += '${JSON.stringify(schema.const)}'
+          else
+            throw new Error(\`Item $\{JSON.stringify(${input})} does not match schema definition.\`)
         `
       } else if (schema.type === undefined) {
         code += `
@@ -914,6 +885,7 @@ function buildValue (location, input) {
                 ${statement}(
                   typeof ${input} === "string" ||
                   ${input} === null ||
+                  ${input} instanceof Date ||
                   ${input} instanceof RegExp ||
                   (
                     typeof ${input} === "object" &&
@@ -941,17 +913,10 @@ function buildValue (location, input) {
               break
             }
             case 'object': {
-              if (schema.fjs_type) {
-                code += `
-                  ${statement}(${input} instanceof Date || ${input} === null)
-                    ${nestedResult}
-                `
-              } else {
-                code += `
-                  ${statement}(typeof ${input} === "object" || ${input} === null)
-                    ${nestedResult}
-                `
-              }
+              code += `
+                ${statement}(typeof ${input} === "object" || ${input} === null)
+                  ${nestedResult}
+              `
               break
             }
             default: {
@@ -980,30 +945,6 @@ function buildValue (location, input) {
   return code
 }
 
-// Ajv does not support js date format. In order to properly validate objects containing a date,
-// it needs to replace all occurrences of the string date format with a custom keyword fjs_type.
-// (see https://github.com/fastify/fast-json-stringify/pull/441)
-function extendDateTimeType (schema) {
-  if (schema === null) return
-
-  if (schema.type === 'string') {
-    schema.fjs_type = 'string'
-    schema.type = ['string', 'object']
-  } else if (
-    Array.isArray(schema.type) &&
-    schema.type.includes('string') &&
-    !schema.type.includes('object')
-  ) {
-    schema.fjs_type = 'string'
-    schema.type.push('object')
-  }
-  for (const property in schema) {
-    if (typeof schema[property] === 'object') {
-      extendDateTimeType(schema[property])
-    }
-  }
-}
-
 function isEmpty (schema) {
   // eslint-disable-next-line
   for (var key in schema) {
@@ -1018,9 +959,9 @@ module.exports = build
 
 module.exports.validLargeArrayMechanisms = validLargeArrayMechanisms
 
-module.exports.restore = function ({ code, ajv }) {
+module.exports.restore = function ({ code, validator }) {
   const serializer = new Serializer()
   // eslint-disable-next-line
-  return (Function.apply(null, ['ajv', 'serializer', code])
-    .apply(null, [ajv, serializer]))
+  return (Function.apply(null, ['validator', 'serializer', code])
+    .apply(null, [validator, serializer]))
 }
