@@ -3,6 +3,7 @@
 const test = require('tap').test
 const fjs = require('..')
 
+const Ajv = require('ajv').default
 const Validator = require('../validator')
 
 function build (opts) {
@@ -19,30 +20,33 @@ function build (opts) {
 }
 
 test('activate debug mode', t => {
-  t.plan(3)
+  t.plan(4)
   const debugMode = build({ debugMode: true })
 
   t.type(debugMode, 'object')
+  t.ok(debugMode.ajv instanceof Ajv)
   t.ok(debugMode.validator instanceof Validator)
   t.type(debugMode.code, 'string')
 })
 
 test('activate debug mode truthy', t => {
-  t.plan(3)
+  t.plan(4)
 
   const debugMode = build({ debugMode: 'yes' })
 
   t.type(debugMode, 'object')
   t.type(debugMode.code, 'string')
+  t.ok(debugMode.ajv instanceof Ajv)
   t.ok(debugMode.validator instanceof Validator)
 })
 
 test('to string auto-consistent', t => {
-  t.plan(4)
+  t.plan(5)
   const debugMode = build({ debugMode: 1 })
 
   t.type(debugMode, 'object')
   t.type(debugMode.code, 'string')
+  t.ok(debugMode.ajv instanceof Ajv)
   t.ok(debugMode.validator instanceof Validator)
 
   const compiled = fjs.restore(debugMode)
@@ -51,7 +55,7 @@ test('to string auto-consistent', t => {
 })
 
 test('to string auto-consistent with ajv', t => {
-  t.plan(4)
+  t.plan(5)
 
   const debugMode = fjs({
     title: 'object with multiple types field',
@@ -69,6 +73,7 @@ test('to string auto-consistent with ajv', t => {
 
   t.type(debugMode, 'object')
   t.type(debugMode.code, 'string')
+  t.ok(debugMode.ajv instanceof Ajv)
   t.ok(debugMode.validator instanceof Validator)
 
   const compiled = fjs.restore(debugMode)

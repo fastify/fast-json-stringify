@@ -147,7 +147,7 @@ function build (schema, options) {
   }
 
   if (options.mode === 'debug') {
-    return { code: dependenciesName.join('\n'), validator }
+    return { code: dependenciesName.join('\n'), validator, ajv: validator.ajv }
   }
 
   if (options.mode === 'standalone') {
