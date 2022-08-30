@@ -853,12 +853,10 @@ function buildValue (location, input) {
           else
             throw new Error(\`Item $\{JSON.stringify(${input})} does not match schema definition.\`)
         `
-      } else if (schema.type === undefined) {
+      } else {
         code += `
           json += JSON.stringify(${input})
         `
-      } else {
-        throw new Error(`${schema.type} unsupported`)
       }
       break
     default:
