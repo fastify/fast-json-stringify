@@ -846,13 +846,6 @@ function buildValue (location, input) {
         code += `
           json += JSON.stringify(${input})
         `
-      } else if ('const' in schema) {
-        code += `
-          if(validator.validate(${JSON.stringify(schema)}, ${input}))
-            json += '${JSON.stringify(schema.const)}'
-          else
-            throw new Error(\`Item $\{JSON.stringify(${input})} does not match schema definition.\`)
-        `
       } else {
         code += `
           json += JSON.stringify(${input})
