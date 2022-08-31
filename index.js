@@ -4,7 +4,6 @@
 
 const merge = require('@fastify/deepmerge')()
 const clone = require('rfdc')({ proto: true })
-const fjsCloned = Symbol('fast-json-stringify.cloned')
 const { randomUUID } = require('crypto')
 
 const validate = require('./schema-validator')
@@ -581,33 +580,23 @@ function buildObject (location) {
 }
 
 function buildArray (location) {
-  let schema = location.schema
-
-  // default to any items type
-  if (!schema.items) {
-    schema.items = {}
-  }
+  const schema = location.schema
 
   let itemsLocation = mergeLocation(location, 'items')
+  itemsLocation.schema = itemsLocation.schema || {}
 
-  if (schema.items.$ref) {
-    if (!schema[fjsCloned]) {
-      location.schema = clone(location.schema)
-      schema = location.schema
-      schema[fjsCloned] = true
-    }
-
-    location = resolveRef(location, schema.items.$ref)
-    itemsLocation = location
-    schema.items = location.schema
+  if (itemsLocation.schema.$ref) {
+    itemsLocation = resolveRef(itemsLocation, itemsLocation.schema.$ref)
   }
 
-  if (arrayItemsReferenceSerializersMap.has(schema.items)) {
-    return arrayItemsReferenceSerializersMap.get(schema.items)
+  const itemsSchema = itemsLocation.schema
+
+  if (arrayItemsReferenceSerializersMap.has(itemsSchema)) {
+    return arrayItemsReferenceSerializersMap.get(itemsSchema)
   }
 
   const functionName = generateFuncName()
-  arrayItemsReferenceSerializersMap.set(schema.items, functionName)
+  arrayItemsReferenceSerializersMap.set(itemsSchema, functionName)
 
   const schemaId = location.schemaId === rootSchemaId ? '' : location.schemaId
   let functionCode = `
@@ -632,8 +621,8 @@ function buildArray (location) {
 
   if (!schema.additionalItems) {
     functionCode += `
-      if (arrayLength > ${schema.items.length}) {
-        throw new Error(\`Item at ${schema.items.length} does not match schema definition.\`)
+      if (arrayLength > ${itemsSchema.length}) {
+        throw new Error(\`Item at ${itemsSchema.length} does not match schema definition.\`)
       }
     `
   }
@@ -650,9 +639,9 @@ function buildArray (location) {
     let jsonOutput = ''
   `
 
-  if (Array.isArray(schema.items)) {
-    for (let i = 0; i < schema.items.length; i++) {
-      const item = schema.items[i]
+  if (Array.isArray(itemsSchema)) {
+    for (let i = 0; i < itemsSchema.length; i++) {
+      const item = itemsSchema[i]
       const tmpRes = buildValue(mergeLocation(itemsLocation, i), `obj[${i}]`)
       functionCode += `
         if (${i} < arrayLength) {
@@ -672,7 +661,7 @@ function buildArray (location) {
 
     if (schema.additionalItems) {
       functionCode += `
-        for (let i = ${schema.items.length}; i < arrayLength; i++) {
+        for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
           let json = JSON.stringify(obj[i])
           jsonOutput += json
           if (i < arrayLength - 1) {
