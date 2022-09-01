@@ -831,10 +831,6 @@ function buildValue (location, input) {
         code += `
           else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
         `
-      } else if (isEmpty(schema)) {
-        code += `
-          json += JSON.stringify(${input})
-        `
       } else {
         code += `
           json += JSON.stringify(${input})
@@ -923,16 +919,6 @@ function buildValue (location, input) {
   }
 
   return code
-}
-
-function isEmpty (schema) {
-  // eslint-disable-next-line
-  for (var key in schema) {
-    if (Object.prototype.hasOwnProperty.call(schema, key) && schema[key] !== undefined) {
-      return false
-    }
-  }
-  return true
 }
 
 module.exports = build
