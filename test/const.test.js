@@ -238,7 +238,7 @@ test('schema with const and null as type', (t) => {
     foo: null
   })
 
-  t.equal(output, '{"foo":null}')
+  t.equal(output, '{"foo":"baz"}')
   t.ok(validate(JSON.parse(output)), 'valid schema')
 
   const output2 = stringify({ foo: 'baz' })
@@ -262,7 +262,7 @@ test('schema with const as nullable', (t) => {
     foo: null
   })
 
-  t.equal(output, '{"foo":null}')
+  t.equal(output, '{"foo":"baz"}')
   t.ok(validate(JSON.parse(output)), 'valid schema')
 
   const output2 = stringify({

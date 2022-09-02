@@ -765,12 +765,6 @@ function buildValue (location, input) {
   let funcName
 
   if ('const' in schema) {
-    if (nullable) {
-      code += `
-        json += ${input} === null ? 'null' : '${JSON.stringify(schema.const)}'
-      `
-      return code
-    }
     code += `json += '${JSON.stringify(schema.const)}'`
     return code
   }
