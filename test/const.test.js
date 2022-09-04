@@ -1,7 +1,7 @@
 'use strict'
 
 const test = require('tap').test
-const validator = require('is-my-json-valid')
+const { validate } = require('./util')
 const build = require('..')
 
 test('schema with const string', (t) => {
@@ -14,14 +14,13 @@ test('schema with const string', (t) => {
     }
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({
     foo: 'bar'
   })
 
   t.equal(output, '{"foo":"bar"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
 
 test('schema with const string and different input', (t) => {
@@ -34,14 +33,13 @@ test('schema with const string and different input', (t) => {
     }
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({
     foo: 'baz'
   })
 
   t.equal(output, '{"foo":"bar"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
 
 test('schema with const string and different type input', (t) => {
@@ -54,14 +52,13 @@ test('schema with const string and different type input', (t) => {
     }
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({
     foo: 1
   })
 
   t.equal(output, '{"foo":"bar"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
 
 test('schema with const string and no input', (t) => {
@@ -74,12 +71,11 @@ test('schema with const string and no input', (t) => {
     }
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({})
 
   t.equal(output, '{}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
 
 test('schema with const number', (t) => {
@@ -92,14 +88,13 @@ test('schema with const number', (t) => {
     }
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({
     foo: 1
   })
 
   t.equal(output, '{"foo":1}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
 
 test('schema with const number and different input', (t) => {
@@ -112,14 +107,13 @@ test('schema with const number and different input', (t) => {
     }
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({
     foo: 2
   })
 
   t.equal(output, '{"foo":1}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
 
 test('schema with const bool', (t) => {
@@ -132,14 +126,13 @@ test('schema with const bool', (t) => {
     }
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({
     foo: true
   })
 
   t.equal(output, '{"foo":true}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
 
 test('schema with const number', (t) => {
@@ -152,14 +145,13 @@ test('schema with const number', (t) => {
     }
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({
     foo: 1
   })
 
   t.equal(output, '{"foo":1}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
 
 test('schema with const null', (t) => {
@@ -172,14 +164,13 @@ test('schema with const null', (t) => {
     }
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({
     foo: null
   })
 
   t.equal(output, '{"foo":null}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
 
 test('schema with const array', (t) => {
@@ -192,14 +183,13 @@ test('schema with const array', (t) => {
     }
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({
     foo: [1, 2, 3]
   })
 
   t.equal(output, '{"foo":[1,2,3]}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
 
 test('schema with const object', (t) => {
@@ -212,14 +202,13 @@ test('schema with const object', (t) => {
     }
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({
     foo: { bar: 'baz' }
   })
 
   t.equal(output, '{"foo":{"bar":"baz"}}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
 
 test('schema with const and null as type', (t) => {
@@ -232,18 +221,17 @@ test('schema with const and null as type', (t) => {
     }
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({
     foo: null
   })
 
   t.equal(output, '{"foo":"baz"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 
   const output2 = stringify({ foo: 'baz' })
   t.equal(output2, '{"foo":"baz"}')
-  t.ok(validate(JSON.parse(output2)), 'valid schema')
+  t.ok(validate(JSON.parse(output2), schema), 'valid schema')
 })
 
 test('schema with const as nullable', (t) => {
@@ -256,20 +244,19 @@ test('schema with const as nullable', (t) => {
     }
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({
     foo: null
   })
 
   t.equal(output, '{"foo":"baz"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 
   const output2 = stringify({
     foo: 'baz'
   })
   t.equal(output2, '{"foo":"baz"}')
-  t.ok(validate(JSON.parse(output2)), 'valid schema')
+  t.ok(validate(JSON.parse(output2), schema), 'valid schema')
 })
 
 test('schema with const and invalid object', (t) => {
@@ -283,12 +270,11 @@ test('schema with const and invalid object', (t) => {
     required: ['foo']
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const result = stringify({
     foo: { foo: 'baz' }
   })
 
   t.equal(result, '{"foo":{"foo":"bar"}}')
-  t.ok(validate(JSON.parse(result)), 'valid schema')
+  t.ok(validate(JSON.parse(result), schema), 'valid schema')
 })

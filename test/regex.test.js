@@ -1,7 +1,7 @@
 'use strict'
 
 const test = require('tap').test
-const validator = require('is-my-json-valid')
+const { validate } = require('./util')
 const build = require('..')
 
 test('object with RexExp', (t) => {
@@ -22,12 +22,11 @@ test('object with RexExp', (t) => {
   }
 
   const stringify = build(schema)
-  const validate = validator(schema)
   const output = stringify(obj)
 
   JSON.parse(output)
   t.pass()
 
   t.equal(obj.reg.source, new RegExp(JSON.parse(output).reg).source)
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })

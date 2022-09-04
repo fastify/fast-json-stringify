@@ -1,7 +1,7 @@
 'use strict'
 
 const test = require('tap').test
-const validator = require('is-my-json-valid')
+const { validate } = require('./util')
 const build = require('..')
 
 test('render a string with surrogate pairs as JSON:test 1', (t) => {
@@ -12,12 +12,11 @@ test('render a string with surrogate pairs as JSON:test 1', (t) => {
     type: 'string'
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify('𝌆')
 
   t.equal(output, '"𝌆"')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
 
 test('render a string with surrogate pairs as JSON: test 2', (t) => {
@@ -28,12 +27,11 @@ test('render a string with surrogate pairs as JSON: test 2', (t) => {
     type: 'string'
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify('\uD834\uDF06')
 
   t.equal(output, '"𝌆"')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
 
 test('render a string with Unpaired surrogate code as JSON', (t) => {
@@ -44,11 +42,10 @@ test('render a string with Unpaired surrogate code as JSON', (t) => {
     type: 'string'
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify('\uDF06\uD834')
   t.equal(output, JSON.stringify('\uDF06\uD834'))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
 
 test('render a string with lone surrogate code as JSON', (t) => {
@@ -59,9 +56,8 @@ test('render a string with lone surrogate code as JSON', (t) => {
     type: 'string'
   }
 
-  const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify('\uDEAD')
   t.equal(output, JSON.stringify('\uDEAD'))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.ok(validate(JSON.parse(output), schema), 'valid schema')
 })
