@@ -252,7 +252,7 @@ test('schema with const as nullable', (t) => {
   const schema = {
     type: 'object',
     properties: {
-      foo: { nullable: true, const: 'baz' }
+      foo: { type: 'string', nullable: true, const: 'baz' }
     }
   }
 
