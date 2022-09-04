@@ -525,3 +525,22 @@ test('nullable date', (t) => {
 
   t.same(result, `"${DateTime.fromJSDate(data).toISODate()}"`)
 })
+
+test('non-date format should not affect data serialization (issue #491)', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      hello: {
+        type: 'string',
+        format: 'int64',
+        pattern: '^[0-9]*$'
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const data = { hello: 123n }
+  t.equal(stringify(data), '{"hello":"123"}')
+})
