@@ -18,14 +18,6 @@ module.exports = class Serializer {
     }
   }
 
-  asAny (i) {
-    return JSON.stringify(i)
-  }
-
-  asNull () {
-    return 'null'
-  }
-
   asInteger (i) {
     if (typeof i === 'bigint') {
       return i.toString()
@@ -42,10 +34,6 @@ module.exports = class Serializer {
     }
   }
 
-  asIntegerNullable (i) {
-    return i === null ? 'null' : this.asInteger(i)
-  }
-
   asNumber (i) {
     const num = Number(i)
     if (Number.isNaN(num)) {
@@ -57,16 +45,8 @@ module.exports = class Serializer {
     }
   }
 
-  asNumberNullable (i) {
-    return i === null ? 'null' : this.asNumber(i)
-  }
-
   asBoolean (bool) {
     return bool && 'true' || 'false' // eslint-disable-line
-  }
-
-  asBooleanNullable (bool) {
-    return bool === null ? 'null' : this.asBoolean(bool)
   }
 
   asDateTime (date) {
@@ -80,10 +60,6 @@ module.exports = class Serializer {
     throw new Error(`The value "${date}" cannot be converted to a date-time.`)
   }
 
-  asDateTimeNullable (date) {
-    return date === null ? 'null' : this.asDateTime(date)
-  }
-
   asDate (date) {
     if (date === null) return '""'
     if (date instanceof Date) {
@@ -95,10 +71,6 @@ module.exports = class Serializer {
     throw new Error(`The value "${date}" cannot be converted to a date.`)
   }
 
-  asDateNullable (date) {
-    return date === null ? 'null' : this.asDate(date)
-  }
-
   asTime (date) {
     if (date === null) return '""'
     if (date instanceof Date) {
@@ -108,10 +80,6 @@ module.exports = class Serializer {
       return '"' + date + '"'
     }
     throw new Error(`The value "${date}" cannot be converted to a time.`)
-  }
-
-  asTimeNullable (date) {
-    return date === null ? 'null' : this.asTime(date)
   }
 
   asString (str) {
@@ -131,10 +99,6 @@ module.exports = class Serializer {
     } else {
       return JSON.stringify(str)
     }
-  }
-
-  asStringNullable (str) {
-    return str === null ? 'null' : this.asString(str)
   }
 
   // magically escape strings for json
