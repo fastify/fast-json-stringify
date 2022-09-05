@@ -549,13 +549,6 @@ function buildObject (location) {
     function ${functionName} (input) {
       // ${schemaId + location.jsonPointer}
   `
-  if (schema.nullable) {
-    functionCode += `
-      if (input === null) {
-        return 'null';
-      }
-  `
-  }
 
   functionCode += `
       var obj = ${toJSON('input')}
@@ -603,14 +596,6 @@ function buildArray (location) {
     function ${functionName} (obj) {
       // ${schemaId + location.jsonPointer}
   `
-
-  if (schema.nullable) {
-    functionCode += `
-      if (obj === null) {
-        return 'null';
-      }
-    `
-  }
 
   functionCode += `
     if (!Array.isArray(obj)) {
@@ -732,6 +717,137 @@ function generateFuncName () {
   return 'anonymous' + genFuncNameCounter++
 }
 
+function buildMultiTypeSerializer (location, input) {
+  const schema = location.schema
+  const types = schema.type.sort(t1 => t1 === 'null' ? -1 : 1)
+
+  let code = ''
+
+  const locationClone = clone(location)
+  types.forEach((type, index) => {
+    const statement = index === 0 ? 'if' : 'else if'
+    locationClone.schema.type = type
+    const nestedResult = buildSingleTypeSerializer(locationClone, input)
+    switch (type) {
+      case 'null':
+        code += `
+          ${statement} (${input} === null)
+            ${nestedResult}
+          `
+        break
+      case 'string': {
+        code += `
+          ${statement}(
+            typeof ${input} === "string" ||
+            ${input} === null ||
+            ${input} instanceof Date ||
+            ${input} instanceof RegExp ||
+            (
+              typeof ${input} === "object" &&
+              typeof ${input}.toString === "function" &&
+              ${input}.toString !== Object.prototype.toString &&
+              !(${input} instanceof Date)
+            )
+          )
+            ${nestedResult}
+        `
+        break
+      }
+      case 'array': {
+        code += `
+          ${statement}(Array.isArray(${input}))
+            ${nestedResult}
+        `
+        break
+      }
+      case 'integer': {
+        code += `
+          ${statement}(Number.isInteger(${input}) || ${input} === null)
+            ${nestedResult}
+        `
+        break
+      }
+      default: {
+        code += `
+          ${statement}(typeof ${input} === "${type}" || ${input} === null)
+            ${nestedResult}
+        `
+        break
+      }
+    }
+  })
+  code += `
+    else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
+  `
+
+  return code
+}
+
+function buildSingleTypeSerializer (location, input) {
+  const schema = location.schema
+
+  switch (schema.type) {
+    case 'null':
+      return 'json += \'null\''
+    case 'string': {
+      if (schema.format === 'date-time') {
+        return `json += serializer.asDateTime(${input})`
+      } else if (schema.format === 'date') {
+        return `json += serializer.asDate(${input})`
+      } else if (schema.format === 'time') {
+        return `json += serializer.asTime(${input})`
+      } else {
+        return `json += serializer.asString(${input})`
+      }
+    }
+    case 'integer':
+      return `json += serializer.asInteger(${input})`
+    case 'number':
+      return `json += serializer.asNumber(${input})`
+    case 'boolean':
+      return `json += serializer.asBoolean(${input})`
+    case 'object': {
+      const funcName = buildObject(location)
+      return `json += ${funcName}(${input})`
+    }
+    case 'array': {
+      const funcName = buildArray(location)
+      return `json += ${funcName}(${input})`
+    }
+    case undefined:
+      return `json += JSON.stringify(${input})`
+    default:
+      throw new Error(`${schema.type} unsupported`)
+  }
+}
+
+function buildConstSerializer (location, input) {
+  const schema = location.schema
+  const type = schema.type
+
+  const hasNullType = Array.isArray(type) && type.includes('null')
+
+  let code = ''
+
+  if (hasNullType) {
+    code += `
+      if (${input} === null) {
+        json += 'null'
+      } else {
+    `
+  }
+
+  code += `json += '${JSON.stringify(schema.const)}'`
+
+  if (hasNullType) {
+    code += `
+      }
+    `
+  }
+
+  return code
+}
+
 function buildValue (location, input) {
   let schema = location.schema
 
@@ -759,163 +875,50 @@ function buildValue (location, input) {
   }
 
   const type = schema.type
-  const nullable = schema.nullable === true || (Array.isArray(type) && type.includes('null'))
 
   let code = ''
-  let funcName
 
-  if ('const' in schema) {
-    if (nullable) {
+  if (type === undefined && (schema.anyOf || schema.oneOf)) {
+    const type = schema.anyOf ? 'anyOf' : 'oneOf'
+    const anyOfLocation = mergeLocation(location, type)
+
+    for (let index = 0; index < location.schema[type].length; index++) {
+      const optionLocation = mergeLocation(anyOfLocation, index)
+      const schemaRef = optionLocation.schemaId + optionLocation.jsonPointer
+      const nestedResult = buildValue(optionLocation, input)
       code += `
-        json += ${input} === null ? 'null' : '${JSON.stringify(schema.const)}'
+        ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}))
+          ${nestedResult}
       `
-      return code
     }
-    code += `json += '${JSON.stringify(schema.const)}'`
+
+    code += `
+      else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
+    `
     return code
   }
 
-  switch (type) {
-    case 'null':
-      code += 'json += serializer.asNull()'
-      break
-    case 'string': {
-      if (schema.format === 'date-time') {
-        funcName = nullable ? 'serializer.asDateTimeNullable.bind(serializer)' : 'serializer.asDateTime.bind(serializer)'
-      } else if (schema.format === 'date') {
-        funcName = nullable ? 'serializer.asDateNullable.bind(serializer)' : 'serializer.asDate.bind(serializer)'
-      } else if (schema.format === 'time') {
-        funcName = nullable ? 'serializer.asTimeNullable.bind(serializer)' : 'serializer.asTime.bind(serializer)'
+  const nullable = schema.nullable === true
+  if (nullable) {
+    code += `
+      if (${input} === null) {
+        json += 'null'
       } else {
-        funcName = nullable ? 'serializer.asStringNullable.bind(serializer)' : 'serializer.asString.bind(serializer)'
+    `
+  }
+
+  if (schema.const !== undefined) {
+    code += buildConstSerializer(location, input)
+  } else if (Array.isArray(type)) {
+    code += buildMultiTypeSerializer(location, input)
+  } else {
+    code += buildSingleTypeSerializer(location, input)
+  }
+
+  if (nullable) {
+    code += `
       }
-      code += `json += ${funcName}(${input})`
-      break
-    }
-    case 'integer':
-      funcName = nullable ? 'serializer.asIntegerNullable.bind(serializer)' : 'serializer.asInteger.bind(serializer)'
-      code += `json += ${funcName}(${input})`
-      break
-    case 'number':
-      funcName = nullable ? 'serializer.asNumberNullable.bind(serializer)' : 'serializer.asNumber.bind(serializer)'
-      code += `json += ${funcName}(${input})`
-      break
-    case 'boolean':
-      funcName = nullable ? 'serializer.asBooleanNullable.bind(serializer)' : 'serializer.asBoolean.bind(serializer)'
-      code += `json += ${funcName}(${input})`
-      break
-    case 'object':
-      funcName = buildObject(location)
-      code += `json += ${funcName}(${input})`
-      break
-    case 'array':
-      funcName = buildArray(location)
-      code += `json += ${funcName}(${input})`
-      break
-    case undefined:
-      if (schema.anyOf || schema.oneOf) {
-        // beware: dereferenceOfRefs has side effects and changes schema.anyOf
-        const type = schema.anyOf ? 'anyOf' : 'oneOf'
-        const anyOfLocation = mergeLocation(location, type)
-
-        for (let index = 0; index < location.schema[type].length; index++) {
-          const optionLocation = mergeLocation(anyOfLocation, index)
-          const schemaRef = optionLocation.schemaId + optionLocation.jsonPointer
-          const nestedResult = buildValue(optionLocation, input)
-          code += `
-            ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}))
-              ${nestedResult}
-          `
-        }
-
-        code += `
-          else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
-        `
-      } else {
-        code += `
-          json += JSON.stringify(${input})
-        `
-      }
-      break
-    default:
-      if (Array.isArray(type)) {
-        let sortedTypes = type
-        const nullable = schema.nullable === true || type.includes('null')
-
-        if (nullable) {
-          sortedTypes = sortedTypes.filter(type => type !== 'null')
-          code += `
-            if (${input} === null) {
-              json += null
-            } else {`
-        }
-
-        const locationClone = clone(location)
-        sortedTypes.forEach((type, index) => {
-          const statement = index === 0 ? 'if' : 'else if'
-          locationClone.schema.type = type
-          const nestedResult = buildValue(locationClone, input)
-          switch (type) {
-            case 'string': {
-              code += `
-                ${statement}(
-                  typeof ${input} === "string" ||
-                  ${input} === null ||
-                  ${input} instanceof Date ||
-                  ${input} instanceof RegExp ||
-                  (
-                    typeof ${input} === "object" &&
-                    typeof ${input}.toString === "function" &&
-                    ${input}.toString !== Object.prototype.toString &&
-                    !(${input} instanceof Date)
-                  )
-                )
-                  ${nestedResult}
-              `
-              break
-            }
-            case 'array': {
-              code += `
-                ${statement}(Array.isArray(${input}))
-                  ${nestedResult}
-              `
-              break
-            }
-            case 'integer': {
-              code += `
-                ${statement}(Number.isInteger(${input}) || ${input} === null)
-                  ${nestedResult}
-              `
-              break
-            }
-            case 'object': {
-              code += `
-                ${statement}(typeof ${input} === "object" || ${input} === null)
-                  ${nestedResult}
-              `
-              break
-            }
-            default: {
-              code += `
-                ${statement}(typeof ${input} === "${type}" || ${input} === null)
-                  ${nestedResult}
-              `
-              break
-            }
-          }
-        })
-        code += `
-          else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
-        `
-
-        if (nullable) {
-          code += `
-            }
-          `
-        }
-      } else {
-        throw new Error(`${type} unsupported`)
-      }
+    `
   }
 
   return code
