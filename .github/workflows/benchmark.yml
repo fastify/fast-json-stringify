@@ -8,23 +8,26 @@ jobs:
   benchmark:
     if: ${{ github.event.label.name == 'benchmark' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
-      PR-BENCH-12: ${{ steps.benchmark-pr.outputs.BENCH_RESULT12 }}
       PR-BENCH-14: ${{ steps.benchmark-pr.outputs.BENCH_RESULT14 }}
       PR-BENCH-16: ${{ steps.benchmark-pr.outputs.BENCH_RESULT16 }}
-      MAIN-BENCH-12: ${{ steps.benchmark-main.outputs.BENCH_RESULT12 }}
+      PR-BENCH-18: ${{ steps.benchmark-pr.outputs.BENCH_RESULT18 }}
       MAIN-BENCH-14: ${{ steps.benchmark-main.outputs.BENCH_RESULT14 }}
       MAIN-BENCH-16: ${{ steps.benchmark-main.outputs.BENCH_RESULT16 }}
+      MAIN-BENCH-18: ${{ steps.benchmark-main.outputs.BENCH_RESULT18 }}
     strategy:
       matrix:
-        node-version: [12, 14, 16]
+        node-version: [14, 16, 18]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
-          ref: ${{github.event.pull_request.head.ref}}
+          persist-credentials: false
+          ref: ${{github.event.pull_request.head.sha}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
 
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
 
@@ -43,7 +46,7 @@ jobs:
           echo "::set-output name=BENCH_RESULT${{matrix.node-version}}::$content"
 
       # main benchmark
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: 'master'
 
@@ -64,24 +67,14 @@ jobs:
   output-benchmark:
     needs: [benchmark]
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - name: Comment PR
         uses: thollander/actions-comment-pull-request@v1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           message: |
-            **Node**: 12
-            **PR**:
-            ```
-            ${{ needs.benchmark.outputs.PR-BENCH-12 }}
-            ```
-            **MAIN**:
-            ```
-            ${{ needs.benchmark.outputs.MAIN-BENCH-12 }}
-            ```
-            
-            ---
-            
             **Node**: 14
             **PR**:
             ```
@@ -102,6 +95,18 @@ jobs:
             **MAIN**:
             ```
             ${{ needs.benchmark.outputs.MAIN-BENCH-16 }}
+            ```
+            
+            ---
+            
+            **Node**: 18
+            **PR**:
+            ```
+            ${{ needs.benchmark.outputs.PR-BENCH-18 }}
+            ```
+            **MAIN**:
+            ```
+            ${{ needs.benchmark.outputs.MAIN-BENCH-18 }}
             ```
             
       - uses: actions-ecosystem/action-remove-labels@v1

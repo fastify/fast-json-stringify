@@ -1,7 +1,7 @@
 'use strict'
 
 const test = require('tap').test
-const moment = require('moment')
+const { DateTime } = require('luxon')
 const validator = require('is-my-json-valid')
 const build = require('..')
 
@@ -40,6 +40,25 @@ test('render a date in a string when format is date-format as ISOString', (t) =>
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
+test('render a nullable date in a string when format is date-format as ISOString', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'date-time',
+    nullable: true
+  }
+  const toStringify = new Date()
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, JSON.stringify(toStringify))
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
 test('render a date in a string when format is date as YYYY-MM-DD', (t) => {
   t.plan(2)
 
@@ -54,7 +73,26 @@ test('render a date in a string when format is date as YYYY-MM-DD', (t) => {
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, `"${moment(toStringify).format('YYYY-MM-DD')}"`)
+  t.equal(output, `"${DateTime.fromJSDate(toStringify).toISODate()}"`)
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('render a nullable date in a string when format is date as YYYY-MM-DD', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'date',
+    nullable: true
+  }
+  const toStringify = new Date()
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, `"${DateTime.fromJSDate(toStringify).toISODate()}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -72,7 +110,7 @@ test('verify padding for rendered date in a string when format is date', (t) => 
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, `"${moment(toStringify).format('YYYY-MM-DD')}"`)
+  t.equal(output, `"${DateTime.fromJSDate(toStringify).toISODate()}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -93,7 +131,50 @@ test('render a date in a string when format is time as kk:mm:ss', (t) => {
   validate(JSON.parse(output))
   t.equal(validate.errors, null)
 
-  t.equal(output, `"${moment(toStringify).format('HH:mm:ss')}"`)
+  t.equal(output, `"${DateTime.fromJSDate(toStringify).toFormat('HH:mm:ss')}"`)
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('render a nullable date in a string when format is time as kk:mm:ss', (t) => {
+  t.plan(3)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'time',
+    nullable: true
+  }
+  const toStringify = new Date()
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  validate(JSON.parse(output))
+  t.equal(validate.errors, null)
+
+  t.equal(output, `"${DateTime.fromJSDate(toStringify).toFormat('HH:mm:ss')}"`)
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('render a midnight time', (t) => {
+  t.plan(3)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'time'
+  }
+  const midnight = new Date(new Date().setHours(24))
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(midnight)
+
+  validate(JSON.parse(output))
+  t.equal(validate.errors, null)
+
+  t.equal(output, `"${DateTime.fromJSDate(midnight).toFormat('HH:mm:ss')}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -114,61 +195,7 @@ test('verify padding for rendered date in a string when format is time', (t) => 
   validate(JSON.parse(output))
   t.equal(validate.errors, null)
 
-  t.equal(output, `"${moment(toStringify).format('HH:mm:ss')}"`)
-  t.ok(validate(JSON.parse(output)), 'valid schema')
-})
-
-test('render a moment.js instance in a string when format is date-time as ISOString', (t) => {
-  t.plan(2)
-
-  const schema = {
-    title: 'a moment.js object in a string',
-    type: 'string',
-    format: 'date-time'
-  }
-  const toStringify = moment()
-
-  const validate = validator(schema)
-  const stringify = build(schema)
-  const output = stringify(toStringify)
-
-  t.equal(output, JSON.stringify(toStringify))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
-})
-
-test('render a moment.js instance in a string when format is date as YYYY-MM-DD', (t) => {
-  t.plan(2)
-
-  const schema = {
-    title: 'a moment.js object in a string',
-    type: 'string',
-    format: 'date'
-  }
-  const toStringify = moment()
-
-  const validate = validator(schema)
-  const stringify = build(schema)
-  const output = stringify(toStringify)
-
-  t.equal(output, `"${toStringify.format('YYYY-MM-DD')}"`)
-  t.ok(validate(JSON.parse(output)), 'valid schema')
-})
-
-test('render a moment.js instance in a string when format is time as HH:mm:ss', (t) => {
-  t.plan(2)
-
-  const schema = {
-    title: 'a moment.js object in a string',
-    type: 'string',
-    format: 'time'
-  }
-  const toStringify = moment()
-
-  const validate = validator(schema)
-  const stringify = build(schema)
-  const output = stringify(toStringify)
-
-  t.equal(output, `"${toStringify.format('HH:mm:ss')}"`)
+  t.equal(output, `"${DateTime.fromJSDate(toStringify).toFormat('HH:mm:ss')}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -185,7 +212,7 @@ test('render a nested object in a string when type is date-format as ISOString',
       }
     }
   }
-  const toStringify = { date: moment() }
+  const toStringify = { date: new Date() }
 
   const validate = validator(schema)
   const stringify = build(schema)
@@ -281,7 +308,7 @@ test('serializing null value', t => {
   })
 
   t.test('type::array', t => {
-    t.plan(3)
+    t.plan(6)
 
     t.test('format::date-time', t => {
       t.plan(2)
@@ -321,13 +348,13 @@ test('serializing null value', t => {
       t.notOk(validate(JSON.parse(output)), 'an empty string is not a date format')
     })
 
-    t.test('format::time', t => {
+    t.test('format::date', t => {
       t.plan(2)
 
       const prop = {
         updatedAt: {
           type: ['string'],
-          format: 'time'
+          format: 'date'
         }
       }
 
@@ -337,7 +364,66 @@ test('serializing null value', t => {
       } = serialize(createSchema(prop), input)
 
       t.equal(output, '{"updatedAt":""}')
-      t.notOk(validate(JSON.parse(output)), 'an empty string is not a time format')
+      t.notOk(validate(JSON.parse(output)), 'an empty string is not a date format')
+    })
+
+    t.test('format::time, Date object', t => {
+      t.plan(1)
+
+      const schema = {
+        oneOf: [
+          {
+            type: 'object',
+            properties: {
+              updatedAt: {
+                type: ['string', 'number'],
+                format: 'time'
+              }
+            }
+          }
+        ]
+      }
+
+      const date = new Date()
+      const input = { updatedAt: date }
+      const { output } = serialize(schema, input)
+
+      t.equal(output, JSON.stringify({ updatedAt: DateTime.fromJSDate(date).toFormat('HH:mm:ss') }))
+    })
+
+    t.test('format::time, Date object', t => {
+      t.plan(1)
+
+      const schema = {
+        oneOf: [
+          {
+            type: ['string', 'number'],
+            format: 'time'
+          }
+        ]
+      }
+
+      const date = new Date()
+      const { output } = serialize(schema, date)
+
+      t.equal(output, `"${DateTime.fromJSDate(date).toFormat('HH:mm:ss')}"`)
+    })
+
+    t.test('format::time, Date object', t => {
+      t.plan(1)
+
+      const schema = {
+        oneOf: [
+          {
+            type: ['string', 'number'],
+            format: 'time'
+          }
+        ]
+      }
+
+      const { output } = serialize(schema, 42)
+
+      t.equal(output, JSON.stringify(42))
     })
   })
 
@@ -401,4 +487,60 @@ test('serializing null value', t => {
       t.ok(validate(JSON.parse(output)), 'valid schema')
     })
   })
+})
+
+test('Validate Date object as string type', (t) => {
+  t.plan(1)
+
+  const schema = {
+    oneOf: [
+      { type: 'string' }
+    ]
+  }
+  const toStringify = new Date()
+
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, JSON.stringify(toStringify))
+})
+
+test('nullable date', (t) => {
+  t.plan(1)
+
+  const schema = {
+    anyOf: [
+      {
+        format: 'date',
+        type: 'string',
+        nullable: true
+      }
+    ]
+  }
+
+  const stringify = build(schema)
+
+  const data = new Date()
+  const result = stringify(data)
+
+  t.same(result, `"${DateTime.fromJSDate(data).toISODate()}"`)
+})
+
+test('non-date format should not affect data serialization (issue #491)', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      hello: {
+        type: 'string',
+        format: 'int64',
+        pattern: '^[0-9]*$'
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const data = { hello: 123n }
+  t.equal(stringify(data), '{"hello":"123"}')
 })

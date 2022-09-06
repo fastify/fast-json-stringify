@@ -9,11 +9,11 @@ const nullable = true
 const complexObject = {
   type: 'object',
   properties: {
-    nullableString: { type: 'string', nullable: nullable },
-    nullableNumber: { type: 'number', nullable: nullable },
-    nullableInteger: { type: 'integer', nullable: nullable },
-    nullableBoolean: { type: 'boolean', nullable: nullable },
-    nullableNull: { type: 'null', nullable: nullable },
+    nullableString: { type: 'string', nullable },
+    nullableNumber: { type: 'number', nullable },
+    nullableInteger: { type: 'integer', nullable },
+    nullableBoolean: { type: 'boolean', nullable },
+    nullableNull: { type: 'null', nullable },
     nullableArray: {
       type: 'array',
       nullable: true,
@@ -25,11 +25,11 @@ const complexObject = {
       nullable: false,
       additionalProperties: true,
       properties: {
-        nullableString: { type: 'string', nullable: nullable },
-        nullableNumber: { type: 'number', nullable: nullable },
-        nullableInteger: { type: 'integer', nullable: nullable },
-        nullableBoolean: { type: 'boolean', nullable: nullable },
-        nullableNull: { type: 'null', nullable: nullable },
+        nullableString: { type: 'string', nullable },
+        nullableNumber: { type: 'number', nullable },
+        nullableInteger: { type: 'integer', nullable },
+        nullableBoolean: { type: 'boolean', nullable },
+        nullableNull: { type: 'null', nullable },
         nullableArray: {
           type: 'array',
           nullable: true,
@@ -86,11 +86,11 @@ const complexExpectedResult = {
 }
 
 const testSet = {
-  nullableString: [{ type: 'string', nullable: nullable }, null, null],
-  nullableNumber: [{ type: 'number', nullable: nullable }, null, null],
-  nullableInteger: [{ type: 'integer', nullable: nullable }, null, null],
-  nullableBoolean: [{ type: 'boolean', nullable: nullable }, null, null],
-  nullableNull: [{ type: 'null', nullable: nullable }, null, null],
+  nullableString: [{ type: 'string', nullable }, null, null],
+  nullableNumber: [{ type: 'number', nullable }, null, null],
+  nullableInteger: [{ type: 'integer', nullable }, null, null],
+  nullableBoolean: [{ type: 'boolean', nullable }, null, null],
+  nullableNull: [{ type: 'null', nullable }, null, null],
   nullableArray: [{
     type: 'array',
     nullable: true,
@@ -115,4 +115,429 @@ Object.keys(testSet).forEach(key => {
     const result = stringifier(data)
     t.same(JSON.parse(result), expected)
   })
+})
+
+test('handle nullable number correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'number',
+    nullable: true
+  }
+  const stringify = build(schema)
+
+  const data = null
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('handle nullable integer correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'integer',
+    nullable: true
+  }
+  const stringify = build(schema)
+
+  const data = null
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('handle nullable boolean correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'boolean',
+    nullable: true
+  }
+  const stringify = build(schema)
+
+  const data = null
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('handle nullable string correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string',
+    nullable: true
+  }
+  const stringify = build(schema)
+
+  const data = null
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('handle nullable date-time correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string',
+    format: 'date-time',
+    nullable: true
+  }
+  const stringify = build(schema)
+
+  const data = null
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('handle nullable date correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string',
+    format: 'date',
+    nullable: true
+  }
+  const stringify = build(schema)
+
+  const data = null
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('handle nullable time correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string',
+    format: 'time',
+    nullable: true
+  }
+  const stringify = build(schema)
+
+  const data = null
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('large array of nullable strings with default mechanism', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: {
+          type: 'string',
+          nullable: true
+        }
+      }
+    }
+  }
+
+  const options = {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default'
+  }
+
+  const stringify = build(schema, options)
+
+  const data = { ids: new Array(2e4).fill(null) }
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('large array of nullable date-time strings with default mechanism', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: {
+          type: 'string',
+          format: 'date-time',
+          nullable: true
+        }
+      }
+    }
+  }
+
+  const options = {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default'
+  }
+
+  const stringify = build(schema, options)
+
+  const data = { ids: new Array(2e4).fill(null) }
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('large array of nullable date-time strings with default mechanism', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: {
+          type: 'string',
+          format: 'date',
+          nullable: true
+        }
+      }
+    }
+  }
+
+  const options = {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default'
+  }
+
+  const stringify = build(schema, options)
+
+  const data = { ids: new Array(2e4).fill(null) }
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('large array of nullable date-time strings with default mechanism', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: {
+          type: 'string',
+          format: 'time',
+          nullable: true
+        }
+      }
+    }
+  }
+
+  const options = {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default'
+  }
+
+  const stringify = build(schema, options)
+
+  const data = { ids: new Array(2e4).fill(null) }
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('large array of nullable numbers with default mechanism', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: {
+          type: 'number',
+          nullable: true
+        }
+      }
+    }
+  }
+
+  const options = {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default'
+  }
+
+  const stringify = build(schema, options)
+
+  const data = { ids: new Array(2e4).fill(null) }
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('large array of nullable integers with default mechanism', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: {
+          type: 'integer',
+          nullable: true
+        }
+      }
+    }
+  }
+
+  const options = {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default'
+  }
+
+  const stringify = build(schema, options)
+
+  const data = { ids: new Array(2e4).fill(null) }
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('large array of nullable booleans with default mechanism', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: {
+          type: 'boolean',
+          nullable: true
+        }
+      }
+    }
+  }
+
+  const options = {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default'
+  }
+
+  const stringify = build(schema, options)
+
+  const data = { ids: new Array(2e4).fill(null) }
+  const result = stringify(data)
+
+  t.same(result, JSON.stringify(data))
+  t.same(JSON.parse(result), data)
+})
+
+test('nullable type in the schema', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: ['object', 'null'],
+    properties: {
+      foo: {
+        type: 'string'
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  const data = { foo: 'bar' }
+
+  t.same(stringify(data), JSON.stringify(data))
+  t.same(stringify(null), JSON.stringify(null))
+})
+
+test('throw an error if the value doesn\'t match the type', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['data'],
+    properties: {
+      data: {
+        type: 'array',
+        minItems: 1,
+        items: {
+          oneOf: [
+            {
+              type: 'string'
+            },
+            {
+              type: 'number'
+            }
+          ]
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  const validData = { data: [1, 'testing'] }
+  t.equal(stringify(validData), JSON.stringify(validData))
+
+  const invalidData = { data: [false, 'testing'] }
+  t.throws(() => stringify(invalidData))
+})
+
+test('nullable value in oneOf', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      data: {
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'integer', minimum: 1 }
+              },
+              additionalProperties: false,
+              required: ['id']
+            }
+          },
+          {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                job: { type: 'string', nullable: true }
+              },
+              additionalProperties: false,
+              required: ['job']
+            }
+          }
+        ]
+      }
+    },
+    required: ['data'],
+    additionalProperties: false
+  }
+
+  const stringify = build(schema)
+
+  const data = { data: [{ job: null }] }
+  t.equal(stringify(data), JSON.stringify(data))
 })

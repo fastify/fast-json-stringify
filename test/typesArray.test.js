@@ -1,7 +1,6 @@
 'use strict'
 
 const test = require('tap').test
-const moment = require('moment')
 const build = require('..')
 
 test('possibly nullable integer primitive alternative', (t) => {
@@ -86,6 +85,27 @@ test('possibly nullable number primitive alternative with null value', (t) => {
     data: null
   })
   t.equal(value, '{"data":0}')
+})
+
+test('possibly nullable number primitive alternative with null value', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'simple object with multi-type nullable primitive',
+    type: 'object',
+    properties: {
+      data: {
+        type: ['boolean']
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  const value = stringify({
+    data: null
+  })
+  t.equal(value, '{"data":false}')
 })
 
 test('nullable integer primitive', (t) => {
@@ -361,7 +381,7 @@ test('string type array can handle dates', (t) => {
   const stringify = build(schema)
   const value = stringify({
     date: new Date('2018-04-20T07:52:31.017Z'),
-    dateObject: moment('2018-04-21T07:52:31.017Z')
+    dateObject: new Date('2018-04-21T07:52:31.017Z')
   })
   t.equal(value, '{"date":"2018-04-20T07:52:31.017Z","dateObject":"2018-04-21T07:52:31.017Z"}')
 })
@@ -418,6 +438,35 @@ test('object that is simultaneously a string and a json switched', (t) => {
   t.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
 
+test('class instance that is simultaneously a string and a json', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      simultaneously: {
+        type: ['string', 'object'],
+        properties: {
+          foo: { type: 'string' }
+        }
+      }
+    }
+  }
+
+  class Test {
+    toString () { return 'hello' }
+  }
+
+  const likeObjectId = new Test()
+
+  const stringify = build(schema)
+  const valueStr = stringify({ simultaneously: likeObjectId })
+  t.equal(valueStr, '{"simultaneously":"hello"}')
+
+  const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
+  t.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
+})
+
 test('should throw an error when type is array and object is null', (t) => {
   t.plan(1)
   const schema = {
@@ -433,5 +482,22 @@ test('should throw an error when type is array and object is null', (t) => {
   }
 
   const stringify = build(schema)
-  t.throws(() => stringify({ arr: null }), new TypeError('Property \'arr\' should be of type array, received \'null\' instead.'))
+  t.throws(() => stringify({ arr: null }), new TypeError('The value \'null\' does not match schema definition.'))
+})
+
+test('throw an error if none of types matches', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'simple object with multi-type nullable primitive',
+    type: 'object',
+    properties: {
+      data: {
+        type: ['number', 'boolean']
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  t.throws(() => stringify({ data: 'string' }), 'The value "string" does not match schema definition.')
 })

@@ -3,6 +3,9 @@
 const test = require('tap').test
 const fjs = require('..')
 
+const Ajv = require('ajv').default
+const Validator = require('../validator')
+
 function build (opts) {
   return fjs({
     title: 'default string',
@@ -17,32 +20,43 @@ function build (opts) {
 }
 
 test('activate debug mode', t => {
-  t.plan(2)
+  t.plan(4)
   const debugMode = build({ debugMode: true })
-  t.type(debugMode, Array)
-  t.match(debugMode.toString.toString(), 'join', 'to string override')
+
+  t.type(debugMode, 'object')
+  t.ok(debugMode.ajv instanceof Ajv)
+  t.ok(debugMode.validator instanceof Validator)
+  t.type(debugMode.code, 'string')
 })
 
 test('activate debug mode truthy', t => {
-  t.plan(2)
+  t.plan(4)
+
   const debugMode = build({ debugMode: 'yes' })
-  t.type(debugMode, Array)
-  t.match(debugMode.toString.toString(), 'join', 'to string override')
+
+  t.type(debugMode, 'object')
+  t.type(debugMode.code, 'string')
+  t.ok(debugMode.ajv instanceof Ajv)
+  t.ok(debugMode.validator instanceof Validator)
 })
 
 test('to string auto-consistent', t => {
-  t.plan(2)
+  t.plan(5)
   const debugMode = build({ debugMode: 1 })
-  t.type(debugMode, Array)
 
-  const str = debugMode.toString()
-  const compiled = fjs.restore(str)
+  t.type(debugMode, 'object')
+  t.type(debugMode.code, 'string')
+  t.ok(debugMode.ajv instanceof Ajv)
+  t.ok(debugMode.validator instanceof Validator)
+
+  const compiled = fjs.restore(debugMode)
   const tobe = JSON.stringify({ firstName: 'Foo' })
   t.same(compiled({ firstName: 'Foo', surname: 'bar' }), tobe, 'surname evicted')
 })
 
 test('to string auto-consistent with ajv', t => {
-  t.plan(2)
+  t.plan(5)
+
   const debugMode = fjs({
     title: 'object with multiple types field',
     type: 'object',
@@ -56,16 +70,20 @@ test('to string auto-consistent with ajv', t => {
       }
     }
   }, { debugMode: 1 })
-  t.type(debugMode, Array)
 
-  const str = debugMode.toString()
-  const compiled = fjs.restore(str)
+  t.type(debugMode, 'object')
+  t.type(debugMode.code, 'string')
+  t.ok(debugMode.ajv instanceof Ajv)
+  t.ok(debugMode.validator instanceof Validator)
+
+  const compiled = fjs.restore(debugMode)
   const tobe = JSON.stringify({ str: 'Foo' })
   t.same(compiled({ str: 'Foo', void: 'me' }), tobe)
 })
 
 test('to string auto-consistent with ajv-formats', t => {
   t.plan(3)
+
   const debugMode = fjs({
     title: 'object with multiple types field and format keyword',
     type: 'object',
@@ -80,12 +98,11 @@ test('to string auto-consistent with ajv-formats', t => {
       }
     }
   }, { debugMode: 1 })
-  t.type(debugMode, Array)
 
-  const str = debugMode.toString()
+  t.type(debugMode, 'object')
 
-  const compiled = fjs.restore(str)
+  const compiled = fjs.restore(debugMode)
   const tobe = JSON.stringify({ str: 'foo@bar.com' })
   t.same(compiled({ str: 'foo@bar.com' }), tobe)
-  t.same(compiled({ str: 'foo' }), JSON.stringify({ str: null }), 'invalid format is ignored')
+  t.throws(() => compiled({ str: 'foo' }))
 })

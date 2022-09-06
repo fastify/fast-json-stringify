@@ -232,7 +232,7 @@ test('required numbers', (t) => {
     })
     t.fail()
   } catch (e) {
-    t.equal(e.message, '"num" is required!')
+    t.equal(e.message, 'The value "aaa" cannot be converted to an integer.')
     t.pass()
   }
 })

@@ -1,7 +1,63 @@
 'use strict'
 
 const test = require('tap').test
+const { DateTime } = require('luxon')
 const build = require('..')
+
+test('allOf: combine type and format ', (t) => {
+  t.plan(1)
+
+  const schema = {
+    allOf: [
+      { type: 'string' },
+      { format: 'time' }
+    ]
+  }
+  const stringify = build(schema)
+  const date = new Date()
+  const value = stringify(date)
+  t.equal(value, `"${DateTime.fromJSDate(date).toFormat('HH:mm:ss')}"`)
+})
+
+test('allOf: combine additional properties ', (t) => {
+  t.plan(1)
+
+  const schema = {
+    allOf: [
+      { type: 'object' },
+      {
+        type: 'object',
+        additionalProperties: { type: 'boolean' }
+      }
+    ]
+  }
+  const stringify = build(schema)
+  const data = { property: true }
+  const value = stringify(data)
+  t.equal(value, JSON.stringify(data))
+})
+
+test('allOf: combine pattern properties', (t) => {
+  t.plan(1)
+
+  const schema = {
+    allOf: [
+      { type: 'object' },
+      {
+        type: 'object',
+        patternProperties: {
+          foo: {
+            type: 'number'
+          }
+        }
+      }
+    ]
+  }
+  const stringify = build(schema)
+  const data = { foo: 42 }
+  const value = stringify(data)
+  t.equal(value, JSON.stringify(data))
+})
 
 test('object with allOf and multiple schema on the allOf', (t) => {
   t.plan(4)
@@ -346,12 +402,14 @@ test('object with external $refs in allOf', (t) => {
       }
     },
     second: {
-      id2: {
-        $id: '#id2',
-        type: 'object',
-        properties: {
-          id2: {
-            type: 'integer'
+      definitions: {
+        id2: {
+          $id: '#id2',
+          type: 'object',
+          properties: {
+            id2: {
+              type: 'integer'
+            }
           }
         }
       }
@@ -366,7 +424,7 @@ test('object with external $refs in allOf', (t) => {
         $ref: 'first#/definitions/id1'
       },
       {
-        $ref: 'second#id2'
+        $ref: 'second#/definitions/id2'
       }
     ]
   }

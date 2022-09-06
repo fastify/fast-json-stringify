@@ -1,16 +1,15 @@
 'use strict'
 
-const moment = require('moment')
 const test = require('tap').test
 const validator = require('is-my-json-valid')
 const build = require('..')
 
-function buildTest (schema, toStringify) {
+function buildTest (schema, toStringify, options) {
   test(`render a ${schema.title} as JSON`, (t) => {
     t.plan(3)
 
     const validate = validator(schema)
-    const stringify = build(schema)
+    const stringify = build(schema, options)
     const output = stringify(toStringify)
 
     t.same(JSON.parse(output), toStringify)
@@ -177,27 +176,6 @@ test('invalid items throw', (t) => {
   t.throws(() => stringify({ args: ['invalid'] }))
 })
 
-test('moment array', (t) => {
-  t.plan(1)
-  const schema = {
-    type: 'object',
-    properties: {
-      times: {
-        type: 'array',
-        items: {
-          type: 'string',
-          format: 'date-time'
-        }
-      }
-    }
-  }
-  const stringify = build(schema)
-  const value = stringify({
-    times: [moment('2018-04-21T07:52:31.017Z')]
-  })
-  t.equal(value, '{"times":["2018-04-21T07:52:31.017Z"]}')
-})
-
 buildTest({
   title: 'item types in array default to any',
   type: 'object',
@@ -238,6 +216,35 @@ test('array items is a list of schema and additionalItems is true, just the desc
   })
 
   t.equal(result, '{"foo":["foo","bar",1]}')
+})
+
+test('array items is a list of schema and additionalItems is true, just the described item is validated', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        type: 'array',
+        items: [
+          {
+            type: 'string'
+          },
+          {
+            type: 'number'
+          }
+        ],
+        additionalItems: true
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const result = stringify({
+    foo: ['foo']
+  })
+
+  t.equal(result, '{"foo":["foo"]}')
 })
 
 test('array items is a list of schema and additionalItems is false', (t) => {
@@ -318,4 +325,128 @@ test('object array with anyOf and symbol', (t) => {
     { name: 'name-1', option: 'Bar' }
   ])
   t.equal(value, '[{"name":"name-0","option":"Foo"},{"name":"name-1","option":"Bar"}]')
+})
+
+const largeArray = new Array(2e4).fill({ a: 'test', b: 1 })
+buildTest({
+  title: 'large array with default mechanism',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          a: { type: 'string' },
+          b: { type: 'number' }
+        }
+      }
+    }
+  }
+}, {
+  ids: largeArray
+}, {
+  largeArraySize: 2e4,
+  largeArrayMechanism: 'default'
+})
+
+buildTest({
+  title: 'large array of objects with json-stringify mechanism',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          a: { type: 'string' },
+          b: { type: 'number' }
+        }
+      }
+    }
+  }
+}, {
+  ids: largeArray
+}, {
+  largeArrayMechanism: 'json-stringify'
+})
+
+buildTest({
+  title: 'large array of strings with default mechanism',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: { type: 'string' }
+    }
+  }
+}, {
+  ids: new Array(2e4).fill('string')
+}, {
+  largeArraySize: 2e4,
+  largeArrayMechanism: 'default'
+})
+
+buildTest({
+  title: 'large array of numbers with default mechanism',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: { type: 'number' }
+    }
+  }
+}, {
+  ids: new Array(2e4).fill(42)
+}, {
+  largeArraySize: 2e4,
+  largeArrayMechanism: 'default'
+})
+
+buildTest({
+  title: 'large array of integers with default mechanism',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: { type: 'integer' }
+    }
+  }
+}, {
+  ids: new Array(2e4).fill(42)
+}, {
+  largeArraySize: 2e4,
+  largeArrayMechanism: 'default'
+})
+
+buildTest({
+  title: 'large array of booleans with default mechanism',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: { type: 'boolean' }
+    }
+  }
+}, {
+  ids: new Array(2e4).fill(true)
+}, {
+  largeArraySize: 2e4,
+  largeArrayMechanism: 'default'
+})
+
+buildTest({
+  title: 'large array of null values with default mechanism',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: { type: 'null' }
+    }
+  }
+}, {
+  ids: new Array(2e4).fill(null)
+}, {
+  largeArraySize: 2e4,
+  largeArrayMechanism: 'default'
 })

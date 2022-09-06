@@ -2,13 +2,12 @@
 
 ![CI](https://github.com/fastify/fast-json-stringify/workflows/CI/badge.svg)
 [![NPM version](https://img.shields.io/npm/v/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify)
-[![Known Vulnerabilities](https://snyk.io/test/github/fastify/fast-json-stringify/badge.svg)](https://snyk.io/test/github/fastify/fast-json-stringify)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](https://standardjs.com/)
 [![NPM downloads](https://img.shields.io/npm/dm/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify)
 
 
-__fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads.  
-Its performance advantage shrinks as your payload grows.  
+__fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads.
+Its performance advantage shrinks as your payload grows.
 It pairs well with [__flatstr__](https://www.npmjs.com/package/flatstr), which triggers a V8 optimization that improves performance when eventually converting the string to a `Buffer`.
 
 
@@ -22,22 +21,28 @@ fast-json-stringify requires a [JSON Schema Draft 7](https://json-schema.org/spe
 - Node.js `v16.9.1`
 
 ```
-FJS creation x 6,040 ops/sec ±1.17% (91 runs sampled)
-
-JSON.stringify array x 5,519 ops/sec ±0.08% (99 runs sampled)
-fast-json-stringify array x 7,143 ops/sec ±0.14% (97 runs sampled)
-
-JSON.stringify long string x 16,438 ops/sec ±0.32% (98 runs sampled)
-fast-json-stringify long string x 16,457 ops/sec ±0.09% (97 runs sampled)
-
-JSON.stringify short string x 12,061,258 ops/sec ±0.32% (97 runs sampled)
-fast-json-stringify short string x 35,531,071 ops/sec ±0.17% (94 runs sampled)
-
-JSON.stringify obj x 3,079,746 ops/sec ±0.09% (95 runs sampled)
-fast-json-stringify obj x 7,721,569 ops/sec ±0.12% (98 runs sampled)
-
-JSON stringify date x 1,149,786 ops/sec ±0.10% (99 runs sampled)
-fast-json-stringify date format x 1,674,498 ops/sec ±0.12% (99 runs sampled)
+FJS creation x 8,443 ops/sec ±1.01% (90 runs sampled)
+CJS creation x 183,219 ops/sec ±0.13% (96 runs sampled)
+AJV Serialize creation x 83,541,848 ops/sec ±0.24% (98 runs sampled)
+JSON.stringify array x 5,363 ops/sec ±0.11% (100 runs sampled)
+fast-json-stringify array x 6,747 ops/sec ±0.13% (98 runs sampled)
+compile-json-stringify array x 7,121 ops/sec ±0.42% (98 runs sampled)
+AJV Serialize array x 7,533 ops/sec ±0.13% (98 runs sampled)
+JSON.stringify long string x 16,461 ops/sec ±0.12% (98 runs sampled)
+fast-json-stringify long string x 16,443 ops/sec ±0.37% (99 runs sampled)
+compile-json-stringify long string x 16,458 ops/sec ±0.09% (98 runs sampled)
+AJV Serialize long string x 21,433 ops/sec ±0.08% (95 runs sampled)
+JSON.stringify short string x 12,035,664 ops/sec ±0.62% (96 runs sampled)
+fast-json-stringify short string x 38,281,060 ops/sec ±0.24% (98 runs sampled)
+compile-json-stringify short string x 32,388,037 ops/sec ±0.27% (97 runs sampled)
+AJV Serialize short string x 32,288,612 ops/sec ±0.32% (95 runs sampled)
+JSON.stringify obj x 3,068,185 ops/sec ±0.16% (98 runs sampled)
+fast-json-stringify obj x 10,082,694 ops/sec ±0.10% (97 runs sampled)
+compile-json-stringify obj x 17,037,963 ops/sec ±1.17% (97 runs sampled)
+AJV Serialize obj x 9,660,041 ops/sec ±0.11% (97 runs sampled)
+JSON stringify date x 1,084,008 ops/sec ±0.16% (98 runs sampled)
+fast-json-stringify date format x 1,781,044 ops/sec ±0.48% (99 runs sampled)
+compile-json-stringify date format x 1,086,187 ops/sec ±0.16% (99 runs sampled)
 ```
 
 #### Table of contents:
@@ -50,12 +55,15 @@ fast-json-stringify date format x 1,674,498 ops/sec ±0.12% (99 runs sampled)
  - <a href="#missingFields">`Missing fields`</a>
  - <a href="#patternProperties">`Pattern Properties`</a>
  - <a href="#additionalProperties">`Additional Properties`</a>
- - <a href="#anyof">`AnyOf`</a>
+ - <a href="#AnyOf-and-OneOf">`AnyOf` and `OneOf`</a>
  - <a href="#ref">`Reuse - $ref`</a>
  - <a href="#long">`Long integers`</a>
  - <a href="#integer">`Integers`</a>
  - <a href="#nullable">`Nullable`</a>
+ - <a href="#largearrays">`Large Arrays`</a>
 - <a href="#security">`Security Notice`</a>
+- <a href="#debug">`Debug Mode`</a>
+- <a href="#standalone">`Standalone Mode`</a>
 - <a href="#acknowledgements">`Acknowledgements`</a>
 - <a href="#license">`License`</a>
 
@@ -111,6 +119,8 @@ const stringify = fastJson(mySchema, {
 - `schema`: external schemas references by $ref property. [More details](#ref)
 - `ajv`: [ajv v8 instance's settings](https://ajv.js.org/options.html) for those properties that require `ajv`. [More details](#anyof)
 - `rounding`: setup how the `integer` types will be rounded when not integers. [More details](#integer)
+- `largeArrayMechanism`: set the mechanism that should be used to handle large
+(by default `20000` or more items) arrays. [More details](#largearrays)
 
 
 <a name="api"></a>
@@ -151,18 +161,17 @@ And nested ones, too.
 
 **Note**: In the case of string formatted Date and not Date Object, there will be no manipulation on it. It should be properly formatted.
 
-Example with a MomentJS object:
+Example with a Date object:
 
 ```javascript
-const moment = require('moment')
-
 const stringify = fastJson({
   title: 'Example Schema with string date-time field',
   type: 'string',
   format: 'date-time'
 })
 
-console.log(stringify(moment())) // '"YYYY-MM-DDTHH:mm:ss.sssZ"'
+const date = new Date()
+console.log(stringify(date)) // '"YYYY-MM-DDTHH:mm:ss.sssZ"'
 ```
 
 
@@ -262,7 +271,7 @@ const stringify = fastJson({
 const obj = {
   nickname: 'nick',
   matchfoo: 42,
-  otherfoo: 'str'
+  otherfoo: 'str',
   matchnum: 3
 }
 
@@ -278,7 +287,7 @@ console.log(stringify(obj)) // '{"matchfoo":"42","otherfoo":"str","matchnum":3,"
 If *additionalProperties* is not present or is set to `false`, every property that is not explicitly listed in the *properties* and *patternProperties* objects,will be ignored, as described in <a href="#missingFields">Missing fields</a>.
 Missing fields are ignored to avoid having to rewrite objects before serializing. However, other schema rules would throw in similar situations.
 If *additionalProperties* is set to `true`, it will be used by `JSON.stringify` to stringify the additional properties. If you want to achieve maximum performance, we strongly encourage you to use a fixed schema where possible.
-The additional properties will always be serialzied at the end of the object.
+The additional properties will always be serialized at the end of the object.
 Example:
 ```javascript
 const stringify = fastJson({
@@ -305,7 +314,7 @@ const stringify = fastJson({
 const obj = {
   nickname: 'nick',
   matchfoo: 42,
-  otherfoo: 'str'
+  otherfoo: 'str',
   matchnum: 3,
   nomatchstr: 'valar morghulis',
   nomatchint: 313
@@ -314,11 +323,11 @@ const obj = {
 console.log(stringify(obj)) // '{"nickname":"nick","matchfoo":"42","otherfoo":"str","matchnum":3,"nomatchstr":"valar morghulis",nomatchint:"313"}'
 ```
 
-#### AnyOf
+#### AnyOf and OneOf
 
-`fast-json-stringify` supports the anyOf keyword as defined by JSON schema. *anyOf* must be an array of valid JSON schemas. The different schemas will be tested in the specified order. The more schemas `stringify` has to try before finding a match, the slower it will be.
+`fast-json-stringify` supports the **anyOf** and **oneOf** keywords as defined by JSON schema. Both must be an array of valid JSON schemas. The different schemas will be tested in the specified order. The more schemas `stringify` has to try before finding a match, the slower it will be.
 
-*anyOf* uses [ajv](https://www.npmjs.com/package/ajv) as a JSON schema validator to find the schema that matches the data. This has an impact on performance—only use it as a last resort.
+*anyOf* and *oneOf* use [ajv](https://www.npmjs.com/package/ajv) as a JSON schema validator to find the schema that matches the data. This has an impact on performance—only use it as a last resort.
 
 Example:
 ```javascript
@@ -576,6 +585,59 @@ Otherwise, instead of raising an error, null values will be coerced as follows:
 - `string` -> `""`
 - `boolean` -> `false`
 
+<a name="largearrays"></a>
+#### Large Arrays
+
+Large arrays are, for the scope of this document, defined as arrays containing,
+by default, `20000` elements or more. That value can be adjusted via the option
+parameter `largeArraySize`.
+
+At some point the overhead caused by the default mechanism used by
+`fast-json-stringify` to handle arrays starts increasing exponentially, leading
+to slow overall executions.
+
+##### Settings
+
+In order to improve that the user can set the `largeArrayMechanism` and
+`largeArraySize` options.
+
+`largeArrayMechanism`'s default value is `default`. Valid values for it are:
+
+- `default` - This option is a compromise between performance and feature set by
+still providing the expected functionality out of this lib but giving up some
+possible performance gain. With this option set, **large arrays** would be
+stringified by joining their stringified elements using `Array.join` instead of
+string concatenation for better performance
+- `json-stringify` - This option will remove support for schema validation
+within **large arrays** completely. By doing so the overhead previously
+mentioned is nulled, greatly improving execution time. Mind there's no change
+in behavior for arrays not considered _large_
+
+`largeArraySize`'s default value is `20000`. Valid values for it are
+integer-like values, such as:
+
+- `20000`
+- `2e4`
+- `'20000'`
+- `'2e4'` - _note this will be converted to `2`, not `20000`_
+- `1.5` - _note this will be converted to `1`_
+
+##### Benchmarks
+
+For reference, here goes some benchmarks for comparison over the three
+mechanisms. Benchmarks conducted on an old machine.
+
+- Machine: `ST1000LM024 HN-M 1TB HDD, Intel Core i7-3610QM @ 2.3GHz, 12GB RAM, 4C/8T`.
+- Node.js `v16.13.1`
+
+```
+JSON.stringify large array x 157 ops/sec ±0.73% (86 runs sampled)
+fast-json-stringify large array default x 48.72 ops/sec ±4.92% (48 runs sampled)
+fast-json-stringify large array json-stringify x 157 ops/sec ±0.76% (86 runs sampled)
+compile-json-stringify large array x 175 ops/sec ±4.47% (79 runs sampled)
+AJV Serialize large array x 58.76 ops/sec ±4.59% (60 runs sampled)
+```
+
 <a name="security"></a>
 ## Security notice
 
@@ -603,13 +665,37 @@ const debugCompiled = fastJson({
       type: 'string'
     }
   }
-}, { debugMode: true })
+}, { mode: 'debug' })
 
-console.log(debugCompiled) // it is an array of functions that can create your `stringify` function
-console.log(debugCompiled.toString()) // print a "ready to read" string function, you can save it to a file
+console.log(debugCompiled) // it is a object contain code, ajv instance
+const rawString = debugCompiled.code // it is the generated code
+console.log(rawString) 
 
-const rawString = debugCompiled.toString()
-const stringify = fastJson.restore(rawString) // use the generated string to get back the `stringify` function
+const stringify = fastJson.restore(debugCompiled) // use the generated string to get back the `stringify` function
+console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"Foo"}'
+```
+
+<a name="standalone"></a>
+### Standalone Mode
+
+The standalone mode is used to compile the code that can be directly run by `node`
+itself. You need to install `ajv`, `fast-uri` and `ajv-formats` for
+the standalone code to work.
+
+```js
+const fs = require('fs')
+const code = fastJson({
+  title: 'default string',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
+    }
+  }
+}, { mode: 'standalone' })
+
+fs.writeFileSync('stringify.js', code)
+const stringify = require('stringify.js')
 console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"Foo"}'
 ```
 

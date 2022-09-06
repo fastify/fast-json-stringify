@@ -1,5 +1,4 @@
-const moment = require('moment')
-const fastJson = require('fast-json-stringify')
+const fastJson = require('.')
 const stringify = fastJson({
   title: 'Example Schema',
   type: 'object',
@@ -67,12 +66,10 @@ console.log(stringify({
   lastName: 'Collina',
   age: 32,
   now: new Date(),
-  birthdate: moment(),
   reg: /"([^"]|\\")*"/,
   foo: 'hello',
   numfoo: 42,
   test: 42,
-  date: moment(),
   strtest: '23',
   arr: [{ str: 'stark' }, { str: 'lannister' }],
   obj: { bool: true },
