@@ -2,7 +2,7 @@
 
 const http = require('http')
 
-const stringify = require('.')({
+const stringify = require('..')({
   type: 'object',
   properties: {
     hello: {

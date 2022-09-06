@@ -6,10 +6,10 @@ const merge = require('@fastify/deepmerge')()
 const clone = require('rfdc')({ proto: true })
 const { randomUUID } = require('crypto')
 
-const validate = require('./schema-validator')
-const Serializer = require('./serializer')
-const Validator = require('./validator')
-const RefResolver = require('./ref-resolver')
+const validate = require('./lib/schema-validator')
+const Serializer = require('./lib/serializer')
+const Validator = require('./lib/validator')
+const RefResolver = require('./lib/ref-resolver')
 
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
@@ -151,7 +151,7 @@ function build (schema, options) {
 
   if (options.mode === 'standalone') {
     // lazy load
-    const buildStandaloneCode = require('./standalone')
+    const buildStandaloneCode = require('./lib/standalone')
     return buildStandaloneCode(options, validator, contextFunctionCode)
   }
 
