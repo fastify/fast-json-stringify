@@ -1,6 +1,7 @@
 'use strict'
 
 const test = require('tap').test
+const { DateTime } = require('luxon')
 const validator = require('is-my-json-valid')
 const build = require('..')
 
@@ -152,28 +153,56 @@ buildTest({
   '@data': ['test']
 })
 
-test('invalid items throw', (t) => {
+test('coerce number to string type item', (t) => {
   t.plan(1)
   const schema = {
-    type: 'object',
-    properties: {
-      args: {
-        type: 'array',
-        items: [
-          {
-            type: 'object',
-            patternProperties: {
-              '.*': {
-                type: 'string'
-              }
-            }
-          }
-        ]
-      }
-    }
+    type: 'array',
+    items: [{ type: 'string' }]
   }
   const stringify = build(schema)
-  t.throws(() => stringify({ args: ['invalid'] }))
+  t.equal(stringify([1]), '["1"]')
+})
+
+test('coerce string to number type item', (t) => {
+  t.plan(1)
+  const schema = {
+    type: 'array',
+    items: [{ type: 'number' }]
+  }
+  const stringify = build(schema)
+  t.equal(stringify(['1']), '[1]')
+})
+
+test('coerce string to integer type item', (t) => {
+  t.plan(1)
+  const schema = {
+    type: 'array',
+    items: [{ type: 'integer' }]
+  }
+  const stringify = build(schema)
+  t.equal(stringify(['1']), '[1]')
+})
+
+test('coerce date to string (date) type item', (t) => {
+  t.plan(1)
+  const schema = {
+    type: 'array',
+    items: [{ type: 'string', format: 'date' }]
+  }
+  const stringify = build(schema)
+  const date = new Date()
+  t.equal(stringify([date]), `["${DateTime.fromJSDate(date).toISODate()}"]`)
+})
+
+test('coerce date to string (time) type item', (t) => {
+  t.plan(1)
+  const schema = {
+    type: 'array',
+    items: [{ type: 'string', format: 'time' }]
+  }
+  const stringify = build(schema)
+  const date = new Date()
+  t.equal(stringify([date]), `["${DateTime.fromJSDate(date).toFormat('HH:mm:ss')}"]`)
 })
 
 buildTest({
