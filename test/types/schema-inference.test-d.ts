@@ -1,71 +1,6 @@
 import { expectError } from "tsd";
 import build from "../..";
 
-// Schema with constant value
-const schema = {
-  type: "object",
-  properties: {
-    foo: {
-      const: "bar",
-    },
-  },
-  additionalProperties: false,
-} as const;
-const stringify = build(schema);
-
-expectError(stringify({ foo: "baz" }));
-expectError(stringify({ foo: 1 }));
-expectError(stringify({ foo: null }));
-
-stringify({ foo: "bar" });
-
-// Schema with property multiple types
-const schema1 = {
-  type: "object",
-  properties: {
-    foo: {
-      type: ["string", "integer", "null"],
-    },
-  },
-} as const;
-const stringify1 = build(schema1);
-expectError(stringify1({ foo: true }));
-stringify1({ foo: "bar" });
-stringify1({ foo: "bar", anotherOne: null });
-stringify1({ foo: 1 });
-stringify1({ foo: null });
-
-// Schema with nested properties
-const schema2 = {
-  type: "object",
-  properties: {
-    foo: {
-      type: "object",
-      properties: {
-        bar: { type: "object", properties: { baz: { type: "string" } } },
-      },
-      required: ["bar"],
-    },
-  },
-} as const;
-const stringify2 = build(schema2);
-expectError(
-  stringify2({
-    foo: {
-      bar: { baz: 1 },
-    },
-  })
-);
-expectError(
-  stringify2({
-    foo: {
-      bar: null,
-    },
-  })
-);
-stringify2({ foo: { bar: { baz: "baz" } } });
-stringify2({ foo: { bar: {} } });
-
 // With inference
 interface Schema {
   id: string;
@@ -80,3 +15,34 @@ stringify3<Schema>({ id: "123" });
 stringify3<Schema>({ a: 123, id: "123" });
 expectError(stringify3<Schema>({ anotherOne: "bar" }));
 expectError(stringify3<Schema>({ a: "bar" }));
+
+// Without inference
+const stringify4 = build({
+  type: "object",
+  properties: { a: { type: "string" } },
+});
+stringify4({ id: "123" });
+stringify4({ a: 123, id: "123" });
+stringify4({ anotherOne: "bar" });
+stringify4({ a: "bar" });
+
+// Without inference - string type
+const stringify5 = build({
+  type: "string",
+});
+stringify5("foo");
+expectError(stringify5({ id: "123" }));
+
+// Without inference - null type
+const stringify6 = build({
+  type: "null",
+});
+stringify6(null);
+expectError(stringify6("a string"));
+
+// Without inference - boolean type
+const stringify7 = build({
+  type: "boolean",
+});
+stringify7(true);
+expectError(stringify7("a string"));

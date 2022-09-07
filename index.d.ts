@@ -1,5 +1,4 @@
 import Ajv, { Options as AjvOptions } from "ajv"
-import {FromSchema, JSONSchema} from 'json-schema-to-ts'
 
 declare namespace build {
   interface BaseSchema {
@@ -192,13 +191,12 @@ declare function build(schema: build.AnySchema, options: DebugOption): { code: s
 declare function build(schema: build.AnySchema, options: DeprecateDebugOption): { code: string, ajv: Ajv };
 declare function build(schema: build.AnySchema, options: StandaloneOption): string;
 declare function build(schema: build.AnySchema, options?: build.Options): <TDoc = any>(doc: TDoc) => any;
-declare function build(schema: build.StringSchema, options?: build.Options): <TDoc = string>(doc: TDoc) => string;
-declare function build(schema: build.IntegerSchema | build.NumberSchema, options?: build.Options): <TDoc = number>(doc: TDoc) => string;
-declare function build(schema: build.NullSchema, options?: build.Options): <TDoc = null>(doc: TDoc) => "null";
-declare function build(schema: build.BooleanSchema, options?: build.Options): <TDoc = boolean>(doc: boolean) => string;
-declare function build(schema: build.ArraySchema | build.TupleSchema, options?: build.Options): <TDoc = any[]>(doc: TDoc) => string;
-declare function build(schema: build.ObjectSchema, options?: build.Options): <TDoc = object>(doc: TDoc) => string;
+declare function build(schema: build.StringSchema, options?: build.Options): <TDoc extends string = string>(doc: TDoc) => string;
+declare function build(schema: build.IntegerSchema | build.NumberSchema, options?: build.Options): <TDoc extends number = number>(doc: TDoc) => string;
+declare function build(schema: build.NullSchema, options?: build.Options): <TDoc extends null = null>(doc: TDoc) => "null";
+declare function build(schema: build.BooleanSchema, options?: build.Options): <TDoc extends boolean = boolean>(doc: TDoc) => string;
+declare function build(schema: build.ArraySchema | build.TupleSchema, options?: build.Options): <TDoc extends any[]= any[]>(doc: TDoc) => string;
+declare function build(schema: build.ObjectSchema, options?: build.Options): <TDoc extends object = object>(doc: TDoc) => string;
 declare function build(schema: build.Schema, options?: build.Options): <TDoc = object | any[] | string | number | boolean | null> (doc: TDoc) => string;
-declare function build<TSchema extends JSONSchema>(schema: TSchema, options?: build.Options): <TDoc extends FromSchema<TSchema> = FromSchema<TSchema>>(doc: TDoc) => any;
 
 export = build;
