@@ -238,7 +238,10 @@ test('toJSON - ref - properties', (t) => {
   const object = {
     props: {
       obj: {
-        toJSON () { return { str: 'test' } }
+        toJSON () {
+          t.pass()
+          return { str: 'test' }
+        }
       }
     },
     toJSON () {
@@ -250,7 +253,6 @@ test('toJSON - ref - properties', (t) => {
   const output = stringify(object)
 
   JSON.parse(output)
-  t.pass()
 
   t.equal(output, '{"obj":{"str":"test"}}')
 })
@@ -887,7 +889,10 @@ test('should throw an error when type is array and object is null', (t) => {
   const dataNull = { toJSON () { return null } }
 
   const stringify = build(schema)
-  t.throws(() => stringify({ arr: dataNull }))
+  t.throws(
+    () => stringify({ arr: dataNull }),
+    new TypeError('The value \'null\' does not match schema definition.')
+  )
 })
 
 test('use toJSON method on primary json types', (t) => {
