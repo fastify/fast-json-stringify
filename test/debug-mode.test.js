@@ -4,7 +4,7 @@ const test = require('tap').test
 const fjs = require('..')
 
 const Ajv = require('ajv').default
-const Validator = require('../validator')
+const Validator = require('../lib/validator')
 
 function build (opts) {
   return fjs({

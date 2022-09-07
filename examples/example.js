@@ -1,4 +1,4 @@
-const fastJson = require('.')
+const fastJson = require('..')
 const stringify = fastJson({
   title: 'Example Schema',
   type: 'object',
