@@ -61,5 +61,5 @@
       "schema-validator.js"
     ]
   },
-  "runkitExampleFilename": "example.js"
+  "runkitExampleFilename": "./examples/example.js"
 }
