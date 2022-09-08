@@ -11,7 +11,7 @@
     "benchmark": "node ./benchmark/bench-cmp-lib.js",
     "lint:fix": "standard --fix",
     "test:lint": "standard",
-    "test:typescript": "tsc --project ./test/types/tsconfig.json",
+    "test:typescript": "tsc --project ./test/types/tsconfig.json && tsd",
     "test:unit": "tap -J test/*.test.js test/**/*.test.js",
     "test": "npm run test:lint && npm run test:unit && npm run test:typescript"
   },
@@ -45,6 +45,7 @@
     "simple-git": "^3.7.1",
     "standard": "^17.0.0",
     "tap": "^16.0.1",
+    "tsd": "^0.22.0",
     "typescript": "^4.0.2",
     "webpack": "^5.40.0"
   },
@@ -61,5 +62,8 @@
       "schema-validator.js"
     ]
   },
-  "runkitExampleFilename": "./examples/example.js"
+  "runkitExampleFilename": "./examples/example.js",
+  "tsd": {
+    "directory": "test/types"
+  }
 }

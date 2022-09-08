@@ -1,4 +1,5 @@
 import Ajv, { Options as AjvOptions } from "ajv"
+
 declare namespace build {
   interface BaseSchema {
     /**
@@ -189,13 +190,13 @@ interface StandaloneOption extends build.Options {
 declare function build(schema: build.AnySchema, options: DebugOption): { code: string, ajv: Ajv };
 declare function build(schema: build.AnySchema, options: DeprecateDebugOption): { code: string, ajv: Ajv };
 declare function build(schema: build.AnySchema, options: StandaloneOption): string;
-declare function build(schema: build.AnySchema, options?: build.Options): (doc: any) => any;
-declare function build(schema: build.StringSchema, options?: build.Options): (doc: string) => string;
-declare function build(schema: build.IntegerSchema | build.NumberSchema, options?: build.Options): (doc: number) => string;
-declare function build(schema: build.NullSchema, options?: build.Options): (doc: null) => "null";
-declare function build(schema: build.BooleanSchema, options?: build.Options): (doc: boolean) => string;
-declare function build(schema: build.ArraySchema | build.TupleSchema, options?: build.Options): (doc: any[]) => string;
-declare function build(schema: build.ObjectSchema, options?: build.Options): (doc: object) => string;
-declare function build(schema: build.Schema, options?: build.Options): (doc: object | any[] | string | number | boolean | null) => string;
+declare function build(schema: build.AnySchema, options?: build.Options): <TDoc = any>(doc: TDoc) => any;
+declare function build(schema: build.StringSchema, options?: build.Options): <TDoc extends string = string>(doc: TDoc) => string;
+declare function build(schema: build.IntegerSchema | build.NumberSchema, options?: build.Options): <TDoc extends number = number>(doc: TDoc) => string;
+declare function build(schema: build.NullSchema, options?: build.Options): <TDoc extends null = null>(doc: TDoc) => "null";
+declare function build(schema: build.BooleanSchema, options?: build.Options): <TDoc extends boolean = boolean>(doc: TDoc) => string;
+declare function build(schema: build.ArraySchema | build.TupleSchema, options?: build.Options): <TDoc extends any[]= any[]>(doc: TDoc) => string;
+declare function build(schema: build.ObjectSchema, options?: build.Options): <TDoc extends object = object>(doc: TDoc) => string;
+declare function build(schema: build.Schema, options?: build.Options): <TDoc = object | any[] | string | number | boolean | null> (doc: TDoc) => string;
 
 export = build;
