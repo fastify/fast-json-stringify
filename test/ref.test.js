@@ -1953,3 +1953,31 @@ test('should resolve absolute $refs', (t) => {
 
   t.equal(output, JSON.stringify(object))
 })
+
+test('nested schema should overwrite anchor scope', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    root: {
+      $id: 'root',
+      definitions: {
+        subschema: {
+          $id: 'subschema',
+          definitions: {
+            anchorSchema: {
+              $id: '#anchor',
+              type: 'string'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const data = 'test'
+  const stringify = build({ $ref: 'subschema#anchor' }, { schema: externalSchema })
+  const output = stringify(data)
+
+  t.equal(output, JSON.stringify(data))
+  t.throws(() => build({ $ref: 'root#anchor' }, { schema: externalSchema }))
+})

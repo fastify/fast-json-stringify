@@ -4,12 +4,12 @@
 
 const merge = require('@fastify/deepmerge')()
 const clone = require('rfdc')({ proto: true })
-const fjsCloned = Symbol('fast-json-stringify.cloned')
 const { randomUUID } = require('crypto')
 
-const validate = require('./schema-validator')
-const Serializer = require('./serializer')
-const buildAjv = require('./ajv')
+const validate = require('./lib/schema-validator')
+const Serializer = require('./lib/serializer')
+const Validator = require('./lib/validator')
+const RefResolver = require('./lib/ref-resolver')
 
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
@@ -57,20 +57,12 @@ function resolveRef (location, ref) {
   const schemaId = ref.slice(0, hashIndex) || location.schemaId
   const jsonPointer = ref.slice(hashIndex) || '#'
 
-  const schemaRef = schemaId + jsonPointer
+  const schema = refResolver.getSchema(schemaId, jsonPointer)
 
-  let ajvSchema
-  try {
-    ajvSchema = ajvInstance.getSchema(schemaRef)
-  } catch (error) {
+  if (schema === undefined) {
     throw new Error(`Cannot find reference "${ref}"`)
   }
 
-  if (ajvSchema === undefined) {
-    throw new Error(`Cannot find reference "${ref}"`)
-  }
-
-  const schema = ajvSchema.schema
   if (schema.$ref !== undefined) {
     return resolveRef({ schema, schemaId, jsonPointer }, schema.$ref)
   }
@@ -82,41 +74,31 @@ const arrayItemsReferenceSerializersMap = new Map()
 const objectReferenceSerializersMap = new Map()
 
 let rootSchemaId = null
-let ajvInstance = null
+let refResolver = null
+let validator = null
 let contextFunctions = null
 
 function build (schema, options) {
-  schema = clone(schema)
-
   arrayItemsReferenceSerializersMap.clear()
   objectReferenceSerializersMap.clear()
 
   contextFunctions = []
   options = options || {}
 
-  ajvInstance = buildAjv(options.ajv)
+  refResolver = new RefResolver()
+  validator = new Validator(options.ajv)
+
   rootSchemaId = schema.$id || randomUUID()
 
   isValidSchema(schema)
-  extendDateTimeType(schema)
-  ajvInstance.addSchema(schema, rootSchemaId)
+  validator.addSchema(schema, rootSchemaId)
+  refResolver.addSchema(schema, rootSchemaId)
 
   if (options.schema) {
-    const externalSchemas = clone(options.schema)
-
-    for (const key of Object.keys(externalSchemas)) {
-      const externalSchema = externalSchemas[key]
-      isValidSchema(externalSchema, key)
-      extendDateTimeType(externalSchema)
-
-      let schemaKey = externalSchema.$id || key
-      if (externalSchema.$id !== undefined && externalSchema.$id[0] === '#') {
-        schemaKey = key + externalSchema.$id // relative URI
-      }
-
-      if (ajvInstance.getSchema(schemaKey) === undefined) {
-        ajvInstance.addSchema(externalSchema, schemaKey)
-      }
+    for (const key of Object.keys(options.schema)) {
+      isValidSchema(options.schema[key], key)
+      validator.addSchema(options.schema[key], key)
+      refResolver.addSchema(options.schema[key], key)
     }
   }
 
@@ -157,27 +139,28 @@ function build (schema, options) {
     return main
     `
 
-  const dependenciesName = ['ajv', 'serializer', contextFunctionCode]
+  const dependenciesName = ['validator', 'serializer', contextFunctionCode]
 
   if (options.debugMode) {
     options.mode = 'debug'
   }
 
   if (options.mode === 'debug') {
-    return { code: dependenciesName.join('\n'), ajv: ajvInstance }
+    return { code: dependenciesName.join('\n'), validator, ajv: validator.ajv }
   }
 
   if (options.mode === 'standalone') {
     // lazy load
-    const buildStandaloneCode = require('./standalone')
-    return buildStandaloneCode(options, ajvInstance, contextFunctionCode)
+    const buildStandaloneCode = require('./lib/standalone')
+    return buildStandaloneCode(options, validator, contextFunctionCode)
   }
 
   /* eslint no-new-func: "off" */
-  const contextFunc = new Function('ajv', 'serializer', contextFunctionCode)
-  const stringifyFunc = contextFunc(ajvInstance, serializer)
+  const contextFunc = new Function('validator', 'serializer', contextFunctionCode)
+  const stringifyFunc = contextFunc(validator, serializer)
 
-  ajvInstance = null
+  refResolver = null
+  validator = null
   rootSchemaId = null
   contextFunctions = null
   arrayItemsReferenceSerializersMap.clear()
@@ -341,9 +324,8 @@ function buildCode (location) {
   const propertiesLocation = mergeLocation(location, 'properties')
   Object.keys(schema.properties || {}).forEach((key) => {
     let propertyLocation = mergeLocation(propertiesLocation, key)
-    if (schema.properties[key].$ref) {
-      propertyLocation = resolveRef(location, schema.properties[key].$ref)
-      schema.properties[key] = propertyLocation.schema
+    if (propertyLocation.$ref) {
+      propertyLocation = resolveRef(location, propertyLocation.$ref)
     }
 
     const sanitized = JSON.stringify(key)
@@ -360,8 +342,7 @@ function buildCode (location) {
 
     code += buildValue(propertyLocation, `obj[${JSON.stringify(key)}]`)
 
-    const defaultValue = schema.properties[key].default
-
+    const defaultValue = propertyLocation.schema.default
     if (defaultValue !== undefined) {
       code += `
       } else {
@@ -476,16 +457,6 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
       mergedSchema.anyOf.push(...allOfSchema.anyOf)
     }
 
-    if (allOfSchema.fjs_type !== undefined) {
-      if (
-        mergedSchema.fjs_type !== undefined &&
-        mergedSchema.fjs_type !== allOfSchema.fjs_type
-      ) {
-        throw new Error('allOf schemas have different fjs_type values')
-      }
-      mergedSchema.fjs_type = allOfSchema.fjs_type
-    }
-
     if (allOfSchema.allOf !== undefined) {
       mergeAllOfSchema(location, allOfSchema, mergedSchema)
     }
@@ -493,7 +464,8 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
   delete mergedSchema.allOf
 
   mergedSchema.$id = `merged_${randomUUID()}`
-  ajvInstance.addSchema(mergedSchema)
+  validator.addSchema(mergedSchema)
+  refResolver.addSchema(mergedSchema)
   location.schemaId = mergedSchema.$id
   location.jsonPointer = '#'
 }
@@ -522,7 +494,7 @@ function addIfThenElse (location) {
   const ifSchemaRef = ifLocation.schemaId + ifLocation.jsonPointer
 
   let code = `
-    if (ajv.validate("${ifSchemaRef}", obj)) {
+    if (validator.validate("${ifSchemaRef}", obj)) {
   `
 
   const thenLocation = mergeLocation(location, 'then')
@@ -577,13 +549,6 @@ function buildObject (location) {
     function ${functionName} (input) {
       // ${schemaId + location.jsonPointer}
   `
-  if (schema.nullable) {
-    functionCode += `
-      if (input === null) {
-        return 'null';
-      }
-  `
-  }
 
   functionCode += `
       var obj = ${toJSON('input')}
@@ -608,47 +573,29 @@ function buildObject (location) {
 }
 
 function buildArray (location) {
-  let schema = location.schema
-
-  // default to any items type
-  if (!schema.items) {
-    schema.items = {}
-  }
+  const schema = location.schema
 
   let itemsLocation = mergeLocation(location, 'items')
+  itemsLocation.schema = itemsLocation.schema || {}
 
-  if (schema.items.$ref) {
-    if (!schema[fjsCloned]) {
-      location.schema = clone(location.schema)
-      schema = location.schema
-      schema[fjsCloned] = true
-    }
-
-    location = resolveRef(location, schema.items.$ref)
-    itemsLocation = location
-    schema.items = location.schema
+  if (itemsLocation.schema.$ref) {
+    itemsLocation = resolveRef(itemsLocation, itemsLocation.schema.$ref)
   }
 
-  if (arrayItemsReferenceSerializersMap.has(schema.items)) {
-    return arrayItemsReferenceSerializersMap.get(schema.items)
+  const itemsSchema = itemsLocation.schema
+
+  if (arrayItemsReferenceSerializersMap.has(itemsSchema)) {
+    return arrayItemsReferenceSerializersMap.get(itemsSchema)
   }
 
   const functionName = generateFuncName()
-  arrayItemsReferenceSerializersMap.set(schema.items, functionName)
+  arrayItemsReferenceSerializersMap.set(itemsSchema, functionName)
 
   const schemaId = location.schemaId === rootSchemaId ? '' : location.schemaId
   let functionCode = `
     function ${functionName} (obj) {
       // ${schemaId + location.jsonPointer}
   `
-
-  if (schema.nullable) {
-    functionCode += `
-      if (obj === null) {
-        return 'null';
-      }
-    `
-  }
 
   functionCode += `
     if (!Array.isArray(obj)) {
@@ -659,8 +606,8 @@ function buildArray (location) {
 
   if (!schema.additionalItems) {
     functionCode += `
-      if (arrayLength > ${schema.items.length}) {
-        throw new Error(\`Item at ${schema.items.length} does not match schema definition.\`)
+      if (arrayLength > ${itemsSchema.length}) {
+        throw new Error(\`Item at ${itemsSchema.length} does not match schema definition.\`)
       }
     `
   }
@@ -677,9 +624,9 @@ function buildArray (location) {
     let jsonOutput = ''
   `
 
-  if (Array.isArray(schema.items)) {
-    for (let i = 0; i < schema.items.length; i++) {
-      const item = schema.items[i]
+  if (Array.isArray(itemsSchema)) {
+    for (let i = 0; i < itemsSchema.length; i++) {
+      const item = itemsSchema[i]
       const tmpRes = buildValue(mergeLocation(itemsLocation, i), `obj[${i}]`)
       functionCode += `
         if (${i} < arrayLength) {
@@ -699,7 +646,7 @@ function buildArray (location) {
 
     if (schema.additionalItems) {
       functionCode += `
-        for (let i = ${schema.items.length}; i < arrayLength; i++) {
+        for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
           let json = JSON.stringify(obj[i])
           jsonOutput += json
           if (i < arrayLength - 1) {
@@ -770,6 +717,137 @@ function generateFuncName () {
   return 'anonymous' + genFuncNameCounter++
 }
 
+function buildMultiTypeSerializer (location, input) {
+  const schema = location.schema
+  const types = schema.type.sort(t1 => t1 === 'null' ? -1 : 1)
+
+  let code = ''
+
+  const locationClone = clone(location)
+  types.forEach((type, index) => {
+    const statement = index === 0 ? 'if' : 'else if'
+    locationClone.schema.type = type
+    const nestedResult = buildSingleTypeSerializer(locationClone, input)
+    switch (type) {
+      case 'null':
+        code += `
+          ${statement} (${input} === null)
+            ${nestedResult}
+          `
+        break
+      case 'string': {
+        code += `
+          ${statement}(
+            typeof ${input} === "string" ||
+            ${input} === null ||
+            ${input} instanceof Date ||
+            ${input} instanceof RegExp ||
+            (
+              typeof ${input} === "object" &&
+              typeof ${input}.toString === "function" &&
+              ${input}.toString !== Object.prototype.toString &&
+              !(${input} instanceof Date)
+            )
+          )
+            ${nestedResult}
+        `
+        break
+      }
+      case 'array': {
+        code += `
+          ${statement}(Array.isArray(${input}))
+            ${nestedResult}
+        `
+        break
+      }
+      case 'integer': {
+        code += `
+          ${statement}(Number.isInteger(${input}) || ${input} === null)
+            ${nestedResult}
+        `
+        break
+      }
+      default: {
+        code += `
+          ${statement}(typeof ${input} === "${type}" || ${input} === null)
+            ${nestedResult}
+        `
+        break
+      }
+    }
+  })
+  code += `
+    else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
+  `
+
+  return code
+}
+
+function buildSingleTypeSerializer (location, input) {
+  const schema = location.schema
+
+  switch (schema.type) {
+    case 'null':
+      return 'json += \'null\''
+    case 'string': {
+      if (schema.format === 'date-time') {
+        return `json += serializer.asDateTime(${input})`
+      } else if (schema.format === 'date') {
+        return `json += serializer.asDate(${input})`
+      } else if (schema.format === 'time') {
+        return `json += serializer.asTime(${input})`
+      } else {
+        return `json += serializer.asString(${input})`
+      }
+    }
+    case 'integer':
+      return `json += serializer.asInteger(${input})`
+    case 'number':
+      return `json += serializer.asNumber(${input})`
+    case 'boolean':
+      return `json += serializer.asBoolean(${input})`
+    case 'object': {
+      const funcName = buildObject(location)
+      return `json += ${funcName}(${input})`
+    }
+    case 'array': {
+      const funcName = buildArray(location)
+      return `json += ${funcName}(${input})`
+    }
+    case undefined:
+      return `json += JSON.stringify(${input})`
+    default:
+      throw new Error(`${schema.type} unsupported`)
+  }
+}
+
+function buildConstSerializer (location, input) {
+  const schema = location.schema
+  const type = schema.type
+
+  const hasNullType = Array.isArray(type) && type.includes('null')
+
+  let code = ''
+
+  if (hasNullType) {
+    code += `
+      if (${input} === null) {
+        json += 'null'
+      } else {
+    `
+  }
+
+  code += `json += '${JSON.stringify(schema.const)}'`
+
+  if (hasNullType) {
+    code += `
+      }
+    `
+  }
+
+  return code
+}
+
 function buildValue (location, input) {
   let schema = location.schema
 
@@ -796,226 +874,63 @@ function buildValue (location, input) {
     location.schema = mergedSchema
   }
 
-  let type = schema.type
-  const nullable = schema.nullable === true || (Array.isArray(type) && type.includes('null'))
+  const type = schema.type
 
   let code = ''
-  let funcName
 
-  if (schema.fjs_type === 'string' && schema.format === undefined && Array.isArray(schema.type) && schema.type.length === 2) {
-    type = 'string'
-  }
+  if (type === undefined && (schema.anyOf || schema.oneOf)) {
+    const type = schema.anyOf ? 'anyOf' : 'oneOf'
+    const anyOfLocation = mergeLocation(location, type)
 
-  if ('const' in schema) {
-    if (nullable) {
+    for (let index = 0; index < location.schema[type].length; index++) {
+      const optionLocation = mergeLocation(anyOfLocation, index)
+      const schemaRef = optionLocation.schemaId + optionLocation.jsonPointer
+      const nestedResult = buildValue(optionLocation, input)
       code += `
-        json += ${input} === null ? 'null' : '${JSON.stringify(schema.const)}'
+        ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}))
+          ${nestedResult}
       `
-      return code
     }
-    code += `json += '${JSON.stringify(schema.const)}'`
+
+    code += `
+      else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
+    `
     return code
   }
 
-  switch (type) {
-    case 'null':
-      code += 'json += serializer.asNull()'
-      break
-    case 'string': {
-      funcName = nullable ? 'serializer.asStringNullable.bind(serializer)' : 'serializer.asString.bind(serializer)'
-      code += `json += ${funcName}(${input})`
-      break
-    }
-    case 'integer':
-      funcName = nullable ? 'serializer.asIntegerNullable.bind(serializer)' : 'serializer.asInteger.bind(serializer)'
-      code += `json += ${funcName}(${input})`
-      break
-    case 'number':
-      funcName = nullable ? 'serializer.asNumberNullable.bind(serializer)' : 'serializer.asNumber.bind(serializer)'
-      code += `json += ${funcName}(${input})`
-      break
-    case 'boolean':
-      funcName = nullable ? 'serializer.asBooleanNullable.bind(serializer)' : 'serializer.asBoolean.bind(serializer)'
-      code += `json += ${funcName}(${input})`
-      break
-    case 'object':
-      if (schema.format === 'date-time') {
-        funcName = nullable ? 'serializer.asDateTimeNullable.bind(serializer)' : 'serializer.asDateTime.bind(serializer)'
-      } else if (schema.format === 'date') {
-        funcName = nullable ? 'serializer.asDateNullable.bind(serializer)' : 'serializer.asDate.bind(serializer)'
-      } else if (schema.format === 'time') {
-        funcName = nullable ? 'serializer.asTimeNullable.bind(serializer)' : 'serializer.asTime.bind(serializer)'
+  const nullable = schema.nullable === true
+  if (nullable) {
+    code += `
+      if (${input} === null) {
+        json += 'null'
       } else {
-        funcName = buildObject(location)
+    `
+  }
+
+  if (schema.const !== undefined) {
+    code += buildConstSerializer(location, input)
+  } else if (Array.isArray(type)) {
+    code += buildMultiTypeSerializer(location, input)
+  } else {
+    code += buildSingleTypeSerializer(location, input)
+  }
+
+  if (nullable) {
+    code += `
       }
-      code += `json += ${funcName}(${input})`
-      break
-    case 'array':
-      funcName = buildArray(location)
-      code += `json += ${funcName}(${input})`
-      break
-    case undefined:
-      if (schema.anyOf || schema.oneOf) {
-        // beware: dereferenceOfRefs has side effects and changes schema.anyOf
-        const type = schema.anyOf ? 'anyOf' : 'oneOf'
-        const anyOfLocation = mergeLocation(location, type)
-
-        for (let index = 0; index < location.schema[type].length; index++) {
-          const optionLocation = mergeLocation(anyOfLocation, index)
-          const schemaRef = optionLocation.schemaId + optionLocation.jsonPointer
-          const nestedResult = buildValue(optionLocation, input)
-          code += `
-            ${index === 0 ? 'if' : 'else if'}(ajv.validate("${schemaRef}", ${input}))
-              ${nestedResult}
-          `
-        }
-
-        code += `
-          else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
-        `
-      } else if (isEmpty(schema)) {
-        code += `
-          json += JSON.stringify(${input})
-        `
-      } else if (schema.type === undefined) {
-        code += `
-          json += JSON.stringify(${input})
-        `
-      } else {
-        throw new Error(`${schema.type} unsupported`)
-      }
-      break
-    default:
-      if (Array.isArray(type)) {
-        let sortedTypes = type
-        const nullable = schema.nullable === true || type.includes('null')
-
-        if (nullable) {
-          sortedTypes = sortedTypes.filter(type => type !== 'null')
-          code += `
-            if (${input} === null) {
-              json += null
-            } else {`
-        }
-
-        const locationClone = clone(location)
-        sortedTypes.forEach((type, index) => {
-          const statement = index === 0 ? 'if' : 'else if'
-          locationClone.schema.type = type
-          const nestedResult = buildValue(locationClone, input)
-          switch (type) {
-            case 'string': {
-              code += `
-                ${statement}(
-                  typeof ${input} === "string" ||
-                  ${input} === null ||
-                  ${input} instanceof RegExp ||
-                  (
-                    typeof ${input} === "object" &&
-                    typeof ${input}.toString === "function" &&
-                    ${input}.toString !== Object.prototype.toString &&
-                    !(${input} instanceof Date)
-                  )
-                )
-                  ${nestedResult}
-              `
-              break
-            }
-            case 'array': {
-              code += `
-                ${statement}(Array.isArray(${input}))
-                  ${nestedResult}
-              `
-              break
-            }
-            case 'integer': {
-              code += `
-                ${statement}(Number.isInteger(${input}) || ${input} === null)
-                  ${nestedResult}
-              `
-              break
-            }
-            case 'object': {
-              if (schema.fjs_type) {
-                code += `
-                  ${statement}(${input} instanceof Date || ${input} === null)
-                    ${nestedResult}
-                `
-              } else {
-                code += `
-                  ${statement}(typeof ${input} === "object" || ${input} === null)
-                    ${nestedResult}
-                `
-              }
-              break
-            }
-            default: {
-              code += `
-                ${statement}(typeof ${input} === "${type}" || ${input} === null)
-                  ${nestedResult}
-              `
-              break
-            }
-          }
-        })
-        code += `
-          else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
-        `
-
-        if (nullable) {
-          code += `
-            }
-          `
-        }
-      } else {
-        throw new Error(`${type} unsupported`)
-      }
+    `
   }
 
   return code
-}
-
-// Ajv does not support js date format. In order to properly validate objects containing a date,
-// it needs to replace all occurrences of the string date format with a custom keyword fjs_type.
-// (see https://github.com/fastify/fast-json-stringify/pull/441)
-function extendDateTimeType (schema) {
-  if (schema === null) return
-
-  if (schema.type === 'string') {
-    schema.fjs_type = 'string'
-    schema.type = ['string', 'object']
-  } else if (
-    Array.isArray(schema.type) &&
-    schema.type.includes('string') &&
-    !schema.type.includes('object')
-  ) {
-    schema.fjs_type = 'string'
-    schema.type.push('object')
-  }
-  for (const property in schema) {
-    if (typeof schema[property] === 'object') {
-      extendDateTimeType(schema[property])
-    }
-  }
-}
-
-function isEmpty (schema) {
-  // eslint-disable-next-line
-  for (var key in schema) {
-    if (Object.prototype.hasOwnProperty.call(schema, key) && schema[key] !== undefined) {
-      return false
-    }
-  }
-  return true
 }
 
 module.exports = build
 
 module.exports.validLargeArrayMechanisms = validLargeArrayMechanisms
 
-module.exports.restore = function ({ code, ajv }) {
+module.exports.restore = function ({ code, validator }) {
   const serializer = new Serializer()
   // eslint-disable-next-line
-  return (Function.apply(null, ['ajv', 'serializer', code])
-    .apply(null, [ajv, serializer]))
+  return (Function.apply(null, ['validator', 'serializer', code])
+    .apply(null, [validator, serializer]))
 }
