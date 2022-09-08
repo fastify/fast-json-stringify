@@ -121,6 +121,7 @@ const stringify = fastJson(mySchema, {
 - `rounding`: setup how the `integer` types will be rounded when not integers. [More details](#integer)
 - `largeArrayMechanism`: set the mechanism that should be used to handle large
 (by default `20000` or more items) arrays. [More details](#largearrays)
+- `enableToJSON`: enable the `toJSON` method check for the generated function.
 
 
 <a name="api"></a>
@@ -669,7 +670,7 @@ const debugCompiled = fastJson({
 
 console.log(debugCompiled) // it is a object contain code, ajv instance
 const rawString = debugCompiled.code // it is the generated code
-console.log(rawString) 
+console.log(rawString)
 
 const stringify = fastJson.restore(debugCompiled) // use the generated string to get back the `stringify` function
 console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"Foo"}'

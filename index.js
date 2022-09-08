@@ -73,6 +73,7 @@ function resolveRef (location, ref) {
 const arrayItemsReferenceSerializersMap = new Map()
 const objectReferenceSerializersMap = new Map()
 
+let enableToJSON = null
 let rootSchemaId = null
 let refResolver = null
 let validator = null
@@ -88,6 +89,7 @@ function build (schema, options) {
   refResolver = new RefResolver()
   validator = new Validator(options.ajv)
 
+  enableToJSON = options.enableToJSON || false
   rootSchemaId = schema.$id || randomUUID()
 
   isValidSchema(schema)
@@ -527,13 +529,6 @@ function addIfThenElse (location) {
   return code
 }
 
-function toJSON (variableName) {
-  return `(${variableName} && typeof ${variableName}.toJSON === 'function')
-    ? ${variableName}.toJSON()
-    : ${variableName}
-  `
-}
-
 function buildObject (location) {
   const schema = location.schema
 
@@ -551,7 +546,7 @@ function buildObject (location) {
   `
 
   functionCode += `
-      var obj = ${toJSON('input')}
+      var obj = input
       var json = '{'
       var addComma = false
   `
@@ -675,7 +670,7 @@ function generateFuncName () {
   return 'anonymous' + genFuncNameCounter++
 }
 
-function buildMultiTypeSerializer (location, input) {
+function buildMultiTypeSerializer (location) {
   const schema = location.schema
   const types = schema.type.sort(t1 => t1 === 'null' ? -1 : 1)
 
@@ -685,26 +680,26 @@ function buildMultiTypeSerializer (location, input) {
   types.forEach((type, index) => {
     const statement = index === 0 ? 'if' : 'else if'
     locationClone.schema.type = type
-    const nestedResult = buildSingleTypeSerializer(locationClone, input)
+    const nestedResult = buildSingleTypeSerializer(locationClone)
     switch (type) {
       case 'null':
         code += `
-          ${statement} (${input} === null)
+          ${statement} (input === null)
             ${nestedResult}
           `
         break
       case 'string': {
         code += `
           ${statement}(
-            typeof ${input} === "string" ||
-            ${input} === null ||
-            ${input} instanceof Date ||
-            ${input} instanceof RegExp ||
+            typeof input === "string" ||
+            input === null ||
+            input instanceof Date ||
+            input instanceof RegExp ||
             (
-              typeof ${input} === "object" &&
-              typeof ${input}.toString === "function" &&
-              ${input}.toString !== Object.prototype.toString &&
-              !(${input} instanceof Date)
+              typeof input === "object" &&
+              typeof input.toString === "function" &&
+              input.toString !== Object.prototype.toString &&
+              !(input instanceof Date)
             )
           )
             ${nestedResult}
@@ -713,21 +708,21 @@ function buildMultiTypeSerializer (location, input) {
       }
       case 'array': {
         code += `
-          ${statement}(Array.isArray(${input}))
+          ${statement}(Array.isArray(input))
             ${nestedResult}
         `
         break
       }
       case 'integer': {
         code += `
-          ${statement}(Number.isInteger(${input}) || ${input} === null)
+          ${statement}(Number.isInteger(input) || input === null)
             ${nestedResult}
         `
         break
       }
       default: {
         code += `
-          ${statement}(typeof ${input} === "${type}" || ${input} === null)
+          ${statement}(typeof input === "${type}" || input === null)
             ${nestedResult}
         `
         break
@@ -735,13 +730,13 @@ function buildMultiTypeSerializer (location, input) {
     }
   })
   code += `
-    else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
+    else throw new Error(\`The value $\{JSON.stringify(input)} does not match schema definition.\`)
   `
 
   return code
 }
 
-function buildSingleTypeSerializer (location, input) {
+function buildSingleTypeSerializer (location) {
   const schema = location.schema
 
   switch (schema.type) {
@@ -749,37 +744,37 @@ function buildSingleTypeSerializer (location, input) {
       return 'json += \'null\''
     case 'string': {
       if (schema.format === 'date-time') {
-        return `json += serializer.asDateTime(${input})`
+        return 'json += serializer.asDateTime(input)'
       } else if (schema.format === 'date') {
-        return `json += serializer.asDate(${input})`
+        return 'json += serializer.asDate(input)'
       } else if (schema.format === 'time') {
-        return `json += serializer.asTime(${input})`
+        return 'json += serializer.asTime(input)'
       } else {
-        return `json += serializer.asString(${input})`
+        return 'json += serializer.asString(input)'
       }
     }
     case 'integer':
-      return `json += serializer.asInteger(${input})`
+      return 'json += serializer.asInteger(input)'
     case 'number':
-      return `json += serializer.asNumber(${input})`
+      return 'json += serializer.asNumber(input)'
     case 'boolean':
-      return `json += serializer.asBoolean(${input})`
+      return 'json += serializer.asBoolean(input)'
     case 'object': {
       const funcName = buildObject(location)
-      return `json += ${funcName}(${input})`
+      return `json += ${funcName}(input)`
     }
     case 'array': {
       const funcName = buildArray(location)
-      return `json += ${funcName}(${input})`
+      return `json += ${funcName}(input)`
     }
     case undefined:
-      return `json += JSON.stringify(${input})`
+      return 'json += JSON.stringify(input)'
     default:
       throw new Error(`${schema.type} unsupported`)
   }
 }
 
-function buildConstSerializer (location, input) {
+function buildConstSerializer (location) {
   const schema = location.schema
   const type = schema.type
 
@@ -789,7 +784,7 @@ function buildConstSerializer (location, input) {
 
   if (hasNullType) {
     code += `
-      if (${input} === null) {
+      if (input === null) {
         json += 'null'
       } else {
     `
@@ -809,8 +804,13 @@ function buildConstSerializer (location, input) {
 function buildValue (location, input) {
   let schema = location.schema
 
+  let code = `
+    var input = ${input}
+  `
+
   if (typeof schema === 'boolean') {
-    return `json += JSON.stringify(${input})`
+    code += 'json += JSON.stringify(input)'
+    return code
   }
 
   if (schema.$ref) {
@@ -834,7 +834,13 @@ function buildValue (location, input) {
 
   const type = schema.type
 
-  let code = ''
+  if (enableToJSON === true) {
+    code += `
+      if (input && typeof input.toJSON === 'function' && !(input instanceof Date)) {
+        input = input.toJSON()
+      }
+    `
+  }
 
   if (type === undefined && (schema.anyOf || schema.oneOf)) {
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
@@ -845,13 +851,14 @@ function buildValue (location, input) {
       const schemaRef = optionLocation.schemaId + optionLocation.jsonPointer
       const nestedResult = buildValue(optionLocation, input)
       code += `
-        ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}))
+        ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", input)) {
           ${nestedResult}
+        }
       `
     }
 
     code += `
-      else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
+      else throw new Error(\`The value $\{JSON.stringify(input)} does not match schema definition.\`)
     `
     return code
   }
@@ -859,18 +866,18 @@ function buildValue (location, input) {
   const nullable = schema.nullable === true
   if (nullable) {
     code += `
-      if (${input} === null) {
+      if (input === null) {
         json += 'null'
       } else {
     `
   }
 
   if (schema.const !== undefined) {
-    code += buildConstSerializer(location, input)
+    code += buildConstSerializer(location)
   } else if (Array.isArray(type)) {
-    code += buildMultiTypeSerializer(location, input)
+    code += buildMultiTypeSerializer(location)
   } else {
-    code += buildSingleTypeSerializer(location, input)
+    code += buildSingleTypeSerializer(location)
   }
 
   if (nullable) {
