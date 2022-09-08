@@ -1247,3 +1247,54 @@ test('use toJSON recursively', (t) => {
   t.equal(JSON.stringify(aggregate), expected)
   t.equal(stringify(aggregate), expected)
 })
+
+test('object with tuple of multiple types', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'object with array of multiple types',
+    type: 'object',
+    properties: {
+      fixedTupleOfStringsAndNumbers: {
+        type: 'array',
+        items: [
+          {
+            type: 'string'
+          },
+          {
+            type: 'number'
+          },
+          {
+            type: ['string', 'number']
+          }
+        ]
+      }
+    }
+  }
+  const stringify = build(schema, { enableToJSON: true })
+
+  const dataString1 = { toJSON () { return 'string1' } }
+  const dataString2 = { toJSON () { return 'string2' } }
+  const dataNumber42 = { toJSON () { return 42 } }
+  const dataNumber7 = { toJSON () { return 7 } }
+
+  try {
+    const value = stringify({
+      fixedTupleOfStringsAndNumbers: { toJSON () { return [dataString1, dataNumber42, dataNumber7] } }
+    })
+    t.equal(value, '{"fixedTupleOfStringsAndNumbers":["string1",42,7]}')
+  } catch (e) {
+    console.log(e)
+    t.fail()
+  }
+
+  try {
+    const value = JSON.stringify({
+      fixedTupleOfStringsAndNumbers: { toJSON () { return [dataString1, dataNumber42, dataString2] } }
+    })
+    t.equal(value, '{"fixedTupleOfStringsAndNumbers":["string1",42,"string2"]}')
+  } catch (e) {
+    console.log(e)
+    t.fail()
+  }
+})
