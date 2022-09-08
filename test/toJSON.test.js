@@ -3,6 +3,27 @@
 const test = require('tap').test
 const build = require('..')
 
+test('should not call toJSON when enableToJSON equals false', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      data: {
+        type: 'object'
+      }
+    }
+  }
+
+  const stringify = build(schema, { enableToJSON: false })
+
+  const data = {
+    data: { toJSON () { return 4 } }
+  }
+
+  t.equal(stringify(data), '{"data":{}}')
+})
+
 test('use toJSON method on object types', (t) => {
   t.plan(1)
 
@@ -14,7 +35,10 @@ test('use toJSON method on object types', (t) => {
         type: 'string'
       }
     }
+  }, {
+    enableToJSON: true
   })
+
   const object = {
     product: { name: 'cola' },
     toJSON: function () {
@@ -39,7 +63,10 @@ test('use toJSON method on nested object types', (t) => {
         }
       }
     }
+  }, {
+    enableToJSON: true
   })
+
   const array = [
     {
       product: { name: 'cola' },
@@ -74,7 +101,10 @@ test('not use toJSON if does not exist', (t) => {
         }
       }
     }
+  }, {
+    enableToJSON: true
   })
+
   const object = {
     product: { name: 'cola' }
   }
@@ -99,7 +129,10 @@ test('not fail on null object declared nullable', (t) => {
         }
       }
     }
+  }, {
+    enableToJSON: true
   })
+
   t.equal('null', stringify(null))
 })
 
@@ -120,7 +153,10 @@ test('not fail on null sub-object declared nullable', (t) => {
         }
       }
     }
+  }, {
+    enableToJSON: true
   })
+
   const object = {
     product: null
   }
@@ -144,7 +180,10 @@ test('throw an error on non nullable null sub-object', (t) => {
         }
       }
     }
+  }, {
+    enableToJSON: true
   })
+
   const object = {
     product: null
   }
@@ -169,7 +208,10 @@ test('throw an error on non nullable null object', (t) => {
         }
       }
     }
+  }, {
+    enableToJSON: true
   })
+
   t.throws(() => { stringify(null) })
 })
 
@@ -192,7 +234,7 @@ test('recursive toJSON call', (t) => {
     }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
 
   const data = {
     props: {
@@ -249,7 +291,7 @@ test('toJSON - ref - properties', (t) => {
     }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
   const output = stringify(object)
 
   JSON.parse(output)
@@ -285,7 +327,7 @@ test('toJSON - ref - items', (t) => {
     toJSON () { return [this.props.str] }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
   const output = stringify(arrayObj)
 
   JSON.parse(output)
@@ -329,7 +371,7 @@ test('toJSON - ref - patternProperties', (t) => {
     }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
   const output = stringify(object)
 
   JSON.parse(output)
@@ -371,7 +413,7 @@ test('toJSON - ref - additionalProperties', (t) => {
     }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
   const output = stringify(object)
 
   JSON.parse(output)
@@ -421,7 +463,7 @@ test('toJSON - ref - pattern-additional Properties', (t) => {
     }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
   const output = stringify(object)
 
   JSON.parse(output)
@@ -479,7 +521,7 @@ test('toJSON - ref - deepObject schema', (t) => {
     toJSON () { return { winter } }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
   const output = stringify(object)
 
   JSON.parse(output)
@@ -546,7 +588,7 @@ test('toJSON - ref - Regression 2.5.2', t => {
     }
   }
 
-  const stringify = build(schema, { schema: externalSchema })
+  const stringify = build(schema, { schema: externalSchema, enableToJSON: true })
   const output = stringify(object)
 
   t.equal(output, '[{"field":"parent","sub":{"field":"joined"}}]')
@@ -565,7 +607,7 @@ test('possibly nullable integer primitive alternative', (t) => {
     }
   }
 
-  const stringify = build(schema, { ajv: { allowUnionTypes: true } })
+  const stringify = build(schema, { ajv: { allowUnionTypes: true }, enableToJSON: true })
 
   const data = {
     data: { toJSON () { return 4 } }
@@ -587,7 +629,7 @@ test('possibly nullable number primitive alternative', (t) => {
     }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
 
   const data = {
     data: { toJSON () { return 4 } }
@@ -609,7 +651,7 @@ test('possibly nullable integer primitive alternative with null value', (t) => {
     }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
 
   const dataNull = {
     data: { toJSON () { return null } }
@@ -632,7 +674,7 @@ test('possibly nullable number primitive alternative with null value', (t) => {
     }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
 
   const dataNull = {
     data: { toJSON () { return null } }
@@ -655,7 +697,7 @@ test('nullable integer primitive', (t) => {
     }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
 
   const data = {
     data: { toJSON () { return 4 } }
@@ -678,7 +720,7 @@ test('nullable number primitive', (t) => {
     }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
 
   const data = {
     data: { toJSON () { return 4 } }
@@ -701,7 +743,7 @@ test('nullable primitive with null value', (t) => {
     }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
 
   const dataNull = {
     data: { toJSON () { return null } }
@@ -724,7 +766,7 @@ test('nullable number primitive with null value', (t) => {
     }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
 
   const dataNull = {
     data: { toJSON () { return null } }
@@ -751,7 +793,7 @@ test('possibly null object with multi-type property', (t) => {
       }
     }
   }
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
 
   const dataString = { toJSON () { return 'string1' } }
   const dataNumber = { toJSON () { return 42 } }
@@ -784,7 +826,7 @@ test('object with possibly null array of multiple types', (t) => {
   const dataNumber2 = { toJSON () { return 7 } }
   const dataNull = { toJSON () { return null } }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
 
   const arrayStringsAndNumberString = {
     arrayOfStringsAndNumbers: { toJSON () { return [dataString1, dataString2] } }
@@ -838,7 +880,7 @@ test('object that is simultaneously a string and a json', (t) => {
     toString () { return 'hello' }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
   const valueStr = stringify({ simultaneously: { toJSON () { return likeObjectId } } })
   t.equal(valueStr, '{"simultaneously":"hello"}')
 
@@ -864,7 +906,7 @@ test('object that is simultaneously a string and a json switched', (t) => {
     toString () { return 'hello' }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
   const valueStr = stringify({ simultaneously: { toJSON () { return likeObjectId } } })
   t.equal(valueStr, '{"simultaneously":{}}')
 
@@ -888,7 +930,7 @@ test('should throw an error when type is array and object is null', (t) => {
 
   const dataNull = { toJSON () { return null } }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { enableToJSON: true })
   t.throws(
     () => stringify({ arr: dataNull }),
     new TypeError('The value \'null\' does not match schema definition.')
@@ -918,7 +960,10 @@ test('use toJSON method on primary json types', (t) => {
         type: 'string'
       }
     }
+  }, {
+    enableToJSON: true
   })
+
   const input = {
     _bool: {
       toJSON () { return true }
@@ -965,6 +1010,8 @@ test('toJSON skips missing props when not required', (t) => {
         type: 'string'
       }
     }
+  }, {
+    enableToJSON: true
   })
 
   const input = {
@@ -999,6 +1046,8 @@ test('toJSON forwards nullable types', (t) => {
         nullable
       }
     }
+  }, {
+    enableToJSON: true
   })
 
   const inputNull = {
@@ -1062,6 +1111,8 @@ test('toJSON supports required types', (t) => {
       }
     },
     required: ['_bool', '_int', '_null', '_num', '_str']
+  }, {
+    enableToJSON: true
   })
 
   const input = {
@@ -1151,6 +1202,8 @@ test('use toJSON recursively', (t) => {
       '_num_required',
       '_str_required'
     ]
+  }, {
+    enableToJSON: true
   })
   const aggregate = {
     props: {

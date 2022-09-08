@@ -73,6 +73,7 @@ function resolveRef (location, ref) {
 const arrayItemsReferenceSerializersMap = new Map()
 const objectReferenceSerializersMap = new Map()
 
+let enableToJSON = null
 let rootSchemaId = null
 let refResolver = null
 let validator = null
@@ -88,6 +89,7 @@ function build (schema, options) {
   refResolver = new RefResolver()
   validator = new Validator(options.ajv)
 
+  enableToJSON = options.enableToJSON || false
   rootSchemaId = schema.$id || randomUUID()
 
   isValidSchema(schema)
@@ -832,11 +834,13 @@ function buildValue (location, input) {
 
   const type = schema.type
 
-  code += `
-    if (input && typeof input.toJSON === 'function' && !(input instanceof Date)) {
-      input = input.toJSON()
-    }
-  `
+  if (enableToJSON === true) {
+    code += `
+      if (input && typeof input.toJSON === 'function' && !(input instanceof Date)) {
+        input = input.toJSON()
+      }
+    `
+  }
 
   if (type === undefined && (schema.anyOf || schema.oneOf)) {
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
