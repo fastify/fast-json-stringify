@@ -146,7 +146,12 @@ function build (schema, options) {
   }
 
   if (options.mode === 'debug') {
-    return { code: dependenciesName.join('\n'), validator, ajv: validator.ajv }
+    return {
+      validator,
+      serializer,
+      code: dependenciesName.join('\n'),
+      ajv: validator.ajv
+    }
   }
 
   if (options.mode === 'standalone') {
@@ -928,8 +933,7 @@ module.exports = build
 
 module.exports.validLargeArrayMechanisms = validLargeArrayMechanisms
 
-module.exports.restore = function ({ code, validator }) {
-  const serializer = new Serializer()
+module.exports.restore = function ({ code, validator, serializer }) {
   // eslint-disable-next-line
   return (Function.apply(null, ['validator', 'serializer', code])
     .apply(null, [validator, serializer]))
