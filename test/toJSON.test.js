@@ -1088,7 +1088,7 @@ test('toJSON forwards nullable types', (t) => {
 })
 
 test('toJSON supports required types', (t) => {
-  t.plan(2)
+  t.plan(1)
 
   const stringify = build({
     title: 'object of required primitive (json) types',
@@ -1134,11 +1134,6 @@ test('toJSON supports required types', (t) => {
   }
   const expected = '{"_bool":true,"_int":42,"_null":null,"_num":3.14,"_str":"whatever"}'
   t.equal(stringify(input), expected)
-
-  const invalidInput = {
-    toJSON () { return {} }
-  }
-  t.throws(() => { stringify(invalidInput) })
 })
 
 test('use toJSON recursively', (t) => {

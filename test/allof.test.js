@@ -60,7 +60,7 @@ test('allOf: combine pattern properties', (t) => {
 })
 
 test('object with allOf and multiple schema on the allOf', (t) => {
-  t.plan(4)
+  t.plan(2)
 
   const schema = {
     title: 'object with allOf and multiple schema on the allOf',
@@ -94,22 +94,6 @@ test('object with allOf and multiple schema on the allOf', (t) => {
     ]
   }
   const stringify = build(schema)
-
-  try {
-    stringify({
-      id: 1
-    })
-  } catch (e) {
-    t.equal(e.message, '"name" is required!')
-  }
-
-  try {
-    stringify({
-      name: 'string'
-    })
-  } catch (e) {
-    t.equal(e.message, '"id" is required!')
-  }
 
   t.equal(stringify({
     id: 1,

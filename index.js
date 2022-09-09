@@ -319,7 +319,6 @@ function buildCode (location) {
   }
 
   const schema = location.schema
-  const required = schema.required || []
 
   let code = ''
 
@@ -351,22 +350,11 @@ function buildCode (location) {
         ${addComma}
         json += ${asString} + ':' + ${JSON.stringify(JSON.stringify(defaultValue))}
       `
-    } else if (required.includes(key)) {
-      code += `
-      } else {
-        throw new Error('${sanitized} is required!')
-      `
     }
-
     code += `
       }
     `
   })
-
-  for (const requiredProperty of required) {
-    if (schema.properties && schema.properties[requiredProperty] !== undefined) continue
-    code += `if (obj['${requiredProperty}'] === undefined) throw new Error('"${requiredProperty}" is required!')\n`
-  }
 
   return code
 }
