@@ -70,8 +70,7 @@ function resolveRef (location, ref) {
   return { schema, schemaId, jsonPointer }
 }
 
-const arrayItemsReferenceSerializersMap = new Map()
-const objectReferenceSerializersMap = new Map()
+const contextFunctionsNamesBySchema = new Map()
 
 let rootSchemaId = null
 let refResolver = null
@@ -79,8 +78,7 @@ let validator = null
 let contextFunctions = null
 
 function build (schema, options) {
-  arrayItemsReferenceSerializersMap.clear()
-  objectReferenceSerializersMap.clear()
+  contextFunctionsNamesBySchema.clear()
 
   contextFunctions = []
   options = options || {}
@@ -168,8 +166,7 @@ function build (schema, options) {
   validator = null
   rootSchemaId = null
   contextFunctions = null
-  arrayItemsReferenceSerializersMap.clear()
-  objectReferenceSerializersMap.clear()
+  contextFunctionsNamesBySchema.clear()
 
   return stringifyFunc
 }
@@ -542,12 +539,12 @@ function toJSON (variableName) {
 function buildObject (location) {
   const schema = location.schema
 
-  if (objectReferenceSerializersMap.has(schema)) {
-    return objectReferenceSerializersMap.get(schema)
+  if (contextFunctionsNamesBySchema.has(schema)) {
+    return contextFunctionsNamesBySchema.get(schema)
   }
 
   const functionName = generateFuncName()
-  objectReferenceSerializersMap.set(schema, functionName)
+  contextFunctionsNamesBySchema.set(schema, functionName)
 
   const schemaId = location.schemaId === rootSchemaId ? '' : location.schemaId
   let functionCode = `
@@ -589,12 +586,12 @@ function buildArray (location) {
 
   const itemsSchema = itemsLocation.schema
 
-  if (arrayItemsReferenceSerializersMap.has(itemsSchema)) {
-    return arrayItemsReferenceSerializersMap.get(itemsSchema)
+  if (contextFunctionsNamesBySchema.has(schema)) {
+    return contextFunctionsNamesBySchema.get(schema)
   }
 
   const functionName = generateFuncName()
-  arrayItemsReferenceSerializersMap.set(itemsSchema, functionName)
+  contextFunctionsNamesBySchema.set(schema, functionName)
 
   const schemaId = location.schemaId === rootSchemaId ? '' : location.schemaId
   let functionCode = `
