@@ -399,8 +399,8 @@ t.test('if/else with const integers', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify(66.32), '66')
-  t.equal(stringify(33.12), '33')
+  t.equal(stringify(100.32), '66')
+  t.equal(stringify(10.12), '33')
 })
 
 t.test('if/else with array', (t) => {
