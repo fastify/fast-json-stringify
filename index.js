@@ -483,7 +483,7 @@ function buildInnerObject (location) {
   return code
 }
 
-function addIfThenElse (location) {
+function addIfThenElse (location, input) {
   const schema = merge({}, location.schema)
   const thenSchema = schema.then
   const elseSchema = schema.else || { additionalProperties: true }
@@ -495,38 +495,19 @@ function addIfThenElse (location) {
   const ifLocation = mergeLocation(location, 'if')
   const ifSchemaRef = ifLocation.schemaId + ifLocation.jsonPointer
 
-  let code = `
-    if (validator.validate("${ifSchemaRef}", obj)) {
-  `
-
   const thenLocation = mergeLocation(location, 'then')
   thenLocation.schema = merge(schema, thenSchema)
-
-  if (thenSchema.if && thenSchema.then) {
-    code += addIfThenElse(thenLocation)
-  } else {
-    code += buildInnerObject(thenLocation)
-  }
-  code += `
-    }
-  `
 
   const elseLocation = mergeLocation(location, 'else')
   elseLocation.schema = merge(schema, elseSchema)
 
-  code += `
-      else {
-    `
-
-  if (elseSchema.if && elseSchema.then) {
-    code += addIfThenElse(elseLocation)
-  } else {
-    code += buildInnerObject(elseLocation)
-  }
-  code += `
-      }
-    `
-  return code
+  return `
+    if (validator.validate("${ifSchemaRef}", ${input})) {
+      ${buildValue(thenLocation, input)}
+    } else {
+      ${buildValue(elseLocation, input)}
+    }
+  `
 }
 
 function toJSON (variableName) {
@@ -558,12 +539,7 @@ function buildObject (location) {
       var addComma = false
   `
 
-  if (schema.if && schema.then) {
-    functionCode += addIfThenElse(location)
-  } else {
-    functionCode += buildInnerObject(location)
-  }
-
+  functionCode += buildInnerObject(location)
   functionCode += `
       json += '}'
       return json
@@ -867,6 +843,10 @@ function buildValue (location, input) {
     if (inferredType) {
       schema.type = inferredType
     }
+  }
+
+  if (schema.if && schema.then) {
+    return addIfThenElse(location, input)
   }
 
   if (schema.allOf) {
