@@ -1,6 +1,7 @@
 'use strict'
 
 const t = require('tap')
+const { DateTime } = require('luxon')
 const build = require('..')
 
 const schema = {
@@ -367,4 +368,53 @@ t.test('nested if/then', t => {
     stringify({ a: 'A', foo: 'foo', bar: 'bar', foo1: 'foo1', bar1: 'bar1' }),
     JSON.stringify({ a: 'A', bar: 'bar', bar1: 'bar1' })
   )
+})
+
+t.test('if/else with string format', (t) => {
+  t.plan(2)
+
+  const schema = {
+    if: { type: 'string' },
+    then: { type: 'string', format: 'date' },
+    else: { const: 'Invalid' }
+  }
+
+  const stringify = build(schema)
+
+  const date = new Date()
+
+  t.equal(stringify(date), `"${DateTime.fromJSDate(date).toISODate()}"`)
+  t.equal(stringify('Invalid'), '"Invalid"')
+})
+
+t.test('if/else with const integers', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'integer',
+    if: { minimum: 42 },
+    then: { const: 66 },
+    else: { const: 33 }
+  }
+
+  const stringify = build(schema)
+
+  t.equal(stringify(100.32), '66')
+  t.equal(stringify(10.12), '33')
+})
+
+t.test('if/else with array', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'array',
+    if: { maxItems: 1 },
+    then: { items: { type: 'string' } },
+    else: { items: { type: 'number' } }
+  }
+
+  const stringify = build(schema)
+
+  t.equal(stringify(['1']), JSON.stringify(['1']))
+  t.equal(stringify(['1', '2']), JSON.stringify([1, 2]))
 })
