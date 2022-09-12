@@ -9,11 +9,12 @@
     "bench:cmp": "node ./benchmark/bench-cmp-branch.js",
     "bench:cmp:ci": "node ./benchmark/bench-cmp-branch.js --ci",
     "benchmark": "node ./benchmark/bench-cmp-lib.js",
+    "lint": "standard",
     "lint:fix": "standard --fix",
     "test:lint": "standard",
     "test:typescript": "tsc --project ./test/types/tsconfig.json && tsd",
     "test:unit": "tap -J test/*.test.js test/**/*.test.js",
-    "test": "npm run test:lint && npm run test:unit && npm run test:typescript"
+    "test": "npm run test:unit && npm run test:typescript"
   },
   "precommit": "test",
   "repository": {
