@@ -304,10 +304,6 @@ function buildExtraObjectPropertiesSerializer (location) {
 }
 
 function buildInnerObject (location) {
-  if (location.schema.$ref) {
-    location = resolveRef(location, location.schema.$ref)
-  }
-
   const schema = location.schema
   const required = schema.required || []
 
