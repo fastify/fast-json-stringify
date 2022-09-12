@@ -596,3 +596,23 @@ test('anyOf object with invalid field date of type string with format or null', 
   const withOneOfStringify = build(withOneOfSchema)
   t.throws(() => withOneOfStringify({ prop: toStringify }))
 })
+
+test('anyOf with a nested external schema', (t) => {
+  t.plan(1)
+
+  const externalSchemas = {
+    schema1: {
+      definitions: {
+        def1: {
+          $id: 'external',
+          type: 'string'
+        }
+      },
+      type: 'number'
+    }
+  }
+  const schema = { anyOf: [{ $ref: 'external' }] }
+
+  const stringify = build(schema, { schema: externalSchemas })
+  t.equal(stringify('foo'), '"foo"')
+})
