@@ -72,30 +72,30 @@ function resolveRef (location, ref) {
 
 const contextFunctionsNamesBySchema = new Map()
 
+let isValidatorUsed = null
 let rootSchemaId = null
 let refResolver = null
-let validator = null
 let contextFunctions = null
+let mergeAllOfSchemas = null
 
 function build (schema, options) {
   contextFunctionsNamesBySchema.clear()
 
+  isValidatorUsed = false
   contextFunctions = []
+  mergeAllOfSchemas = {}
   options = options || {}
 
   refResolver = new RefResolver()
-  validator = new Validator(options.ajv)
 
   rootSchemaId = schema.$id || randomUUID()
 
   isValidSchema(schema)
-  validator.addSchema(schema, rootSchemaId)
   refResolver.addSchema(schema, rootSchemaId)
 
   if (options.schema) {
     for (const key of Object.keys(options.schema)) {
       isValidSchema(options.schema[key], key)
-      validator.addSchema(options.schema[key], key)
       refResolver.addSchema(options.schema[key], key)
     }
   }
@@ -122,8 +122,6 @@ function build (schema, options) {
     }
   }
 
-  const serializer = new Serializer(options)
-
   const location = { schema, schemaId: rootSchemaId, jsonPointer: '#' }
   const code = buildValue(location, 'input')
 
@@ -135,7 +133,19 @@ function build (schema, options) {
     }
     ${contextFunctions.join('\n')}
     return main
-    `
+  `
+
+  const serializer = new Serializer(options)
+  const validator = new Validator(options.ajv)
+
+  if (isValidatorUsed) {
+    validator.addSchema(schema, rootSchemaId)
+    const externalSchemas = options.schema || {}
+    const validatorSchemas = { ...externalSchemas, ...mergeAllOfSchemas }
+    for (const [schemaKey, schema] of Object.entries(validatorSchemas)) {
+      validator.addSchema(schema, schemaKey)
+    }
+  }
 
   const dependenciesName = ['validator', 'serializer', contextFunctionCode]
 
@@ -155,17 +165,18 @@ function build (schema, options) {
   if (options.mode === 'standalone') {
     // lazy load
     const buildStandaloneCode = require('./lib/standalone')
-    return buildStandaloneCode(options, validator, contextFunctionCode)
+    return buildStandaloneCode(options, validator, isValidatorUsed, contextFunctionCode)
   }
 
   /* eslint no-new-func: "off" */
   const contextFunc = new Function('validator', 'serializer', contextFunctionCode)
   const stringifyFunc = contextFunc(validator, serializer)
 
+  isValidatorUsed = false
   refResolver = null
-  validator = null
   rootSchemaId = null
   contextFunctions = null
+  mergeAllOfSchemas = null
   contextFunctionsNamesBySchema.clear()
 
   return stringifyFunc
@@ -466,7 +477,7 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
   delete mergedSchema.allOf
 
   mergedSchema.$id = `merged_${randomUUID()}`
-  validator.addSchema(mergedSchema)
+  mergeAllOfSchemas[mergedSchema.$id] = mergedSchema
   refResolver.addSchema(mergedSchema)
   location.schemaId = mergedSchema.$id
   location.jsonPointer = '#'
@@ -484,6 +495,8 @@ function buildInnerObject (location) {
 }
 
 function addIfThenElse (location, input) {
+  isValidatorUsed = true
+
   const schema = merge({}, location.schema)
   const thenSchema = schema.then
   const elseSchema = schema.else || { additionalProperties: true }
@@ -861,6 +874,8 @@ function buildValue (location, input) {
   let code = ''
 
   if (type === undefined && (schema.anyOf || schema.oneOf)) {
+    isValidatorUsed = true
+
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
     const anyOfLocation = mergeLocation(location, type)
 
