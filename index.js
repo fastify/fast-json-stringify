@@ -326,8 +326,8 @@ function buildCode (location) {
   const propertiesLocation = mergeLocation(location, 'properties')
   Object.keys(schema.properties || {}).forEach((key) => {
     let propertyLocation = mergeLocation(propertiesLocation, key)
-    if (propertyLocation.$ref) {
-      propertyLocation = resolveRef(location, propertyLocation.$ref)
+    if (propertyLocation.schema.$ref) {
+      propertyLocation = resolveRef(location, propertyLocation.schema.$ref)
     }
 
     const sanitized = JSON.stringify(key)
