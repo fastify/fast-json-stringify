@@ -248,15 +248,13 @@ function buildExtraObjectPropertiesSerializer (location) {
 
   if (patternPropertiesSchema !== undefined) {
     for (const propertyKey in patternPropertiesSchema) {
-      let propertyLocation = mergeLocation(patternPropertiesLocation, propertyKey)
-      if (propertyLocation.schema.$ref) {
-        propertyLocation = resolveRef(propertyLocation, propertyLocation.schema.$ref)
-      }
+      const propertyLocation = mergeLocation(patternPropertiesLocation, propertyKey)
 
       try {
         RegExp(propertyKey)
       } catch (err) {
-        throw new Error(`${err.message}. Found at ${propertyKey} matching ${JSON.stringify(propertyLocation.schema)}`)
+        const jsonPointer = propertyLocation.schema + propertyLocation.jsonPointer
+        throw new Error(`${err.message}. Invalid pattern property regexp key ${propertyKey} at ${jsonPointer}`)
       }
 
       code += `
@@ -280,11 +278,7 @@ function buildExtraObjectPropertiesSerializer (location) {
         json += serializer.asString(key) + ':' + JSON.stringify(value)
       `
     } else {
-      let propertyLocation = mergeLocation(location, 'additionalProperties')
-      if (propertyLocation.schema.$ref) {
-        propertyLocation = resolveRef(propertyLocation, propertyLocation.schema.$ref)
-      }
-
+      const propertyLocation = mergeLocation(location, 'additionalProperties')
       code += `
         ${addComma}
         json += serializer.asString(key) + ':'
