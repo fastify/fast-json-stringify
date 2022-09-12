@@ -1,3 +1,7 @@
 ts: false
 jsx: false
-coverage: false
+branches: 65
+functions: 100
+lines: 75
+statements: 75
+nyc-arg: "--exclude=.cache/*"
