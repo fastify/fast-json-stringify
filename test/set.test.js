@@ -3,16 +3,6 @@
 const { test } = require('tap')
 const build = require('..')
 
-/**
- * test cases
- * 1. basic a set of different type in the same set
- * 2. basic a set of different type in one set
- * 3. empty set
- * 4. multi type
- * 5. constant
- * 6. toJSON
- */
-
 function buildTest (schema, toStringify, expectedOutput, options) {
   test(`render a ${schema.title} as JSON`, t => {
     t.plan(1)
