@@ -44,7 +44,8 @@ function mergeLocation (location, key) {
   return {
     schema: location.schema[key],
     schemaId: location.schemaId,
-    jsonPointer: location.jsonPointer + '/' + key
+    jsonPointer: location.jsonPointer + '/' + key,
+    isValidated: location.isValidated
   }
 }
 
@@ -63,27 +64,29 @@ function resolveRef (location, ref) {
     throw new Error(`Cannot find reference "${ref}"`)
   }
 
+  if (location.isValidated) {
+    validatorSchemasIds.add(schemaId)
+  }
+
   if (schema.$ref !== undefined) {
     return resolveRef({ schema, schemaId, jsonPointer }, schema.$ref)
   }
 
-  return { schema, schemaId, jsonPointer }
+  return { schema, schemaId, jsonPointer, isValidated: location.isValidated }
 }
 
 const contextFunctionsNamesBySchema = new Map()
 
-let isValidatorUsed = null
 let rootSchemaId = null
 let refResolver = null
 let contextFunctions = null
-let mergeAllOfSchemas = null
+let validatorSchemasIds = null
 
 function build (schema, options) {
   contextFunctionsNamesBySchema.clear()
 
-  isValidatorUsed = false
   contextFunctions = []
-  mergeAllOfSchemas = {}
+  validatorSchemasIds = new Set()
   options = options || {}
 
   refResolver = new RefResolver()
@@ -122,7 +125,7 @@ function build (schema, options) {
     }
   }
 
-  const location = { schema, schemaId: rootSchemaId, jsonPointer: '#' }
+  const location = { schema, schemaId: rootSchemaId, jsonPointer: '#', isValidated: false }
   const code = buildValue(location, 'input')
 
   const contextFunctionCode = `
@@ -138,13 +141,9 @@ function build (schema, options) {
   const serializer = new Serializer(options)
   const validator = new Validator(options.ajv)
 
-  if (isValidatorUsed) {
-    validator.addSchema(schema, rootSchemaId)
-    const externalSchemas = options.schema || {}
-    const validatorSchemas = { ...externalSchemas, ...mergeAllOfSchemas }
-    for (const [schemaKey, schema] of Object.entries(validatorSchemas)) {
-      validator.addSchema(schema, schemaKey)
-    }
+  for (const schemaId of validatorSchemasIds) {
+    const schema = refResolver.getSchema(schemaId)
+    validator.addSchema(schema, schemaId)
   }
 
   const dependenciesName = ['validator', 'serializer', contextFunctionCode]
@@ -164,6 +163,7 @@ function build (schema, options) {
 
   if (options.mode === 'standalone') {
     // lazy load
+    const isValidatorUsed = validatorSchemasIds.size > 0
     const buildStandaloneCode = require('./lib/standalone')
     return buildStandaloneCode(options, validator, isValidatorUsed, contextFunctionCode)
   }
@@ -172,11 +172,10 @@ function build (schema, options) {
   const contextFunc = new Function('validator', 'serializer', contextFunctionCode)
   const stringifyFunc = contextFunc(validator, serializer)
 
-  isValidatorUsed = false
   refResolver = null
   rootSchemaId = null
   contextFunctions = null
-  mergeAllOfSchemas = null
+  validatorSchemasIds = null
   contextFunctionsNamesBySchema.clear()
 
   return stringifyFunc
@@ -477,7 +476,6 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
   delete mergedSchema.allOf
 
   mergedSchema.$id = `merged_${randomUUID()}`
-  mergeAllOfSchemas[mergedSchema.$id] = mergedSchema
   refResolver.addSchema(mergedSchema)
   location.schemaId = mergedSchema.$id
   location.jsonPointer = '#'
@@ -495,7 +493,8 @@ function buildInnerObject (location) {
 }
 
 function addIfThenElse (location, input) {
-  isValidatorUsed = true
+  location.isValidated = true
+  validatorSchemasIds.add(location.schemaId)
 
   const schema = merge({}, location.schema)
   const thenSchema = schema.then
@@ -874,7 +873,8 @@ function buildValue (location, input) {
   let code = ''
 
   if (type === undefined && (schema.anyOf || schema.oneOf)) {
-    isValidatorUsed = true
+    location.isValidated = true
+    validatorSchemasIds.add(location.schemaId)
 
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
     const anyOfLocation = mergeLocation(location, type)
