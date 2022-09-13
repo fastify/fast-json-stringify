@@ -150,7 +150,9 @@ And nested ones, too.
 | `Date`   | `string` via `toISOString()` |
 | `RegExp` | `string`                     |
 | `BigInt` | `integer` via `toString`     |
+| `Set`    | `array`                      |
 
+##### Date
 [JSON Schema built-in formats](https://json-schema.org/understanding-json-schema/reference/string.html#built-in-formats) for dates are supported and will be serialized as:
 
 | Format      | Serialized format example  |
@@ -174,6 +176,25 @@ const date = new Date()
 console.log(stringify(date)) // '"YYYY-MM-DDTHH:mm:ss.sssZ"'
 ```
 
+##### Set
+Set will be serialized as array, with items being ordered by the add order:
+```javascript
+const set = new Set()
+
+set.add(2)
+set.add(5)
+set.add(3)
+set.add(1)
+set.delete(5)
+set.add(5)
+set.delete(2)
+
+const stringify = build({
+  title: 'Example schema of a set',
+  type: 'array' // type as array
+})
+const output = stringify(set) // "[3,1,5]"
+```
 
 <a name="required"></a>
 #### Required
