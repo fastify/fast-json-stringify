@@ -2,6 +2,8 @@ ts: false
 jsx: false
 branches: 65
 functions: 100
-lines: 75
-statements: 75
-nyc-arg: "--exclude=.cache/*"
+lines: 89
+statements: 89
+nyc-arg:
+  - "--exclude=.cache/*"
+  - "--exclude=lib/schema-validator.js"
