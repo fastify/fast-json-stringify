@@ -58,6 +58,28 @@ test('use toJSON method on nested object types', (t) => {
   t.equal('[{"productName":"cola"},{"productName":"sprite"}]', stringify(array))
 })
 
+test('use toJSON method on an object with a set', (t) => {
+  t.plan(1)
+
+  const stringify = build({
+    title: 'an object with a set and a custom toJSON method',
+    type: 'object',
+    properties: {
+      doubleValues: { type: 'array' }
+    }
+  })
+
+  const doubleArray = stringify({
+    values: new Set([1, 2, 3]),
+    toJSON: function () {
+      const doubleValues = []
+      this.values.forEach((item) => doubleValues.push(item * 2))
+      return { doubleValues }
+    }
+  })
+  t.equal(doubleArray, '{"doubleValues":[2,4,6]}')
+})
+
 test('not use toJSON if does not exist', (t) => {
   t.plan(1)
 

@@ -222,6 +222,28 @@ test('schema with const object', (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
+test('schema with const set', t => {
+  t.plan(1)
+  const schema = {
+    title: 'set as a constant',
+    type: 'object',
+    properties: {
+      constantSet: { const: new Set([2, 3]) },
+      nonConstantSet: { type: 'array' }
+    }
+  }
+
+  const stringify = build(schema)
+  const output = stringify({
+    constantSet: new Set([2, 3]), nonConstantSet: new Set(['Hi', 'it\'s', 'Tommy'])
+  })
+
+  t.same(
+    "{\"constantSet\":[2,3],\"nonConstantSet\":[\"Hi\",\"it's\",\"Tommy\"]}",
+    output
+  )
+})
+
 test('schema with const and null as type', (t) => {
   t.plan(4)
 
