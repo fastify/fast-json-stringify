@@ -110,7 +110,7 @@ function build (schema, options) {
     if (validLargeArrayMechanisms.includes(options.largeArrayMechanism)) {
       largeArrayMechanism = options.largeArrayMechanism
     } else {
-      throw new Error(`Unsupported large array mechanism ${options.rounding}`)
+      throw new Error(`Unsupported large array mechanism ${options.largeArrayMechanism}`)
     }
   }
 

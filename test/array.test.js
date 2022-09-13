@@ -4,6 +4,24 @@ const test = require('tap').test
 const validator = require('is-my-json-valid')
 const build = require('..')
 
+test('error on invalid largeArrayMechanism', (t) => {
+  t.plan(1)
+
+  t.throws(() => build({
+    title: 'large array of null values with default mechanism',
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: { type: 'null' }
+      }
+    }
+  }, {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'invalid'
+  }), Error('Unsupported large array mechanism invalid'))
+})
+
 function buildTest (schema, toStringify, options) {
   test(`render a ${schema.title} as JSON`, (t) => {
     t.plan(3)
