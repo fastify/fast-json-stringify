@@ -177,7 +177,7 @@ console.log(stringify(date)) // '"YYYY-MM-DDTHH:mm:ss.sssZ"'
 ```
 
 ##### Set
-Set will be serialized as array, with items being ordered by the add order:
+A set will be serialized as an array, with items being ordered by the add order:
 ```javascript
 const set = new Set()
 
