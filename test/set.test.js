@@ -61,6 +61,15 @@ const testCases = [
   ],
   [
     {
+      title: 'a set of dates',
+      type: 'array',
+      items: { type: 'string' }
+    },
+    new Set([new Date('2022-09-13T15:56:24.111Z'), new Date('2022-09-01T15:56:24.111Z')]),
+    '["2022-09-13T15:56:24.111Z","2022-09-01T15:56:24.111Z"]'
+  ],
+  [
+    {
       title: 'a set of mixed types',
       type: 'array'
     },
