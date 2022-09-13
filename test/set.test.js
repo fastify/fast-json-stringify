@@ -26,7 +26,8 @@ const testCases = [
   [
     {
       title: 'a set of numbers',
-      type: 'array'
+      type: 'array',
+      items: { type: 'number' }
     },
     new Set([1, 2, 3]),
     '[1,2,3]'
@@ -34,7 +35,8 @@ const testCases = [
   [
     {
       title: 'a set of strings',
-      type: 'array'
+      type: 'array',
+      items: { type: 'string' }
     },
     new Set(['string 1', 'string 2', "it's time 12:30pm"]),
     '["string 1","string 2","it\'s time 12:30pm"]'
@@ -42,7 +44,8 @@ const testCases = [
   [
     {
       title: 'a set of booleans',
-      type: 'array'
+      type: 'array',
+      items: { type: 'boolean' }
     },
     new Set([false, true]),
     '[false,true]'
