@@ -143,11 +143,7 @@ function build (schema, options) {
 
   for (const schemaId of validatorSchemasIds) {
     const schema = refResolver.getSchema(schemaId)
-    if (schema) {
-      validator.addSchema(schema, schemaId)
-    } else {
-      throw new Error(`Cannot find schema "${schemaId}"`)
-    }
+    validator.addSchema(schema, schemaId)
   }
 
   const dependenciesName = ['validator', 'serializer', contextFunctionCode]
