@@ -391,8 +391,8 @@ t.test('if/else with const integers', (t) => {
   t.plan(2)
 
   const schema = {
-    type: 'integer',
-    if: { minimum: 42 },
+    type: 'number',
+    if: { type: 'number', minimum: 42 },
     then: { const: 66 },
     else: { const: 33 }
   }
@@ -408,7 +408,7 @@ t.test('if/else with array', (t) => {
 
   const schema = {
     type: 'array',
-    if: { maxItems: 1 },
+    if: { type: 'array', maxItems: 1 },
     then: { items: { type: 'string' } },
     else: { items: { type: 'number' } }
   }
