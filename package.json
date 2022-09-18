@@ -16,7 +16,7 @@
     "test:unit": "tap -J test/*.test.js test/**/*.test.js",
     "test": "npm run test:unit && npm run test:typescript"
   },
-  "precommit": "test",
+  "precommit": ["test:lint", "test"],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fastify/fast-json-stringify.git"
