@@ -40,12 +40,47 @@ function isValidSchema (schema, name) {
   }
 }
 
-function mergeLocation (location, key) {
-  return {
-    schema: location.schema[key],
-    schemaId: location.schemaId,
-    jsonPointer: location.jsonPointer + '/' + key,
-    isValidated: location.isValidated
+class Location {
+  constructor (schema, schemaId, jsonPointer = '#', isValidated = false) {
+    this.schema = schema
+    this.schemaId = schemaId
+    this.jsonPointer = jsonPointer
+    this.isValidated = isValidated
+
+    this.isMerged = false
+    this.mergedSchemaId = null
+    this.mergedJsonPointer = null
+  }
+
+  getPropertyLocation (propertyName) {
+    const propertyLocation = new Location(
+      this.schema[propertyName],
+      this.schemaId,
+      this.jsonPointer + '/' + propertyName,
+      this.isValidated
+    )
+
+    if (this.isMerged) {
+      propertyLocation.addMergedSchema(
+        this.mergedSchemaId,
+        this.mergedJsonPointer + '/' + propertyName
+      )
+    }
+
+    return propertyLocation
+  }
+
+  getSchemaRef () {
+    if (this.isMerged) {
+      return this.mergedSchemaId + this.mergedJsonPointer
+    }
+    return this.schemaId + this.jsonPointer
+  }
+
+  addMergedSchema (schemaId, jsonPointer = '#') {
+    this.isMerged = true
+    this.mergedSchemaId = schemaId
+    this.mergedJsonPointer = jsonPointer
   }
 }
 
@@ -68,11 +103,12 @@ function resolveRef (location, ref) {
     validatorSchemasIds.add(schemaId)
   }
 
+  const newLocation = new Location(schema, schemaId, jsonPointer, location.isValidated)
   if (schema.$ref !== undefined) {
-    return resolveRef({ schema, schemaId, jsonPointer }, schema.$ref)
+    return resolveRef(newLocation, schema.$ref)
   }
 
-  return { schema, schemaId, jsonPointer, isValidated: location.isValidated }
+  return newLocation
 }
 
 const contextFunctionsNamesBySchema = new Map()
@@ -125,7 +161,7 @@ function build (schema, options) {
     }
   }
 
-  const location = { schema, schemaId: rootSchemaId, jsonPointer: '#', isValidated: false }
+  const location = new Location(schema, rootSchemaId)
   const code = buildValue(location, 'input')
 
   const contextFunctionCode = `
@@ -253,12 +289,12 @@ function buildExtraObjectPropertiesSerializer (location) {
       ) continue
   `
 
-  const patternPropertiesLocation = mergeLocation(location, 'patternProperties')
+  const patternPropertiesLocation = location.getPropertyLocation('patternProperties')
   const patternPropertiesSchema = patternPropertiesLocation.schema
 
   if (patternPropertiesSchema !== undefined) {
     for (const propertyKey in patternPropertiesSchema) {
-      const propertyLocation = mergeLocation(patternPropertiesLocation, propertyKey)
+      const propertyLocation = patternPropertiesLocation.getPropertyLocation(propertyKey)
 
       try {
         RegExp(propertyKey)
@@ -278,7 +314,7 @@ function buildExtraObjectPropertiesSerializer (location) {
     }
   }
 
-  const additionalPropertiesLocation = mergeLocation(location, 'additionalProperties')
+  const additionalPropertiesLocation = location.getPropertyLocation('additionalProperties')
   const additionalPropertiesSchema = additionalPropertiesLocation.schema
 
   if (additionalPropertiesSchema !== undefined) {
@@ -288,7 +324,7 @@ function buildExtraObjectPropertiesSerializer (location) {
         json += serializer.asString(key) + ':' + JSON.stringify(value)
       `
     } else {
-      const propertyLocation = mergeLocation(location, 'additionalProperties')
+      const propertyLocation = location.getPropertyLocation('additionalProperties')
       code += `
         ${addComma}
         json += serializer.asString(key) + ':'
@@ -313,9 +349,12 @@ function buildInnerObject (location) {
 
   let code = ''
 
-  const propertiesLocation = mergeLocation(location, 'properties')
+  if (!(location instanceof Location)) {
+    console.log(location)
+  }
+  const propertiesLocation = location.getPropertyLocation('properties')
   Object.keys(schema.properties || {}).forEach((key) => {
-    let propertyLocation = mergeLocation(propertiesLocation, key)
+    let propertyLocation = propertiesLocation.getPropertyLocation(key)
     if (propertyLocation.schema.$ref) {
       propertyLocation = resolveRef(location, propertyLocation.schema.$ref)
     }
@@ -366,13 +405,13 @@ function buildInnerObject (location) {
 }
 
 function mergeAllOfSchema (location, schema, mergedSchema) {
-  const allOfLocation = mergeLocation(location, 'allOf')
+  const allOfLocation = location.getPropertyLocation('allOf')
 
   for (let i = 0; i < schema.allOf.length; i++) {
     let allOfSchema = schema.allOf[i]
 
     if (allOfSchema.$ref) {
-      const allOfSchemaLocation = mergeLocation(allOfLocation, i)
+      const allOfSchemaLocation = allOfLocation.getPropertyLocation(i)
       allOfSchema = resolveRef(allOfSchemaLocation, allOfSchema.$ref).schema
     }
 
@@ -461,13 +500,18 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
 
   mergedSchema.$id = `merged_${randomUUID()}`
   refResolver.addSchema(mergedSchema)
-  location.schemaId = mergedSchema.$id
-  location.jsonPointer = '#'
+
+  location.schema = mergedSchema
+  location.addMergedSchema(mergedSchema.$id)
 }
 
 function addIfThenElse (location, input) {
   location.isValidated = true
-  validatorSchemasIds.add(location.schemaId)
+  if (location.isMerged) {
+    validatorSchemasIds.add(location.mergedSchemaId)
+  } else {
+    validatorSchemasIds.add(location.schemaId)
+  }
 
   const schema = merge({}, location.schema)
   const thenSchema = schema.then
@@ -477,13 +521,13 @@ function addIfThenElse (location, input) {
   delete schema.then
   delete schema.else
 
-  const ifLocation = mergeLocation(location, 'if')
-  const ifSchemaRef = ifLocation.schemaId + ifLocation.jsonPointer
+  const ifLocation = location.getPropertyLocation('if')
+  const ifSchemaRef = ifLocation.getSchemaRef()
 
-  const thenLocation = mergeLocation(location, 'then')
+  const thenLocation = location.getPropertyLocation('then')
   thenLocation.schema = merge(schema, thenSchema)
 
-  const elseLocation = mergeLocation(location, 'else')
+  const elseLocation = location.getPropertyLocation('else')
   elseLocation.schema = merge(schema, elseSchema)
 
   return `
@@ -538,7 +582,7 @@ function buildObject (location) {
 function buildArray (location) {
   const schema = location.schema
 
-  let itemsLocation = mergeLocation(location, 'items')
+  let itemsLocation = location.getPropertyLocation('items')
   itemsLocation.schema = itemsLocation.schema || {}
 
   if (itemsLocation.schema.$ref) {
@@ -590,7 +634,7 @@ function buildArray (location) {
   if (Array.isArray(itemsSchema)) {
     for (let i = 0; i < itemsSchema.length; i++) {
       const item = itemsSchema[i]
-      const tmpRes = buildValue(mergeLocation(itemsLocation, i), `obj[${i}]`)
+      const tmpRes = buildValue(itemsLocation.getPropertyLocation(i), `obj[${i}]`)
       functionCode += `
         if (${i} < arrayLength) {
           if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
@@ -686,11 +730,11 @@ function buildMultiTypeSerializer (location, input) {
 
   let code = ''
 
-  const locationClone = clone(location)
   types.forEach((type, index) => {
+    location.schema = { ...location.schema, type }
+    const nestedResult = buildSingleTypeSerializer(location, input)
+
     const statement = index === 0 ? 'if' : 'else if'
-    locationClone.schema.type = type
-    const nestedResult = buildSingleTypeSerializer(locationClone, input)
     switch (type) {
       case 'null':
         code += `
@@ -835,10 +879,8 @@ function buildValue (location, input) {
   }
 
   if (schema.allOf) {
-    const mergedSchema = clone(schema)
-    mergeAllOfSchema(location, schema, mergedSchema)
-    schema = mergedSchema
-    location.schema = mergedSchema
+    mergeAllOfSchema(location, schema, clone(schema))
+    schema = location.schema
   }
 
   const type = schema.type
@@ -847,14 +889,18 @@ function buildValue (location, input) {
 
   if (type === undefined && (schema.anyOf || schema.oneOf)) {
     location.isValidated = true
-    validatorSchemasIds.add(location.schemaId)
+    if (location.isMerged) {
+      validatorSchemasIds.add(location.mergedSchemaId)
+    } else {
+      validatorSchemasIds.add(location.schemaId)
+    }
 
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
-    const anyOfLocation = mergeLocation(location, type)
+    const anyOfLocation = location.getPropertyLocation(type)
 
     for (let index = 0; index < location.schema[type].length; index++) {
-      const optionLocation = mergeLocation(anyOfLocation, index)
-      const schemaRef = optionLocation.schemaId + optionLocation.jsonPointer
+      const optionLocation = anyOfLocation.getPropertyLocation(index)
+      const schemaRef = optionLocation.getSchemaRef()
       const nestedResult = buildValue(optionLocation, input)
       code += `
         ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}))
