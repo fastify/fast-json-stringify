@@ -238,92 +238,72 @@ function inferTypeByKeyword (schema) {
   return schema.type
 }
 
-function addPatternProperties (location) {
+function buildExtraObjectPropertiesSerializer (location) {
   const schema = location.schema
-  const pp = schema.patternProperties
+  const propertiesKeys = Object.keys(schema.properties || {})
+
   let code = `
-      var properties = ${JSON.stringify(schema.properties)} || {}
-      var keys = Object.keys(obj)
-      for (var i = 0; i < keys.length; i++) {
-        if (properties[keys[i]]) continue
+    const propertiesKeys = ${JSON.stringify(propertiesKeys)}
+    for (const [key, value] of Object.entries(obj)) {
+      if (
+        propertiesKeys.includes(key) ||
+        value === undefined ||
+        typeof value === 'function' ||
+        typeof value === 'symbol'
+      ) continue
   `
 
   const patternPropertiesLocation = mergeLocation(location, 'patternProperties')
-  Object.keys(pp).forEach((regex) => {
-    let ppLocation = mergeLocation(patternPropertiesLocation, regex)
-    if (pp[regex].$ref) {
-      ppLocation = resolveRef(ppLocation, pp[regex].$ref)
-      pp[regex] = ppLocation.schema
-    }
+  const patternPropertiesSchema = patternPropertiesLocation.schema
 
-    try {
-      RegExp(regex)
-    } catch (err) {
-      throw new Error(`${err.message}. Found at ${regex} matching ${JSON.stringify(pp[regex])}`)
-    }
+  if (patternPropertiesSchema !== undefined) {
+    for (const propertyKey in patternPropertiesSchema) {
+      const propertyLocation = mergeLocation(patternPropertiesLocation, propertyKey)
 
-    const valueCode = buildValue(ppLocation, 'obj[keys[i]]')
-    code += `
-      if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
-        ${addComma}
-        json += serializer.asString(keys[i]) + ':'
-        ${valueCode}
-        continue
+      try {
+        RegExp(propertyKey)
+      } catch (err) {
+        const jsonPointer = propertyLocation.schema + propertyLocation.jsonPointer
+        throw new Error(`${err.message}. Invalid pattern property regexp key ${propertyKey} at ${jsonPointer}`)
       }
-    `
-  })
-  if (schema.additionalProperties) {
-    code += additionalProperty(location)
-  }
 
-  code += `
-      }
-  `
-  return code
-}
-
-function additionalProperty (location) {
-  const ap = location.schema.additionalProperties
-  let code = ''
-  if (ap === true) {
-    code += `
-        if (obj[keys[i]] !== undefined && typeof obj[keys[i]] !== 'function' && typeof obj[keys[i]] !== 'symbol') {
+      code += `
+        if (/${propertyKey.replace(/\\*\//g, '\\/')}/.test(key)) {
           ${addComma}
-          json += serializer.asString(keys[i]) + ':' + JSON.stringify(obj[keys[i]])
+          json += serializer.asString(key) + ':'
+          ${buildValue(propertyLocation, 'value')}
+          continue
         }
-    `
-
-    return code
+      `
+    }
   }
 
-  let apLocation = mergeLocation(location, 'additionalProperties')
-  if (apLocation.schema.$ref) {
-    apLocation = resolveRef(apLocation, apLocation.schema.$ref)
-  }
+  const additionalPropertiesLocation = mergeLocation(location, 'additionalProperties')
+  const additionalPropertiesSchema = additionalPropertiesLocation.schema
 
-  const valueCode = buildValue(apLocation, 'obj[keys[i]]')
+  if (additionalPropertiesSchema !== undefined) {
+    if (additionalPropertiesSchema === true) {
+      code += `
+        ${addComma}
+        json += serializer.asString(key) + ':' + JSON.stringify(value)
+      `
+    } else {
+      const propertyLocation = mergeLocation(location, 'additionalProperties')
+      code += `
+        ${addComma}
+        json += serializer.asString(key) + ':'
+        ${buildValue(propertyLocation, 'value')}
+      `
+    }
+  }
 
   code += `
-    ${addComma}
-    json += serializer.asString(keys[i]) + ':'
-    ${valueCode}
+    }
   `
-
   return code
 }
 
-function addAdditionalProperties (location) {
-  return `
-      var properties = ${JSON.stringify(location.schema.properties)} || {}
-      var keys = Object.keys(obj)
-      for (var i = 0; i < keys.length; i++) {
-        if (properties[keys[i]]) continue
-        ${additionalProperty(location)}
-      }
-  `
-}
-
-function buildCode (location) {
+function buildInnerObject (location) {
   if (location.schema.$ref) {
     location = resolveRef(location, location.schema.$ref)
   }
@@ -376,6 +356,10 @@ function buildCode (location) {
   for (const requiredProperty of required) {
     if (schema.properties && schema.properties[requiredProperty] !== undefined) continue
     code += `if (obj['${requiredProperty}'] === undefined) throw new Error('"${requiredProperty}" is required!')\n`
+  }
+
+  if (schema.patternProperties || schema.additionalProperties) {
+    code += buildExtraObjectPropertiesSerializer(location)
   }
 
   return code
@@ -479,17 +463,6 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
   refResolver.addSchema(mergedSchema)
   location.schemaId = mergedSchema.$id
   location.jsonPointer = '#'
-}
-
-function buildInnerObject (location) {
-  const schema = location.schema
-  let code = buildCode(location)
-  if (schema.patternProperties) {
-    code += addPatternProperties(location)
-  } else if (schema.additionalProperties && !schema.patternProperties) {
-    code += addAdditionalProperties(location)
-  }
-  return code
 }
 
 function addIfThenElse (location, input) {
