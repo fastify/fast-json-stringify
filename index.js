@@ -10,6 +10,7 @@ const validate = require('./lib/schema-validator')
 const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
 const RefResolver = require('./lib/ref-resolver')
+const Location = require('./lib/location')
 
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
@@ -40,57 +41,13 @@ function isValidSchema (schema, name) {
   }
 }
 
-class Location {
-  constructor (schema, schemaId, jsonPointer = '#', isValidated = false) {
-    this.schema = schema
-    this.schemaId = schemaId
-    this.jsonPointer = jsonPointer
-    this.isValidated = isValidated
-
-    this.isMerged = false
-    this.mergedSchemaId = null
-    this.mergedJsonPointer = null
-  }
-
-  getPropertyLocation (propertyName) {
-    const propertyLocation = new Location(
-      this.schema[propertyName],
-      this.schemaId,
-      this.jsonPointer + '/' + propertyName,
-      this.isValidated
-    )
-
-    if (this.isMerged) {
-      propertyLocation.addMergedSchema(
-        this.mergedSchemaId,
-        this.mergedJsonPointer + '/' + propertyName
-      )
-    }
-
-    return propertyLocation
-  }
-
-  getSchemaRef () {
-    if (this.isMerged) {
-      return this.mergedSchemaId + this.mergedJsonPointer
-    }
-    return this.schemaId + this.jsonPointer
-  }
-
-  addMergedSchema (schemaId, jsonPointer = '#') {
-    this.isMerged = true
-    this.mergedSchemaId = schemaId
-    this.mergedJsonPointer = jsonPointer
-  }
-}
-
 function resolveRef (location, ref) {
   let hashIndex = ref.indexOf('#')
   if (hashIndex === -1) {
     hashIndex = ref.length
   }
 
-  const schemaId = ref.slice(0, hashIndex) || location.schemaId
+  const schemaId = ref.slice(0, hashIndex) || location.getOriginSchemaId()
   const jsonPointer = ref.slice(hashIndex) || '#'
 
   const schema = refResolver.getSchema(schemaId, jsonPointer)
@@ -299,7 +256,7 @@ function buildExtraObjectPropertiesSerializer (location) {
       try {
         RegExp(propertyKey)
       } catch (err) {
-        const jsonPointer = propertyLocation.schema + propertyLocation.jsonPointer
+        const jsonPointer = propertyLocation.getSchemaRef()
         throw new Error(`${err.message}. Invalid pattern property regexp key ${propertyKey} at ${jsonPointer}`)
       }
 
@@ -349,9 +306,6 @@ function buildInnerObject (location) {
 
   let code = ''
 
-  if (!(location instanceof Location)) {
-    console.log(location)
-  }
   const propertiesLocation = location.getPropertyLocation('properties')
   Object.keys(schema.properties || {}).forEach((key) => {
     let propertyLocation = propertiesLocation.getPropertyLocation(key)
@@ -500,18 +454,12 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
 
   mergedSchema.$id = `merged_${randomUUID()}`
   refResolver.addSchema(mergedSchema)
-
-  location.schema = mergedSchema
-  location.addMergedSchema(mergedSchema.$id)
+  location.addMergedSchema(mergedSchema, mergedSchema.$id)
 }
 
 function addIfThenElse (location, input) {
   location.isValidated = true
-  if (location.isMerged) {
-    validatorSchemasIds.add(location.mergedSchemaId)
-  } else {
-    validatorSchemasIds.add(location.schemaId)
-  }
+  validatorSchemasIds.add(location.getSchemaId())
 
   const schema = merge({}, location.schema)
   const thenSchema = schema.then
@@ -556,10 +504,14 @@ function buildObject (location) {
   const functionName = generateFuncName()
   contextFunctionsNamesBySchema.set(schema, functionName)
 
-  const schemaId = location.schemaId === rootSchemaId ? '' : location.schemaId
+  let schemaRef = location.getSchemaRef()
+  if (schemaRef.startsWith(rootSchemaId)) {
+    schemaRef = schemaRef.replace(rootSchemaId, '')
+  }
+
   let functionCode = `
     function ${functionName} (input) {
-      // ${schemaId + location.jsonPointer}
+      // ${schemaRef}
   `
 
   functionCode += `
@@ -598,10 +550,14 @@ function buildArray (location) {
   const functionName = generateFuncName()
   contextFunctionsNamesBySchema.set(schema, functionName)
 
-  const schemaId = location.schemaId === rootSchemaId ? '' : location.schemaId
+  let schemaRef = location.getSchemaRef()
+  if (schemaRef.startsWith(rootSchemaId)) {
+    schemaRef = schemaRef.replace(rootSchemaId, '')
+  }
+
   let functionCode = `
     function ${functionName} (obj) {
-      // ${schemaId + location.jsonPointer}
+      // ${schemaRef}
   `
 
   functionCode += `
@@ -889,11 +845,7 @@ function buildValue (location, input) {
 
   if (type === undefined && (schema.anyOf || schema.oneOf)) {
     location.isValidated = true
-    if (location.isMerged) {
-      validatorSchemasIds.add(location.mergedSchemaId)
-    } else {
-      validatorSchemasIds.add(location.schemaId)
-    }
+    validatorSchemasIds.add(location.getSchemaId())
 
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
     const anyOfLocation = location.getPropertyLocation(type)
