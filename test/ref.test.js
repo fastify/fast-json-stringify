@@ -1981,3 +1981,27 @@ test('nested schema should overwrite anchor scope', (t) => {
   t.equal(output, JSON.stringify(data))
   t.throws(() => build({ $ref: 'root#anchor' }, { schema: externalSchema }))
 })
+
+test('object property reference with default value', (t) => {
+  t.plan(1)
+
+  const schema = {
+    definitions: {
+      prop: {
+        type: 'string',
+        default: 'foo'
+      }
+    },
+    type: 'object',
+    properties: {
+      prop: {
+        $ref: '#/definitions/prop'
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const output = stringify({})
+
+  t.equal(output, '{"prop":"foo"}')
+})

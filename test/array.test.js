@@ -4,6 +4,24 @@ const test = require('tap').test
 const validator = require('is-my-json-valid')
 const build = require('..')
 
+test('error on invalid largeArrayMechanism', (t) => {
+  t.plan(1)
+
+  t.throws(() => build({
+    title: 'large array of null values with default mechanism',
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: { type: 'null' }
+      }
+    }
+  }, {
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'invalid'
+  }), Error('Unsupported large array mechanism invalid'))
+})
+
 function buildTest (schema, toStringify, options) {
   test(`render a ${schema.title} as JSON`, (t) => {
     t.plan(3)
@@ -325,6 +343,31 @@ test('object array with anyOf and symbol', (t) => {
     { name: 'name-1', option: 'Bar' }
   ])
   t.equal(value, '[{"name":"name-0","option":"Foo"},{"name":"name-1","option":"Bar"}]')
+})
+
+test('different arrays with same item schemas', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      array1: {
+        type: 'array',
+        items: [{ type: 'string' }],
+        additionalItems: false
+      },
+      array2: {
+        type: 'array',
+        items: { $ref: '#/properties/array1/items' },
+        additionalItems: true
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const data = { array1: ['bar'], array2: ['foo', 'bar'] }
+
+  t.equal(stringify(data), '{"array1":["bar"],"array2":["foo","bar"]}')
 })
 
 const largeArray = new Array(2e4).fill({ a: 'test', b: 1 })
