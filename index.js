@@ -10,6 +10,7 @@ const validate = require('./lib/schema-validator')
 const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
 const RefResolver = require('./lib/ref-resolver')
+const Location = require('./lib/location')
 
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
@@ -40,21 +41,13 @@ function isValidSchema (schema, name) {
   }
 }
 
-function mergeLocation (location, key) {
-  return {
-    schema: location.schema[key],
-    schemaId: location.schemaId,
-    jsonPointer: location.jsonPointer + '/' + key
-  }
-}
-
 function resolveRef (location, ref) {
   let hashIndex = ref.indexOf('#')
   if (hashIndex === -1) {
     hashIndex = ref.length
   }
 
-  const schemaId = ref.slice(0, hashIndex) || location.schemaId
+  const schemaId = ref.slice(0, hashIndex) || location.getOriginSchemaId()
   const jsonPointer = ref.slice(hashIndex) || '#'
 
   const schema = refResolver.getSchema(schemaId, jsonPointer)
@@ -63,39 +56,42 @@ function resolveRef (location, ref) {
     throw new Error(`Cannot find reference "${ref}"`)
   }
 
-  if (schema.$ref !== undefined) {
-    return resolveRef({ schema, schemaId, jsonPointer }, schema.$ref)
+  if (location.isValidated) {
+    validatorSchemasIds.add(schemaId)
   }
 
-  return { schema, schemaId, jsonPointer }
+  const newLocation = new Location(schema, schemaId, jsonPointer, location.isValidated)
+  if (schema.$ref !== undefined) {
+    return resolveRef(newLocation, schema.$ref)
+  }
+
+  return newLocation
 }
 
 const contextFunctionsNamesBySchema = new Map()
 
 let rootSchemaId = null
 let refResolver = null
-let validator = null
 let contextFunctions = null
+let validatorSchemasIds = null
 
 function build (schema, options) {
   contextFunctionsNamesBySchema.clear()
 
   contextFunctions = []
+  validatorSchemasIds = new Set()
   options = options || {}
 
   refResolver = new RefResolver()
-  validator = new Validator(options.ajv)
 
   rootSchemaId = schema.$id || randomUUID()
 
   isValidSchema(schema)
-  validator.addSchema(schema, rootSchemaId)
   refResolver.addSchema(schema, rootSchemaId)
 
   if (options.schema) {
     for (const key of Object.keys(options.schema)) {
       isValidSchema(options.schema[key], key)
-      validator.addSchema(options.schema[key], key)
       refResolver.addSchema(options.schema[key], key)
     }
   }
@@ -110,7 +106,7 @@ function build (schema, options) {
     if (validLargeArrayMechanisms.includes(options.largeArrayMechanism)) {
       largeArrayMechanism = options.largeArrayMechanism
     } else {
-      throw new Error(`Unsupported large array mechanism ${options.rounding}`)
+      throw new Error(`Unsupported large array mechanism ${options.largeArrayMechanism}`)
     }
   }
 
@@ -122,9 +118,7 @@ function build (schema, options) {
     }
   }
 
-  const serializer = new Serializer(options)
-
-  const location = { schema, schemaId: rootSchemaId, jsonPointer: '#' }
+  const location = new Location(schema, rootSchemaId)
   const code = buildValue(location, 'input')
 
   const contextFunctionCode = `
@@ -135,7 +129,15 @@ function build (schema, options) {
     }
     ${contextFunctions.join('\n')}
     return main
-    `
+  `
+
+  const serializer = new Serializer(options)
+  const validator = new Validator(options.ajv)
+
+  for (const schemaId of validatorSchemasIds) {
+    const schema = refResolver.getSchema(schemaId)
+    validator.addSchema(schema, schemaId)
+  }
 
   const dependenciesName = ['validator', 'serializer', contextFunctionCode]
 
@@ -154,8 +156,9 @@ function build (schema, options) {
 
   if (options.mode === 'standalone') {
     // lazy load
+    const isValidatorUsed = validatorSchemasIds.size > 0
     const buildStandaloneCode = require('./lib/standalone')
-    return buildStandaloneCode(options, validator, contextFunctionCode)
+    return buildStandaloneCode(options, validator, isValidatorUsed, contextFunctionCode)
   }
 
   /* eslint no-new-func: "off" */
@@ -163,9 +166,9 @@ function build (schema, options) {
   const stringifyFunc = contextFunc(validator, serializer)
 
   refResolver = null
-  validator = null
   rootSchemaId = null
   contextFunctions = null
+  validatorSchemasIds = null
   contextFunctionsNamesBySchema.clear()
 
   return stringifyFunc
@@ -228,106 +231,82 @@ function inferTypeByKeyword (schema) {
   return schema.type
 }
 
-function addPatternProperties (location) {
+function buildExtraObjectPropertiesSerializer (location) {
   const schema = location.schema
-  const pp = schema.patternProperties
+  const propertiesKeys = Object.keys(schema.properties || {})
+
   let code = `
-      var properties = ${JSON.stringify(schema.properties)} || {}
-      var keys = Object.keys(obj)
-      for (var i = 0; i < keys.length; i++) {
-        if (properties[keys[i]]) continue
+    const propertiesKeys = ${JSON.stringify(propertiesKeys)}
+    for (const [key, value] of Object.entries(obj)) {
+      if (
+        propertiesKeys.includes(key) ||
+        value === undefined ||
+        typeof value === 'function' ||
+        typeof value === 'symbol'
+      ) continue
   `
 
-  const patternPropertiesLocation = mergeLocation(location, 'patternProperties')
-  Object.keys(pp).forEach((regex) => {
-    let ppLocation = mergeLocation(patternPropertiesLocation, regex)
-    if (pp[regex].$ref) {
-      ppLocation = resolveRef(ppLocation, pp[regex].$ref)
-      pp[regex] = ppLocation.schema
-    }
+  const patternPropertiesLocation = location.getPropertyLocation('patternProperties')
+  const patternPropertiesSchema = patternPropertiesLocation.schema
 
-    try {
-      RegExp(regex)
-    } catch (err) {
-      throw new Error(`${err.message}. Found at ${regex} matching ${JSON.stringify(pp[regex])}`)
-    }
+  if (patternPropertiesSchema !== undefined) {
+    for (const propertyKey in patternPropertiesSchema) {
+      const propertyLocation = patternPropertiesLocation.getPropertyLocation(propertyKey)
 
-    const valueCode = buildValue(ppLocation, 'obj[keys[i]]')
-    code += `
-      if (/${regex.replace(/\\*\//g, '\\/')}/.test(keys[i])) {
-        ${addComma}
-        json += serializer.asString(keys[i]) + ':'
-        ${valueCode}
-        continue
+      try {
+        RegExp(propertyKey)
+      } catch (err) {
+        const jsonPointer = propertyLocation.getSchemaRef()
+        throw new Error(`${err.message}. Invalid pattern property regexp key ${propertyKey} at ${jsonPointer}`)
       }
-    `
-  })
-  if (schema.additionalProperties) {
-    code += additionalProperty(location)
-  }
 
-  code += `
-      }
-  `
-  return code
-}
-
-function additionalProperty (location) {
-  const ap = location.schema.additionalProperties
-  let code = ''
-  if (ap === true) {
-    code += `
-        if (obj[keys[i]] !== undefined && typeof obj[keys[i]] !== 'function' && typeof obj[keys[i]] !== 'symbol') {
+      code += `
+        if (/${propertyKey.replace(/\\*\//g, '\\/')}/.test(key)) {
           ${addComma}
-          json += serializer.asString(keys[i]) + ':' + JSON.stringify(obj[keys[i]])
+          json += serializer.asString(key) + ':'
+          ${buildValue(propertyLocation, 'value')}
+          continue
         }
-    `
-
-    return code
+      `
+    }
   }
 
-  let apLocation = mergeLocation(location, 'additionalProperties')
-  if (apLocation.schema.$ref) {
-    apLocation = resolveRef(apLocation, apLocation.schema.$ref)
-  }
+  const additionalPropertiesLocation = location.getPropertyLocation('additionalProperties')
+  const additionalPropertiesSchema = additionalPropertiesLocation.schema
 
-  const valueCode = buildValue(apLocation, 'obj[keys[i]]')
+  if (additionalPropertiesSchema !== undefined) {
+    if (additionalPropertiesSchema === true) {
+      code += `
+        ${addComma}
+        json += serializer.asString(key) + ':' + JSON.stringify(value)
+      `
+    } else {
+      const propertyLocation = location.getPropertyLocation('additionalProperties')
+      code += `
+        ${addComma}
+        json += serializer.asString(key) + ':'
+        ${buildValue(propertyLocation, 'value')}
+      `
+    }
+  }
 
   code += `
-    ${addComma}
-    json += serializer.asString(keys[i]) + ':'
-    ${valueCode}
+    }
   `
-
   return code
 }
 
-function addAdditionalProperties (location) {
-  return `
-      var properties = ${JSON.stringify(location.schema.properties)} || {}
-      var keys = Object.keys(obj)
-      for (var i = 0; i < keys.length; i++) {
-        if (properties[keys[i]]) continue
-        ${additionalProperty(location)}
-      }
-  `
-}
-
-function buildCode (location) {
-  if (location.schema.$ref) {
-    location = resolveRef(location, location.schema.$ref)
-  }
-
+function buildInnerObject (location) {
   const schema = location.schema
   const required = schema.required || []
 
   let code = ''
 
-  const propertiesLocation = mergeLocation(location, 'properties')
+  const propertiesLocation = location.getPropertyLocation('properties')
   Object.keys(schema.properties || {}).forEach((key) => {
-    let propertyLocation = mergeLocation(propertiesLocation, key)
-    if (propertyLocation.$ref) {
-      propertyLocation = resolveRef(location, propertyLocation.$ref)
+    let propertyLocation = propertiesLocation.getPropertyLocation(key)
+    if (propertyLocation.schema.$ref) {
+      propertyLocation = resolveRef(location, propertyLocation.schema.$ref)
     }
 
     const sanitized = JSON.stringify(key)
@@ -368,17 +347,21 @@ function buildCode (location) {
     code += `if (obj['${requiredProperty}'] === undefined) throw new Error('"${requiredProperty}" is required!')\n`
   }
 
+  if (schema.patternProperties || schema.additionalProperties) {
+    code += buildExtraObjectPropertiesSerializer(location)
+  }
+
   return code
 }
 
 function mergeAllOfSchema (location, schema, mergedSchema) {
-  const allOfLocation = mergeLocation(location, 'allOf')
+  const allOfLocation = location.getPropertyLocation('allOf')
 
   for (let i = 0; i < schema.allOf.length; i++) {
     let allOfSchema = schema.allOf[i]
 
     if (allOfSchema.$ref) {
-      const allOfSchemaLocation = mergeLocation(allOfLocation, i)
+      const allOfSchemaLocation = allOfLocation.getPropertyLocation(i)
       allOfSchema = resolveRef(allOfSchemaLocation, allOfSchema.$ref).schema
     }
 
@@ -466,24 +449,14 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
   delete mergedSchema.allOf
 
   mergedSchema.$id = `merged_${randomUUID()}`
-  validator.addSchema(mergedSchema)
   refResolver.addSchema(mergedSchema)
-  location.schemaId = mergedSchema.$id
-  location.jsonPointer = '#'
+  location.addMergedSchema(mergedSchema, mergedSchema.$id)
 }
 
-function buildInnerObject (location) {
-  const schema = location.schema
-  let code = buildCode(location)
-  if (schema.patternProperties) {
-    code += addPatternProperties(location)
-  } else if (schema.additionalProperties && !schema.patternProperties) {
-    code += addAdditionalProperties(location)
-  }
-  return code
-}
+function addIfThenElse (location, input) {
+  location.isValidated = true
+  validatorSchemasIds.add(location.getSchemaId())
 
-function addIfThenElse (location) {
   const schema = merge({}, location.schema)
   const thenSchema = schema.then
   const elseSchema = schema.else || { additionalProperties: true }
@@ -492,41 +465,22 @@ function addIfThenElse (location) {
   delete schema.then
   delete schema.else
 
-  const ifLocation = mergeLocation(location, 'if')
-  const ifSchemaRef = ifLocation.schemaId + ifLocation.jsonPointer
+  const ifLocation = location.getPropertyLocation('if')
+  const ifSchemaRef = ifLocation.getSchemaRef()
 
-  let code = `
-    if (validator.validate("${ifSchemaRef}", obj)) {
-  `
-
-  const thenLocation = mergeLocation(location, 'then')
+  const thenLocation = location.getPropertyLocation('then')
   thenLocation.schema = merge(schema, thenSchema)
 
-  if (thenSchema.if && thenSchema.then) {
-    code += addIfThenElse(thenLocation)
-  } else {
-    code += buildInnerObject(thenLocation)
-  }
-  code += `
-    }
-  `
-
-  const elseLocation = mergeLocation(location, 'else')
+  const elseLocation = location.getPropertyLocation('else')
   elseLocation.schema = merge(schema, elseSchema)
 
-  code += `
-      else {
-    `
-
-  if (elseSchema.if && elseSchema.then) {
-    code += addIfThenElse(elseLocation)
-  } else {
-    code += buildInnerObject(elseLocation)
-  }
-  code += `
-      }
-    `
-  return code
+  return `
+    if (validator.validate("${ifSchemaRef}", ${input})) {
+      ${buildValue(thenLocation, input)}
+    } else {
+      ${buildValue(elseLocation, input)}
+    }
+  `
 }
 
 function toJSON (variableName) {
@@ -546,10 +500,14 @@ function buildObject (location) {
   const functionName = generateFuncName()
   contextFunctionsNamesBySchema.set(schema, functionName)
 
-  const schemaId = location.schemaId === rootSchemaId ? '' : location.schemaId
+  let schemaRef = location.getSchemaRef()
+  if (schemaRef.startsWith(rootSchemaId)) {
+    schemaRef = schemaRef.replace(rootSchemaId, '')
+  }
+
   let functionCode = `
     function ${functionName} (input) {
-      // ${schemaId + location.jsonPointer}
+      // ${schemaRef}
   `
 
   functionCode += `
@@ -558,12 +516,7 @@ function buildObject (location) {
       var addComma = false
   `
 
-  if (schema.if && schema.then) {
-    functionCode += addIfThenElse(location)
-  } else {
-    functionCode += buildInnerObject(location)
-  }
-
+  functionCode += buildInnerObject(location)
   functionCode += `
       json += '}'
       return json
@@ -577,7 +530,7 @@ function buildObject (location) {
 function buildArray (location) {
   const schema = location.schema
 
-  let itemsLocation = mergeLocation(location, 'items')
+  let itemsLocation = location.getPropertyLocation('items')
   itemsLocation.schema = itemsLocation.schema || {}
 
   if (itemsLocation.schema.$ref) {
@@ -593,10 +546,14 @@ function buildArray (location) {
   const functionName = generateFuncName()
   contextFunctionsNamesBySchema.set(schema, functionName)
 
-  const schemaId = location.schemaId === rootSchemaId ? '' : location.schemaId
+  let schemaRef = location.getSchemaRef()
+  if (schemaRef.startsWith(rootSchemaId)) {
+    schemaRef = schemaRef.replace(rootSchemaId, '')
+  }
+
   let functionCode = `
     function ${functionName} (obj) {
-      // ${schemaId + location.jsonPointer}
+      // ${schemaRef}
   `
 
   functionCode += `
@@ -629,7 +586,7 @@ function buildArray (location) {
   if (Array.isArray(itemsSchema)) {
     for (let i = 0; i < itemsSchema.length; i++) {
       const item = itemsSchema[i]
-      const tmpRes = buildValue(mergeLocation(itemsLocation, i), `obj[${i}]`)
+      const tmpRes = buildValue(itemsLocation.getPropertyLocation(i), `obj[${i}]`)
       functionCode += `
         if (${i} < arrayLength) {
           if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
@@ -725,11 +682,11 @@ function buildMultiTypeSerializer (location, input) {
 
   let code = ''
 
-  const locationClone = clone(location)
   types.forEach((type, index) => {
+    location.schema = { ...location.schema, type }
+    const nestedResult = buildSingleTypeSerializer(location, input)
+
     const statement = index === 0 ? 'if' : 'else if'
-    locationClone.schema.type = type
-    const nestedResult = buildSingleTypeSerializer(locationClone, input)
     switch (type) {
       case 'null':
         code += `
@@ -869,11 +826,13 @@ function buildValue (location, input) {
     }
   }
 
+  if (schema.if && schema.then) {
+    return addIfThenElse(location, input)
+  }
+
   if (schema.allOf) {
-    const mergedSchema = clone(schema)
-    mergeAllOfSchema(location, schema, mergedSchema)
-    schema = mergedSchema
-    location.schema = mergedSchema
+    mergeAllOfSchema(location, schema, clone(schema))
+    schema = location.schema
   }
 
   const type = schema.type
@@ -881,12 +840,15 @@ function buildValue (location, input) {
   let code = ''
 
   if (type === undefined && (schema.anyOf || schema.oneOf)) {
+    location.isValidated = true
+    validatorSchemasIds.add(location.getSchemaId())
+
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
-    const anyOfLocation = mergeLocation(location, type)
+    const anyOfLocation = location.getPropertyLocation(type)
 
     for (let index = 0; index < location.schema[type].length; index++) {
-      const optionLocation = mergeLocation(anyOfLocation, index)
-      const schemaRef = optionLocation.schemaId + optionLocation.jsonPointer
+      const optionLocation = anyOfLocation.getPropertyLocation(index)
+      const schemaRef = optionLocation.getSchemaRef()
       const nestedResult = buildValue(optionLocation, input)
       code += `
         ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}))

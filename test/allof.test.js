@@ -437,3 +437,48 @@ test('object with external $refs in allOf', (t) => {
   })
   t.equal(value, '{"id1":1,"id2":2}')
 })
+
+test('allof with local anchor reference', (t) => {
+  t.plan(1)
+
+  const externalSchemas = {
+    Test: {
+      $id: 'Test',
+      definitions: {
+        Problem: {
+          type: 'object',
+          properties: {
+            type: {
+              type: 'string'
+            }
+          }
+        },
+        ValidationFragment: {
+          type: 'string'
+        },
+        ValidationErrorProblem: {
+          type: 'object',
+          allOf: [
+            {
+              $ref: '#/definitions/Problem'
+            },
+            {
+              type: 'object',
+              properties: {
+                validation: {
+                  $ref: '#/definitions/ValidationFragment'
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+
+  const schema = { $ref: 'Test#/definitions/ValidationErrorProblem' }
+  const stringify = build(schema, { schema: externalSchemas })
+  const data = { type: 'foo', validation: 'bar' }
+
+  t.equal(stringify(data), JSON.stringify(data))
+})
