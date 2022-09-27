@@ -235,11 +235,11 @@ test('schema with const set', t => {
 
   const stringify = build(schema)
   const output = stringify({
-    constantSet: new Set([2, 3]), nonConstantSet: new Set(['Hi', 'it\'s', 'Tommy'])
+    constantSet: new Set([4, 5, 6]), nonConstantSet: new Set(['Hi', "it's", 'Tommy aka "Tom"'])
   })
 
   t.same(
-    "{\"constantSet\":[2,3],\"nonConstantSet\":[\"Hi\",\"it's\",\"Tommy\"]}",
+    "{\"constantSet\":[2,3],\"nonConstantSet\":[\"Hi\",\"it's\",\"Tommy aka \\\"Tom\\\"\"]}",
     output
   )
 })
