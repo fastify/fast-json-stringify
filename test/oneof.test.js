@@ -490,3 +490,18 @@ test('all array items does not match oneOf types', (t) => {
 
   t.throws(() => stringify({ data: [null, false, true, undefined, [], {}] }))
 })
+
+test('oneOf with a set and an object', (t) => {
+  t.plan(2)
+
+  const schema = {
+    oneOf: [
+      { type: 'array', items: { type: 'string' } },
+      { type: 'object', properties: { foo: { type: 'string' } } }
+    ]
+  }
+
+  const stringify = build(schema)
+  t.equal(stringify(new Set(['foo', 'bar'])), '["foo","bar"]')
+  t.equal(stringify({ foo: 'bar' }), '{"foo":"bar"}')
+})

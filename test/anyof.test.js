@@ -616,3 +616,18 @@ test('anyOf with a nested external schema', (t) => {
   const stringify = build(schema, { schema: externalSchemas })
   t.equal(stringify('foo'), '"foo"')
 })
+
+test('anyOf with a set and an object', (t) => {
+  t.plan(2)
+
+  const schema = {
+    anyOf: [
+      { type: 'array', items: { type: 'string' } },
+      { type: 'object', properties: { foo: { type: 'string' } } }
+    ]
+  }
+
+  const stringify = build(schema)
+  t.equal(stringify(new Set(['foo', 'bar'])), '["foo","bar"]')
+  t.equal(stringify({ foo: 'bar' }), '{"foo":"bar"}')
+})
