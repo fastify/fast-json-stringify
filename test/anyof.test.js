@@ -656,3 +656,28 @@ test('anyOf with string and set', (t) => {
     JSON.stringify({ a: [1, 2, 3] })
   )
 })
+
+test('anyOf with string and set where set is invalid', (t) => {
+  t.plan(2)
+
+  const schema = {
+    anyOf: [
+      { type: 'string' },
+      {
+        type: 'object',
+        properties: {
+          a: { type: 'array', items: { type: 'number' }, maxItems: 2 }
+        }
+      }
+    ]
+  }
+
+  const stringify = build(schema)
+
+  t.equal(stringify('foo'), '"foo"')
+
+  t.throws(
+    () => stringify({ a: new Set([1, 2, 3]) }),
+    Error('The value {"a":{}} does not match schema definition.')
+  )
+})
