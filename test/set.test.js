@@ -10,7 +10,7 @@ function buildTest (schema, toStringify, expectedOutput, options) {
     const stringify = build(schema, options)
     const output = stringify(toStringify)
 
-    t.same(expectedOutput, output)
+    t.same(output, expectedOutput)
   })
 }
 
