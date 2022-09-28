@@ -418,3 +418,71 @@ t.test('if/else with array', (t) => {
   t.equal(stringify(['1']), JSON.stringify(['1']))
   t.equal(stringify(['1', '2']), JSON.stringify([1, 2]))
 })
+
+t.test('if/else with set', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'array',
+    if: { type: 'array', maxItems: 1 },
+    then: { items: { type: 'string' } },
+    else: { items: { type: 'number' } }
+  }
+
+  const stringify = build(schema)
+
+  t.equal(stringify(new Set(['1'])), JSON.stringify(['1']))
+  t.equal(stringify(new Set(['1', '2'])), JSON.stringify([1, 2]))
+})
+
+t.test('if/else with nested set', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'array',
+    items: {
+      type: 'array',
+      if: { type: 'array', maxItems: 1 },
+      then: { items: { type: 'string' } },
+      else: { items: { type: 'number' } }
+    }
+  }
+
+  const stringify = build(schema)
+
+  t.equal(stringify(new Set([new Set([1]), new Set([2, 3])])), JSON.stringify([['1'], [2, 3]]))
+  t.equal(stringify(new Set([new Set([1, 2])])), JSON.stringify([[1, 2]]))
+})
+
+t.test('if/else with set in an object', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      name: { type: 'string' },
+      friends: {
+        type: 'array',
+        if: { type: 'array', contains: { type: 'string' }, minContains: 1 },
+        then: { items: { type: 'string' } },
+        else: { const: ['no one'] }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  t.equal(
+    stringify({ name: 'Tommy D', friends: new Set(['ryan', 'kk', 'kit', 'david']) }),
+    JSON.stringify({
+      name: 'Tommy D', friends: ['ryan', 'kk', 'kit', 'david']
+    })
+  )
+
+  t.equal(
+    stringify({ name: 'Tommy D', friends: new Set() }),
+    JSON.stringify({
+      name: 'Tommy D', friends: ['no one']
+    })
+  )
+})
