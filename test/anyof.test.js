@@ -631,3 +631,28 @@ test('anyOf with a set and an object', (t) => {
   t.equal(stringify(new Set(['foo', 'bar'])), '["foo","bar"]')
   t.equal(stringify({ foo: 'bar' }), '{"foo":"bar"}')
 })
+
+test('anyOf with string and set', (t) => {
+  t.plan(2)
+
+  const schema = {
+    anyOf: [
+      { type: 'string' },
+      {
+        type: 'object',
+        properties: {
+          a: { type: 'array', items: { type: 'number' } }
+        }
+      }
+    ]
+  }
+
+  const stringify = build(schema)
+
+  t.equal(stringify('foo'), '"foo"')
+
+  t.equal(
+    stringify({ a: new Set([1, 2, 3]) }),
+    JSON.stringify({ a: [1, 2, 3] })
+  )
+})
