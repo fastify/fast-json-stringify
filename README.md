@@ -191,6 +191,7 @@ set.delete(2)
 
 const stringify = build({
   title: 'Example schema of a set',
+  minItems: 2, // array keyword allowed
   type: 'array' // type as array
 })
 const output = stringify(set) // "[3,1,5]"
