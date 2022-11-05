@@ -56,11 +56,7 @@ function resolveRef (location, ref) {
     throw new Error(`Cannot find reference "${ref}"`)
   }
 
-  if (location.isValidated) {
-    validatorSchemasIds.add(schemaId)
-  }
-
-  const newLocation = new Location(schema, schemaId, jsonPointer, location.isValidated)
+  const newLocation = new Location(schema, schemaId, jsonPointer)
   if (schema.$ref !== undefined) {
     return resolveRef(newLocation, schema.$ref)
   }
@@ -459,7 +455,6 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
 }
 
 function addIfThenElse (location, input) {
-  location.isValidated = true
   validatorSchemasIds.add(location.getSchemaId())
 
   const schema = merge({}, location.schema)
@@ -845,7 +840,6 @@ function buildValue (location, input) {
   let code = ''
 
   if (type === undefined && (schema.anyOf || schema.oneOf)) {
-    location.isValidated = true
     validatorSchemasIds.add(location.getSchemaId())
 
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
