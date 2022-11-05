@@ -137,6 +137,11 @@ function build (schema, options) {
   for (const schemaId of validatorSchemasIds) {
     const schema = refResolver.getSchema(schemaId)
     validator.addSchema(schema, schemaId)
+
+    const dependencies = refResolver.getSchemaDependencies(schemaId)
+    for (const [schemaId, schema] of Object.entries(dependencies)) {
+      validator.addSchema(schema, schemaId)
+    }
   }
 
   const dependenciesName = ['validator', 'serializer', contextFunctionCode]
