@@ -616,3 +616,31 @@ test('anyOf with a nested external schema', (t) => {
   const stringify = build(schema, { schema: externalSchemas })
   t.equal(stringify('foo'), '"foo"')
 })
+
+test('object with ref and validated properties', (t) => {
+  t.plan(1)
+
+  const externalSchemas = {
+    RefSchema: {
+      $id: 'RefSchema',
+      type: 'string'
+    }
+  }
+
+  const schema = {
+    $id: 'root',
+    type: 'object',
+    properties: {
+      id: {
+        anyOf: [
+          { type: 'string' },
+          { type: 'number' }
+        ]
+      },
+      reference: { $ref: 'RefSchema' }
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchemas })
+  t.equal(stringify({ id: 1, reference: 'hi' }), '{"id":1,"reference":"hi"}')
+})
