@@ -650,6 +650,9 @@ While the `schema` is currently validated for any developer errors,
 there is no guarantee that supplying user-generated schema could not
 expose your application to remote attacks.
 
+The _data_ that `fast-json-stringify` serializes is trusted too. In other terms,
+fast-json-stringify makes no claim to validate the incoming data against the schema. 
+
 <a name="debug"></a>
 ### Debug Mode
 
