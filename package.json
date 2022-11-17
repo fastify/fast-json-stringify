@@ -32,6 +32,7 @@
     "url": "https://github.com/fastify/fast-json-stringify/issues"
   },
   "homepage": "https://github.com/fastify/fast-json-stringify#readme",
+  "files": ["*.js", "*.d.ts", "build/*.js", "lib/*.js"],
   "devDependencies": {
     "@fastify/pre-commit": "^2.0.2",
     "@sinclair/typebox": "^0.25.2",
