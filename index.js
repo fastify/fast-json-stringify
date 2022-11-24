@@ -2,6 +2,7 @@
 
 /* eslint no-prototype-builtins: 0 */
 
+const join = require('fast-array-join')
 const merge = require('@fastify/deepmerge')()
 const clone = require('rfdc')({ proto: true })
 const { randomUUID } = require('crypto')
@@ -123,7 +124,7 @@ function build (schema, options) {
       ${code}
       return json
     }
-    ${contextFunctions.join('\n')}
+    ${join(contextFunctions, '\n')}
     return main
   `
 
@@ -150,7 +151,7 @@ function build (schema, options) {
     return {
       validator,
       serializer,
-      code: dependenciesName.join('\n'),
+      code: join(dependenciesName, '\n'),
       ajv: validator.ajv
     }
   }
@@ -663,7 +664,7 @@ function buildArrayTypeCondition (type, accessor) {
         const conditions = type.map((subType) => {
           return buildArrayTypeCondition(subType, accessor)
         })
-        condition = `(${conditions.join(' || ')})`
+        condition = `(${join(conditions, ' || ')})`
       } else {
         throw new Error(`${type} unsupported`)
       }
