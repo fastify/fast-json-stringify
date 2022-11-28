@@ -4,7 +4,7 @@
 
 const merge = require('@fastify/deepmerge')()
 const clone = require('rfdc')({ proto: true })
-const { randomUUID } = require('crypto')
+const { v4: uuidv4 } = require('uuid')
 
 const validate = require('./lib/schema-validator')
 const Serializer = require('./lib/serializer')
@@ -80,7 +80,7 @@ function build (schema, options) {
 
   refResolver = new RefResolver()
 
-  rootSchemaId = schema.$id || randomUUID()
+  rootSchemaId = schema.$id || uuidv4()
 
   isValidSchema(schema)
   refResolver.addSchema(schema, rootSchemaId)
@@ -449,7 +449,7 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
   }
   delete mergedSchema.allOf
 
-  mergedSchema.$id = `merged_${randomUUID()}`
+  mergedSchema.$id = `merged_${uuidv4()}`
   refResolver.addSchema(mergedSchema)
   location.addMergedSchema(mergedSchema, mergedSchema.$id)
 }
