@@ -3,7 +3,7 @@
   "version": "5.4.1",
   "description": "Stringify your JSON at max speed",
   "main": "index.js",
-  "types": "index.d.ts",
+  "types": "types/index.d.ts",
   "scripts": {
     "bench": "node ./benchmark/bench.js",
     "bench:cmp": "node ./benchmark/bench-cmp-branch.js",
@@ -11,7 +11,7 @@
     "benchmark": "node ./benchmark/bench-cmp-lib.js",
     "lint": "standard",
     "lint:fix": "standard --fix",
-    "test:typescript": "tsc --project ./test/types/tsconfig.json && tsd",
+    "test:typescript": "tsd",
     "test:unit": "tap -J test/*.test.js test/**/*.test.js",
     "test": "npm run test:unit && npm run test:typescript"
   },
@@ -46,7 +46,6 @@
     "standard": "^17.0.0",
     "tap": "^16.0.1",
     "tsd": "^0.24.1",
-    "typescript": "^4.0.2",
     "webpack": "^5.40.0"
   },
   "dependencies": {
@@ -62,8 +61,5 @@
       "schema-validator.js"
     ]
   },
-  "runkitExampleFilename": "./examples/example.js",
-  "tsd": {
-    "directory": "test/types"
-  }
+  "runkitExampleFilename": "./examples/example.js"
 }

@@ -888,6 +888,8 @@ function buildValue (location, input) {
 }
 
 module.exports = build
+module.exports.default = build
+module.exports.build = build
 
 module.exports.validLargeArrayMechanisms = validLargeArrayMechanisms
 
