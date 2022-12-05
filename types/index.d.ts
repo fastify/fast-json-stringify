@@ -1,5 +1,7 @@
 import Ajv, { Options as AjvOptions } from "ajv"
 
+type Build = typeof build
+
 declare namespace build {
   interface BaseSchema {
     /**
@@ -168,6 +170,12 @@ declare namespace build {
      */
     mode?: 'debug' | 'standalone'
   }
+
+  export const validLargeArrayMechanisms: string[]
+  export function restore (value: <TDoc extends object = object>(doc: TDoc) => string): ReturnType<Build> 
+
+  export const build: Build
+  export { build as default }
 }
 
 interface DebugOption extends build.Options {

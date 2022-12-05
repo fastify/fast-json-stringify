@@ -1,5 +1,6 @@
 import Ajv from 'ajv'
-import build, { Schema } from '../..'
+import build, { restore, Schema, validLargeArrayMechanisms } from '..'
+import { expectError, expectType } from 'tsd'
 
 // Number schemas
 const schema1: Schema = {
@@ -151,3 +152,68 @@ ajv = build(schema1, { debugMode: true }).ajv
 str = build(schema1, { mode: 'debug' }).code
 ajv = build(schema1, { mode: 'debug' }).ajv
 str = build(schema1, { mode: 'standalone' })
+
+const debugCompiled = build({
+  title: 'default string',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
+    }
+  }
+}, { mode: 'debug' })
+expectType<ReturnType<typeof build>>(build.restore(debugCompiled))
+expectType<ReturnType<typeof build>>(restore(debugCompiled))
+
+expectType<string[]>(build.validLargeArrayMechanisms)
+expectType<string[]>(validLargeArrayMechanisms)
+
+/**
+ * Schema inference
+ */
+
+// With inference
+interface InferenceSchema {
+  id: string;
+  a?: number;
+}
+
+const stringify3 = build({
+  type: "object",
+  properties: { a: { type: "string" } },
+});
+stringify3<InferenceSchema>({ id: "123" });
+stringify3<InferenceSchema>({ a: 123, id: "123" });
+expectError(stringify3<InferenceSchema>({ anotherOne: "bar" }));
+expectError(stringify3<Schema>({ a: "bar" }));
+
+// Without inference
+const stringify4 = build({
+  type: "object",
+  properties: { a: { type: "string" } },
+});
+stringify4({ id: "123" });
+stringify4({ a: 123, id: "123" });
+stringify4({ anotherOne: "bar" });
+stringify4({ a: "bar" });
+
+// Without inference - string type
+const stringify5 = build({
+  type: "string",
+});
+stringify5("foo");
+expectError(stringify5({ id: "123" }));
+
+// Without inference - null type
+const stringify6 = build({
+  type: "null",
+});
+stringify6(null);
+expectError(stringify6("a string"));
+
+// Without inference - boolean type
+const stringify7 = build({
+  type: "boolean",
+});
+stringify7(true);
+expectError(stringify7("a string"));
