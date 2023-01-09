@@ -485,6 +485,24 @@ test('should throw an error when type is array and object is null', (t) => {
   t.throws(() => stringify({ arr: null }), new TypeError('The value \'null\' does not match schema definition.'))
 })
 
+test('should throw an error when type is array and object is object', (t) => {
+  t.plan(1)
+  const schema = {
+    type: 'object',
+    properties: {
+      arr: {
+        type: 'array',
+        items: {
+          type: 'number'
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  t.throws(() => stringify({ arr: { foo: 'hello' } }), new TypeError('The value \'{"foo":"hello"}\' does not match schema definition.'))
+})
+
 test('throw an error if none of types matches', (t) => {
   t.plan(1)
 
