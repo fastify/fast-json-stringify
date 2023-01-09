@@ -485,7 +485,7 @@ test('should throw an error when type is array and object is null', (t) => {
   t.throws(() => stringify({ arr: null }), new TypeError('The value of \'#/properties/arr\' does not match schema definition.'))
 })
 
-test('should throw an error when type is array and object is not at an array', (t) => {
+test('should throw an error when type is array and object is not an array', (t) => {
   t.plan(1)
   const schema = {
     type: 'object',
@@ -501,6 +501,34 @@ test('should throw an error when type is array and object is not at an array', (
 
   const stringify = build(schema)
   t.throws(() => stringify({ arr: { foo: 'hello' } }), new TypeError('The value of \'#/properties/arr\' does not match schema definition.'))
+})
+
+test('should throw an error when type is array and object is not an array with external schema', (t) => {
+  t.plan(1)
+  const schema = {
+    type: 'object',
+    properties: {
+      arr: {
+        $ref: 'arrayOfNumbers#/definitions/arr'
+      }
+    }
+  }
+
+  const externalSchema = {
+    arrayOfNumbers: {
+      definitions: {
+        arr: {
+          type: 'array',
+          items: {
+            type: 'number'
+          }
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  t.throws(() => stringify({ arr: { foo: 'hello' } }), new TypeError('The value of \'arrayOfNumbers#/definitions/arr\' does not match schema definition.'))
 })
 
 test('throw an error if none of types matches', (t) => {
