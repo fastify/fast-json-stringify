@@ -606,8 +606,7 @@ function buildArray (location) {
     if (schema.additionalItems) {
       functionCode += `
         for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
-          let json = JSON.stringify(obj[i])
-          jsonOutput += json
+          jsonOutput += JSON.stringify(obj[i])
           if (i < arrayLength - 1) {
             jsonOutput += ','
           }
