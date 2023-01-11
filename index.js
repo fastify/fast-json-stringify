@@ -563,7 +563,7 @@ function buildArray (location) {
     const arrayLength = obj.length
   `
 
-  if (!schema.additionalItems) {
+  if (!schema.additionalItems && Array.isArray(itemsSchema)) {
     functionCode += `
       if (arrayLength > ${itemsSchema.length}) {
         throw new Error(\`Item at ${itemsSchema.length} does not match schema definition.\`)
