@@ -284,18 +284,7 @@ test('array items is a list of schema and additionalItems is false', (t) => {
   }
 
   const stringify = build(schema)
-
-  try {
-    stringify({
-      foo: [
-        'foo',
-        'bar'
-      ]
-    })
-    t.fail()
-  } catch (error) {
-    t.ok(/does not match schema definition./.test(error.message))
-  }
+  t.throws(() => stringify({ foo: ['foo', 'bar'] }), new Error('Item at 1 does not match schema definition'))
 })
 
 // https://github.com/fastify/fast-json-stringify/issues/279
