@@ -322,7 +322,7 @@ function buildInnerObject (location) {
         json += ${asString} + ':'
       `
 
-    code += buildValue(propertyLocation, `obj[${JSON.stringify(key)}]`)
+    code += buildValue(propertyLocation, `obj[${sanitized}]`)
 
     const defaultValue = propertyLocation.schema.default
     if (defaultValue !== undefined) {
