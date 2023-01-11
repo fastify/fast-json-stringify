@@ -558,7 +558,7 @@ function buildArray (location) {
 
   functionCode += `
     if (!Array.isArray(obj)) {
-      throw new TypeError(\`The value '$\{obj}' does not match schema definition.\`)
+      throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
     }
     const arrayLength = obj.length
   `
