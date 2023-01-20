@@ -599,3 +599,40 @@ test('should throw an error if value can not be transformed to date', (t) => {
   t.throws(() => stringify(toStringify), new Error('The value "true" cannot be converted to a date.'))
   t.not(validate(toStringify))
 })
+
+test('should throw an error if value can not be transformed to time', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'a time in a string',
+    type: 'string',
+    format: 'time',
+    nullable: true
+  }
+  const toStringify = true
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+
+  t.throws(() => stringify(toStringify), new Error('The value "true" cannot be converted to a time.'))
+  t.not(validate(toStringify))
+})
+
+test('should serialize also an invalid string value, even if it is not a valid time', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'a time in a string',
+    type: 'string',
+    format: 'time',
+    nullable: true
+  }
+  const toStringify = 'invalid'
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, JSON.stringify(toStringify))
+  t.not(validate(JSON.parse(output)), 'valid schema')
+})
