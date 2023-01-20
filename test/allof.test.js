@@ -482,3 +482,15 @@ test('allof with local anchor reference', (t) => {
 
   t.equal(stringify(data), JSON.stringify(data))
 })
+
+test('allOf: throw Error if types mismatch ', (t) => {
+  t.plan(1)
+
+  const schema = {
+    allOf: [
+      { type: 'string' },
+      { type: 'number' }
+    ]
+  }
+  t.throws(() => build(schema), new Error('allOf schemas have different type values'))
+})
