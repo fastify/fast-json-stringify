@@ -494,3 +494,15 @@ test('allOf: throw Error if types mismatch ', (t) => {
   }
   t.throws(() => build(schema), new Error('allOf schemas have different type values'))
 })
+
+test('allOf: throw Error if format mismatch ', (t) => {
+  t.plan(1)
+
+  const schema = {
+    allOf: [
+      { format: 'date' },
+      { format: 'time' }
+    ]
+  }
+  t.throws(() => build(schema), new Error('allOf schemas have different format values'))
+})
