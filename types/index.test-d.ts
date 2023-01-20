@@ -13,6 +13,12 @@ const schema2: Schema = {
 build(schema1)(25)
 build(schema2)(-5)
 
+build(schema2, { rounding: 'ceil' })
+build(schema2, { rounding: 'floor' })
+build(schema2, { rounding: 'round' })
+build(schema2, { rounding: 'trunc' })
+expectError(build(schema2, { rounding: 'invalid' }))
+
 // String schema
 const schema3: Schema = {
     type: 'string'

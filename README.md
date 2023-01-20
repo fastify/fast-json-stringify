@@ -548,7 +548,7 @@ By default the library will handle automatically [BigInt](https://developer.mozi
 <a name="integer"></a>
 #### Integers
 The `type: integer` property will be truncated if a floating point is provided.
-You can customize this behaviour with the `rounding` option that will accept [`round`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/round), [`ceil`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/ceil) or [`floor`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/floor):
+You can customize this behaviour with the `rounding` option that will accept [`round`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/round), [`ceil`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/ceil), [`floor`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/floor) or [`trunc`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/trunc). Default is `trunc`:
 
 ```js
 const stringify = fastJson(schema, { rounding: 'ceil' })
