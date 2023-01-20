@@ -107,10 +107,14 @@ function build (schema, options) {
   }
 
   if (options.largeArraySize) {
-    if (!Number.isNaN(Number.parseInt(options.largeArraySize, 10))) {
+    if (typeof options.largeArraySize === 'string' && Number.isFinite(Number.parseInt(options.largeArraySize, 10))) {
+      largeArraySize = Number.parseInt(options.largeArraySize, 10)
+    } else if (typeof options.largeArraySize === 'number' && Number.isInteger(options.largeArraySize)) {
       largeArraySize = options.largeArraySize
+    } else if (typeof options.largeArraySize === 'bigint') {
+      largeArraySize = Number(options.largeArraySize)
     } else {
-      throw new Error(`Unsupported large array size. Expected integer-like, got ${options.largeArraySize}`)
+      throw new Error(`Unsupported large array size. Expected integer-like, got ${typeof options.largeArraySize} with value ${options.largeArraySize}`)
     }
   }
 

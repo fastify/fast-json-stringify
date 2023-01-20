@@ -217,3 +217,14 @@ const stringify7 = build({
 });
 stringify7(true);
 expectError(stringify7("a string"));
+
+// largeArrayMechanism
+
+build({}, { largeArrayMechanism: 'json-stringify'} )
+build({}, { largeArrayMechanism: 'default'} )
+expectError(build({} as Schema, { largeArrayMechanism: 'invalid'} ))
+
+build({}, { largeArraySize: 2000 } )
+build({}, { largeArraySize: '2e4' } )
+build({}, { largeArraySize: 2n } )
+expectError(build({} as Schema, { largeArraySize: ['asdf']} ))
