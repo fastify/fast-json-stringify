@@ -158,8 +158,10 @@ declare namespace build {
     ajv?: AjvOptions
     /**
      * Optionally configure how the integer will be rounded
+     * 
+     * @default 'trunc'
      */
-    rounding?: 'ceil' | 'floor' | 'round'
+    rounding?: 'ceil' | 'floor' | 'round' | 'trunc'
     /**
      * @deprecated 
      * Enable debug mode. Please use `mode: "debug"` instead
