@@ -148,3 +148,21 @@ test('patternProperties - array coerce', (t) => {
   const incoercibleValues = { foo: 'true', ofoo: 0, objfoo: { tyrion: 'lannister' } }
   t.throws(() => stringify(incoercibleValues))
 })
+
+test('patternProperties - fail on invalid regex, handled by ajv', (t) => {
+  t.plan(1)
+
+  t.throws(() => build({
+    title: 'check array coerce',
+    type: 'object',
+    properties: {},
+    patternProperties: {
+      'foo/\\': {
+        type: 'array',
+        items: {
+          type: 'string'
+        }
+      }
+    }
+  }), new Error('schema is invalid: data/patternProperties must match format "regex"'))
+})

@@ -254,13 +254,6 @@ function buildExtraObjectPropertiesSerializer (location) {
     for (const propertyKey in patternPropertiesSchema) {
       const propertyLocation = patternPropertiesLocation.getPropertyLocation(propertyKey)
 
-      try {
-        RegExp(propertyKey)
-      } catch (err) {
-        const jsonPointer = propertyLocation.getSchemaRef()
-        throw new Error(`${err.message}. Invalid pattern property regexp key ${propertyKey} at ${jsonPointer}`)
-      }
-
       code += `
         if (/${propertyKey.replace(/\\*\//g, '\\/')}/.test(key)) {
           ${addComma}
