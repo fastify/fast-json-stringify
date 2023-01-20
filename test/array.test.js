@@ -530,3 +530,86 @@ buildTest({
   largeArraySize: 2e4,
   largeArrayMechanism: 'default'
 })
+
+test('error on invalid value for largeArraySize /1', (t) => {
+  t.plan(1)
+
+  t.throws(() => build({
+    title: 'large array of null values with default mechanism',
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: { type: 'null' }
+      }
+    }
+  }, {
+    largeArraySize: 'invalid'
+  }), Error('Unsupported large array size. Expected integer-like, got string with value invalid'))
+})
+
+test('error on invalid value for largeArraySize /2', (t) => {
+  t.plan(1)
+
+  t.throws(() => build({
+    title: 'large array of null values with default mechanism',
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: { type: 'null' }
+      }
+    }
+  }, {
+    largeArraySize: Infinity
+  }), Error('Unsupported large array size. Expected integer-like, got number with value Infinity'))
+})
+
+test('error on invalid value for largeArraySize /3', (t) => {
+  t.plan(1)
+
+  t.throws(() => build({
+    title: 'large array of null values with default mechanism',
+    type: 'object',
+    properties: {
+      ids: {
+        type: 'array',
+        items: { type: 'null' }
+      }
+    }
+  }, {
+    largeArraySize: [200]
+  }), Error('Unsupported large array size. Expected integer-like, got object with value 200'))
+})
+
+buildTest({
+  title: 'large array of integers with largeArraySize is bigint',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: { type: 'integer' }
+    }
+  }
+}, {
+  ids: new Array(2e4).fill(42)
+}, {
+  largeArraySize: 20000n,
+  largeArrayMechanism: 'default'
+})
+
+buildTest({
+  title: 'large array of integers with largeArraySize is valid string',
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: { type: 'integer' }
+    }
+  }
+}, {
+  ids: new Array(1e4).fill(42)
+}, {
+  largeArraySize: '10000',
+  largeArrayMechanism: 'default'
+})
