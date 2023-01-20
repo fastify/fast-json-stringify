@@ -152,3 +152,80 @@ test('empty schema on anyOf', (t) => {
   t.equal(stringify({ kind: 'Foo', value: true }), '{"kind":"Foo","value":true}')
   t.equal(stringify({ kind: 'Foo', value: 'hello' }), '{"kind":"Foo","value":"hello"}')
 })
+
+test('should throw a TypeError with the path to the key of the invalid value /1', (t) => {
+  t.plan(1)
+
+  // any on Foo codepath.
+  const schema = {
+    anyOf: [
+      {
+        type: 'object',
+        properties: {
+          kind: {
+            type: 'string',
+            enum: ['Foo']
+          },
+          value: {}
+        }
+      },
+      {
+        type: 'object',
+        properties: {
+          kind: {
+            type: 'string',
+            enum: ['Bar']
+          },
+          value: {
+            type: 'number'
+          }
+        }
+      }
+    ]
+  }
+
+  const stringify = build(schema)
+
+  t.throws(() => stringify({ kind: 'Baz', value: 1 }), new TypeError('The value of \'#\' does not match schema definition.'))
+})
+
+test('should throw a TypeError with the path to the key of the invalid value /2', (t) => {
+  t.plan(1)
+
+  // any on Foo codepath.
+  const schema = {
+    type: 'object',
+    properties: {
+      data: {
+        anyOf: [
+          {
+            type: 'object',
+            properties: {
+              kind: {
+                type: 'string',
+                enum: ['Foo']
+              },
+              value: {}
+            }
+          },
+          {
+            type: 'object',
+            properties: {
+              kind: {
+                type: 'string',
+                enum: ['Bar']
+              },
+              value: {
+                type: 'number'
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  t.throws(() => stringify({ data: { kind: 'Baz', value: 1 } }), new TypeError('The value of \'#/properties/data\' does not match schema definition.'))
+})

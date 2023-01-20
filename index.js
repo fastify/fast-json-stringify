@@ -734,8 +734,12 @@ function buildMultiTypeSerializer (location, input) {
       }
     }
   })
+  let schemaRef = location.getSchemaRef()
+  if (schemaRef.startsWith(rootSchemaId)) {
+    schemaRef = schemaRef.replace(rootSchemaId, '')
+  }
   code += `
-    else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
+    else throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
   `
 
   return code
@@ -854,8 +858,13 @@ function buildValue (location, input) {
       `
     }
 
+    let schemaRef = location.getSchemaRef()
+    if (schemaRef.startsWith(rootSchemaId)) {
+      schemaRef = schemaRef.replace(rootSchemaId, '')
+    }
+
     code += `
-      else throw new Error(\`The value $\{JSON.stringify(${input})} does not match schema definition.\`)
+      else throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
     `
     return code
   }

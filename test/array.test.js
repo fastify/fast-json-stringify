@@ -283,7 +283,6 @@ test('array items is a list of schema and additionalItems is false /1', (t) => {
   }
 
   const stringify = build(schema)
-
   t.throws(() => stringify({ foo: ['foo', 'bar'] }), new Error('Item at 1 does not match schema definition.'))
 })
 
