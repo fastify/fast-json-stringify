@@ -506,3 +506,27 @@ test('allOf: throw Error if format mismatch ', (t) => {
   }
   t.throws(() => build(schema), new Error('allOf schemas have different format values'))
 })
+
+test('allOf: throw Error if nullable mismatch /1', (t) => {
+  t.plan(1)
+
+  const schema = {
+    allOf: [
+      { nullable: true },
+      { nullable: false }
+    ]
+  }
+  t.throws(() => build(schema), new Error('allOf schemas have different nullable values'))
+})
+
+test('allOf: throw Error if nullable mismatch /2', (t) => {
+  t.plan(1)
+
+  const schema = {
+    allOf: [
+      { nullable: false },
+      { nullable: true }
+    ]
+  }
+  t.throws(() => build(schema), new Error('allOf schemas have different nullable values'))
+})
