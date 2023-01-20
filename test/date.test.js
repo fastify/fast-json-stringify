@@ -581,3 +581,21 @@ test('should throw an error if value can not be transformed to date-time', (t) =
   t.throws(() => stringify(toStringify), new Error('The value "true" cannot be converted to a date-time.'))
   t.not(validate(toStringify))
 })
+
+test('should throw an error if value can not be transformed to date', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'date',
+    nullable: true
+  }
+  const toStringify = true
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+
+  t.throws(() => stringify(toStringify), new Error('The value "true" cannot be converted to a date.'))
+  t.not(validate(toStringify))
+})
