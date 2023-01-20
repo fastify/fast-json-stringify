@@ -785,26 +785,56 @@ function buildSingleTypeSerializer (location, input) {
 
 function buildConstSerializer (location, input) {
   const schema = location.schema
-  const type = schema.type
-
-  const hasNullType = Array.isArray(type) && type.includes('null')
-
+  let schemaRef = location.getSchemaRef()
+  if (schemaRef.startsWith(rootSchemaId)) {
+    schemaRef = schemaRef.replace(rootSchemaId, '')
+  }
   let code = ''
 
-  if (hasNullType) {
-    code += `
-      if (${input} === null) {
-        json += 'null'
+  switch (typeof schema.const) {
+    case 'bigint':
+      code += `
+      if (${input} === ${schema.const}n) {
+        json += '${Number(schema.const)}'
       } else {
-    `
-  }
-
-  code += `json += '${JSON.stringify(schema.const)}'`
-
-  if (hasNullType) {
-    code += `
+        throw new Error(\`The value of '${schemaRef}' does not match schema definition.\`)
+      }`
+      break
+    case 'number':
+    case 'boolean':
+      code += `
+      if (${input} === ${schema.const}) {
+        json += ${JSON.stringify(JSON.stringify(schema.const))}
+      } else {
+        throw new Error(\`The value of '${schemaRef}' does not match schema definition.\`)
+      }`
+      break
+    case 'object':
+      if (schema.const === null) {
+        code += `
+        if (${input} === null) {
+          json += 'null'
+        } else {
+          throw new Error(\`The value of '${schemaRef}' does not match schema definition.\`)
+        }`
+      } else {
+        code += `
+        if (JSON.stringify(${input}) === '${JSON.stringify(schema.const)}') {
+          json += ${JSON.stringify(JSON.stringify(schema.const))}
+        } else {
+          throw new Error(\`The value of '${schemaRef}' does not match schema definition.\`)
+        }`
       }
-    `
+      break
+    case 'string':
+    case 'undefined':
+      code += `
+      if (${input} === '${schema.const}') {
+        json += ${JSON.stringify(JSON.stringify(schema.const))}
+      } else {
+        throw new Error(\`The value of '${schemaRef}' does not match schema definition.\`)
+      }`
+      break
   }
 
   return code
@@ -869,7 +899,7 @@ function buildValue (location, input) {
     return code
   }
 
-  const nullable = schema.nullable === true
+  const nullable = schema.nullable === true && !('const' in schema)
   if (nullable) {
     code += `
       if (${input} === null) {
