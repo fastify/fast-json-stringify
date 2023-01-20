@@ -3,6 +3,7 @@
 const test = require('tap').test
 const validator = require('is-my-json-valid')
 const build = require('..')
+const Ajv = require('ajv')
 
 test('error on invalid largeArrayMechanism', (t) => {
   t.plan(1)
@@ -265,7 +266,7 @@ test('array items is a list of schema and additionalItems is true, just the desc
   t.equal(result, '{"foo":["foo"]}')
 })
 
-test('array items is a list of schema and additionalItems is false', (t) => {
+test('array items is a list of schema and additionalItems is false /1', (t) => {
   t.plan(1)
 
   const schema = {
@@ -274,9 +275,7 @@ test('array items is a list of schema and additionalItems is false', (t) => {
       foo: {
         type: 'array',
         items: [
-          {
-            type: 'string'
-          }
+          { type: 'string' }
         ],
         additionalItems: false
       }
@@ -285,17 +284,55 @@ test('array items is a list of schema and additionalItems is false', (t) => {
 
   const stringify = build(schema)
 
-  try {
-    stringify({
-      foo: [
-        'foo',
-        'bar'
-      ]
-    })
-    t.fail()
-  } catch (error) {
-    t.ok(/does not match schema definition./.test(error.message))
+  t.throws(() => stringify({ foo: ['foo', 'bar'] }), new Error('Item at 1 does not match schema definition.'))
+})
+
+test('array items is a list of schema and additionalItems is false /2', (t) => {
+  t.plan(3)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        type: 'array',
+        items: [
+          { type: 'string' },
+          { type: 'string' }
+        ],
+        additionalItems: false
+      }
+    }
   }
+
+  const stringify = build(schema)
+
+  t.throws(() => stringify({ foo: [1, 'bar'] }), new Error('Item at 0 does not match schema definition.'))
+  t.throws(() => stringify({ foo: ['foo', 1] }), new Error('Item at 1 does not match schema definition.'))
+  t.throws(() => stringify({ foo: ['foo', 'bar', 'baz'] }), new Error('Item at 2 does not match schema definition.'))
+})
+
+test('array items is a schema and additionalItems is false', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        type: 'array',
+        items: { type: 'string' },
+        additionalItems: false
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  // ajv ignores additionalItems if items is not an Array
+  const ajv = new Ajv({ allErrors: true, strict: false })
+
+  const validate = ajv.compile(schema)
+  t.same(stringify({ foo: ['foo', 'bar'] }), '{"foo":["foo","bar"]}')
+  t.equal(validate({ foo: ['foo', 'bar'] }), true)
 })
 
 // https://github.com/fastify/fast-json-stringify/issues/279
