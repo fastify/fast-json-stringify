@@ -1,9 +1,9 @@
 'use strict'
 
 const test = require('tap').test
-const { DateTime } = require('luxon')
 const validator = require('is-my-json-valid')
 const build = require('..')
+const { toISODate, toTime } = require('./utils')
 
 test('render a date in a string as JSON', (t) => {
   t.plan(2)
@@ -73,7 +73,7 @@ test('render a date in a string when format is date as YYYY-MM-DD', (t) => {
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, `"${DateTime.fromJSDate(toStringify).toISODate()}"`)
+  t.equal(output, `"${toISODate(toStringify)}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -92,7 +92,7 @@ test('render a nullable date in a string when format is date as YYYY-MM-DD', (t)
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, `"${DateTime.fromJSDate(toStringify).toISODate()}"`)
+  t.equal(output, `"${toISODate(toStringify)}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -110,7 +110,7 @@ test('verify padding for rendered date in a string when format is date', (t) => 
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, `"${DateTime.fromJSDate(toStringify).toISODate()}"`)
+  t.equal(output, `"${toISODate(toStringify)}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -131,7 +131,7 @@ test('render a date in a string when format is time as kk:mm:ss', (t) => {
   validate(JSON.parse(output))
   t.equal(validate.errors, null)
 
-  t.equal(output, `"${DateTime.fromJSDate(toStringify).toFormat('HH:mm:ss')}"`)
+  t.equal(output, `"${toTime(toStringify)}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -153,7 +153,7 @@ test('render a nullable date in a string when format is time as kk:mm:ss', (t) =
   validate(JSON.parse(output))
   t.equal(validate.errors, null)
 
-  t.equal(output, `"${DateTime.fromJSDate(toStringify).toFormat('HH:mm:ss')}"`)
+  t.equal(output, `"${toTime(toStringify)}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -174,7 +174,7 @@ test('render a midnight time', (t) => {
   validate(JSON.parse(output))
   t.equal(validate.errors, null)
 
-  t.equal(output, `"${DateTime.fromJSDate(midnight).toFormat('HH:mm:ss')}"`)
+  t.equal(output, `"${toTime(midnight)}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -195,7 +195,7 @@ test('verify padding for rendered date in a string when format is time', (t) => 
   validate(JSON.parse(output))
   t.equal(validate.errors, null)
 
-  t.equal(output, `"${DateTime.fromJSDate(toStringify).toFormat('HH:mm:ss')}"`)
+  t.equal(output, `"${toTime(toStringify)}"`)
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -388,7 +388,7 @@ test('serializing null value', t => {
       const input = { updatedAt: date }
       const { output } = serialize(schema, input)
 
-      t.equal(output, JSON.stringify({ updatedAt: DateTime.fromJSDate(date).toFormat('HH:mm:ss') }))
+      t.equal(output, JSON.stringify({ updatedAt: toTime(date) }))
     })
 
     t.test('format::time, Date object', t => {
@@ -406,7 +406,7 @@ test('serializing null value', t => {
       const date = new Date()
       const { output } = serialize(schema, date)
 
-      t.equal(output, `"${DateTime.fromJSDate(date).toFormat('HH:mm:ss')}"`)
+      t.equal(output, `"${toTime(date)}"`)
     })
 
     t.test('format::time, Date object', t => {
@@ -523,7 +523,7 @@ test('nullable date', (t) => {
   const data = new Date()
   const result = stringify(data)
 
-  t.same(result, `"${DateTime.fromJSDate(data).toISODate()}"`)
+  t.same(result, `"${toISODate(data)}"`)
 })
 
 test('non-date format should not affect data serialization (issue #491)', (t) => {

@@ -1,8 +1,8 @@
 'use strict'
 
 const test = require('tap').test
-const { DateTime } = require('luxon')
 const build = require('..')
+const { toTime } = require('./utils')
 
 test('allOf: combine type and format ', (t) => {
   t.plan(1)
@@ -16,7 +16,7 @@ test('allOf: combine type and format ', (t) => {
   const stringify = build(schema)
   const date = new Date()
   const value = stringify(date)
-  t.equal(value, `"${DateTime.fromJSDate(date).toFormat('HH:mm:ss')}"`)
+  t.equal(value, `"${toTime(date)}"`)
 })
 
 test('allOf: combine additional properties ', (t) => {

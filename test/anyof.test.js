@@ -1,8 +1,8 @@
 'use strict'
 
-const { DateTime } = require('luxon')
 const { test } = require('tap')
 const build = require('..')
+const { toISODate, toTime } = require('./utils')
 
 test('object with multiple types field', (t) => {
   t.plan(2)
@@ -522,7 +522,7 @@ test('anyOf object with nested field date of type string with format or null', (
     prop: { nestedProp: new Date() }
   }
 
-  t.equal(withOneOfStringify(data), `{"prop":{"nestedProp":"${DateTime.fromJSDate(data.prop.nestedProp).toISODate()}"}}`)
+  t.equal(withOneOfStringify(data), `{"prop":{"nestedProp":"${toISODate(data.prop.nestedProp)}"}}`)
 })
 
 test('anyOf object with nested field time of type string with format or null', (t) => {
@@ -549,8 +549,7 @@ test('anyOf object with nested field time of type string with format or null', (
   const data = {
     prop: { nestedProp: new Date() }
   }
-
-  t.equal(withOneOfStringify(data), `{"prop":{"nestedProp":"${DateTime.fromJSDate(data.prop.nestedProp).toFormat('HH:mm:ss')}"}}`)
+  t.equal(withOneOfStringify(data), `{"prop":{"nestedProp":"${toTime(data.prop.nestedProp)}"}}`)
 })
 
 test('anyOf object with field date of type string with format or null', (t) => {

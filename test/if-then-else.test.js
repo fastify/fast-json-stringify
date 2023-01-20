@@ -1,8 +1,8 @@
 'use strict'
 
 const t = require('tap')
-const { DateTime } = require('luxon')
 const build = require('..')
+const { toISODate } = require('./utils')
 
 const schema = {
   type: 'object',
@@ -383,7 +383,7 @@ t.test('if/else with string format', (t) => {
 
   const date = new Date()
 
-  t.equal(stringify(date), `"${DateTime.fromJSDate(date).toISODate()}"`)
+  t.equal(stringify(date), `"${toISODate(date)}"`)
   t.equal(stringify('Invalid'), '"Invalid"')
 })
 
