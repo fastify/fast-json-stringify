@@ -1,11 +1,11 @@
 'use strict'
 
 const test = require('tap').test
-const validator = require('is-my-json-valid')
+const ajv = new (require('ajv'))()
 const build = require('..')
 
 test('schema with const string', (t) => {
-  t.plan(2)
+  t.plan(3)
 
   const schema = {
     type: 'object',
@@ -14,14 +14,13 @@ test('schema with const string', (t) => {
     }
   }
 
-  const validate = validator(schema)
+  const input = { foo: 'bar' }
+  const validate = ajv.compile(schema)
   const stringify = build(schema)
-  const output = stringify({
-    foo: 'bar'
-  })
 
-  t.equal(output, '{"foo":"bar"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.equal(stringify(input), '{"foo":"bar"}')
+  t.ok(validate((input)))
+  t.equal(stringify(input), JSON.stringify(input))
 })
 
 test('schema with const string and different input', (t) => {
@@ -30,18 +29,16 @@ test('schema with const string and different input', (t) => {
   const schema = {
     type: 'object',
     properties: {
-      foo: { const: 'bar' }
+      foo: { type: 'string', const: 'bar' }
     }
   }
 
-  const validate = validator(schema)
+  const input = { foo: 'baz' }
+  const validate = ajv.compile(schema)
   const stringify = build(schema)
-  const output = stringify({
-    foo: 'baz'
-  })
 
-  t.equal(output, '{"foo":"bar"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.throws(() => stringify(input), new Error("The value of '#/properties/foo' does not match schema definition."))
+  t.not(validate(input))
 })
 
 test('schema with const string and different type input', (t) => {
@@ -54,18 +51,16 @@ test('schema with const string and different type input', (t) => {
     }
   }
 
-  const validate = validator(schema)
+  const input = { foo: 1 }
+  const validate = ajv.compile(schema)
   const stringify = build(schema)
-  const output = stringify({
-    foo: 1
-  })
 
-  t.equal(output, '{"foo":"bar"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.throws(() => stringify(input), new Error("The value of '#/properties/foo' does not match schema definition."))
+  t.not(validate(input))
 })
 
 test('schema with const string and no input', (t) => {
-  t.plan(2)
+  t.plan(3)
 
   const schema = {
     type: 'object',
@@ -74,16 +69,17 @@ test('schema with const string and no input', (t) => {
     }
   }
 
-  const validate = validator(schema)
+  const input = {}
+  const validate = ajv.compile(schema)
   const stringify = build(schema)
-  const output = stringify({})
 
-  t.equal(output, '{}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.equal(stringify(input), '{}')
+  t.ok(validate((input)))
+  t.equal(stringify(input), JSON.stringify(input))
 })
 
 test('schema with const number', (t) => {
-  t.plan(2)
+  t.plan(3)
 
   const schema = {
     type: 'object',
@@ -92,14 +88,13 @@ test('schema with const number', (t) => {
     }
   }
 
-  const validate = validator(schema)
+  const input = { foo: 1 }
+  const validate = ajv.compile(schema)
   const stringify = build(schema)
-  const output = stringify({
-    foo: 1
-  })
 
-  t.equal(output, '{"foo":1}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.equal(stringify(input), '{"foo":1}')
+  t.ok(validate((input)))
+  t.equal(stringify(input), JSON.stringify(input))
 })
 
 test('schema with const number and different input', (t) => {
@@ -112,18 +107,16 @@ test('schema with const number and different input', (t) => {
     }
   }
 
-  const validate = validator(schema)
+  const input = { foo: 2 }
+  const validate = ajv.compile(schema)
   const stringify = build(schema)
-  const output = stringify({
-    foo: 2
-  })
 
-  t.equal(output, '{"foo":1}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.throws(() => stringify(input), new Error("The value of '#/properties/foo' does not match schema definition."))
+  t.not(validate(input))
 })
 
 test('schema with const bool', (t) => {
-  t.plan(2)
+  t.plan(3)
 
   const schema = {
     type: 'object',
@@ -132,18 +125,17 @@ test('schema with const bool', (t) => {
     }
   }
 
-  const validate = validator(schema)
+  const input = { foo: true }
+  const validate = ajv.compile(schema)
   const stringify = build(schema)
-  const output = stringify({
-    foo: true
-  })
 
-  t.equal(output, '{"foo":true}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.equal(stringify(input), '{"foo":true}')
+  t.ok(validate((input)))
+  t.equal(stringify(input), JSON.stringify(input))
 })
 
 test('schema with const number', (t) => {
-  t.plan(2)
+  t.plan(3)
 
   const schema = {
     type: 'object',
@@ -152,18 +144,17 @@ test('schema with const number', (t) => {
     }
   }
 
-  const validate = validator(schema)
+  const input = { foo: 1 }
+  const validate = ajv.compile(schema)
   const stringify = build(schema)
-  const output = stringify({
-    foo: 1
-  })
 
-  t.equal(output, '{"foo":1}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.equal(stringify(input), '{"foo":1}')
+  t.ok(validate((input)))
+  t.equal(stringify(input), JSON.stringify(input))
 })
 
 test('schema with const null', (t) => {
-  t.plan(2)
+  t.plan(3)
 
   const schema = {
     type: 'object',
@@ -172,18 +163,17 @@ test('schema with const null', (t) => {
     }
   }
 
-  const validate = validator(schema)
+  const input = { foo: null }
+  const validate = ajv.compile(schema)
   const stringify = build(schema)
-  const output = stringify({
-    foo: null
-  })
 
-  t.equal(output, '{"foo":null}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.equal(stringify(input), '{"foo":null}')
+  t.ok(validate((input)))
+  t.equal(stringify(input), JSON.stringify(input))
 })
 
 test('schema with const array', (t) => {
-  t.plan(2)
+  t.plan(3)
 
   const schema = {
     type: 'object',
@@ -192,18 +182,17 @@ test('schema with const array', (t) => {
     }
   }
 
-  const validate = validator(schema)
+  const input = { foo: [1, 2, 3] }
+  const validate = ajv.compile(schema)
   const stringify = build(schema)
-  const output = stringify({
-    foo: [1, 2, 3]
-  })
 
-  t.equal(output, '{"foo":[1,2,3]}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.equal(stringify(input), '{"foo":[1,2,3]}')
+  t.ok(validate((input)))
+  t.equal(stringify(input), JSON.stringify(input))
 })
 
 test('schema with const object', (t) => {
-  t.plan(2)
+  t.plan(3)
 
   const schema = {
     type: 'object',
@@ -212,18 +201,17 @@ test('schema with const object', (t) => {
     }
   }
 
-  const validate = validator(schema)
+  const input = { foo: { bar: 'baz' } }
+  const validate = ajv.compile(schema)
   const stringify = build(schema)
-  const output = stringify({
-    foo: { bar: 'baz' }
-  })
 
-  t.equal(output, '{"foo":{"bar":"baz"}}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.equal(stringify(input), '{"foo":{"bar":"baz"}}')
+  t.ok(validate((input)))
+  t.equal(stringify(input), JSON.stringify(input))
 })
 
 test('schema with const and null as type', (t) => {
-  t.plan(4)
+  t.plan(5)
 
   const schema = {
     type: 'object',
@@ -231,45 +219,36 @@ test('schema with const and null as type', (t) => {
       foo: { type: ['string', 'null'], const: 'baz' }
     }
   }
-
-  const validate = validator(schema)
+  const validate = ajv.compile(schema)
   const stringify = build(schema)
-  const output = stringify({
-    foo: null
-  })
 
-  t.equal(output, '{"foo":null}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.throws(() => stringify({ foo: null }), new Error("The value of '\#/properties/foo' does not match schema definition."))
+  t.not(validate({ foo: null }))
 
-  const output2 = stringify({ foo: 'baz' })
-  t.equal(output2, '{"foo":"baz"}')
-  t.ok(validate(JSON.parse(output2)), 'valid schema')
+  t.equal(stringify({ foo: 'baz' }), '{"foo":"baz"}')
+  t.ok(validate({ foo: 'baz' }))
+  t.equal(stringify({ foo: 'baz' }), JSON.stringify({ foo: 'baz' }))
 })
 
 test('schema with const as nullable', (t) => {
-  t.plan(4)
+  t.plan(5)
 
   const schema = {
     type: 'object',
     properties: {
-      foo: { nullable: true, const: 'baz' }
+      foo: { type: 'string', nullable: true, const: 'baz' }
     }
   }
 
-  const validate = validator(schema)
+  const validate = ajv.compile(schema)
   const stringify = build(schema)
-  const output = stringify({
-    foo: null
-  })
 
-  t.equal(output, '{"foo":null}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.throws(() => stringify({ foo: null }), new Error("The value of '\#/properties/foo' does not match schema definition."))
+  t.not(validate({ foo: null }))
 
-  const output2 = stringify({
-    foo: 'baz'
-  })
-  t.equal(output2, '{"foo":"baz"}')
-  t.ok(validate(JSON.parse(output2)), 'valid schema')
+  t.equal(stringify({ foo: 'baz' }), '{"foo":"baz"}')
+  t.ok(validate({ foo: 'baz' }))
+  t.equal(stringify({ foo: 'baz' }), JSON.stringify({ foo: 'baz' }))
 })
 
 test('schema with const and invalid object', (t) => {
@@ -283,12 +262,10 @@ test('schema with const and invalid object', (t) => {
     required: ['foo']
   }
 
-  const validate = validator(schema)
+  const input = { foo: { foo: 'baz' } }
+  const validate = ajv.compile(schema)
   const stringify = build(schema)
-  const result = stringify({
-    foo: { foo: 'baz' }
-  })
 
-  t.equal(result, '{"foo":{"foo":"bar"}}')
-  t.ok(validate(JSON.parse(result)), 'valid schema')
+  t.throws(() => stringify(input), new Error("The value of '\#/properties/foo' does not match schema definition."))
+  t.not(validate(input))
 })
