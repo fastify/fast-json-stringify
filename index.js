@@ -14,6 +14,14 @@ const Location = require('./lib/location')
 
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
+
+const validRoundingMethods = [
+  'floor',
+  'ceil',
+  'round',
+  'trunc'
+]
+
 const validLargeArrayMechanisms = [
   'default',
   'json-stringify'
@@ -93,7 +101,7 @@ function build (schema, options) {
   }
 
   if (options.rounding) {
-    if (!['floor', 'ceil', 'round'].includes(options.rounding)) {
+    if (!validRoundingMethods.includes(options.rounding)) {
       throw new Error(`Unsupported integer rounding method ${options.rounding}`)
     }
   }
