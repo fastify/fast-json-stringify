@@ -2,7 +2,6 @@
 
 const { test } = require('tap')
 const build = require('..')
-const { toISODate, toTime } = require('./utils')
 
 test('object with multiple types field', (t) => {
   t.plan(2)
@@ -519,10 +518,10 @@ test('anyOf object with nested field date of type string with format or null', (
   const withOneOfStringify = build(withOneOfSchema)
 
   const data = {
-    prop: { nestedProp: new Date() }
+    prop: { nestedProp: new Date(1674263005800) }
   }
 
-  t.equal(withOneOfStringify(data), `{"prop":{"nestedProp":"${toISODate(data.prop.nestedProp)}"}}`)
+  t.equal(withOneOfStringify(data), '{"prop":{"nestedProp":"2023-01-21"}}')
 })
 
 test('anyOf object with nested field time of type string with format or null', (t) => {
@@ -547,9 +546,9 @@ test('anyOf object with nested field time of type string with format or null', (
   const withOneOfStringify = build(withOneOfSchema)
 
   const data = {
-    prop: { nestedProp: new Date() }
+    prop: { nestedProp: new Date(1674263005800) }
   }
-  t.equal(withOneOfStringify(data), `{"prop":{"nestedProp":"${toTime(data.prop.nestedProp)}"}}`)
+  t.equal(withOneOfStringify(data), '{"prop":{"nestedProp":"02:03:25"}}')
 })
 
 test('anyOf object with field date of type string with format or null', (t) => {

@@ -2,7 +2,6 @@
 
 const t = require('tap')
 const build = require('..')
-const { toISODate } = require('./utils')
 
 const schema = {
   type: 'object',
@@ -381,9 +380,9 @@ t.test('if/else with string format', (t) => {
 
   const stringify = build(schema)
 
-  const date = new Date()
+  const date = new Date(1674263005800)
 
-  t.equal(stringify(date), `"${toISODate(date)}"`)
+  t.equal(stringify(date), '"2023-01-21"')
   t.equal(stringify('Invalid'), '"Invalid"')
 })
 
