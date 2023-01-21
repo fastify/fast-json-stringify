@@ -39,7 +39,6 @@
     "cli-select": "^1.1.2",
     "compile-json-stringify": "^0.1.2",
     "is-my-json-valid": "^2.20.0",
-    "luxon": "^3.0.1",
     "simple-git": "^3.7.1",
     "standard": "^17.0.0",
     "tap": "^16.0.1",
