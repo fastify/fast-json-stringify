@@ -3,6 +3,8 @@
 const { test } = require('tap')
 const build = require('..')
 
+process.env.TZ = 'UTC'
+
 test('object with multiple types field', (t) => {
   t.plan(2)
 
@@ -548,7 +550,7 @@ test('anyOf object with nested field time of type string with format or null', (
   const data = {
     prop: { nestedProp: new Date(1674263005800) }
   }
-  t.equal(withOneOfStringify(data), '{"prop":{"nestedProp":"02:03:25"}}')
+  t.equal(withOneOfStringify(data), '{"prop":{"nestedProp":"01:03:25"}}')
 })
 
 test('anyOf object with field date of type string with format or null', (t) => {

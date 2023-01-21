@@ -3,6 +3,8 @@
 const test = require('tap').test
 const build = require('..')
 
+process.env.TZ = 'UTC'
+
 test('allOf: combine type and format ', (t) => {
   t.plan(1)
 
@@ -15,7 +17,7 @@ test('allOf: combine type and format ', (t) => {
   const stringify = build(schema)
   const date = new Date(1674263005800)
   const value = stringify(date)
-  t.equal(value, '"02:03:25"')
+  t.equal(value, '"01:03:25"')
 })
 
 test('allOf: combine additional properties ', (t) => {

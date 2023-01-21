@@ -3,6 +3,8 @@
 const t = require('tap')
 const build = require('..')
 
+process.env.TZ = 'UTC'
+
 const schema = {
   type: 'object',
   properties: {

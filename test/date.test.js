@@ -4,6 +4,8 @@ const test = require('tap').test
 const validator = require('is-my-json-valid')
 const build = require('..')
 
+process.env.TZ = 'UTC'
+
 test('render a date in a string as JSON', (t) => {
   t.plan(2)
 
@@ -130,7 +132,7 @@ test('render a date in a string when format is time as kk:mm:ss', (t) => {
   validate(JSON.parse(output))
   t.equal(validate.errors, null)
 
-  t.equal(output, '"02:03:25"')
+  t.equal(output, '"01:03:25"')
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -152,7 +154,7 @@ test('render a nullable date in a string when format is time as kk:mm:ss', (t) =
   validate(JSON.parse(output))
   t.equal(validate.errors, null)
 
-  t.equal(output, '"02:03:25"')
+  t.equal(output, '"01:03:25"')
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
@@ -387,7 +389,7 @@ test('serializing null value', t => {
       const input = { updatedAt: date }
       const { output } = serialize(schema, input)
 
-      t.equal(output, JSON.stringify({ updatedAt: '02:03:25' }))
+      t.equal(output, JSON.stringify({ updatedAt: '01:03:25' }))
     })
 
     t.test('format::time, Date object', t => {
@@ -405,7 +407,7 @@ test('serializing null value', t => {
       const date = new Date(1674263005800)
       const { output } = serialize(schema, date)
 
-      t.equal(output, '"02:03:25"')
+      t.equal(output, '"01:03:25"')
     })
 
     t.test('format::time, Date object', t => {
