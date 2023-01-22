@@ -129,7 +129,13 @@ function build (schema, options) {
   const location = new Location(schema, rootSchemaId)
   const code = buildValue(location, 'input')
 
-  const contextFunctionCode = `
+  const contextFunctionCode = code === 'json += anonymous0(input)'
+    ? `
+    ${contextFunctions.join('\n')}
+    const main = anonymous0
+    return main
+    `
+    : `
     function main (input) {
       let json = ''
       ${code}
@@ -137,7 +143,7 @@ function build (schema, options) {
     }
     ${contextFunctions.join('\n')}
     return main
-  `
+    `
 
   const serializer = new Serializer(options)
   const validator = new Validator(options.ajv)
