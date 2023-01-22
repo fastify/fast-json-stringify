@@ -326,7 +326,6 @@ function buildInnerObject (location) {
     }
 
     const sanitized = JSON.stringify(key)
-    const asString = JSON.stringify(sanitized)
 
     // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
     // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
@@ -334,7 +333,7 @@ function buildInnerObject (location) {
     code += `
       if (obj[${sanitized}] !== undefined) {
         ${addComma}
-        json += ${asString} + ':'
+        json += ${JSON.stringify(sanitized + ':')}
       `
 
     code += buildValue(propertyLocation, `obj[${sanitized}]`)
@@ -344,7 +343,7 @@ function buildInnerObject (location) {
       code += `
       } else {
         ${addComma}
-        json += ${asString} + ':' + ${JSON.stringify(JSON.stringify(defaultValue))}
+        json += ${JSON.stringify(sanitized + ':' + JSON.stringify(defaultValue))}
       `
     } else if (required.includes(key)) {
       code += `
@@ -526,15 +525,14 @@ function buildObject (location) {
   `
 
   functionCode += `
-      var obj = ${toJSON('input')}
-      var json = '{'
-      var addComma = false
+      const obj = ${toJSON('input')}
+      let json = '{'
+      let addComma = false
   `
 
   functionCode += buildInnerObject(location)
   functionCode += `
-      json += '}'
-      return json
+      return json + '}'
     }
   `
 
