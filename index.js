@@ -27,13 +27,7 @@ const validLargeArrayMechanisms = [
   'json-stringify'
 ]
 
-const addComma = `
-  if (addComma) {
-    json += ','
-  } else {
-    addComma = true
-  }
-`
+const addComma = '!addComma && (addComma = true) || (json += \',\')'
 
 function isValidSchema (schema, name) {
   if (!validate(schema)) {
