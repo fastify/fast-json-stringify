@@ -123,7 +123,21 @@ function build (schema, options) {
   const location = new Location(schema, rootSchemaId)
   const code = buildValue(location, 'input')
 
-  const contextFunctionCode = `
+  let contextFunctionCode
+
+  // If we have only the invocation of the 'anonymous0' function, we would
+  // basically just wrap the 'anonymous0' function in the 'main' function and
+  // and the overhead of the intermediate variabe 'json'. We can avoid the
+  // wrapping and the unnecessary memory allocation by aliasing 'anonymous0' to
+  // 'main'
+  if (code === 'json += anonymous0(input)') {
+    contextFunctionCode = `
+    ${contextFunctions.join('\n')}
+    const main = anonymous0
+    return main
+    `
+  } else {
+    contextFunctionCode = `
     function main (input) {
       let json = ''
       ${code}
@@ -131,7 +145,8 @@ function build (schema, options) {
     }
     ${contextFunctions.join('\n')}
     return main
-  `
+    `
+  }
 
   const serializer = new Serializer(options)
   const validator = new Validator(options.ajv)
