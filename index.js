@@ -178,6 +178,7 @@ function build (schema, options) {
   const contextFunc = new Function('validator', 'serializer', contextFunctionCode)
   const stringifyFunc = contextFunc(validator, serializer)
 
+  genFuncNameCounter = 0
   refResolver = null
   rootSchemaId = null
   contextFunctions = null
