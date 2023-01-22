@@ -189,12 +189,12 @@ function build (schema, options) {
 }
 
 const objectKeywords = [
+  'properties',
+  'required',
+  'additionalProperties',
+  'patternProperties',
   'maxProperties',
   'minProperties',
-  'required',
-  'properties',
-  'patternProperties',
-  'additionalProperties',
   'dependencies'
 ]
 
