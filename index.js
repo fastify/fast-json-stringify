@@ -584,6 +584,22 @@ function buildArray (location) {
     `
   }
 
+  if (schema.minItems) {
+    functionCode += `
+      if (arrayLength < ${itemsSchema.minItems}) {
+        throw new Error(\`Item at ${itemsSchema.length} does not match schema definition.\`)
+      }
+    `
+  }
+
+  if (schema.maxItems) {
+    functionCode += `
+      if (arrayLength > ${itemsSchema.maxItems}) {
+        throw new Error(\`Item at ${itemsSchema.length} does not match schema definition.\`)
+      }
+    `
+  }
+
   if (largeArrayMechanism !== 'default') {
     if (largeArrayMechanism === 'json-stringify') {
       functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
@@ -618,7 +634,7 @@ function buildArray (location) {
 
     if (schema.additionalItems) {
       functionCode += `
-        for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
+        for (let i = ${itemsSchema.length}; i < arrayLength; ++i) {
           jsonOutput += JSON.stringify(obj[i])
           if (i < arrayLength - 1) {
             jsonOutput += ','
@@ -626,14 +642,36 @@ function buildArray (location) {
         }`
     }
   } else {
-    const code = buildValue(itemsLocation, 'obj[i]')
+    const maxItems = Number.isFinite(schema.maxItems) ? Math.max(schema.maxItems, 3) : 3
+    functionCode += `let json = ''
+      `
+    functionCode += 'switch (obj.length) {'
+
     functionCode += `
-      for (let i = 0; i < arrayLength; i++) {
-        let json = ''
-        ${code}
-        jsonOutput += json
-        if (i < arrayLength - 1) {
-          jsonOutput += ','
+      case 0:
+        return '[]'`
+    if (maxItems) {
+      for (let i = maxItems; i > 0; --i) {
+        functionCode += `
+        case ${i}:
+          json = ''
+          ${buildValue(itemsLocation, `obj[${i - 1}]`)}
+          jsonOutput = ${i === 1 ? '' : '\',\' + '}json + jsonOutput`
+      }
+
+      functionCode += `
+        break`
+    }
+
+    functionCode += `
+      default:
+        for (let i = 0; i < arrayLength; ++i) {
+          let json = ''
+          ${buildValue(itemsLocation, 'obj[i]')}
+          jsonOutput += json
+          if (i < arrayLength - 1) {
+            jsonOutput += ','
+          }
         }
       }`
   }
