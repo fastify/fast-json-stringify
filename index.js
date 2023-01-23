@@ -161,8 +161,6 @@ function build (schema, options) {
     }
   }
 
-  const dependenciesName = ['validator', 'serializer', contextFunctionCode]
-
   if (options.debugMode) {
     options.mode = 'debug'
   }
@@ -171,7 +169,7 @@ function build (schema, options) {
     return {
       validator,
       serializer,
-      code: dependenciesName.join('\n'),
+      code: `validator\nserializer\n${contextFunctionCode}`,
       ajv: validator.ajv
     }
   }
