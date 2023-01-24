@@ -1,8 +1,9 @@
 'use strict'
 
 const t = require('tap')
-const { DateTime } = require('luxon')
 const build = require('..')
+
+process.env.TZ = 'UTC'
 
 const schema = {
   type: 'object',
@@ -381,9 +382,9 @@ t.test('if/else with string format', (t) => {
 
   const stringify = build(schema)
 
-  const date = new Date()
+  const date = new Date(1674263005800)
 
-  t.equal(stringify(date), `"${DateTime.fromJSDate(date).toISODate()}"`)
+  t.equal(stringify(date), '"2023-01-21"')
   t.equal(stringify('Invalid'), '"Invalid"')
 })
 

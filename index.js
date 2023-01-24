@@ -19,18 +19,20 @@ const constKeyword = require('./lib/keywords/const').keyword
 
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
+
+const validRoundingMethods = [
+  'floor',
+  'ceil',
+  'round',
+  'trunc'
+]
+
 const validLargeArrayMechanisms = [
   'default',
   'json-stringify'
 ]
 
-const addComma = `
-  if (addComma) {
-    json += ','
-  } else {
-    addComma = true
-  }
-`
+const addComma = '!addComma && (addComma = true) || (json += \',\')'
 
 function isValidSchema (schema, name) {
   if (!validate(schema)) {
@@ -46,7 +48,7 @@ function isValidSchema (schema, name) {
   }
 }
 
-function resolveRef (location, ref) {
+function resolveRef (context, location, ref) {
   let hashIndex = ref.indexOf('#')
   if (hashIndex === -1) {
     hashIndex = ref.length
@@ -55,7 +57,7 @@ function resolveRef (location, ref) {
   const schemaId = ref.slice(0, hashIndex) || location.getOriginSchemaId()
   const jsonPointer = ref.slice(hashIndex) || '#'
 
-  const schema = refResolver.getSchema(schemaId, jsonPointer)
+  const schema = context.refResolver.getSchema(schemaId, jsonPointer)
 
   if (schema === undefined) {
     throw new Error(`Cannot find reference "${ref}"`)
@@ -63,42 +65,37 @@ function resolveRef (location, ref) {
 
   const newLocation = new Location(schema, schemaId, jsonPointer)
   if (schema.$ref !== undefined) {
-    return resolveRef(newLocation, schema.$ref)
+    return resolveRef(context, newLocation, schema.$ref)
   }
 
   return newLocation
 }
 
-const contextFunctionsNamesBySchema = new Map()
-
-let rootSchemaId = null
-let refResolver = null
-let contextFunctions = null
-let validatorSchemasIds = null
-
 function build (schema, options) {
-  contextFunctionsNamesBySchema.clear()
+  isValidSchema(schema)
 
-  contextFunctions = []
-  validatorSchemasIds = new Set()
   options = options || {}
 
-  refResolver = new RefResolver()
+  const context = {
+    functions: [],
+    functionsNamesBySchema: new Map(),
+    options,
+    refResolver: new RefResolver(),
+    rootSchemaId: schema.$id || randomUUID(),
+    validatorSchemasIds: new Set()
+  }
 
-  rootSchemaId = schema.$id || randomUUID()
-
-  isValidSchema(schema)
-  refResolver.addSchema(schema, rootSchemaId)
+  context.refResolver.addSchema(schema, context.rootSchemaId)
 
   if (options.schema) {
     for (const key of Object.keys(options.schema)) {
       isValidSchema(options.schema[key], key)
-      refResolver.addSchema(options.schema[key], key)
+      context.refResolver.addSchema(options.schema[key], key)
     }
   }
 
   if (options.rounding) {
-    if (!['floor', 'ceil', 'round'].includes(options.rounding)) {
+    if (!validRoundingMethods.includes(options.rounding)) {
       throw new Error(`Unsupported integer rounding method ${options.rounding}`)
     }
   }
@@ -112,40 +109,57 @@ function build (schema, options) {
   }
 
   if (options.largeArraySize) {
-    if (!Number.isNaN(Number.parseInt(options.largeArraySize, 10))) {
+    if (typeof options.largeArraySize === 'string' && Number.isFinite(Number.parseInt(options.largeArraySize, 10))) {
+      largeArraySize = Number.parseInt(options.largeArraySize, 10)
+    } else if (typeof options.largeArraySize === 'number' && Number.isInteger(options.largeArraySize)) {
       largeArraySize = options.largeArraySize
+    } else if (typeof options.largeArraySize === 'bigint') {
+      largeArraySize = Number(options.largeArraySize)
     } else {
-      throw new Error(`Unsupported large array size. Expected integer-like, got ${options.largeArraySize}`)
+      throw new Error(`Unsupported large array size. Expected integer-like, got ${typeof options.largeArraySize} with value ${options.largeArraySize}`)
     }
   }
 
-  const location = new Location(schema, rootSchemaId)
-  const code = buildValue(location, 'input')
+  const location = new Location(schema, context.rootSchemaId)
+  const code = buildValue(context, location, 'input')
 
-  const contextFunctionCode = `
+  let contextFunctionCode
+
+  // If we have only the invocation of the 'anonymous0' function, we would
+  // basically just wrap the 'anonymous0' function in the 'main' function and
+  // and the overhead of the intermediate variabe 'json'. We can avoid the
+  // wrapping and the unnecessary memory allocation by aliasing 'anonymous0' to
+  // 'main'
+  if (code === 'json += anonymous0(input)') {
+    contextFunctionCode = `
+    ${context.functions.join('\n')}
+    const main = anonymous0
+    return main
+    `
+  } else {
+    contextFunctionCode = `
     function main (input) {
       let json = ''
       ${code}
       return json
     }
-    ${contextFunctions.join('\n')}
+    ${context.functions.join('\n')}
     return main
-  `
+    `
+  }
 
   const serializer = new Serializer(options)
   const validator = new Validator(options.ajv)
 
-  for (const schemaId of validatorSchemasIds) {
-    const schema = refResolver.getSchema(schemaId)
+  for (const schemaId of context.validatorSchemasIds) {
+    const schema = context.refResolver.getSchema(schemaId)
     validator.addSchema(schema, schemaId)
 
-    const dependencies = refResolver.getSchemaDependencies(schemaId)
+    const dependencies = context.refResolver.getSchemaDependencies(schemaId)
     for (const [schemaId, schema] of Object.entries(dependencies)) {
       validator.addSchema(schema, schemaId)
     }
   }
-
-  const dependenciesName = ['validator', 'serializer', contextFunctionCode]
 
   if (options.debugMode) {
     options.mode = 'debug'
@@ -155,14 +169,14 @@ function build (schema, options) {
     return {
       validator,
       serializer,
-      code: dependenciesName.join('\n'),
+      code: `validator\nserializer\n${contextFunctionCode}`,
       ajv: validator.ajv
     }
   }
 
   if (options.mode === 'standalone') {
     // lazy load
-    const isValidatorUsed = validatorSchemasIds.size > 0
+    const isValidatorUsed = context.validatorSchemasIds.size > 0
     const buildStandaloneCode = require('./lib/standalone')
     return buildStandaloneCode(options, validator, isValidatorUsed, contextFunctionCode)
   }
@@ -171,22 +185,17 @@ function build (schema, options) {
   const contextFunc = new Function('validator', 'serializer', contextFunctionCode)
   const stringifyFunc = contextFunc(validator, serializer)
 
-  refResolver = null
-  rootSchemaId = null
-  contextFunctions = null
-  validatorSchemasIds = null
-  contextFunctionsNamesBySchema.clear()
-
+  genFuncNameCounter = 0
   return stringifyFunc
 }
 
 const objectKeywords = [
+  'properties',
+  'required',
+  'additionalProperties',
+  'patternProperties',
   'maxProperties',
   'minProperties',
-  'required',
-  'properties',
-  'patternProperties',
-  'additionalProperties',
   'dependencies'
 ]
 
@@ -237,7 +246,7 @@ function inferTypeByKeyword (schema) {
   return schema.type
 }
 
-function buildExtraObjectPropertiesSerializer (location) {
+function buildExtraObjectPropertiesSerializer (context, location) {
   const schema = location.schema
   const propertiesKeys = Object.keys(schema.properties || {})
 
@@ -259,18 +268,11 @@ function buildExtraObjectPropertiesSerializer (location) {
     for (const propertyKey in patternPropertiesSchema) {
       const propertyLocation = patternPropertiesLocation.getPropertyLocation(propertyKey)
 
-      try {
-        RegExp(propertyKey)
-      } catch (err) {
-        const jsonPointer = propertyLocation.getSchemaRef()
-        throw new Error(`${err.message}. Invalid pattern property regexp key ${propertyKey} at ${jsonPointer}`)
-      }
-
       code += `
         if (/${propertyKey.replace(/\\*\//g, '\\/')}/.test(key)) {
           ${addComma}
           json += serializer.asString(key) + ':'
-          ${buildValue(propertyLocation, 'value')}
+          ${buildValue(context, propertyLocation, 'value')}
           continue
         }
       `
@@ -291,7 +293,7 @@ function buildExtraObjectPropertiesSerializer (location) {
       code += `
         ${addComma}
         json += serializer.asString(key) + ':'
-        ${buildValue(propertyLocation, 'value')}
+        ${buildValue(context, propertyLocation, 'value')}
       `
     }
   }
@@ -302,7 +304,7 @@ function buildExtraObjectPropertiesSerializer (location) {
   return code
 }
 
-function buildInnerObject (location) {
+function buildInnerObject (context, location) {
   const schema = location.schema
   const required = schema.required || []
 
@@ -312,11 +314,10 @@ function buildInnerObject (location) {
   Object.keys(schema.properties || {}).forEach((key) => {
     let propertyLocation = propertiesLocation.getPropertyLocation(key)
     if (propertyLocation.schema.$ref) {
-      propertyLocation = resolveRef(location, propertyLocation.schema.$ref)
+      propertyLocation = resolveRef(context, location, propertyLocation.schema.$ref)
     }
 
     const sanitized = JSON.stringify(key)
-    const asString = JSON.stringify(sanitized)
 
     // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
     // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
@@ -324,17 +325,17 @@ function buildInnerObject (location) {
     code += `
       if (obj[${sanitized}] !== undefined) {
         ${addComma}
-        json += ${asString} + ':'
+        json += ${JSON.stringify(sanitized + ':')}
       `
 
-    code += buildValue(propertyLocation, `obj[${sanitized}]`)
+    code += buildValue(context, propertyLocation, `obj[${sanitized}]`)
 
     const defaultValue = propertyLocation.schema.default
     if (defaultValue !== undefined) {
       code += `
       } else {
         ${addComma}
-        json += ${asString} + ':' + ${JSON.stringify(JSON.stringify(defaultValue))}
+        json += ${JSON.stringify(sanitized + ':' + JSON.stringify(defaultValue))}
       `
     } else if (required.includes(key)) {
       code += `
@@ -354,13 +355,13 @@ function buildInnerObject (location) {
   }
 
   if (schema.patternProperties || schema.additionalProperties) {
-    code += buildExtraObjectPropertiesSerializer(location)
+    code += buildExtraObjectPropertiesSerializer(context, location)
   }
 
   return code
 }
 
-function mergeAllOfSchema (location, schema, mergedSchema) {
+function mergeAllOfSchema (context, location, schema, mergedSchema) {
   const allOfLocation = location.getPropertyLocation('allOf')
 
   for (let i = 0; i < schema.allOf.length; i++) {
@@ -368,7 +369,7 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
 
     if (allOfSchema.$ref) {
       const allOfSchemaLocation = allOfLocation.getPropertyLocation(i)
-      allOfSchema = resolveRef(allOfSchemaLocation, allOfSchema.$ref).schema
+      allOfSchema = resolveRef(context, allOfSchemaLocation, allOfSchema.$ref).schema
     }
 
     let allOfSchemaType = allOfSchema.type
@@ -449,18 +450,18 @@ function mergeAllOfSchema (location, schema, mergedSchema) {
     }
 
     if (allOfSchema.allOf !== undefined) {
-      mergeAllOfSchema(location, allOfSchema, mergedSchema)
+      mergeAllOfSchema(context, location, allOfSchema, mergedSchema)
     }
   }
   delete mergedSchema.allOf
 
   mergedSchema.$id = `merged_${randomUUID()}`
-  refResolver.addSchema(mergedSchema)
+  context.refResolver.addSchema(mergedSchema)
   location.addMergedSchema(mergedSchema, mergedSchema.$id)
 }
 
-function addIfThenElse (location, input) {
-  validatorSchemasIds.add(location.getSchemaId())
+function addIfThenElse (context, location, input) {
+  context.validatorSchemasIds.add(location.getSchemaId())
 
   const schema = merge({}, location.schema)
   const thenSchema = schema.then
@@ -481,9 +482,9 @@ function addIfThenElse (location, input) {
 
   return `
     if (validator.validate("${ifSchemaRef}", ${input})) {
-      ${buildValue(thenLocation, input)}
+      ${buildValue(context, thenLocation, input)}
     } else {
-      ${buildValue(elseLocation, input)}
+      ${buildValue(context, elseLocation, input)}
     }
   `
 }
@@ -495,19 +496,19 @@ function toJSON (variableName) {
   `
 }
 
-function buildObject (location) {
+function buildObject (context, location) {
   const schema = location.schema
 
-  if (contextFunctionsNamesBySchema.has(schema)) {
-    return contextFunctionsNamesBySchema.get(schema)
+  if (context.functionsNamesBySchema.has(schema)) {
+    return context.functionsNamesBySchema.get(schema)
   }
 
   const functionName = generateFuncName()
-  contextFunctionsNamesBySchema.set(schema, functionName)
+  context.functionsNamesBySchema.set(schema, functionName)
 
   let schemaRef = location.getSchemaRef()
-  if (schemaRef.startsWith(rootSchemaId)) {
-    schemaRef = schemaRef.replace(rootSchemaId, '')
+  if (schemaRef.startsWith(context.rootSchemaId)) {
+    schemaRef = schemaRef.replace(context.rootSchemaId, '')
   }
 
   let functionCode = `
@@ -516,44 +517,43 @@ function buildObject (location) {
   `
 
   functionCode += `
-      var obj = ${toJSON('input')}
-      var json = '{'
-      var addComma = false
+      const obj = ${toJSON('input')}
+      let json = '{'
+      let addComma = false
   `
 
-  functionCode += buildInnerObject(location)
+  functionCode += buildInnerObject(context, location)
   functionCode += `
-      json += '}'
-      return json
+      return json + '}'
     }
   `
 
-  contextFunctions.push(functionCode)
+  context.functions.push(functionCode)
   return functionName
 }
 
-function buildArray (location) {
+function buildArray (context, location) {
   const schema = location.schema
 
   let itemsLocation = location.getPropertyLocation('items')
   itemsLocation.schema = itemsLocation.schema || {}
 
   if (itemsLocation.schema.$ref) {
-    itemsLocation = resolveRef(itemsLocation, itemsLocation.schema.$ref)
+    itemsLocation = resolveRef(context, itemsLocation, itemsLocation.schema.$ref)
   }
 
   const itemsSchema = itemsLocation.schema
 
-  if (contextFunctionsNamesBySchema.has(schema)) {
-    return contextFunctionsNamesBySchema.get(schema)
+  if (context.functionsNamesBySchema.has(schema)) {
+    return context.functionsNamesBySchema.get(schema)
   }
 
   const functionName = generateFuncName()
-  contextFunctionsNamesBySchema.set(schema, functionName)
+  context.functionsNamesBySchema.set(schema, functionName)
 
   let schemaRef = location.getSchemaRef()
-  if (schemaRef.startsWith(rootSchemaId)) {
-    schemaRef = schemaRef.replace(rootSchemaId, '')
+  if (schemaRef.startsWith(context.rootSchemaId)) {
+    schemaRef = schemaRef.replace(context.rootSchemaId, '')
   }
 
   let functionCode = `
@@ -591,7 +591,7 @@ function buildArray (location) {
   if (Array.isArray(itemsSchema)) {
     for (let i = 0; i < itemsSchema.length; i++) {
       const item = itemsSchema[i]
-      const tmpRes = buildValue(itemsLocation.getPropertyLocation(i), `obj[${i}]`)
+      const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), `obj[${i}]`)
       functionCode += `
         if (${i} < arrayLength) {
           if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
@@ -618,7 +618,7 @@ function buildArray (location) {
         }`
     }
   } else {
-    const code = buildValue(itemsLocation, 'obj[i]')
+    const code = buildValue(context, itemsLocation, 'obj[i]')
     functionCode += `
       for (let i = 0; i < arrayLength; i++) {
         let json = ''
@@ -634,7 +634,7 @@ function buildArray (location) {
     return \`[\${jsonOutput}]\`
   }`
 
-  contextFunctions.push(functionCode)
+  context.functions.push(functionCode)
   return functionName
 }
 
@@ -680,7 +680,7 @@ function generateFuncName () {
   return 'anonymous' + genFuncNameCounter++
 }
 
-function buildMultiTypeSerializer (location, input) {
+function buildMultiTypeSerializer (context, location, input) {
   const schema = location.schema
   const types = schema.type.sort(t1 => t1 === 'null' ? -1 : 1)
 
@@ -688,7 +688,7 @@ function buildMultiTypeSerializer (location, input) {
 
   types.forEach((type, index) => {
     location.schema = { ...location.schema, type }
-    const nestedResult = buildSingleTypeSerializer(location, input)
+    const nestedResult = buildSingleTypeSerializer(context, location, input)
 
     const statement = index === 0 ? 'if' : 'else if'
     switch (type) {
@@ -740,8 +740,8 @@ function buildMultiTypeSerializer (location, input) {
     }
   })
   let schemaRef = location.getSchemaRef()
-  if (schemaRef.startsWith(rootSchemaId)) {
-    schemaRef = schemaRef.replace(rootSchemaId, '')
+  if (schemaRef.startsWith(context.rootSchemaId)) {
+    schemaRef = schemaRef.replace(context.rootSchemaId, '')
   }
   code += `
     else throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
@@ -750,7 +750,7 @@ function buildMultiTypeSerializer (location, input) {
   return code
 }
 
-function buildSingleTypeSerializer (location, input) {
+function buildSingleTypeSerializer (context, location, input) {
   const schema = location.schema
 
   switch (schema.type) {
@@ -774,11 +774,11 @@ function buildSingleTypeSerializer (location, input) {
     case 'boolean':
       return `json += serializer.asBoolean(${input})`
     case 'object': {
-      const funcName = buildObject(location)
+      const funcName = buildObject(context, location)
       return `json += ${funcName}(${input})`
     }
     case 'array': {
-      const funcName = buildArray(location)
+      const funcName = buildArray(context, location)
       return `json += ${funcName}(${input})`
     }
     case undefined:
@@ -788,7 +788,34 @@ function buildSingleTypeSerializer (location, input) {
   }
 }
 
-function buildValue (location, input) {
+function buildConstSerializer (location, input) {
+  const schema = location.schema
+  const type = schema.type
+
+  const hasNullType = Array.isArray(type) && type.includes('null')
+
+  let code = ''
+
+  if (hasNullType) {
+    code += `
+      if (${input} === null) {
+        json += 'null'
+      } else {
+    `
+  }
+
+  code += `json += '${JSON.stringify(schema.const)}'`
+
+  if (hasNullType) {
+    code += `
+      }
+    `
+  }
+
+  return code
+}
+
+function buildValue (context, location, input) {
   let schema = location.schema
 
   if (typeof schema === 'boolean') {
@@ -796,7 +823,7 @@ function buildValue (location, input) {
   }
 
   if (schema.$ref) {
-    location = resolveRef(location, schema.$ref)
+    location = resolveRef(context, location, schema.$ref)
     schema = location.schema
   }
 
@@ -808,11 +835,11 @@ function buildValue (location, input) {
   }
 
   if (schema.if && schema.then) {
-    return addIfThenElse(location, input)
+    return addIfThenElse(context, location, input)
   }
 
   if (schema.allOf) {
-    mergeAllOfSchema(location, schema, clone(schema))
+    mergeAllOfSchema(context, location, schema, clone(schema))
     schema = location.schema
   }
 
@@ -821,7 +848,7 @@ function buildValue (location, input) {
   let code = ''
 
   if (type === undefined && (schema.anyOf || schema.oneOf)) {
-    validatorSchemasIds.add(location.getSchemaId())
+    context.validatorSchemasIds.add(location.getSchemaId())
 
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
     const anyOfLocation = location.getPropertyLocation(type)
@@ -829,7 +856,7 @@ function buildValue (location, input) {
     for (let index = 0; index < location.schema[type].length; index++) {
       const optionLocation = anyOfLocation.getPropertyLocation(index)
       const schemaRef = optionLocation.getSchemaRef()
-      const nestedResult = buildValue(optionLocation, input)
+      const nestedResult = buildValue(context, optionLocation, input)
       code += `
         ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}))
           ${nestedResult}
@@ -837,8 +864,8 @@ function buildValue (location, input) {
     }
 
     let schemaRef = location.getSchemaRef()
-    if (schemaRef.startsWith(rootSchemaId)) {
-      schemaRef = schemaRef.replace(rootSchemaId, '')
+    if (schemaRef.startsWith(context.rootSchemaId)) {
+      schemaRef = schemaRef.replace(context.rootSchemaId, '')
     }
 
     code += `
@@ -859,9 +886,9 @@ function buildValue (location, input) {
   if (schema.const !== undefined) {
     code += constKeyword(location, rootSchemaId, input)
   } else if (Array.isArray(type)) {
-    code += buildMultiTypeSerializer(location, input)
+    code += buildMultiTypeSerializer(context, location, input)
   } else {
-    code += buildSingleTypeSerializer(location, input)
+    code += buildSingleTypeSerializer(context, location, input)
   }
 
   if (nullable) {

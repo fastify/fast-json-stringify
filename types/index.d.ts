@@ -158,8 +158,10 @@ declare namespace build {
     ajv?: AjvOptions
     /**
      * Optionally configure how the integer will be rounded
+     * 
+     * @default 'trunc'
      */
-    rounding?: 'ceil' | 'floor' | 'round'
+    rounding?: 'ceil' | 'floor' | 'round' | 'trunc'
     /**
      * @deprecated 
      * Enable debug mode. Please use `mode: "debug"` instead
@@ -169,6 +171,22 @@ declare namespace build {
      * Running mode of fast-json-stringify
      */
     mode?: 'debug' | 'standalone'
+
+    /**
+     * Large arrays are defined as arrays containing, by default, `20000`
+     * elements or more. That value can be adjusted via the option parameter
+     * `largeArraySize`.
+     *
+     * @default 20000
+     */
+    largeArraySize?: number | string | BigInt
+
+    /**
+     * Specify the function on how large Arrays should be stringified.
+     *
+     * @default 'default'
+     */
+    largeArrayMechanism?: 'default' | 'json-stringify'
   }
 
   export const validLargeArrayMechanisms: string[]

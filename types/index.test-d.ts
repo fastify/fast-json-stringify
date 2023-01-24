@@ -13,6 +13,12 @@ const schema2: Schema = {
 build(schema1)(25)
 build(schema2)(-5)
 
+build(schema2, { rounding: 'ceil' })
+build(schema2, { rounding: 'floor' })
+build(schema2, { rounding: 'round' })
+build(schema2, { rounding: 'trunc' })
+expectError(build(schema2, { rounding: 'invalid' }))
+
 // String schema
 const schema3: Schema = {
     type: 'string'
@@ -217,3 +223,14 @@ const stringify7 = build({
 });
 stringify7(true);
 expectError(stringify7("a string"));
+
+// largeArrayMechanism
+
+build({}, { largeArrayMechanism: 'json-stringify'} )
+build({}, { largeArrayMechanism: 'default'} )
+expectError(build({} as Schema, { largeArrayMechanism: 'invalid'} ))
+
+build({}, { largeArraySize: 2000 } )
+build({}, { largeArraySize: '2e4' } )
+build({}, { largeArraySize: 2n } )
+expectError(build({} as Schema, { largeArraySize: ['asdf']} ))

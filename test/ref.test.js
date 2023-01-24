@@ -2005,3 +2005,76 @@ test('object property reference with default value', (t) => {
 
   t.equal(output, '{"prop":"foo"}')
 })
+
+test('should throw an Error if two non-identical schemas with same id are provided', (t) => {
+  t.plan(1)
+
+  const schema = {
+    $id: 'schema',
+    type: 'object',
+    allOf: [
+      {
+        $id: 'base',
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string'
+          }
+        },
+        required: [
+          'name'
+        ]
+      },
+      {
+        $id: 'inner_schema',
+        type: 'object',
+        properties: {
+          union: {
+            $id: '#id',
+            anyOf: [
+              {
+
+                $id: 'guid',
+                type: 'string'
+              },
+              {
+
+                $id: 'email',
+                type: 'string'
+              }
+            ]
+          }
+        },
+        required: [
+          'union'
+        ]
+      },
+      {
+        $id: 'inner_schema',
+        type: 'object',
+        properties: {
+          union: {
+            $id: '#id',
+            anyOf: [
+              {
+
+                $id: 'guid',
+                type: 'string'
+              },
+              {
+
+                $id: 'mail',
+                type: 'string'
+              }
+            ]
+          }
+        },
+        required: [
+          'union'
+        ]
+      }
+    ]
+  }
+
+  t.throws(() => build(schema), new Error('There is already another schema with id inner_schema'))
+})

@@ -1,8 +1,9 @@
 'use strict'
 
-const { DateTime } = require('luxon')
 const { test } = require('tap')
 const build = require('..')
+
+process.env.TZ = 'UTC'
 
 test('object with multiple types field', (t) => {
   t.plan(2)
@@ -519,10 +520,10 @@ test('anyOf object with nested field date of type string with format or null', (
   const withOneOfStringify = build(withOneOfSchema)
 
   const data = {
-    prop: { nestedProp: new Date() }
+    prop: { nestedProp: new Date(1674263005800) }
   }
 
-  t.equal(withOneOfStringify(data), `{"prop":{"nestedProp":"${DateTime.fromJSDate(data.prop.nestedProp).toISODate()}"}}`)
+  t.equal(withOneOfStringify(data), '{"prop":{"nestedProp":"2023-01-21"}}')
 })
 
 test('anyOf object with nested field time of type string with format or null', (t) => {
@@ -547,10 +548,9 @@ test('anyOf object with nested field time of type string with format or null', (
   const withOneOfStringify = build(withOneOfSchema)
 
   const data = {
-    prop: { nestedProp: new Date() }
+    prop: { nestedProp: new Date(1674263005800) }
   }
-
-  t.equal(withOneOfStringify(data), `{"prop":{"nestedProp":"${DateTime.fromJSDate(data.prop.nestedProp).toFormat('HH:mm:ss')}"}}`)
+  t.equal(withOneOfStringify(data), '{"prop":{"nestedProp":"01:03:25"}}')
 })
 
 test('anyOf object with field date of type string with format or null', (t) => {
