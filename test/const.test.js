@@ -222,7 +222,7 @@ test('schema with const and null as type', (t) => {
   const validate = ajv.compile(schema)
   const stringify = build(schema)
 
-  t.throws(() => stringify({ foo: null }), new Error("The value of '\#/properties/foo' does not match schema definition."))
+  t.throws(() => stringify({ foo: null }), new Error("The value of '#/properties/foo' does not match schema definition."))
   t.not(validate({ foo: null }))
 
   t.equal(stringify({ foo: 'baz' }), '{"foo":"baz"}')
@@ -243,7 +243,7 @@ test('schema with const as nullable', (t) => {
   const validate = ajv.compile(schema)
   const stringify = build(schema)
 
-  t.throws(() => stringify({ foo: null }), new Error("The value of '\#/properties/foo' does not match schema definition."))
+  t.throws(() => stringify({ foo: null }), new Error("The value of '#/properties/foo' does not match schema definition."))
   t.not(validate({ foo: null }))
 
   t.equal(stringify({ foo: 'baz' }), '{"foo":"baz"}')
@@ -266,6 +266,6 @@ test('schema with const and invalid object', (t) => {
   const validate = ajv.compile(schema)
   const stringify = build(schema)
 
-  t.throws(() => stringify(input), new Error("The value of '\#/properties/foo' does not match schema definition."))
+  t.throws(() => stringify(input), new Error("The value of '#/properties/foo' does not match schema definition."))
   t.not(validate(input))
 })
