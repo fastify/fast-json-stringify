@@ -73,6 +73,7 @@ function build (schema, options) {
 
   const context = {
     functions: [],
+    functionsCounter: 0,
     functionsNamesBySchema: new Map(),
     options,
     refResolver: new RefResolver(),
@@ -180,7 +181,6 @@ function build (schema, options) {
   const contextFunc = new Function('validator', 'serializer', contextFunctionCode)
   const stringifyFunc = contextFunc(validator, serializer)
 
-  genFuncNameCounter = 0
   return stringifyFunc
 }
 
@@ -498,7 +498,7 @@ function buildObject (context, location) {
     return context.functionsNamesBySchema.get(schema)
   }
 
-  const functionName = generateFuncName()
+  const functionName = generateFuncName(context)
   context.functionsNamesBySchema.set(schema, functionName)
 
   let schemaRef = location.getSchemaRef()
@@ -543,7 +543,7 @@ function buildArray (context, location) {
     return context.functionsNamesBySchema.get(schema)
   }
 
-  const functionName = generateFuncName()
+  const functionName = generateFuncName(context)
   context.functionsNamesBySchema.set(schema, functionName)
 
   let schemaRef = location.getSchemaRef()
@@ -670,9 +670,8 @@ function buildArrayTypeCondition (type, accessor) {
   return condition
 }
 
-let genFuncNameCounter = 0
-function generateFuncName () {
-  return 'anonymous' + genFuncNameCounter++
+function generateFuncName (context) {
+  return 'anonymous' + context.functionsCounter++
 }
 
 function buildMultiTypeSerializer (context, location, input) {
