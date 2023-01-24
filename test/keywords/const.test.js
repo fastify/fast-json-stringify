@@ -1,12 +1,12 @@
 'use strict'
 
 const test = require('tap').test
-const constValidator = require('../lib/const-validator')
+const validator = require('../../lib/keywords/const').validator
 
 test('string', (t) => {
   t.plan(2)
 
-  const validateConst = constValidator('stringValue')
+  const validateConst = validator('stringValue')
 
   t.equal(validateConst('stringValue'), true)
   t.equal(validateConst('b'), false)
@@ -15,7 +15,7 @@ test('string', (t) => {
 test('number', (t) => {
   t.plan(2)
 
-  const validateConst = constValidator(42)
+  const validateConst = validator(42)
 
   t.equal(validateConst(42), true)
   t.equal(validateConst(43), false)
@@ -24,7 +24,7 @@ test('number', (t) => {
 test('bigint', (t) => {
   t.plan(2)
 
-  const validateConst = constValidator(42n)
+  const validateConst = validator(42n)
 
   t.equal(validateConst(42n), true)
   t.equal(validateConst(43n), false)
@@ -33,7 +33,7 @@ test('bigint', (t) => {
 test('boolean', (t) => {
   t.plan(2)
 
-  const validateConst = constValidator(true)
+  const validateConst = validator(true)
 
   t.equal(validateConst(true), true)
   t.equal(validateConst(false), false)
@@ -42,7 +42,7 @@ test('boolean', (t) => {
 test('null', (t) => {
   t.plan(2)
 
-  const validateConst = constValidator(null)
+  const validateConst = validator(null)
 
   t.equal(validateConst(null), true)
   t.equal(validateConst('null'), false)
@@ -51,7 +51,7 @@ test('null', (t) => {
 test('array, basic', (t) => {
   t.plan(3)
 
-  const validateConst = constValidator([1, 2, 3])
+  const validateConst = validator([1, 2, 3])
 
   t.equal(validateConst([1, 2, 3]), true)
   t.equal(validateConst([1, 2]), false)
@@ -61,7 +61,7 @@ test('array, basic', (t) => {
 test('array, only numbers', (t) => {
   t.plan(2)
 
-  const validateConst = constValidator([1, 2, 3])
+  const validateConst = validator([1, 2, 3])
 
   t.equal(validateConst([1, 2, 3]), true)
   t.equal(validateConst([1, 2, 4]), false)
@@ -70,7 +70,7 @@ test('array, only numbers', (t) => {
 test('array, sub arrays with numbers', (t) => {
   t.plan(3)
 
-  const validateConst = constValidator([[1, 2], 3])
+  const validateConst = validator([[1, 2], 3])
 
   t.equal(validateConst([[1, 2], 3]), true)
   t.equal(validateConst([[1, 2], 4]), false)
@@ -80,7 +80,7 @@ test('array, sub arrays with numbers', (t) => {
 test('object, two properties', (t) => {
   t.plan(3)
 
-  const validateConst = constValidator({ a: 1, b: 2 })
+  const validateConst = validator({ a: 1, b: 2 })
 
   t.equal(validateConst({ a: 1, b: 2 }), true)
   t.equal(validateConst({ b: 2, a: 1 }), true)
@@ -90,7 +90,7 @@ test('object, two properties', (t) => {
 test('NaN', (t) => {
   t.plan(2)
 
-  const validateConst = constValidator(NaN)
+  const validateConst = validator(NaN)
 
   t.equal(validateConst(NaN), true)
   t.equal(validateConst(Infinity), false)
@@ -99,7 +99,7 @@ test('NaN', (t) => {
 test('Infinity', (t) => {
   t.plan(2)
 
-  const validateConst = constValidator(Infinity)
+  const validateConst = validator(Infinity)
 
   t.equal(validateConst(Infinity), true)
   t.equal(validateConst(-Infinity), false)
@@ -108,7 +108,7 @@ test('Infinity', (t) => {
 test('Infinity', (t) => {
   t.plan(2)
 
-  const validateConst = constValidator(Infinity)
+  const validateConst = validator(Infinity)
 
   t.equal(validateConst(Infinity), true)
   t.equal(validateConst(-Infinity), false)
@@ -117,7 +117,7 @@ test('Infinity', (t) => {
 test('RegExp', (t) => {
   t.plan(3)
 
-  const validateConst = constValidator(/a-z/g)
+  const validateConst = validator(/a-z/g)
 
   t.equal(validateConst(/a-z/g), true)
   t.equal(validateConst(/a-z/gm), false)
@@ -127,13 +127,13 @@ test('RegExp', (t) => {
 test('Date', (t) => {
   t.plan(2)
 
-  const validateConst = constValidator(new Date(123))
+  const validateConst = validator(new Date(123))
 
   t.equal(validateConst(new Date(123)), true)
   t.equal(validateConst(new Date(124)), false)
 })
 
-const spec = require('./spec/fast-deep-equal.spec')
+const spec = require('../spec/fast-deep-equal.spec')
 
 spec.forEach(function (suite) {
   test(suite.description, function (t) {
@@ -141,11 +141,11 @@ spec.forEach(function (suite) {
     suite.tests.forEach(function (testCase) {
       t.test(testCase.description, function (t) {
         t.plan(1)
-        t.equal(constValidator(testCase.value1)(testCase.value2), testCase.equal)
+        t.equal(validator(testCase.value1)(testCase.value2), testCase.equal)
       })
       t.test(testCase.description + ' (reverse arguments)', function (t) {
         t.plan(1)
-        t.equal(constValidator(testCase.value2)(testCase.value1), testCase.equal)
+        t.equal(validator(testCase.value2)(testCase.value1), testCase.equal)
       })
     })
   })

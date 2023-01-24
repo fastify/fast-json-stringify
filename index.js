@@ -11,7 +11,11 @@ const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
 const RefResolver = require('./lib/ref-resolver')
 const Location = require('./lib/location')
-const constValidator = require('./lib/const-validator')
+
+/**
+ * Keywords
+ */
+const constKeyword = require('./lib/keywords/const').keyword
 
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
@@ -784,21 +788,6 @@ function buildSingleTypeSerializer (location, input) {
   }
 }
 
-function buildConstSerializer (location, input) {
-  const schema = location.schema
-  let schemaRef = location.getSchemaRef()
-  if (schemaRef.startsWith(rootSchemaId)) {
-    schemaRef = schemaRef.replace(rootSchemaId, '')
-  }
-  return `
-  if (${constValidator(schema.const, input, 'integration')}) {
-    json += ${JSON.stringify(JSON.stringify(schema.const))}
-  } else {
-    throw new Error(\`The value of '${schemaRef}' does not match schema definition.\`)
-  }
-  `
-}
-
 function buildValue (location, input) {
   let schema = location.schema
 
@@ -868,7 +857,7 @@ function buildValue (location, input) {
   }
 
   if (schema.const !== undefined) {
-    code += buildConstSerializer(location, input)
+    code += constKeyword(location, rootSchemaId, input)
   } else if (Array.isArray(type)) {
     code += buildMultiTypeSerializer(location, input)
   } else {
