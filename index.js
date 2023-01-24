@@ -788,33 +788,6 @@ function buildSingleTypeSerializer (context, location, input) {
   }
 }
 
-function buildConstSerializer (location, input) {
-  const schema = location.schema
-  const type = schema.type
-
-  const hasNullType = Array.isArray(type) && type.includes('null')
-
-  let code = ''
-
-  if (hasNullType) {
-    code += `
-      if (${input} === null) {
-        json += 'null'
-      } else {
-    `
-  }
-
-  code += `json += '${JSON.stringify(schema.const)}'`
-
-  if (hasNullType) {
-    code += `
-      }
-    `
-  }
-
-  return code
-}
-
 function buildValue (context, location, input) {
   let schema = location.schema
 
@@ -884,7 +857,7 @@ function buildValue (context, location, input) {
   }
 
   if (schema.const !== undefined) {
-    code += constKeyword(location, rootSchemaId, input)
+    code += constKeyword(location, context.rootSchemaId, input)
   } else if (Array.isArray(type)) {
     code += buildMultiTypeSerializer(context, location, input)
   } else {
