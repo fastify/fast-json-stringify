@@ -399,8 +399,8 @@ t.test('if/else with const integers', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify(100.32), '66')
-  t.equal(stringify(10.12), '33')
+  t.throws(() => stringify(100.32), new Error('The value of \'#/then\' does not match schema definition.'))
+  t.throws(() => stringify(10 - 12), new Error('The value of \'#/else\' does not match schema definition.'))
 })
 
 t.test('if/else with array', (t) => {

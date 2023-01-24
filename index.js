@@ -11,6 +11,7 @@ const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
 const RefResolver = require('./lib/ref-resolver')
 const Location = require('./lib/location')
+const constValidator = require('./lib/const-validator')
 
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
@@ -819,7 +820,7 @@ function buildConstSerializer (location, input) {
         }`
       } else {
         code += `
-        if (JSON.stringify(${input}) === '${JSON.stringify(schema.const)}') {
+        if (${constValidator(schema.const, input, 'integration')}) {
           json += ${JSON.stringify(JSON.stringify(schema.const))}
         } else {
           throw new Error(\`The value of '${schemaRef}' does not match schema definition.\`)
