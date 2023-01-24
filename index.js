@@ -326,27 +326,26 @@ function buildInnerObject (context, location) {
       if (obj[${sanitized}] !== undefined) {
         ${addComma}
         json += ${JSON.stringify(sanitized + ':')}
+        ${buildValue(context, propertyLocation, `obj[${sanitized}]`)}
+      }
       `
 
-    code += buildValue(context, propertyLocation, `obj[${sanitized}]`)
-
-    const defaultValue = propertyLocation.schema.default
-    if (defaultValue !== undefined) {
+    if (propertyLocation.schema.default !== undefined) {
       code += `
-      } else {
+      else {
         ${addComma}
-        json += ${JSON.stringify(sanitized + ':' + JSON.stringify(defaultValue))}
-      `
-    } else if (required.includes(key)) {
-      code += `
-      } else {
-        throw new Error('${sanitized} is required!')
+        json += ${JSON.stringify(sanitized + ':' + JSON.stringify(propertyLocation.schema.default))}
+      }
       `
     }
 
-    code += `
+    if (propertyLocation.schema.default === undefined && required.includes(key)) {
+      code += `
+      else {
+        throw new Error('${sanitized} is required!')
       }
-    `
+      `
+    }
   })
 
   for (const requiredProperty of required) {
