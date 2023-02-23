@@ -45,6 +45,7 @@ test('render a float as an integer', (t) => {
     { input: 42, output: '42' },
     { input: 1.99999, output: '1' },
     { input: -45.05, output: '-45' },
+    { input: 3333333333333333, output: '3333333333333333' },
     { input: Math.PI, output: '3', rounding: 'trunc' },
     { input: 5.0, output: '5', rounding: 'trunc' },
     { input: null, output: '0', rounding: 'trunc' },
