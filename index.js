@@ -83,6 +83,7 @@ function build (schema, options) {
     options,
     refResolver: new RefResolver(),
     rootSchemaId: schema.$id || randomUUID(),
+    strict: false,
     validatorSchemasIds: new Set()
   }
 
@@ -119,6 +120,13 @@ function build (schema, options) {
     } else {
       throw new Error(`Unsupported large array size. Expected integer-like, got ${typeof options.largeArraySize} with value ${options.largeArraySize}`)
     }
+  }
+
+  if (options.strict) {
+    if (typeof options.strict !== 'boolean') {
+      throw new Error('Strict-mode must be a boolean value')
+    }
+    context.strict = options.strict
   }
 
   const location = new Location(schema, context.rootSchemaId)
@@ -855,7 +863,7 @@ function buildValue (context, location, input) {
   }
 
   if (schema.const !== undefined) {
-    code += constKeyword(location, context.rootSchemaId, input)
+    code += constKeyword(context, location, input)
   } else if (Array.isArray(type)) {
     code += buildMultiTypeSerializer(context, location, input)
   } else {

@@ -234,3 +234,8 @@ build({}, { largeArraySize: 2000 } )
 build({}, { largeArraySize: '2e4' } )
 build({}, { largeArraySize: 2n } )
 expectError(build({} as Schema, { largeArraySize: ['asdf']} ))
+
+// strict
+build({}, { strict: true })
+build({}, { strict: false })
+expectError(build(schema1, { strict: 1 }))

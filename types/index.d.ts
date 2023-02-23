@@ -187,6 +187,12 @@ declare namespace build {
      * @default 'default'
      */
     largeArrayMechanism?: 'default' | 'json-stringify'
+
+    /**
+     * In Strict-mode fast-json-stringify will throw errors if the value is
+     * mismatching the schema.
+     */
+    strict?: boolean
   }
 
   export const validLargeArrayMechanisms: string[]

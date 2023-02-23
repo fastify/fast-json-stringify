@@ -55,7 +55,7 @@ const schema = {
 
 const nestedIfSchema = {
   type: 'object',
-  properties: { },
+  properties: {},
   if: {
     type: 'object',
     properties: {
@@ -108,7 +108,7 @@ const nestedIfSchema = {
 
 const nestedElseSchema = {
   type: 'object',
-  properties: { },
+  properties: {},
   if: {
     type: 'object',
     properties: {
@@ -388,7 +388,7 @@ t.test('if/else with string format', (t) => {
   t.equal(stringify('Invalid'), '"Invalid"')
 })
 
-t.test('if/else with const integers', (t) => {
+t.test('if/else with const integers, strict: false', (t) => {
   t.plan(2)
 
   const schema = {
@@ -398,7 +398,23 @@ t.test('if/else with const integers', (t) => {
     else: { const: 33 }
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { strict: false })
+
+  t.equal(stringify(100.32), JSON.stringify(100.32))
+  t.equal(stringify(10 - 12), JSON.stringify(10 - 12))
+})
+
+t.test('if/else with const integers, strict: true', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'number',
+    if: { type: 'number', minimum: 42 },
+    then: { const: 66 },
+    else: { const: 33 }
+  }
+
+  const stringify = build(schema, { strict: true })
 
   t.throws(() => stringify(100.32), new Error('The value of \'#/then\' does not match schema definition.'))
   t.throws(() => stringify(10 - 12), new Error('The value of \'#/else\' does not match schema definition.'))
