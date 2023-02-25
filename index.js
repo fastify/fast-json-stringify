@@ -571,12 +571,8 @@ function buildArray (context, location) {
     `
   }
 
-  if (largeArrayMechanism !== 'default') {
-    if (largeArrayMechanism === 'json-stringify') {
-      functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
-    } else {
-      throw new Error(`Unsupported large array mechanism ${largeArrayMechanism}`)
-    }
+  if (largeArrayMechanism === 'json-stringify') {
+    functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
   }
 
   functionCode += `
@@ -663,8 +659,6 @@ function buildArrayTypeCondition (type, accessor) {
           return buildArrayTypeCondition(subType, accessor)
         })
         condition = `(${conditions.join(' || ')})`
-      } else {
-        throw new Error(`${type} unsupported`)
       }
   }
   return condition
