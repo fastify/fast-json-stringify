@@ -35,6 +35,18 @@ test('render a float as an integer', (t) => {
   }
 })
 
+test('throws on NaN', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'integer',
+    type: 'integer'
+  }
+
+  const stringify = build(schema)
+  t.throws(() => stringify(NaN), new Error('The value "NaN" cannot be converted to an integer.'))
+})
+
 test('render a float as an integer', (t) => {
   const cases = [
     { input: Math.PI, output: '3' },
