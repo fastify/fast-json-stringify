@@ -2078,3 +2078,42 @@ test('should throw an Error if two non-identical schemas with same id are provid
 
   t.throws(() => build(schema), new Error('There is already another schema with id inner_schema'))
 })
+
+test('ref internal - throw if schema has definition twice with different shape', (t) => {
+  t.plan(1)
+
+  const schema = {
+    $id: 'test',
+    title: 'object with $ref',
+    definitions: {
+      def: {
+        $id: '#uri',
+        type: 'object',
+        properties: {
+          str: {
+            type: 'string'
+          }
+        },
+        required: ['str']
+      },
+      def2: {
+        $id: '#uri',
+        type: 'object',
+        properties: {
+          num: {
+            type: 'number'
+          }
+        },
+        required: ['num']
+      }
+    },
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: '#uri'
+      }
+    }
+  }
+
+  t.throws(() => build(schema), Error('There is already another schema with id test##uri'))
+})
