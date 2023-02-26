@@ -58,3 +58,18 @@ test('should work with oneOf', (t) => {
   t.equal(stringify({ foo: 'foo', baz: 'baz' }), '{"foo":"foo","baz":"baz"}')
   t.equal(stringify({ bar: 'bar', baz: 'baz' }), '{"bar":"bar","baz":"baz"}')
 })
+
+test('should merge schemas properly', (t) => {
+  t.plan(1)
+
+  const schema = {
+    properties: {
+      foo: { type: 'string' }
+    },
+    oneOf: [{ type: 'object' }]
+  }
+
+  const stringify = build(schema)
+
+  t.equal(stringify({ foo: 'foo' }), '{"foo":"foo"}')
+})
