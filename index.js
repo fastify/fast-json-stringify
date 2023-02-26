@@ -835,7 +835,7 @@ function buildValue (context, location, input) {
 
   let code = ''
 
-  if (type === undefined && (schema.anyOf || schema.oneOf)) {
+  if (schema.anyOf || schema.oneOf) {
     context.validatorSchemasIds.add(location.getSchemaId())
 
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
