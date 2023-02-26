@@ -66,6 +66,38 @@ function resolveRef (context, location, ref) {
   return newLocation
 }
 
+function validateArrayItem (type, arrayItem) {
+  let condition
+  switch (type) {
+    case 'null':
+      condition = arrayItem === null
+      break
+    case 'string':
+      condition = typeof arrayItem === 'string'
+      break
+    case 'integer':
+      condition = Number.isInteger(arrayItem)
+      break
+    case 'number':
+      condition = Number.isFinite(arrayItem)
+      break
+    case 'boolean':
+      condition = typeof arrayItem === 'boolean'
+      break
+    case 'object':
+      condition = arrayItem && typeof arrayItem === 'object' && arrayItem.constructor === Object
+      break
+    case 'array':
+      condition = Array.isArray(arrayItem)
+      break
+    default:
+      if (Array.isArray(type)) {
+        condition = type.some((subType) => validateArrayItem(subType, arrayItem))
+      }
+  }
+  return condition
+}
+
 function build (schema, options) {
   isValidSchema(schema)
 
@@ -78,7 +110,33 @@ function build (schema, options) {
     options,
     refResolver: new RefResolver(),
     rootSchemaId: schema.$id || randomUUID(),
-    validatorSchemasIds: new Set()
+    validatorSchemasIds: new Set(),
+    hooks: {
+      preArraySerializationHook: (schemaRef, schema, array) => {
+        if (!Array.isArray(array)) {
+          throw new TypeError(`The value of '${schemaRef}' does not match schema definition.`)
+        }
+
+        if (!schema.additionalItems && Array.isArray(schema.items)) {
+          if (array.length > schema.items.length) {
+            throw new Error(`Item at ${schema.items.length} does not match schema definition.`)
+          }
+        }
+
+        if (Array.isArray(schema.items)) {
+          for (let i = 0; i < Math.min(schema.items.length, array.length); i++) {
+            const itemType = schema.items[i].type
+            if (itemType === undefined) continue
+
+            const isItemValid = validateArrayItem(itemType, array[i])
+            if (!isItemValid) {
+              throw new Error(`Item at ${i} does not match schema definition.`)
+            }
+          }
+        }
+      },
+      preArrayItemSerializationHook: (schemaRef, schema, arrayIndex, arrayItem) => {}
+    }
   }
 
   context.refResolver.addSchema(schema, context.rootSchemaId)
@@ -178,8 +236,8 @@ function build (schema, options) {
   }
 
   /* eslint no-new-func: "off" */
-  const contextFunc = new Function('validator', 'serializer', contextFunctionCode)
-  const stringifyFunc = contextFunc(validator, serializer)
+  const contextFunc = new Function('validator', 'serializer', 'context', contextFunctionCode)
+  const stringifyFunc = contextFunc(validator, serializer, context)
 
   return stringifyFunc
 }
@@ -552,116 +610,95 @@ function buildArray (context, location) {
   }
 
   let functionCode = `
-    function ${functionName} (obj) {
+    function ${functionName} (array) {
       // ${schemaRef}
   `
 
-  functionCode += `
-    if (!Array.isArray(obj)) {
-      throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
-    }
-    const arrayLength = obj.length
-  `
-
-  if (!schema.additionalItems && Array.isArray(itemsSchema)) {
+  if (context.hooks.preArraySerializationHook !== undefined) {
     functionCode += `
-      if (arrayLength > ${itemsSchema.length}) {
-        throw new Error(\`Item at ${itemsSchema.length} does not match schema definition.\`)
-      }
+      const schema = context.refResolver.getSchema('${location.schemaId}', '${location.jsonPointer}')
+      context.hooks.preArraySerializationHook('${schemaRef}', schema, array)
     `
   }
 
+  functionCode += `
+    const arrayLength = array.length
+  `
+
   if (largeArrayMechanism === 'json-stringify') {
-    functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
+    functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(array)\n`
   }
 
   functionCode += `
-    let jsonOutput = ''
+    let json = ''
   `
 
   if (Array.isArray(itemsSchema)) {
     for (let i = 0; i < itemsSchema.length; i++) {
-      const item = itemsSchema[i]
-      const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), `obj[${i}]`)
+      const itemLocation = itemsLocation.getPropertyLocation(i)
+
       functionCode += `
         if (${i} < arrayLength) {
-          if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
-            let json = ''
-            ${tmpRes}
-            jsonOutput += json
-            if (${i} < arrayLength - 1) {
-              jsonOutput += ','
-            }
-          } else {
-            throw new Error(\`Item at ${i} does not match schema definition.\`)
-          }
-        }
+      `
+
+      if (context.hooks.preArrayItemSerializationHook !== undefined) {
+        functionCode += `
+          const schema = context.refResolver.getSchema('${itemLocation.schemaId}', '${itemLocation.jsonPointer}')
+          context.hooks.preArrayItemSerializationHook('${schemaRef}', schema, ${i}, array[${i}])
         `
+      }
+
+      functionCode += buildValue(context, itemLocation, `array[${i}]`)
+      functionCode += `
+        if (${i} < arrayLength - 1) json += ','
+      }`
     }
 
     if (schema.additionalItems) {
       functionCode += `
         for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
-          jsonOutput += JSON.stringify(obj[i])
-          if (i < arrayLength - 1) {
-            jsonOutput += ','
-          }
+      `
+
+      if (context.hooks.preArrayItemSerializationHook !== undefined) {
+        functionCode += `
+          context.hooks.preArrayItemSerializationHook('${schemaRef}', null, i, array[i])
+        `
+      }
+
+      functionCode += `
+          json += JSON.stringify(array[i])
+          if (i < arrayLength - 1) json += ','
         }`
     }
   } else {
-    const code = buildValue(context, itemsLocation, 'obj[i]')
+    if (context.hooks.preArrayItemSerializationHook !== undefined) {
+      functionCode += `
+        const itemsSchema = context.refResolver.getSchema('${itemsLocation.schemaId}', '${itemsLocation.jsonPointer}')
+      `
+    }
+
     functionCode += `
       for (let i = 0; i < arrayLength; i++) {
-        let json = ''
-        ${code}
-        jsonOutput += json
-        if (i < arrayLength - 1) {
-          jsonOutput += ','
-        }
+    `
+
+    if (context.hooks.preArrayItemSerializationHook !== undefined) {
+      functionCode += `
+        context.hooks.preArrayItemSerializationHook('${schemaRef}', itemsSchema, i, array[i])
+      `
+    }
+
+    functionCode += buildValue(context, itemsLocation, 'array[i]')
+    functionCode += `
+        if (i < arrayLength - 1) json += ','
       }`
   }
 
   functionCode += `
-    return \`[\${jsonOutput}]\`
+    return \`[\${json}]\`
   }`
 
   context.functions.push(functionCode)
   return functionName
-}
-
-function buildArrayTypeCondition (type, accessor) {
-  let condition
-  switch (type) {
-    case 'null':
-      condition = `obj${accessor} === null`
-      break
-    case 'string':
-      condition = `typeof obj${accessor} === 'string'`
-      break
-    case 'integer':
-      condition = `Number.isInteger(obj${accessor})`
-      break
-    case 'number':
-      condition = `Number.isFinite(obj${accessor})`
-      break
-    case 'boolean':
-      condition = `typeof obj${accessor} === 'boolean'`
-      break
-    case 'object':
-      condition = `obj${accessor} && typeof obj${accessor} === 'object' && obj${accessor}.constructor === Object`
-      break
-    case 'array':
-      condition = `Array.isArray(obj${accessor})`
-      break
-    default:
-      if (Array.isArray(type)) {
-        const conditions = type.map((subType) => {
-          return buildArrayTypeCondition(subType, accessor)
-        })
-        condition = `(${conditions.join(' || ')})`
-      }
-  }
-  return condition
 }
 
 function generateFuncName (context) {
