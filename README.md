@@ -689,8 +689,7 @@ console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"F
 ### Standalone Mode
 
 The standalone mode is used to compile the code that can be directly run by `node`
-itself. You need to install `ajv`, `fast-uri` and `ajv-formats` for
-the standalone code to work.
+itself. You need to have `fast-json-stringify` installed for the standalone code to work.
 
 ```js
 const fs = require('fs')

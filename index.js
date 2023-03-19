@@ -170,18 +170,15 @@ function build (schema, options) {
     }
   }
 
-  if (options.mode === 'standalone') {
-    // lazy load
-    const isValidatorUsed = context.validatorSchemasIds.size > 0
-    const buildStandaloneCode = require('./lib/standalone')
-    return buildStandaloneCode(options, validator, isValidatorUsed, contextFunctionCode)
-  }
-
   /* eslint no-new-func: "off" */
   const contextFunc = new Function('validator', 'serializer', contextFunctionCode)
-  const stringifyFunc = contextFunc(validator, serializer)
 
-  return stringifyFunc
+  if (options.mode === 'standalone') {
+    const buildStandaloneCode = require('./lib/standalone')
+    return buildStandaloneCode(contextFunc, context, serializer, validator)
+  }
+
+  return contextFunc(validator, serializer)
 }
 
 const objectKeywords = [
