@@ -5,6 +5,7 @@
 const merge = require('@fastify/deepmerge')()
 const clone = require('rfdc')({ proto: true })
 const { randomUUID } = require('crypto')
+const { default: CodeBlockWriter } = require('code-block-writer')
 
 const validate = require('./lib/schema-validator')
 const Serializer = require('./lib/serializer')
@@ -551,81 +552,75 @@ function buildArray (context, location) {
     schemaRef = schemaRef.replace(context.rootSchemaId, '')
   }
 
-  let functionCode = `
-    function ${functionName} (obj) {
-      // ${schemaRef}
-  `
+  const codeWriter = new CodeBlockWriter({
+    indentNumberOfSpaces: 2,
+    useSingleQuote: true
+  })
 
-  functionCode += `
-    if (!Array.isArray(obj)) {
-      throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
+  codeWriter.write(`function ${functionName} (obj)`).block(() => {
+    codeWriter.writeLine(`// ${schemaRef}`)
+
+    codeWriter.write('if (!Array.isArray(obj))').block(() => {
+      codeWriter.writeLine(`throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)`)
+    })
+    codeWriter.writeLine('const arrayLength = obj.length')
+
+    if (!schema.additionalItems && Array.isArray(itemsSchema)) {
+      codeWriter.write(`if (arrayLength > ${itemsSchema.length})`).block(() => {
+        codeWriter.writeLine(`throw new Error(\`Item at ${itemsSchema.length} does not match schema definition.\`)`)
+      })
     }
-    const arrayLength = obj.length
-  `
 
-  if (!schema.additionalItems && Array.isArray(itemsSchema)) {
-    functionCode += `
-      if (arrayLength > ${itemsSchema.length}) {
-        throw new Error(\`Item at ${itemsSchema.length} does not match schema definition.\`)
+    if (largeArrayMechanism === 'json-stringify') {
+      codeWriter.writeLine(`if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`)
+    }
+
+    codeWriter.writeLine('let jsonOutput = \'\'')
+
+    if (Array.isArray(itemsSchema)) {
+      for (let i = 0; i < itemsSchema.length; i++) {
+        const item = itemsSchema[i]
+        const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), `obj[${i}]`)
+        codeWriter.write(`if (${i} < arrayLength)`).block(() => {
+          codeWriter.write(`if (${buildArrayTypeCondition(item.type, `[${i}]`)}) `).inlineBlock(() => {
+            codeWriter.writeLine('let json = \'\'')
+            codeWriter.writeLine(tmpRes)
+            codeWriter.writeLine('jsonOutput += json')
+            codeWriter.write(`if (${i} < arrayLength - 1)`).block(() => {
+              codeWriter.writeLine('jsonOutput += \',\'')
+            })
+          }).write(' else').block(() => {
+            codeWriter.writeLine(`throw new Error(\`Item at ${i} does not match schema definition.\`)`)
+          })
+        })
       }
-    `
-  }
 
-  if (largeArrayMechanism === 'json-stringify') {
-    functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
-  }
-
-  functionCode += `
-    let jsonOutput = ''
-  `
-
-  if (Array.isArray(itemsSchema)) {
-    for (let i = 0; i < itemsSchema.length; i++) {
-      const item = itemsSchema[i]
-      const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), `obj[${i}]`)
-      functionCode += `
-        if (${i} < arrayLength) {
-          if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
-            let json = ''
-            ${tmpRes}
-            jsonOutput += json
-            if (${i} < arrayLength - 1) {
-              jsonOutput += ','
-            }
-          } else {
-            throw new Error(\`Item at ${i} does not match schema definition.\`)
-          }
-        }
-        `
+      if (schema.additionalItems) {
+        codeWriter.write(`for (let i = ${itemsSchema.length}; i < arrayLength; i++)`).block(() => {
+          codeWriter.writeLine('jsonOutput += JSON.stringify(obj[i])')
+          codeWriter.write('if (i < arrayLength - 1)').block(() => {
+            codeWriter.writeLine('jsonOutput += \',\'')
+          })
+        })
+      }
+    } else {
+      const code = buildValue(context, itemsLocation, 'obj[i]')
+      codeWriter.write('for (let i = 0; i < arrayLength; i++)').block(() => {
+        codeWriter.writeLine('let json = \'\'')
+        codeWriter.writeLine(code)
+        codeWriter.writeLine('jsonOutput += json')
+        codeWriter.write('if (i < arrayLength - 1)').block(() => {
+          codeWriter.writeLine('jsonOutput += \',\'')
+        })
+      })
     }
 
-    if (schema.additionalItems) {
-      functionCode += `
-        for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
-          jsonOutput += JSON.stringify(obj[i])
-          if (i < arrayLength - 1) {
-            jsonOutput += ','
-          }
-        }`
-    }
-  } else {
-    const code = buildValue(context, itemsLocation, 'obj[i]')
-    functionCode += `
-      for (let i = 0; i < arrayLength; i++) {
-        let json = ''
-        ${code}
-        jsonOutput += json
-        if (i < arrayLength - 1) {
-          jsonOutput += ','
-        }
-      }`
-  }
+    codeWriter.writeLine('return \'[\' + jsonOutput + \']\'')
+  })
 
-  functionCode += `
-    return \`[\${jsonOutput}]\`
-  }`
-
+  const functionCode = codeWriter.toString()
   context.functions.push(functionCode)
+
   return functionName
 }
 

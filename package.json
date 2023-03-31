@@ -15,7 +15,10 @@
     "test:unit": "tap",
     "test": "npm run test:unit && npm run test:typescript"
   },
-  "precommit": ["lint", "test"],
+  "precommit": [
+    "lint",
+    "test"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fastify/fast-json-stringify.git"
@@ -49,6 +52,7 @@
     "@fastify/deepmerge": "^1.0.0",
     "ajv": "^8.10.0",
     "ajv-formats": "^2.1.1",
+    "code-block-writer": "^12.0.0",
     "fast-deep-equal": "^3.1.3",
     "fast-uri": "^2.1.0",
     "rfdc": "^1.2.0"
