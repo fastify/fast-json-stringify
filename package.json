@@ -43,7 +43,8 @@
     "standard": "^17.0.0",
     "tap": "^16.0.1",
     "tsd": "^0.28.0",
-    "webpack": "^5.40.0"
+    "webpack": "^5.40.0",
+    "fast-json-stringify": "."
   },
   "dependencies": {
     "@fastify/deepmerge": "^1.0.0",
