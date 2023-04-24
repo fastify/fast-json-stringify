@@ -14,12 +14,14 @@ jobs:
       PR-BENCH-14: ${{ steps.benchmark-pr.outputs.BENCH_RESULT14 }}
       PR-BENCH-16: ${{ steps.benchmark-pr.outputs.BENCH_RESULT16 }}
       PR-BENCH-18: ${{ steps.benchmark-pr.outputs.BENCH_RESULT18 }}
+      PR-BENCH-20: ${{ steps.benchmark-pr.outputs.BENCH_RESULT20 }}
       MAIN-BENCH-14: ${{ steps.benchmark-main.outputs.BENCH_RESULT14 }}
       MAIN-BENCH-16: ${{ steps.benchmark-main.outputs.BENCH_RESULT16 }}
       MAIN-BENCH-18: ${{ steps.benchmark-main.outputs.BENCH_RESULT18 }}
+      MAIN-BENCH-20: ${{ steps.benchmark-main.outputs.BENCH_RESULT20 }}
     strategy:
       matrix:
-        node-version: [14, 16, 18]
+        node-version: [14, 16, 18, 20]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -107,6 +109,17 @@ jobs:
             **MAIN**:
             ```
             ${{ needs.benchmark.outputs.MAIN-BENCH-18 }}
+            
+            ---
+            
+            **Node**: 20
+            **PR**:
+            ```
+            ${{ needs.benchmark.outputs.PR-BENCH-20 }}
+            ```
+            **MAIN**:
+            ```
+            ${{ needs.benchmark.outputs.MAIN-BENCH-20 }}
             ```
             
       - uses: actions-ecosystem/action-remove-labels@v1
