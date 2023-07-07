@@ -123,7 +123,7 @@ function build (schema, options) {
 
   // If we have only the invocation of the 'anonymous0' function, we would
   // basically just wrap the 'anonymous0' function in the 'main' function and
-  // and the overhead of the intermediate variabe 'json'. We can avoid the
+  // and the overhead of the intermediate variable 'json'. We can avoid the
   // wrapping and the unnecessary memory allocation by aliasing 'anonymous0' to
   // 'main'
   if (code === 'json += anonymous0(input)') {
