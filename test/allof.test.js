@@ -220,6 +220,59 @@ test('object with nested allOfs', (t) => {
   t.equal(value, '{"id1":1,"id2":2,"id3":3}')
 })
 
+test('object with anyOf nested inside allOf', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'object with anyOf nested inside allOf',
+    type: 'object',
+    allOf: [
+      {
+        required: [
+          'id1'
+        ],
+        type: 'object',
+        properties: {
+          id1: {
+            type: 'integer'
+          }
+        }
+      },
+      {
+        anyOf: [
+          {
+            type: 'object',
+            properties: {
+              id2: {
+                type: 'integer'
+              }
+            },
+            required: ['id2']
+          },
+          {
+            type: 'object',
+            properties: {
+              id3: {
+                type: 'integer'
+              }
+            },
+            required: ['id3']
+          }
+        ]
+      }
+    ]
+  }
+
+  const stringify = build(schema)
+  const value = stringify({
+    id1: 1,
+    id2: 2,
+    id3: 3, // anyOf should use its first match
+    id4: 4 // extra prop shouldn't be in result
+  })
+  t.equal(value, '{"id1":1,"id2":2}')
+})
+
 test('object with $ref in allOf', (t) => {
   t.plan(1)
 
