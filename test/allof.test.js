@@ -228,13 +228,17 @@ test('object with anyOf nested inside allOf', (t) => {
     type: 'object',
     allOf: [
       {
-        required: [
-          'id1'
-        ],
+        required: ['id1', 'obj'],
         type: 'object',
         properties: {
           id1: {
             type: 'integer'
+          },
+          obj: {
+            type: 'object',
+            properties: {
+              nested: { type: 'string' }
+            }
           }
         }
       },
@@ -268,9 +272,10 @@ test('object with anyOf nested inside allOf', (t) => {
     id1: 1,
     id2: 2,
     id3: 3, // anyOf should use its first match
-    id4: 4 // extra prop shouldn't be in result
+    id4: 4, // extra prop shouldn't be in result
+    obj: { nested: 'yes' }
   })
-  t.equal(value, '{"id1":1,"id2":2}')
+  t.equal(value, '{"id1":1,"obj":{"nested":"yes"},"id2":2}')
 })
 
 test('object with $ref in allOf', (t) => {
