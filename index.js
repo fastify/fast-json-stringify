@@ -509,17 +509,18 @@ function buildObject (context, location) {
       // ${schemaRef}
   `
 
-  const wrapObjects = context.wrapObjects
-  context.wrapObjects = true
   functionCode += `
       const obj = ${toJSON('input')}
-      let json = '${wrapObjects ? '{' : ''}'
+      let json = '${context.wrapObjects ? '{' : ''}'
       let addComma = false
   `
 
+  const wrapObjects = context.wrapObjects
+  context.wrapObjects = true
   functionCode += buildInnerObject(context, location)
+  context.wrapObjects = wrapObjects
   functionCode += `
-      return json${wrapObjects ? ' + \'}\'' : ''}
+      return json${context.wrapObjects ? ' + \'}\'' : ''}
     }
   `
 
@@ -846,7 +847,6 @@ function buildValue (context, location, input) {
         json += ${funcName}(${input})
         json += ','
       `
-      context.wrapObjects = false
     }
 
     const type = schema.anyOf ? 'anyOf' : 'oneOf'

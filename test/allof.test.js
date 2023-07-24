@@ -247,9 +247,7 @@ test('object with anyOf nested inside allOf', (t) => {
           {
             type: 'object',
             properties: {
-              id2: {
-                type: 'integer'
-              }
+              id2: { type: 'string' }
             },
             required: ['id2']
           },
@@ -258,9 +256,22 @@ test('object with anyOf nested inside allOf', (t) => {
             properties: {
               id3: {
                 type: 'integer'
+              },
+              nestedObj: {
+                type: 'object',
+                properties: {
+                  nested: { type: 'string' }
+                }
               }
             },
             required: ['id3']
+          },
+          {
+            type: 'object',
+            properties: {
+              id4: { type: 'integer' }
+            },
+            required: ['id4']
           }
         ]
       }
@@ -270,12 +281,12 @@ test('object with anyOf nested inside allOf', (t) => {
   const stringify = build(schema)
   const value = stringify({
     id1: 1,
-    id2: 2,
-    id3: 3, // anyOf should use its first match
+    id3: 3,
     id4: 4, // extra prop shouldn't be in result
-    obj: { nested: 'yes' }
+    obj: { nested: 'yes' },
+    nestedObj: { nested: 'yes' }
   })
-  t.equal(value, '{"id1":1,"obj":{"nested":"yes"},"id2":2}')
+  t.equal(value, '{"id1":1,"obj":{"nested":"yes"},"id3":3,"nestedObj":{"nested":"yes"}}')
 })
 
 test('object with $ref in allOf', (t) => {
