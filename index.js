@@ -836,6 +836,7 @@ function buildValue (context, location, input) {
   if ((type === undefined || type === 'object') && (schema.anyOf || schema.oneOf)) {
     context.validatorSchemasIds.add(location.getSchemaId())
 
+    const originalWrapObjects = context.wrapObjects
     if (schema.type === 'object') {
       context.wrapObjects = false
       const funcName = buildObject(context, location)
@@ -871,6 +872,7 @@ function buildValue (context, location, input) {
       code += `
         json += '}'
       `
+      context.wrapObjects = originalWrapObjects
     }
     return code
   }
