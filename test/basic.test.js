@@ -344,13 +344,45 @@ test('patternProperties - throw on unknown type', (t) => {
   }
 })
 
-test('render a single quote as JSON', (t) => {
+test('render a double quote as JSON /1', (t) => {
   t.plan(2)
 
   const schema = {
     type: 'string'
   }
   const toStringify = '" double quote'
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, JSON.stringify(toStringify))
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('render a double quote as JSON /2', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string'
+  }
+  const toStringify = 'double quote " 2'
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify(toStringify)
+
+  t.equal(output, JSON.stringify(toStringify))
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
+test('render a long string', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string'
+  }
+  const toStringify = 'the Ultimate Question of Life, the Universe, and Everything.'
 
   const validate = validator(schema)
   const stringify = build(schema)
