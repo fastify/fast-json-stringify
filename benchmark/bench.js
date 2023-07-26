@@ -18,6 +18,11 @@ function getRandomInt (max) {
   return Math.floor(Math.random() * max)
 }
 
+let longSimpleString = ''
+for (let i = 0; i < LONG_STRING_LENGTH; i++) {
+  longSimpleString += i
+}
+
 let longString = ''
 for (let i = 0; i < LONG_STRING_LENGTH; i++) {
   longString += i
@@ -41,6 +46,20 @@ const benchmarks = [
       type: 'string'
     },
     input: 'hello world'
+  },
+  {
+    name: 'short string with double quote',
+    schema: {
+      type: 'string'
+    },
+    input: 'hello " world'
+  },
+  {
+    name: 'long string without double quotes',
+    schema: {
+      type: 'string'
+    },
+    input: longSimpleString
   },
   {
     name: 'long string',
