@@ -5,9 +5,9 @@ const fjs = require('..')
 
 const Ajv = require('ajv').default
 const Validator = require('../lib/validator')
-const Serializer = require('../lib/serializer')
+const { Serializer } = require('../lib/serializer')
 
-function build (opts) {
+function build(opts) {
   return fjs({
     title: 'default string',
     type: 'object',

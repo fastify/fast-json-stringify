@@ -11,6 +11,7 @@ const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
 const RefResolver = require('./lib/ref-resolver')
 const Location = require('./lib/location')
+const optimize = require('./lib/optimize')
 
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
@@ -26,6 +27,18 @@ const validLargeArrayMechanisms = [
   'default',
   'json-stringify'
 ]
+
+const serializerFns = `
+const {
+  asString,
+  asInteger,
+  asNumber,
+  asBoolean,
+  asDateTime,
+  asDate,
+  asTime,
+} = serializer
+`
 
 const addComma = '!addComma && (addComma = true) || (json += \',\')'
 
@@ -119,21 +132,8 @@ function build (schema, options) {
   const location = new Location(schema, context.rootSchemaId)
   const code = buildValue(context, location, 'input')
 
-  let contextFunctionCode
-
-  // If we have only the invocation of the 'anonymous0' function, we would
-  // basically just wrap the 'anonymous0' function in the 'main' function and
-  // and the overhead of the intermediate variable 'json'. We can avoid the
-  // wrapping and the unnecessary memory allocation by aliasing 'anonymous0' to
-  // 'main'
-  if (code === 'json += anonymous0(input)') {
-    contextFunctionCode = `
-    ${context.functions.join('\n')}
-    const main = anonymous0
-    return main
-    `
-  } else {
-    contextFunctionCode = `
+  let contextFunctionCode = `
+    ${serializerFns}
     function main (input) {
       let json = ''
       ${code}
@@ -142,7 +142,8 @@ function build (schema, options) {
     ${context.functions.join('\n')}
     return main
     `
-  }
+
+  contextFunctionCode = optimize(contextFunctionCode)
 
   const serializer = new Serializer(options)
   const validator = new Validator(options.ajv)
@@ -263,7 +264,7 @@ function buildExtraObjectPropertiesSerializer (context, location) {
       code += `
         if (/${propertyKey.replace(/\\*\//g, '\\/')}/.test(key)) {
           ${addComma}
-          json += serializer.asString(key) + ':'
+          json += asString(key) + ':'
           ${buildValue(context, propertyLocation, 'value')}
           continue
         }
@@ -278,13 +279,13 @@ function buildExtraObjectPropertiesSerializer (context, location) {
     if (additionalPropertiesSchema === true) {
       code += `
         ${addComma}
-        json += serializer.asString(key) + ':' + JSON.stringify(value)
+        json += asString(key) + ':' + JSON.stringify(value)
       `
     } else {
       const propertyLocation = location.getPropertyLocation('additionalProperties')
       code += `
         ${addComma}
-        json += serializer.asString(key) + ':'
+        json += asString(key) + ':'
         ${buildValue(context, propertyLocation, 'value')}
       `
     }
@@ -504,8 +505,8 @@ function buildObject (context, location) {
   }
 
   let functionCode = `
+    // ${schemaRef}
     function ${functionName} (input) {
-      // ${schemaRef}
   `
 
   functionCode += `
@@ -549,8 +550,8 @@ function buildArray (context, location) {
   }
 
   let functionCode = `
+    // ${schemaRef}
     function ${functionName} (obj) {
-      // ${schemaRef}
   `
 
   functionCode += `
@@ -743,21 +744,21 @@ function buildSingleTypeSerializer (context, location, input) {
       return 'json += \'null\''
     case 'string': {
       if (schema.format === 'date-time') {
-        return `json += serializer.asDateTime(${input})`
+        return `json += asDateTime(${input})`
       } else if (schema.format === 'date') {
-        return `json += serializer.asDate(${input})`
+        return `json += asDate(${input})`
       } else if (schema.format === 'time') {
-        return `json += serializer.asTime(${input})`
+        return `json += asTime(${input})`
       } else {
-        return `json += serializer.asString(${input})`
+        return `json += asString(${input})`
       }
     }
     case 'integer':
-      return `json += serializer.asInteger(${input})`
+      return `json += asInteger(${input})`
     case 'number':
-      return `json += serializer.asNumber(${input})`
+      return `json += asNumber(${input})`
     case 'boolean':
-      return `json += serializer.asBoolean(${input})`
+      return `json += asBoolean(${input})`
     case 'object': {
       const funcName = buildObject(context, location)
       return `json += ${funcName}(${input})`
