@@ -15,10 +15,10 @@ jobs:
       PR-BENCH-16: ${{ steps.benchmark-pr.outputs.BENCH_RESULT16 }}
       PR-BENCH-18: ${{ steps.benchmark-pr.outputs.BENCH_RESULT18 }}
       PR-BENCH-20: ${{ steps.benchmark-pr.outputs.BENCH_RESULT20 }}
-      MAIN-BENCH-14: ${{ steps.benchmark-main.outputs.BENCH_RESULT14 }}
-      MAIN-BENCH-16: ${{ steps.benchmark-main.outputs.BENCH_RESULT16 }}
-      MAIN-BENCH-18: ${{ steps.benchmark-main.outputs.BENCH_RESULT18 }}
-      MAIN-BENCH-20: ${{ steps.benchmark-main.outputs.BENCH_RESULT20 }}
+      MASTER-BENCH-14: ${{ steps.benchmark-master.outputs.BENCH_RESULT14 }}
+      MASTER-BENCH-16: ${{ steps.benchmark-master.outputs.BENCH_RESULT16 }}
+      MASTER-BENCH-18: ${{ steps.benchmark-master.outputs.BENCH_RESULT18 }}
+      MASTER-BENCH-20: ${{ steps.benchmark-master.outputs.BENCH_RESULT20 }}
     strategy:
       matrix:
         node-version: [14, 16, 18, 20]
@@ -47,7 +47,7 @@ jobs:
           content="${content//$'\r'/'%0D'}"
           echo "::set-output name=BENCH_RESULT${{matrix.node-version}}::$content"
 
-      # main benchmark
+      # master benchmark
       - uses: actions/checkout@v3
         with:
           ref: 'master'
@@ -82,9 +82,9 @@ jobs:
             ```
             ${{ needs.benchmark.outputs.PR-BENCH-14 }}
             ```
-            **MAIN**:
+            **MASTER**:
             ```
-            ${{ needs.benchmark.outputs.MAIN-BENCH-14 }}
+            ${{ needs.benchmark.outputs.MASTER-BENCH-14 }}
             ```
             
             ---
@@ -94,9 +94,9 @@ jobs:
             ```
             ${{ needs.benchmark.outputs.PR-BENCH-16 }}
             ```
-            **MAIN**:
+            **MASTER**:
             ```
-            ${{ needs.benchmark.outputs.MAIN-BENCH-16 }}
+            ${{ needs.benchmark.outputs.MASTER-BENCH-16 }}
             ```
             
             ---
@@ -106,9 +106,9 @@ jobs:
             ```
             ${{ needs.benchmark.outputs.PR-BENCH-18 }}
             ```
-            **MAIN**:
+            **MASTER**:
             ```
-            ${{ needs.benchmark.outputs.MAIN-BENCH-18 }}
+            ${{ needs.benchmark.outputs.MASTER-BENCH-18 }}
             
             ---
             
@@ -117,9 +117,9 @@ jobs:
             ```
             ${{ needs.benchmark.outputs.PR-BENCH-20 }}
             ```
-            **MAIN**:
+            **MASTER**:
             ```
-            ${{ needs.benchmark.outputs.MAIN-BENCH-20 }}
+            ${{ needs.benchmark.outputs.MASTER-BENCH-20 }}
             ```
             
       - uses: actions-ecosystem/action-remove-labels@v1
