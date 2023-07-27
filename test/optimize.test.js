@@ -18,6 +18,24 @@ test('optimize consecutive "json +=" lines', (t) => {
   `)
 })
 
+test('optimize consecutive "json +=" lines', (t) => {
+  t.plan(1)
+
+  const unoptimized = `
+    json += "A"
+    json += "B"
+    json += "C"
+    Math.random()
+  `
+
+  const optimized = optimize(unoptimized)
+
+  t.equal(optimized, `
+    json += "A" + "B" + "C"
+    Math.random()
+  `)
+})
+
 test('optimize consecutive "let json" and following "json +="', (t) => {
   t.plan(1)
 
