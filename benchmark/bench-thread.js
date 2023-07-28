@@ -3,7 +3,7 @@
 const { workerData: benchmark, parentPort } = require('worker_threads')
 
 const Benchmark = require('benchmark')
-Benchmark.options.minSamples = 500
+Benchmark.options.minSamples = 100
 
 const suite = Benchmark.Suite()
 
