@@ -542,7 +542,7 @@ function buildObject (context, location) {
     schemaRef = schemaRef.replace(context.rootSchemaId, '')
   }
 
-  let functionCode = `
+  const functionCode = `
     // ${schemaRef}
     function ${functionName} (input) {
       const obj = ${toJSON('input')}
