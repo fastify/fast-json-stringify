@@ -76,6 +76,7 @@ function build (schema, options) {
     functionsCounter: 0,
     functionsNamesBySchema: new Map(),
     options,
+    wrapObjects: true,
     refResolver: new RefResolver(),
     rootSchemaId: schema.$id || randomUUID(),
     validatorSchemasIds: new Set()
@@ -510,13 +511,16 @@ function buildObject (context, location) {
 
   functionCode += `
       const obj = ${toJSON('input')}
-      let json = '{'
+      let json = '${context.wrapObjects ? '{' : ''}'
       let addComma = false
   `
 
+  const wrapObjects = context.wrapObjects
+  context.wrapObjects = true
   functionCode += buildInnerObject(context, location)
+  context.wrapObjects = wrapObjects
   functionCode += `
-      return json + '}'
+      return json${context.wrapObjects ? ' + \'}\'' : ''}
     }
   `
 
@@ -832,8 +836,18 @@ function buildValue (context, location, input) {
 
   let code = ''
 
-  if (type === undefined && (schema.anyOf || schema.oneOf)) {
+  if ((type === undefined || type === 'object') && (schema.anyOf || schema.oneOf)) {
     context.validatorSchemasIds.add(location.getSchemaId())
+
+    if (schema.type === 'object') {
+      context.wrapObjects = false
+      const funcName = buildObject(context, location)
+      code += `
+        json += '{'
+        json += ${funcName}(${input})
+        json += ','
+      `
+    }
 
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
     const anyOfLocation = location.getPropertyLocation(type)
@@ -856,6 +870,12 @@ function buildValue (context, location, input) {
     code += `
       else throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
     `
+    if (schema.type === 'object') {
+      code += `
+        json += '}'
+      `
+      context.wrapObjects = true
+    }
     return code
   }
 
