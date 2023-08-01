@@ -298,59 +298,96 @@ function buildExtraObjectPropertiesSerializer (context, location) {
 }
 
 function buildInnerObject (context, location) {
+  let code = ''
   const schema = location.schema
   const required = schema.required || []
 
-  let code = ''
-
   const propertiesLocation = location.getPropertyLocation('properties')
-  Object.keys(schema.properties || {}).forEach((key) => {
-    let propertyLocation = propertiesLocation.getPropertyLocation(key)
-    if (propertyLocation.schema.$ref) {
-      propertyLocation = resolveRef(context, location, propertyLocation.schema.$ref)
-    }
 
-    const sanitized = JSON.stringify(key)
-
-    // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
-    // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
-
-    code += `
-      if (obj[${sanitized}] !== undefined) {
-        ${addComma}
-        json += ${JSON.stringify(sanitized + ':')}
-      `
-
-    code += buildValue(context, propertyLocation, `obj[${sanitized}]`)
-
-    const defaultValue = propertyLocation.schema.default
-    if (defaultValue !== undefined) {
-      code += `
-      } else {
-        ${addComma}
-        json += ${JSON.stringify(sanitized + ':' + JSON.stringify(defaultValue))}
-      `
-    } else if (required.includes(key)) {
-      code += `
-      } else {
-        throw new Error('${sanitized} is required!')
-      `
-    }
-
-    code += `
+  const requiredWithDefault = []
+  const requiredWithoutDefault = []
+  if (schema.properties) {
+    for (const key of Object.keys(schema.properties)) {
+      if (required.indexOf(key) === -1) {
+        continue
       }
-    `
-  })
+      let propertyLocation = propertiesLocation.getPropertyLocation(key)
+      if (propertyLocation.schema.$ref) {
+        propertyLocation = resolveRef(context, location, propertyLocation.schema.$ref)
+      }
 
+      const sanitizedKey = JSON.stringify(key)
+
+      // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
+      // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
+      const defaultValue = propertyLocation.schema.default
+      if (defaultValue === undefined) {
+        code += `if (obj[${sanitizedKey}] === undefined) throw new Error('${sanitizedKey} is required!')\n`
+        requiredWithoutDefault.push(key)
+      }
+      requiredWithDefault.push(key)
+    }
+  }
+
+  // handle extraneous required fields
   for (const requiredProperty of required) {
-    if (schema.properties && schema.properties[requiredProperty] !== undefined) continue
+    if (requiredWithDefault.indexOf(requiredProperty) !== -1) continue
     code += `if (obj['${requiredProperty}'] === undefined) throw new Error('"${requiredProperty}" is required!')\n`
+  }
+
+  code += `
+    let addComma = false
+    let json = '${context.wrapObjects ? '{' : ''}'
+  `
+  const wrapObjects = context.wrapObjects
+  context.wrapObjects = true
+
+  if (schema.properties) {
+    for (const key of Object.keys(schema.properties)) {
+      let propertyLocation = propertiesLocation.getPropertyLocation(key)
+      if (propertyLocation.schema.$ref) {
+        propertyLocation = resolveRef(context, location, propertyLocation.schema.$ref)
+      }
+
+      const sanitizedKey = JSON.stringify(key)
+
+      if (requiredWithoutDefault.indexOf(key) !== -1) {
+        code += `
+        ${addComma}
+        json += ${JSON.stringify(sanitizedKey + ':')}
+        ${buildValue(context, propertyLocation, `obj[${sanitizedKey}]`)}
+      `
+      } else {
+        // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
+        // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
+        code += `
+        if (obj[${sanitizedKey}] !== undefined) {
+          ${addComma}
+          json += ${JSON.stringify(sanitizedKey + ':')}
+          ${buildValue(context, propertyLocation, `obj[${sanitizedKey}]`)}
+        }
+        `
+        const defaultValue = propertyLocation.schema.default
+        if (defaultValue !== undefined) {
+          code += `
+        else {
+          ${addComma}
+          json += ${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))}
+        }
+        `
+        }
+      }
+    }
   }
 
   if (schema.patternProperties || schema.additionalProperties) {
     code += buildExtraObjectPropertiesSerializer(context, location)
   }
 
+  context.wrapObjects = wrapObjects
+  code += `
+  return json${context.wrapObjects ? ' + \'}\'' : ''}
+  `
   return code
 }
 
@@ -505,22 +542,13 @@ function buildObject (context, location) {
   }
 
   let functionCode = `
+  `
+
+  functionCode += `
+    // ${schemaRef}
     function ${functionName} (input) {
-      // ${schemaRef}
-  `
-
-  functionCode += `
       const obj = ${toJSON('input')}
-      let json = '${context.wrapObjects ? '{' : ''}'
-      let addComma = false
-  `
-
-  const wrapObjects = context.wrapObjects
-  context.wrapObjects = true
-  functionCode += buildInnerObject(context, location)
-  context.wrapObjects = wrapObjects
-  functionCode += `
-      return json${context.wrapObjects ? ' + \'}\'' : ''}
+      ${buildInnerObject(context, location)}
     }
   `
 
