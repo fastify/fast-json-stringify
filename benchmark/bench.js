@@ -255,6 +255,28 @@ const benchmarks = [
     input: { firstName: 'Max', lastName: 'Power', age: 22 }
   },
   {
+    name: 'simple object with required fields',
+    schema: {
+      title: 'Example Schema',
+      type: 'object',
+      properties: {
+        firstName: {
+          type: 'string'
+        },
+        lastName: {
+          type: ['string', 'null']
+        },
+        age: {
+          description: 'Age in years',
+          type: 'integer',
+          minimum: 0
+        }
+      },
+      required: ['firstName', 'lastName', 'age']
+    },
+    input: { firstName: 'Max', lastName: 'Power', age: 22 }
+  },
+  {
     name: 'object with const string property',
     schema: {
       type: 'object',

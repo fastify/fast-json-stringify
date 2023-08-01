@@ -89,6 +89,7 @@ function build (schema, options) {
     functionsCounter: 0,
     functionsNamesBySchema: new Map(),
     options,
+    wrapObjects: true,
     refResolver: new RefResolver(),
     rootSchemaId: schema.$id || randomUUID(),
     validatorSchemasIds: new Set()
@@ -298,59 +299,96 @@ function buildExtraObjectPropertiesSerializer (context, location) {
 }
 
 function buildInnerObject (context, location) {
+  let code = ''
   const schema = location.schema
   const required = schema.required || []
 
-  let code = ''
-
   const propertiesLocation = location.getPropertyLocation('properties')
-  Object.keys(schema.properties || {}).forEach((key) => {
-    let propertyLocation = propertiesLocation.getPropertyLocation(key)
-    if (propertyLocation.schema.$ref) {
-      propertyLocation = resolveRef(context, location, propertyLocation.schema.$ref)
-    }
 
-    const sanitized = JSON.stringify(key)
-
-    // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
-    // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
-
-    code += `
-      if (obj[${sanitized}] !== undefined) {
-        ${addComma}
-        json += ${JSON.stringify(sanitized + ':')}
-      `
-
-    code += buildValue(context, propertyLocation, `obj[${sanitized}]`)
-
-    const defaultValue = propertyLocation.schema.default
-    if (defaultValue !== undefined) {
-      code += `
-      } else {
-        ${addComma}
-        json += ${JSON.stringify(sanitized + ':' + JSON.stringify(defaultValue))}
-      `
-    } else if (required.includes(key)) {
-      code += `
-      } else {
-        throw new Error('${sanitized} is required!')
-      `
-    }
-
-    code += `
+  const requiredWithDefault = []
+  const requiredWithoutDefault = []
+  if (schema.properties) {
+    for (const key of Object.keys(schema.properties)) {
+      if (required.indexOf(key) === -1) {
+        continue
       }
-    `
-  })
+      let propertyLocation = propertiesLocation.getPropertyLocation(key)
+      if (propertyLocation.schema.$ref) {
+        propertyLocation = resolveRef(context, location, propertyLocation.schema.$ref)
+      }
 
+      const sanitizedKey = JSON.stringify(key)
+
+      // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
+      // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
+      const defaultValue = propertyLocation.schema.default
+      if (defaultValue === undefined) {
+        code += `if (obj[${sanitizedKey}] === undefined) throw new Error('${sanitizedKey} is required!')\n`
+        requiredWithoutDefault.push(key)
+      }
+      requiredWithDefault.push(key)
+    }
+  }
+
+  // handle extraneous required fields
   for (const requiredProperty of required) {
-    if (schema.properties && schema.properties[requiredProperty] !== undefined) continue
+    if (requiredWithDefault.indexOf(requiredProperty) !== -1) continue
     code += `if (obj['${requiredProperty}'] === undefined) throw new Error('"${requiredProperty}" is required!')\n`
+  }
+
+  code += `
+    let addComma = false
+    let json = '${context.wrapObjects ? '{' : ''}'
+  `
+  const wrapObjects = context.wrapObjects
+  context.wrapObjects = true
+
+  if (schema.properties) {
+    for (const key of Object.keys(schema.properties)) {
+      let propertyLocation = propertiesLocation.getPropertyLocation(key)
+      if (propertyLocation.schema.$ref) {
+        propertyLocation = resolveRef(context, location, propertyLocation.schema.$ref)
+      }
+
+      const sanitizedKey = JSON.stringify(key)
+
+      if (requiredWithoutDefault.indexOf(key) !== -1) {
+        code += `
+        ${addComma}
+        json += ${JSON.stringify(sanitizedKey + ':')}
+        ${buildValue(context, propertyLocation, `obj[${sanitizedKey}]`)}
+      `
+      } else {
+        // Using obj['key'] !== undefined instead of obj.hasOwnProperty(prop) for perf reasons,
+        // see https://github.com/mcollina/fast-json-stringify/pull/3 for discussion.
+        code += `
+        if (obj[${sanitizedKey}] !== undefined) {
+          ${addComma}
+          json += ${JSON.stringify(sanitizedKey + ':')}
+          ${buildValue(context, propertyLocation, `obj[${sanitizedKey}]`)}
+        }
+        `
+        const defaultValue = propertyLocation.schema.default
+        if (defaultValue !== undefined) {
+          code += `
+        else {
+          ${addComma}
+          json += ${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))}
+        }
+        `
+        }
+      }
+    }
   }
 
   if (schema.patternProperties || schema.additionalProperties) {
     code += buildExtraObjectPropertiesSerializer(context, location)
   }
 
+  context.wrapObjects = wrapObjects
+  code += `
+  return json${context.wrapObjects ? ' + \'}\'' : ''}
+  `
   return code
 }
 
@@ -507,17 +545,8 @@ function buildObject (context, location) {
   let functionCode = `
     // ${schemaRef}
     function ${functionName} (input) {
-  `
-
-  functionCode += `
       const obj = ${toJSON('input')}
-      let json = '{'
-      let addComma = false
-  `
-
-  functionCode += buildInnerObject(context, location)
-  functionCode += `
-      return json + '}'
+      ${buildInnerObject(context, location)}
     }
   `
 
@@ -833,8 +862,18 @@ function buildValue (context, location, input) {
 
   let code = ''
 
-  if (type === undefined && (schema.anyOf || schema.oneOf)) {
+  if ((type === undefined || type === 'object') && (schema.anyOf || schema.oneOf)) {
     context.validatorSchemasIds.add(location.getSchemaId())
+
+    if (schema.type === 'object') {
+      context.wrapObjects = false
+      const funcName = buildObject(context, location)
+      code += `
+        json += '{'
+        json += ${funcName}(${input})
+        json += ','
+      `
+    }
 
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
     const anyOfLocation = location.getPropertyLocation(type)
@@ -857,6 +896,12 @@ function buildValue (context, location, input) {
     code += `
       else throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
     `
+    if (schema.type === 'object') {
+      code += `
+        json += '}'
+      `
+      context.wrapObjects = true
+    }
     return code
   }
 

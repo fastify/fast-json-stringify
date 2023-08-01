@@ -220,6 +220,75 @@ test('object with nested allOfs', (t) => {
   t.equal(value, '{"id1":1,"id2":2,"id3":3}')
 })
 
+test('object with anyOf nested inside allOf', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'object with anyOf nested inside allOf',
+    type: 'object',
+    allOf: [
+      {
+        required: ['id1', 'obj'],
+        type: 'object',
+        properties: {
+          id1: {
+            type: 'integer'
+          },
+          obj: {
+            type: 'object',
+            properties: {
+              nested: { type: 'string' }
+            }
+          }
+        }
+      },
+      {
+        anyOf: [
+          {
+            type: 'object',
+            properties: {
+              id2: { type: 'string' }
+            },
+            required: ['id2']
+          },
+          {
+            type: 'object',
+            properties: {
+              id3: {
+                type: 'integer'
+              },
+              nestedObj: {
+                type: 'object',
+                properties: {
+                  nested: { type: 'string' }
+                }
+              }
+            },
+            required: ['id3']
+          },
+          {
+            type: 'object',
+            properties: {
+              id4: { type: 'integer' }
+            },
+            required: ['id4']
+          }
+        ]
+      }
+    ]
+  }
+
+  const stringify = build(schema)
+  const value = stringify({
+    id1: 1,
+    id3: 3,
+    id4: 4, // extra prop shouldn't be in result
+    obj: { nested: 'yes' },
+    nestedObj: { nested: 'yes' }
+  })
+  t.equal(value, '{"id1":1,"obj":{"nested":"yes"},"id3":3,"nestedObj":{"nested":"yes"}}')
+})
+
 test('object with $ref in allOf', (t) => {
   t.plan(1)
 
