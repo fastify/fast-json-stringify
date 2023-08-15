@@ -644,3 +644,31 @@ test('object with ref and validated properties', (t) => {
   const stringify = build(schema, { schema: externalSchemas })
   t.equal(stringify({ id: 1, reference: 'hi' }), '{"id":1,"reference":"hi"}')
 })
+
+test('anyOf with a TypedArray', (t) => {
+  t.plan(1)
+
+  const anyOfSchema = {
+    type: 'object',
+    properties: {
+      maybeArray: {
+        anyOf: [{
+          type: 'array',
+          items: {
+            type: 'number'
+          }
+        },
+        {
+          type: 'string'
+        }]
+      }
+    }
+  }
+  const stringify = build(anyOfSchema)
+
+  const typed = new Uint8Array(5)
+  typed.fill(10)
+
+  const value = stringify({ maybeArray: typed })
+  t.equal(value, '{maybeArray: [10,10,10,10,10]}')
+})
