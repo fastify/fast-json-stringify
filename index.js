@@ -27,6 +27,10 @@ const validLargeArrayMechanisms = [
   'json-stringify'
 ]
 
+const supportedTypedArrays = [
+  'Uint8Array'
+]
+
 const addComma = '!addComma && (addComma = true) || (json += \',\')'
 
 function isValidSchema (schema, name) {
@@ -586,7 +590,7 @@ function buildArray (context, location) {
   `
 
   functionCode += `
-    if (!Array.isArray(obj)) {
+    if (!Array.isArray(obj) && !(obj != null && (${supportedTypedArrays.map(type => ' obj.constructor.name === \'' + type + '\' ').join('||')}) )) {
       throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
     }
     const arrayLength = obj.length
