@@ -866,6 +866,7 @@ function buildValue (context, location, input) {
 
   if ((type === undefined || type === 'object') && (schema.anyOf || schema.oneOf)) {
     context.validatorSchemasIds.add(location.getSchemaId())
+    code = 'const errors = []\n'
 
     if (schema.type === 'object') {
       context.wrapObjects = false
@@ -885,8 +886,9 @@ function buildValue (context, location, input) {
       const schemaRef = optionLocation.getSchemaRef()
       const nestedResult = buildValue(context, optionLocation, input)
       code += `
-        ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}))
+        ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}, errors)) {
           ${nestedResult}
+        }
       `
     }
 
@@ -896,7 +898,9 @@ function buildValue (context, location, input) {
     }
 
     code += `
-      else throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
+      else throw Object.assign(new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`), {
+        validationErrors: errors
+      })
     `
     if (schema.type === 'object') {
       code += `
