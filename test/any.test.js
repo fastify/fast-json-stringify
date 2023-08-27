@@ -154,7 +154,7 @@ test('empty schema on anyOf', (t) => {
 })
 
 test('should throw a TypeError with the path to the key of the invalid value /1', (t) => {
-  t.plan(1)
+  t.plan(3)
 
   // any on Foo codepath.
   const schema = {
@@ -186,16 +186,21 @@ test('should throw a TypeError with the path to the key of the invalid value /1'
 
   const stringify = build(schema)
 
-  t.throws(() => stringify({ kind: 'Baz', value: 1 }), Object.assign(new TypeError('The value of \'#\' does not match schema definition.'), {
-    validationErrors: [
-      { message: 'must be equal to one of the allowed values', schemaPath: '#/properties/kind/enum', instancePath: '/kind' },
-      { message: 'must be equal to one of the allowed values', schemaPath: '#/properties/kind/enum', instancePath: '/kind' }
-    ]
-  }))
+  try {
+    stringify({ kind: 'Baz', value: 1 })
+    t.fail('should throw')
+  } catch (err) {
+    t.equal(err.message, 'The value of \'#\' does not match schema definition.')
+    t.same(err.validationErrors, [
+      { message: 'must be equal to one of the allowed values', schemaPath: '#/properties/kind/enum', instancePath: '/kind', keyword: 'enum', params: { allowedValues: ['Foo'] } },
+      { message: 'must be equal to one of the allowed values', schemaPath: '#/properties/kind/enum', instancePath: '/kind', keyword: 'enum', params: { allowedValues: ['Bar'] } }
+    ])
+    t.ok(err instanceof TypeError)
+  }
 })
 
 test('should throw a TypeError with the path to the key of the invalid value /2', (t) => {
-  t.plan(1)
+  t.plan(3)
 
   // any on Foo codepath.
   const schema = {
@@ -232,10 +237,15 @@ test('should throw a TypeError with the path to the key of the invalid value /2'
 
   const stringify = build(schema)
 
-  t.throws(() => stringify({ data: { kind: 'Baz', value: 1 } }), Object.assign(new TypeError('The value of \'#/properties/data\' does not match schema definition.'), {
-    validationErrors: [
-      { message: 'must be equal to one of the allowed values', schemaPath: '#/properties/kind/enum', instancePath: '/kind' },
-      { message: 'must be equal to one of the allowed values', schemaPath: '#/properties/kind/enum', instancePath: '/kind' }
-    ]
-  }))
+  try {
+    stringify({ data: { kind: 'Baz', value: 1 } })
+    t.fail('should throw')
+  } catch (err) {
+    t.equal(err.message, 'The value of \'#/properties/data\' does not match schema definition.')
+    t.same(err.validationErrors, [
+      { message: 'must be equal to one of the allowed values', schemaPath: '#/properties/kind/enum', instancePath: '/kind', keyword: 'enum', params: { allowedValues: ['Foo'] } },
+      { message: 'must be equal to one of the allowed values', schemaPath: '#/properties/kind/enum', instancePath: '/kind', keyword: 'enum', params: { allowedValues: ['Bar'] } }
+    ])
+    t.ok(err instanceof TypeError)
+  }
 })
