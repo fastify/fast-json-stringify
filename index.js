@@ -866,7 +866,7 @@ function buildValue (context, location, input) {
 
   if ((type === undefined || type === 'object') && (schema.anyOf || schema.oneOf)) {
     context.validatorSchemasIds.add(location.getSchemaId())
-    code = 'const errors = []\n'
+    code += 'const errors = []\n'
 
     if (schema.type === 'object') {
       context.wrapObjects = false
