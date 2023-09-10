@@ -4,7 +4,7 @@
 
 const merge = require('@fastify/deepmerge')()
 const clone = require('rfdc')({ proto: true })
-const { randomUUID } = require('crypto')
+const { randomUUID } = require('node:crypto')
 
 const validate = require('./lib/schema-validator')
 const Serializer = require('./lib/serializer')

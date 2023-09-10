@@ -1,6 +1,6 @@
 'use strict'
 
-const { spawn } = require('child_process')
+const { spawn } = require('node:child_process')
 
 const cliSelect = require('cli-select')
 const simpleGit = require('simple-git')
