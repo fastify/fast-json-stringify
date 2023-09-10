@@ -3,8 +3,8 @@
 const Ajv = require('ajv')
 const standaloneCode = require('ajv/dist/standalone').default
 const ajvFormats = require('ajv-formats')
-const fs = require('fs')
-const path = require('path')
+const fs = require('node:fs')
+const path = require('node:path')
 
 const ajv = new Ajv({
   addUsedSchema: false,

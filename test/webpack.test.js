@@ -2,7 +2,7 @@
 
 const test = require('tap').test
 const webpack = require('webpack')
-const path = require('path')
+const path = require('node:path')
 
 test('the library should work with webpack', async (t) => {
   t.plan(1)

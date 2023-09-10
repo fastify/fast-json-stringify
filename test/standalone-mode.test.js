@@ -2,8 +2,8 @@
 
 const test = require('tap').test
 const fjs = require('..')
-const fs = require('fs')
-const path = require('path')
+const fs = require('node:fs')
+const path = require('node:path')
 
 function build (opts, schema) {
   return fjs(schema || {
