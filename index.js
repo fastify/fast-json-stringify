@@ -900,6 +900,8 @@ function buildValue (context, location, input) {
     `
     if (schema.type === 'object') {
       code += `
+        if (json.endsWith(','))
+          json = json.substr(0, json.length - 1)
         json += '}'
       `
       context.wrapObjects = true
