@@ -14,7 +14,7 @@ jobs:
       PR-BENCH: ${{ steps.benchmark-pr.outputs.BENCH_RESULT }}
       MASTER-BENCH: ${{ steps.benchmark-master.outputs.BENCH_RESULT }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
           ref: ${{github.event.pull_request.head.sha}}
@@ -39,7 +39,7 @@ jobs:
           echo "::set-output name=BENCH_RESULT::$content"
 
       # master benchmark
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: 'master'
 
