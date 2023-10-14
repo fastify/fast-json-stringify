@@ -76,6 +76,7 @@ function build (schema, options) {
     functionsCounter: 0,
     functionsNamesBySchema: new Map(),
     options,
+    addComma: false,
     wrapObjects: true,
     refResolver: new RefResolver(),
     rootSchemaId: schema.$id || randomUUID(),
@@ -336,11 +337,12 @@ function buildInnerObject (context, location) {
   }
 
   code += `
-    let addComma = false
+    let addComma = ${context.addComma ?? false}
     let json = '${context.wrapObjects ? '{' : ''}'
   `
   const wrapObjects = context.wrapObjects
   context.wrapObjects = true
+  context.addComma = false
 
   if (schema.properties) {
     for (const key of Object.keys(schema.properties)) {
@@ -874,16 +876,11 @@ function buildValue (context, location, input) {
         json += '{'
         json += ${funcName}(${input})       
       `
+      context.addComma = true
     }
 
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
     const anyOfLocation = location.getPropertyLocation(type)
-
-    if (schema.type === 'object' && location.schema[type].length > 0) {
-      code += `
-        json += ','
-      `
-    }
 
     for (let index = 0; index < location.schema[type].length; index++) {
       const optionLocation = anyOfLocation.getPropertyLocation(index)
@@ -893,6 +890,9 @@ function buildValue (context, location, input) {
         ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}))
           ${nestedResult}
       `
+      if (schema.type === 'object') {
+        context.addComma = true
+      }
     }
 
     let schemaRef = location.getSchemaRef()
@@ -908,6 +908,7 @@ function buildValue (context, location, input) {
         json += '}'
       `
       context.wrapObjects = true
+      context.addComma = false
     }
     return code
   }
