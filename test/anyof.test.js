@@ -644,3 +644,22 @@ test('object with ref and validated properties', (t) => {
   const stringify = build(schema, { schema: externalSchemas })
   t.equal(stringify({ id: 1, reference: 'hi' }), '{"id":1,"reference":"hi"}')
 })
+
+test('anyOf required props', (t) => {
+  t.plan(3)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      prop1: { type: 'string' },
+      prop2: { type: 'string' },
+      prop3: { type: 'string' }
+    },
+    required: ['prop1'],
+    anyOf: [{ required: ['prop2'] }, { required: ['prop3'] }]
+  }
+  const stringify = build(schema)
+  t.equal(stringify({ prop1: 'test', prop2: 'test2' }), '{"prop1":"test","prop2":"test2"}')
+  t.equal(stringify({ prop1: 'test', prop3: 'test3' }), '{"prop1":"test","prop3":"test3"}')
+  t.equal(stringify({ prop1: 'test', prop2: 'test2', prop3: 'test3' }), '{"prop1":"test","prop2":"test2","prop3":"test3"}')
+})
