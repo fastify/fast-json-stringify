@@ -872,13 +872,18 @@ function buildValue (context, location, input) {
       const funcName = buildObject(context, location)
       code += `
         json += '{'
-        json += ${funcName}(${input})
-        json += ','
+        json += ${funcName}(${input})       
       `
     }
 
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
     const anyOfLocation = location.getPropertyLocation(type)
+
+    if (schema.type === 'object' && location.schema[type].length > 0) {
+      code += `
+        json += ','
+      `
+    }
 
     for (let index = 0; index < location.schema[type].length; index++) {
       const optionLocation = anyOfLocation.getPropertyLocation(index)
