@@ -76,7 +76,6 @@ function build (schema, options) {
     functionsCounter: 0,
     functionsNamesBySchema: new Map(),
     options,
-    addComma: false,
     wrapObjects: true,
     refResolver: new RefResolver(),
     rootSchemaId: schema.$id || randomUUID(),
@@ -337,12 +336,11 @@ function buildInnerObject (context, location) {
   }
 
   code += `
-    let addComma = ${context.addComma ?? false}
+    let addComma = runtimeContext?.addComma ?? false
     let json = '${context.wrapObjects ? '{' : ''}'
   `
   const wrapObjects = context.wrapObjects
   context.wrapObjects = true
-  context.addComma = false
 
   if (schema.properties) {
     for (const key of Object.keys(schema.properties)) {
@@ -388,6 +386,9 @@ function buildInnerObject (context, location) {
 
   context.wrapObjects = wrapObjects
   code += `
+  if (runtimeContext !== undefined) {
+    runtimeContext.addComma = addComma
+  }
   return json${context.wrapObjects ? ' + \'}\'' : ''}
   `
   return code
@@ -548,7 +549,7 @@ function buildObject (context, location) {
 
   functionCode += `
     // ${schemaRef}
-    function ${functionName} (input) {
+    function ${functionName} (input, runtimeContext) {
       const obj = ${toJSON('input')}
       ${buildInnerObject(context, location)}
     }
@@ -769,7 +770,7 @@ function buildMultiTypeSerializer (context, location, input) {
   return code
 }
 
-function buildSingleTypeSerializer (context, location, input) {
+function buildSingleTypeSerializer (context, location, input, runtimeContextName) {
   const schema = location.schema
 
   switch (schema.type) {
@@ -794,7 +795,7 @@ function buildSingleTypeSerializer (context, location, input) {
       return `json += serializer.asBoolean(${input})`
     case 'object': {
       const funcName = buildObject(context, location)
-      return `json += ${funcName}(${input})`
+      return `json += ${funcName}(${input}${runtimeContextName !== undefined ? `, ${runtimeContextName}` : ''})`
     }
     case 'array': {
       const funcName = buildArray(context, location)
@@ -834,7 +835,7 @@ function buildConstSerializer (location, input) {
   return code
 }
 
-function buildValue (context, location, input) {
+function buildValue (context, location, input, runtimeContextName) {
   let schema = location.schema
 
   if (typeof schema === 'boolean') {
@@ -868,15 +869,16 @@ function buildValue (context, location, input) {
 
   if ((type === undefined || type === 'object') && (schema.anyOf || schema.oneOf)) {
     context.validatorSchemasIds.add(location.getSchemaId())
-
+    let nestedRuntimeContextName
     if (schema.type === 'object') {
       context.wrapObjects = false
       const funcName = buildObject(context, location)
+      nestedRuntimeContextName = `runtimeContext${context.functionsCounter}`
       code += `
+        let ${nestedRuntimeContextName} = {addComma: false}
         json += '{'
-        json += ${funcName}(${input})       
+        json += ${funcName}(${input}, ${nestedRuntimeContextName})       
       `
-      context.addComma = true
     }
 
     const type = schema.anyOf ? 'anyOf' : 'oneOf'
@@ -885,14 +887,11 @@ function buildValue (context, location, input) {
     for (let index = 0; index < location.schema[type].length; index++) {
       const optionLocation = anyOfLocation.getPropertyLocation(index)
       const schemaRef = optionLocation.getSchemaRef()
-      const nestedResult = buildValue(context, optionLocation, input)
+      const nestedResult = buildValue(context, optionLocation, input, nestedRuntimeContextName)
       code += `
         ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}))
           ${nestedResult}
       `
-      if (schema.type === 'object') {
-        context.addComma = true
-      }
     }
 
     let schemaRef = location.getSchemaRef()
@@ -908,7 +907,6 @@ function buildValue (context, location, input) {
         json += '}'
       `
       context.wrapObjects = true
-      context.addComma = false
     }
     return code
   }
@@ -927,7 +925,7 @@ function buildValue (context, location, input) {
   } else if (Array.isArray(type)) {
     code += buildMultiTypeSerializer(context, location, input)
   } else {
-    code += buildSingleTypeSerializer(context, location, input)
+    code += buildSingleTypeSerializer(context, location, input, runtimeContextName)
   }
 
   if (nullable) {

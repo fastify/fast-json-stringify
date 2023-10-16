@@ -663,3 +663,30 @@ test('anyOf required props', (t) => {
   t.equal(stringify({ prop1: 'test', prop3: 'test3' }), '{"prop1":"test","prop3":"test3"}')
   t.equal(stringify({ prop1: 'test', prop2: 'test2', prop3: 'test3' }), '{"prop1":"test","prop2":"test2","prop3":"test3"}')
 })
+
+test('anyOf required props', (t) => {
+  t.plan(3)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      prop1: { type: 'string' }
+    },
+    anyOf: [
+      {
+        properties: {
+          prop2: { type: 'string' }
+        }
+      },
+      {
+        properties: {
+          prop3: { type: 'string' }
+        }
+      }
+    ]
+  }
+  const stringify = build(schema)
+  t.equal(stringify({ prop1: 'test1' }), '{"prop1":"test1"}')
+  t.equal(stringify({ prop2: 'test2' }), '{"prop2":"test2"}')
+  t.equal(stringify({ prop1: 'test1', prop2: 'test2' }), '{"prop1":"test1","prop2":"test2"}')
+})
