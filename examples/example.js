@@ -1,3 +1,5 @@
+'use strict'
+
 const fastJson = require('..')
 const stringify = fastJson({
   title: 'Example Schema',
