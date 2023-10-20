@@ -1377,7 +1377,10 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "extrenal#/definitions/projectId"')
+      t.equal(
+        err.message,
+        'Cannot resolve ref "extrenal#/definitions/projectId". Schema with id "extrenal" is not found.'
+      )
     }
   })
 
@@ -2076,7 +2079,11 @@ test('should throw an Error if two non-identical schemas with same id are provid
     ]
   }
 
-  t.throws(() => build(schema), new Error('There is already another schema with id inner_schema'))
+  try {
+    build(schema)
+  } catch (err) {
+    t.equal(err.message, 'There is already another schema with id "inner_schema".')
+  }
 })
 
 test('ref internal - throw if schema has definition twice with different shape', (t) => {
@@ -2115,5 +2122,9 @@ test('ref internal - throw if schema has definition twice with different shape',
     }
   }
 
-  t.throws(() => build(schema), Error('There is already another schema with id test##uri'))
+  try {
+    build(schema)
+  } catch (err) {
+    t.equal(err.message, 'There is already another anchor "#uri" in a schema "test".')
+  }
 })
