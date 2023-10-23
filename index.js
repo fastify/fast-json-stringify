@@ -5,11 +5,11 @@
 const merge = require('@fastify/deepmerge')()
 const clone = require('rfdc')({ proto: true })
 const { randomUUID } = require('node:crypto')
+const { RefResolver } = require('json-schema-ref-resolver')
 
 const validate = require('./lib/schema-validator')
 const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
-const RefResolver = require('./lib/ref-resolver')
 const Location = require('./lib/location')
 
 let largeArraySize = 2e4
@@ -53,8 +53,7 @@ function resolveRef (context, location, ref) {
   const jsonPointer = ref.slice(hashIndex) || '#'
 
   const schema = context.refResolver.getSchema(schemaId, jsonPointer)
-
-  if (schema === undefined) {
+  if (schema === null) {
     throw new Error(`Cannot find reference "${ref}"`)
   }
 
@@ -64,6 +63,13 @@ function resolveRef (context, location, ref) {
   }
 
   return newLocation
+}
+
+function getSchemaId (schema, rootSchemaId) {
+  if (schema.$id && schema.$id.charAt(0) !== '#') {
+    return schema.$id
+  }
+  return rootSchemaId
 }
 
 function build (schema, options) {
@@ -82,12 +88,19 @@ function build (schema, options) {
     validatorSchemasIds: new Set()
   }
 
-  context.refResolver.addSchema(schema, context.rootSchemaId)
+  const schemaId = getSchemaId(schema, context.rootSchemaId)
+  if (!context.refResolver.hasSchema(schemaId)) {
+    context.refResolver.addSchema(schema, context.rootSchemaId)
+  }
 
   if (options.schema) {
-    for (const key of Object.keys(options.schema)) {
-      isValidSchema(options.schema[key], key)
-      context.refResolver.addSchema(options.schema[key], key)
+    for (const key in options.schema) {
+      const schema = options.schema[key]
+      const schemaId = getSchemaId(schema, key)
+      if (!context.refResolver.hasSchema(schemaId)) {
+        isValidSchema(schema, key)
+        context.refResolver.addSchema(schema, key)
+      }
     }
   }
 
