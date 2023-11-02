@@ -82,6 +82,26 @@ test('schema with const string and no input', (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
+test('schema with const string that contains \'', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: { const: "'bar'" }
+    }
+  }
+
+  const validate = validator(schema)
+  const stringify = build(schema)
+  const output = stringify({
+    foo: "'bar'"
+  })
+
+  t.equal(output, '{"foo":"\'bar\'"}')
+  t.ok(validate(JSON.parse(output)), 'valid schema')
+})
+
 test('schema with const number', (t) => {
   t.plan(2)
 

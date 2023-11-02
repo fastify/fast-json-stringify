@@ -12,6 +12,8 @@ const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
 const Location = require('./lib/location')
 
+const SINGLE_TICK = /'/g
+
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
 
@@ -834,7 +836,7 @@ function buildConstSerializer (location, input) {
     `
   }
 
-  code += `json += '${JSON.stringify(schema.const)}'`
+  code += `json += '${JSON.stringify(schema.const).replace(SINGLE_TICK, "\\'")}'`
 
   if (hasNullType) {
     code += `
