@@ -834,7 +834,7 @@ function buildConstSerializer (location, input) {
     `
   }
 
-  code += `json += '${JSON.stringify(schema.const)}'`
+  code += `json += '${JSON.stringify(schema.const).replaceAll("'", "\\'")}'`
 
   if (hasNullType) {
     code += `
