@@ -1,6 +1,6 @@
 'use strict'
 
-const { workerData: benchmark, parentPort } = require('node:worker_threads')
+const { workerData: benchmark, parentPort } = require('worker_threads')
 
 const Benchmark = require('benchmark')
 Benchmark.options.minSamples = 100

@@ -1,7 +1,7 @@
 'use strict'
 
-const path = require('node:path')
-const { Worker } = require('node:worker_threads')
+const path = require('path')
+const { Worker } = require('worker_threads')
 
 const BENCH_THREAD_PATH = path.join(__dirname, 'bench-thread.js')
 

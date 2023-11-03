@@ -692,7 +692,7 @@ The standalone mode is used to compile the code that can be directly run by `nod
 itself. You need to have `fast-json-stringify` installed for the standalone code to work.
 
 ```js
-const fs = require('node:fs')
+const fs = require('fs')
 const code = fastJson({
   title: 'default string',
   type: 'object',
