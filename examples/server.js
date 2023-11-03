@@ -1,6 +1,6 @@
 'use strict'
 
-const http = require('node:http')
+const http = require('http')
 
 const stringify = require('fast-json-stringify')({
   type: 'object',
