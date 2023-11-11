@@ -847,6 +847,33 @@ function buildConstSerializer (location, input) {
   return code
 }
 
+function buildSingleEnumSerializer (location, input) {
+  const schema = location.schema
+  const type = schema.type
+
+  const hasNullType = Array.isArray(type) && type.includes('null')
+
+  let code = ''
+
+  if (hasNullType) {
+    code += `
+      if (${input} === null) {
+        json += 'null'
+      } else {
+    `
+  }
+
+  code += `json += '${JSON.stringify(schema.enum[0]).replace(SINGLE_TICK, "\\'")}'`
+
+  if (hasNullType) {
+    code += `
+      }
+    `
+  }
+
+  return code
+}
+
 function buildValue (context, location, input) {
   let schema = location.schema
 
@@ -933,6 +960,8 @@ function buildValue (context, location, input) {
 
   if (schema.const !== undefined) {
     code += buildConstSerializer(location, input)
+  } else if (schema.enum && Array.isArray(schema.enum) && schema.enum.length === 1) {
+    code += buildSingleEnumSerializer(location, input)
   } else if (Array.isArray(type)) {
     code += buildMultiTypeSerializer(context, location, input)
   } else {
