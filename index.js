@@ -4,7 +4,6 @@
 
 const merge = require('@fastify/deepmerge')()
 const clone = require('rfdc')({ proto: true })
-const { randomUUID } = require('crypto')
 const { RefResolver } = require('json-schema-ref-resolver')
 
 const validate = require('./lib/schema-validator')
@@ -30,6 +29,8 @@ const validLargeArrayMechanisms = [
 ]
 
 const addComma = '!addComma && (addComma = true) || (json += \',\')'
+
+let schemaIdCounter = 0
 
 function isValidSchema (schema, name) {
   if (!validate(schema)) {
@@ -86,7 +87,7 @@ function build (schema, options) {
     options,
     wrapObjects: true,
     refResolver: new RefResolver(),
-    rootSchemaId: schema.$id || randomUUID(),
+    rootSchemaId: schema.$id || `__fjs_root_${schemaIdCounter++}`,
     validatorSchemasIds: new Set()
   }
 
@@ -500,7 +501,7 @@ function mergeAllOfSchema (context, location, schema, mergedSchema) {
   }
   delete mergedSchema.allOf
 
-  mergedSchema.$id = `merged_${randomUUID()}`
+  mergedSchema.$id = `__fjs_merged_${schemaIdCounter++}`
   context.refResolver.addSchema(mergedSchema)
   location.addMergedSchema(mergedSchema, mergedSchema.$id)
 }
