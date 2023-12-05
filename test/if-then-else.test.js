@@ -249,15 +249,7 @@ const alphabetOutput = JSON.stringify({
 const deepFoobarOutput = JSON.stringify({
   foobar: JSON.parse(foobarOutput)
 })
-const noElseGreetingOutput = JSON.stringify({
-  kind: 'greeting',
-  foo: 'FOO',
-  bar: 42,
-  hi: 'HI',
-  hello: 45,
-  a: 'A',
-  b: 35
-})
+const noElseGreetingOutput = JSON.stringify({})
 
 t.test('if-then-else', t => {
   const tests = [

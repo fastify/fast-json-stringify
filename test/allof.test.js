@@ -553,6 +553,58 @@ test('allof with local anchor reference', (t) => {
   t.equal(stringify(data), JSON.stringify(data))
 })
 
+test('allOf: multiple nested $ref properties', (t) => {
+  t.plan(2)
+
+  const externalSchema1 = {
+    $id: 'externalSchema1',
+    oneOf: [
+      { $ref: '#/definitions/id1' }
+    ],
+    definitions: {
+      id1: {
+        type: 'object',
+        properties: {
+          id1: {
+            type: 'integer'
+          }
+        },
+        additionalProperties: false
+      }
+    }
+  }
+
+  const externalSchema2 = {
+    $id: 'externalSchema2',
+    oneOf: [
+      { $ref: '#/definitions/id2' }
+    ],
+    definitions: {
+      id2: {
+        type: 'object',
+        properties: {
+          id2: {
+            type: 'integer'
+          }
+        },
+        additionalProperties: false
+      }
+    }
+  }
+
+  const schema = {
+    allOf: [
+      { $ref: 'externalSchema1' },
+      { $ref: 'externalSchema2' }
+    ]
+  }
+
+  const stringify = build(schema, { schema: [externalSchema1, externalSchema2] })
+
+  t.equal(stringify({ id1: 1 }), JSON.stringify({ id1: 1 }))
+  t.equal(stringify({ id2: 2 }), JSON.stringify({ id2: 2 }))
+})
+
 test('allOf: throw Error if types mismatch ', (t) => {
   t.plan(1)
 
@@ -599,4 +651,40 @@ test('allOf: throw Error if nullable mismatch /2', (t) => {
     ]
   }
   t.throws(() => build(schema), new Error('allOf schemas have different nullable values'))
+})
+
+test('recursive nested allOfs', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        additionalProperties: false,
+        allOf: [{ $ref: '#' }]
+      }
+    }
+  }
+
+  const data = { foo: {} }
+  const stringify = build(schema)
+  t.equal(stringify(data), JSON.stringify(data))
+})
+
+test('recursive nested allOfs', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        additionalProperties: false,
+        allOf: [{ allOf: [{ $ref: '#' }] }]
+      }
+    }
+  }
+
+  const data = { foo: {} }
+  const stringify = build(schema)
+  t.equal(stringify(data), JSON.stringify(data))
 })
