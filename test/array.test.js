@@ -23,7 +23,7 @@ test('error on invalid largeArrayMechanism', (t) => {
   }), Error('Unsupported large array mechanism invalid'))
 })
 
-function buildTest (schema, toStringify, options) {
+function buildTest (schema, toStringify, options, isOneWay) {
   test(`render a ${schema.title} as JSON`, (t) => {
     t.plan(3)
 
@@ -31,11 +31,35 @@ function buildTest (schema, toStringify, options) {
     const stringify = build(schema, options)
     const output = stringify(toStringify)
 
-    t.same(JSON.parse(output), toStringify)
+    t.same(JSON.parse(output), JSON.parse(JSON.stringify(toStringify)))
     t.equal(output, JSON.stringify(toStringify))
     t.ok(validate(JSON.parse(output)), 'valid schema')
   })
 }
+
+buildTest({
+  title: 'dates tuple',
+  type: 'object',
+  properties: {
+    dates: {
+      type: 'array',
+      minItems: 2,
+      maxItems: 2,
+      items: [
+        {
+          type: 'string',
+          format: 'date-time'
+        },
+        {
+          type: 'string',
+          format: 'date-time'
+        }
+      ]
+    }
+  }
+}, {
+  dates: [new Date(1), new Date(2)]
+})
 
 buildTest({
   title: 'string array',
