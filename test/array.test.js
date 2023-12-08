@@ -23,7 +23,7 @@ test('error on invalid largeArrayMechanism', (t) => {
   }), Error('Unsupported large array mechanism invalid'))
 })
 
-function buildTest (schema, toStringify, options, isOneWay) {
+function buildTest (schema, toStringify, options) {
   test(`render a ${schema.title} as JSON`, (t) => {
     t.plan(3)
 
