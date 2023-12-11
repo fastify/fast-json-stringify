@@ -93,7 +93,6 @@ function build (schema, options) {
     functionsCounter: 0,
     functionsNamesBySchema: new Map(),
     options,
-    wrapObjects: true,
     refResolver: new RefResolver(),
     rootSchemaId: schema.$id || `__fjs_root_${schemaIdCounter++}`,
     validatorSchemasIds: new Set()
@@ -361,10 +360,8 @@ function buildInnerObject (context, location) {
 
   code += `
     let addComma = false
-    let json = '${context.wrapObjects ? '{' : ''}'
+    let json = '{'
   `
-  const wrapObjects = context.wrapObjects
-  context.wrapObjects = true
 
   if (schema.properties) {
     for (const key of Object.keys(schema.properties)) {
@@ -408,9 +405,8 @@ function buildInnerObject (context, location) {
     code += buildExtraObjectPropertiesSerializer(context, location)
   }
 
-  context.wrapObjects = wrapObjects
   code += `
-  return json${context.wrapObjects ? ' + \'}\'' : ''}
+    return json + '}'
   `
   return code
 }
