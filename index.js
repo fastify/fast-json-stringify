@@ -4,10 +4,11 @@
 
 const { RefResolver } = require('json-schema-ref-resolver')
 
-const validate = require('./lib/schema-validator')
 const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
 const Location = require('./lib/location')
+const validate = require('./lib/schema-validator')
+const mergeSchemas = require('./lib/merge-schemas')
 
 const SINGLE_TICK = /'/g
 
@@ -423,111 +424,16 @@ function mergeLocations (context, mergedSchemaId, mergedLocations) {
     }
   }
 
-  const mergedSchema = {}
-  const mergedLocation = new Location(mergedSchema, mergedSchemaId)
-
+  const mergedSchemas = []
   for (const location of mergedLocations) {
     const schema = cloneOriginSchema(location.schema, location.schemaId)
-    for (const key in schema) {
-      const value = schema[key]
+    delete schema.$id
 
-      if (key === '$id') continue
-      if (key === 'allOf') {
-        if (mergedSchema.allOf === undefined) {
-          mergedSchema.allOf = []
-        }
-        mergedSchema.allOf.push(...value)
-      } else if (key === 'anyOf') {
-        if (mergedSchema.anyOf === undefined) {
-          mergedSchema.anyOf = []
-        }
-        mergedSchema.anyOf.push(...value)
-      } else if (key === 'oneOf') {
-        if (mergedSchema.oneOf === undefined) {
-          mergedSchema.oneOf = []
-        }
-        mergedSchema.oneOf.push(...value)
-      } else if (key === 'required') {
-        if (mergedSchema.required === undefined) {
-          mergedSchema.required = []
-        }
-        mergedSchema.required.push(...value)
-      } else if (key === 'properties') {
-        if (mergedSchema.properties === undefined) {
-          mergedSchema.properties = {}
-        }
-        Object.assign(mergedSchema.properties, value)
-      } else if (key === 'patternProperties') {
-        if (mergedSchema.patternProperties === undefined) {
-          mergedSchema.patternProperties = {}
-        }
-        Object.assign(mergedSchema.patternProperties, value)
-      } else if (key === 'additionalProperties') {
-        if (mergedSchema.additionalProperties === false || value === false) {
-          mergedSchema.additionalProperties = false
-          continue
-        }
-        if (mergedSchema.additionalProperties === undefined) {
-          mergedSchema.additionalProperties = {}
-        }
-        Object.assign(mergedSchema.additionalProperties, value)
-      } else if (key === 'type') {
-        if (mergedSchema.type !== undefined && mergedSchema.type !== value) {
-          throw new Error('allOf schemas have different type values')
-        }
-        mergedSchema.type = value
-      } else if (key === 'format') {
-        if (mergedSchema.format !== undefined && mergedSchema.format !== value) {
-          throw new Error('allOf schemas have different format values')
-        }
-        mergedSchema.format = value
-      } else if (key === 'nullable') {
-        if (mergedSchema.nullable !== undefined && mergedSchema.nullable !== value) {
-          throw new Error('allOf schemas have different nullable values')
-        }
-        mergedSchema.nullable = value
-      } else if (key === 'definitions') {
-        if (mergedSchema.definitions === undefined) {
-          mergedSchema.definitions = {}
-        }
-        Object.assign(mergedSchema.definitions, value)
-      } else if (key === 'items') {
-        if (mergedSchema.items === undefined) {
-          mergedSchema.items = {}
-        }
-        if (Array.isArray(value)) {
-          mergedSchema.items = value
-        } else {
-          Object.assign(mergedSchema.items, value)
-        }
-      } else if (key === 'const') {
-        if (mergedSchema.const !== undefined && mergedSchema.const !== value) {
-          throw new Error('allOf schemas have different const values')
-        }
-        mergedSchema.const = value
-      } else if (key === 'enum') {
-        if (mergedSchema.enum === undefined) {
-          mergedSchema.enum = []
-        }
-        mergedSchema.enum.push(...value)
-      } else if (key === 'if') {
-        if (mergedSchema.if !== undefined && mergedSchema.if !== value) {
-          throw new Error('allOf schemas have different if values')
-        }
-        mergedSchema.if = value
-      } else if (key === 'then') {
-        if (mergedSchema.then !== undefined && mergedSchema.then !== value) {
-          throw new Error('allOf schemas have different then values')
-        }
-        mergedSchema.then = value
-      } else if (key === 'else') {
-        if (mergedSchema.else !== undefined && mergedSchema.else !== value) {
-          throw new Error('allOf schemas have different else values')
-        }
-        mergedSchema.else = value
-      }
-    }
+    mergedSchemas.push(schema)
   }
+
+  const mergedSchema = mergeSchemas(mergedSchemas)
+  const mergedLocation = new Location(mergedSchema, mergedSchemaId)
 
   context.refResolver.addSchema(mergedSchema, mergedSchemaId)
   return mergedLocation

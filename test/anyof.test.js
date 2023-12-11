@@ -717,7 +717,7 @@ test('recursive nested anyOfs', (t) => {
     properties: {
       foo: {
         additionalProperties: false,
-        allOf: [{ allOf: [{ $ref: '#' }] }]
+        anyOf: [{ anyOf: [{ $ref: '#' }] }]
       }
     }
   }
@@ -725,4 +725,43 @@ test('recursive nested anyOfs', (t) => {
   const data = { foo: {} }
   const stringify = build(schema)
   t.equal(stringify(data), JSON.stringify(data))
+})
+
+test('external recursive anyOfs', (t) => {
+  t.plan(1)
+
+  const externalSchema = {
+    type: 'object',
+    properties: {
+      foo: {
+        properties: {
+          bar: { type: 'string' }
+        },
+        anyOf: [{ $ref: '#' }]
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      a: { $ref: 'externalSchema#/properties/foo' },
+      b: { $ref: 'externalSchema#/properties/foo' }
+    }
+  }
+
+  const data = {
+    a: {
+      foo: {},
+      bar: '42',
+      baz: 42
+    },
+    b: {
+      foo: {},
+      bar: '42',
+      baz: 42
+    }
+  }
+  const stringify = build(schema, { schema: { externalSchema } })
+  t.equal(stringify(data), '{"a":{"bar":"42","foo":{}},"b":{"bar":"42","foo":{}}}')
 })

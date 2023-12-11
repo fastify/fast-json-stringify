@@ -593,7 +593,7 @@ test('allOf: multiple nested $ref properties', (t) => {
   }
 
   const schema = {
-    allOf: [
+    anyOf: [
       { $ref: 'externalSchema1' },
       { $ref: 'externalSchema2' }
     ]
@@ -614,7 +614,7 @@ test('allOf: throw Error if types mismatch ', (t) => {
       { type: 'number' }
     ]
   }
-  t.throws(() => build(schema), new Error('allOf schemas have different type values'))
+  t.throws(() => build(schema), new Error('Failed to merge schemas on "type".'))
 })
 
 test('allOf: throw Error if format mismatch ', (t) => {
@@ -626,7 +626,7 @@ test('allOf: throw Error if format mismatch ', (t) => {
       { format: 'time' }
     ]
   }
-  t.throws(() => build(schema), new Error('allOf schemas have different format values'))
+  t.throws(() => build(schema), new Error('Failed to merge schemas on "format".'))
 })
 
 test('allOf: throw Error if nullable mismatch /1', (t) => {
@@ -638,7 +638,7 @@ test('allOf: throw Error if nullable mismatch /1', (t) => {
       { nullable: false }
     ]
   }
-  t.throws(() => build(schema), new Error('allOf schemas have different nullable values'))
+  t.throws(() => build(schema), new Error('Failed to merge schemas on "nullable".'))
 })
 
 test('allOf: throw Error if nullable mismatch /2', (t) => {
@@ -650,7 +650,7 @@ test('allOf: throw Error if nullable mismatch /2', (t) => {
       { nullable: true }
     ]
   }
-  t.throws(() => build(schema), new Error('allOf schemas have different nullable values'))
+  t.throws(() => build(schema), new Error('Failed to merge schemas on "nullable".'))
 })
 
 test('recursive nested allOfs', (t) => {
@@ -687,4 +687,43 @@ test('recursive nested allOfs', (t) => {
   const data = { foo: {} }
   const stringify = build(schema)
   t.equal(stringify(data), JSON.stringify(data))
+})
+
+test('external recursive allOfs', (t) => {
+  t.plan(1)
+
+  const externalSchema = {
+    type: 'object',
+    properties: {
+      foo: {
+        properties: {
+          bar: { type: 'string' }
+        },
+        allOf: [{ $ref: '#' }]
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      a: { $ref: 'externalSchema#/properties/foo' },
+      b: { $ref: 'externalSchema#/properties/foo' }
+    }
+  }
+
+  const data = {
+    a: {
+      foo: {},
+      bar: '42',
+      baz: 42
+    },
+    b: {
+      foo: {},
+      bar: '42',
+      baz: 42
+    }
+  }
+  const stringify = build(schema, { schema: { externalSchema } })
+  t.equal(stringify(data), '{"a":{"bar":"42","foo":{}},"b":{"bar":"42","foo":{}}}')
 })
