@@ -681,7 +681,15 @@ function buildArrayTypeCondition (type, accessor) {
       condition = `obj${accessor} === null`
       break
     case 'string':
-      condition = `typeof obj${accessor} === 'string'`
+      condition = `typeof obj${accessor} === 'string' ||
+      obj${accessor} === null ||
+      obj${accessor} instanceof Date ||
+      obj${accessor} instanceof RegExp ||
+      (
+        typeof obj${accessor} === "object" &&
+        typeof obj${accessor}.toString === "function" &&
+        obj${accessor}.toString !== Object.prototype.toString
+      )`
       break
     case 'integer':
       condition = `Number.isInteger(obj${accessor})`
@@ -741,8 +749,7 @@ function buildMultiTypeSerializer (context, location, input) {
             (
               typeof ${input} === "object" &&
               typeof ${input}.toString === "function" &&
-              ${input}.toString !== Object.prototype.toString &&
-              !(${input} instanceof Date)
+              ${input}.toString !== Object.prototype.toString
             )
           )
             ${nestedResult}
