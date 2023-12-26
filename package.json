@@ -1,6 +1,6 @@
 {
   "name": "fast-json-stringify",
-  "version": "5.9.1",
+  "version": "5.9.2",
   "description": "Stringify your JSON at max speed",
   "main": "index.js",
   "type": "commonjs",
@@ -16,7 +16,10 @@
     "test:unit": "tap",
     "test": "npm run test:unit && npm run test:typescript"
   },
-  "precommit": ["lint", "test"],
+  "precommit": [
+    "lint",
+    "test"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fastify/fast-json-stringify.git"
