@@ -547,3 +547,24 @@ test('throw an error if none of types matches', (t) => {
   const stringify = build(schema)
   t.throws(() => stringify({ data: 'string' }), 'The value "string" does not match schema definition.')
 })
+
+test('typedArray Uint8Array', (t) => {
+  t.plan(1)
+  const schema = {
+    type: 'object',
+    properties: {
+      arr: {
+        type: 'array',
+        items: {
+          type: 'number'
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const arr = new Uint8Array(5)
+  arr.fill(5)
+
+  t.equal(stringify({ arr }), '{"arr":[5,5,5,5,5]}')
+})

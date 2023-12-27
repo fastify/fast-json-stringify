@@ -490,3 +490,31 @@ test('all array items does not match oneOf types', (t) => {
 
   t.throws(() => stringify({ data: [null, false, true, undefined, [], {}] }))
 })
+
+test('oneOf with a TypedArray', (t) => {
+  t.plan(1)
+
+  const oneOfSchema = {
+    type: 'object',
+    properties: {
+      maybeArray: {
+        oneOf: [{
+          type: 'array',
+          items: {
+            type: 'number'
+          }
+        },
+        {
+          type: 'string'
+        }]
+      }
+    }
+  }
+  const stringify = build(oneOfSchema)
+
+  const typed = new Uint8Array(5)
+  typed.fill(10)
+
+  const value = stringify({ maybeArray: typed })
+  t.equal(value, '{maybeArray: [10,10,10,10,10]}')
+})

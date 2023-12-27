@@ -602,7 +602,8 @@ function buildArray (context, location) {
   `
 
   functionCode += `
-    if (!Array.isArray(obj)) {
+    const supportedTypedArrays = ['Uint8Array'];
+    if (!Array.isArray(obj) && !(obj != null && supportedTypedArrays.indexOf(obj.constructor.name) != -1)) {
       throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
     }
     const arrayLength = obj.length
