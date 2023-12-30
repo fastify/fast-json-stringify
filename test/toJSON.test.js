@@ -127,7 +127,7 @@ test('not fail on null sub-object declared nullable', (t) => {
   t.equal('{"product":null}', stringify(object))
 })
 
-test('throw an error on non nullable null sub-object', (t) => {
+test('on non nullable null sub-object it should coerce to {}', (t) => {
   t.plan(1)
 
   const stringify = build({
@@ -148,10 +148,12 @@ test('throw an error on non nullable null sub-object', (t) => {
   const object = {
     product: null
   }
-  t.throws(() => { stringify(object) })
+
+  const result = stringify(object)
+  t.equal(result, JSON.stringify({ product: {} }))
 })
 
-test('throw an error on non nullable null object', (t) => {
+test('on non nullable null object it should coerce to {}', (t) => {
   t.plan(1)
 
   const stringify = build({
@@ -170,5 +172,37 @@ test('throw an error on non nullable null object', (t) => {
       }
     }
   })
-  t.throws(() => { stringify(null) })
+
+  const result = stringify(null)
+  t.equal(result, '{}')
+})
+
+test('on non-nullable null object with required fields it should throw complaining missing required fields', (t) => {
+  t.plan(1)
+
+  const stringify = build({
+    title: 'simple object',
+    nullable: false,
+    type: 'object',
+    properties: {
+      product: {
+        nullable: false,
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string'
+          }
+        }
+      }
+    },
+    required: ['product']
+  })
+
+  try {
+    stringify(null)
+    t.fail('stringify should throw for missing required fields')
+  } catch (err) {
+    const message = err.message
+    t.equal(message, '"product" is required!')
+  }
 })

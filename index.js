@@ -560,23 +560,10 @@ function buildObject (context, location) {
   let functionCode = `
   `
 
-  let checkNullableCode = `
-  `
-  const nullable = schema.nullable === true
-  if (!nullable) {
-    // use schemaRef in the hope there's anything useful for which schema is detecting the issue
-    checkNullableCode += `
-    if (obj === null) {
-      throw new Error('schema: ${schemaRef} is not nullable, received null input!')
-    }
-    `
-  }
-
   functionCode += `
     // ${schemaRef}
     function ${functionName} (input) {
-      const obj = ${toJSON('input')}
-      ${checkNullableCode}
+      const obj = ${toJSON('input')} || {}
 
       ${buildInnerObject(context, location)}
     }

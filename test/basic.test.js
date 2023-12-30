@@ -376,32 +376,6 @@ test('render a double quote as JSON /2', (t) => {
   t.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('should error on non-nullable', t => {
-  t.plan(1)
-  const schema = {
-    title: 'non-nullable schema error',
-    type: 'object',
-    properties: {
-      firstName: {
-        type: 'string'
-      },
-      lastName: {
-        type: 'string'
-      }
-    },
-    required: ['firstName', 'lastName']
-  }
-
-  try {
-    const stringify = build(schema)
-    stringify(null)
-    t.fail('stringify should throw for null doc validated on non-nullable schema')
-  } catch (err) {
-    const message = err.message
-    t.equal(message, 'schema: # is not nullable, received null input!')
-  }
-})
-
 test('render a long string', (t) => {
   t.plan(2)
 
