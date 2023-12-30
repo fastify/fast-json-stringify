@@ -467,7 +467,7 @@ test('class instance that is simultaneously a string and a json', (t) => {
   t.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
 
-test('should throw an error when type is array and object is null', (t) => {
+test('should not throw an error when type is array and object is null, it should instead coerce to []', (t) => {
   t.plan(1)
   const schema = {
     type: 'object',
@@ -482,7 +482,8 @@ test('should throw an error when type is array and object is null', (t) => {
   }
 
   const stringify = build(schema)
-  t.throws(() => stringify({ arr: null }), new TypeError('The value of \'#/properties/arr\' does not match schema definition.'))
+  const result = stringify({ arr: null })
+  t.equal(result, JSON.stringify({ arr: [] }))
 })
 
 test('should throw an error when type is array and object is not an array', (t) => {

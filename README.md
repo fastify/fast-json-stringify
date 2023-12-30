@@ -590,6 +590,8 @@ Otherwise, instead of raising an error, null values will be coerced as follows:
 - `number` -> `0`
 - `string` -> `""`
 - `boolean` -> `false`
+- `object` -> `{}`
+- `array` -> `[]`
 
 <a name="largearrays"></a>
 #### Large Arrays

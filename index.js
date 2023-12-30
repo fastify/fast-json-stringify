@@ -559,11 +559,23 @@ function buildObject (context, location) {
 
   let functionCode = `
   `
+  let checkNullableCode = `
+  `
+
+  const nullable = schema.nullable === true
+  if (!nullable) {
+    checkNullableCode = `
+      if (obj === null) {
+        obj = {}
+      }
+    `
+  }
 
   functionCode += `
     // ${schemaRef}
     function ${functionName} (input) {
-      const obj = ${toJSON('input')} || {}
+      let obj = ${toJSON('input')}
+      ${checkNullableCode}
 
       ${buildInnerObject(context, location)}
     }
@@ -597,12 +609,25 @@ function buildArray (context, location) {
     schemaRef = schemaRef.replace(context.rootSchemaId, '')
   }
 
+  let checkNullableCode = `
+  `
+
   let functionCode = `
     function ${functionName} (obj) {
       // ${schemaRef}
   `
 
+  const nullable = schema.nullable === true
+  if (!nullable) {
+    checkNullableCode = `
+      if (obj === null) {
+        obj = []
+      }
+    `
+  }
+
   functionCode += `
+    ${checkNullableCode}
     if (!Array.isArray(obj)) {
       throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
     }
