@@ -177,7 +177,7 @@ test('on non nullable null object it should coerce to {}', (t) => {
   t.equal(result, '{}')
 })
 
-test('on non-nullable null object with required fields it should throw complaining missing required fields', (t) => {
+test('on non-nullable null object it should skip rendering, skipping required fields checks', (t) => {
   t.plan(1)
 
   const stringify = build({
@@ -198,11 +198,6 @@ test('on non-nullable null object with required fields it should throw complaini
     required: ['product']
   })
 
-  try {
-    stringify(null)
-    t.fail('stringify should throw for missing required fields')
-  } catch (err) {
-    const message = err.message
-    t.equal(message, '"product" is required!')
-  }
+  const result = stringify(null)
+  t.equal(result, '{}')
 })
