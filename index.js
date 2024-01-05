@@ -560,10 +560,13 @@ function buildObject (context, location) {
   let functionCode = `
   `
 
+  const nullable = schema.nullable === true
   functionCode += `
     // ${schemaRef}
     function ${functionName} (input) {
       const obj = ${toJSON('input')}
+      ${!nullable ? 'if (obj === null) return \'{}\'' : ''}
+
       ${buildInnerObject(context, location)}
     }
   `
@@ -601,7 +604,9 @@ function buildArray (context, location) {
       // ${schemaRef}
   `
 
+  const nullable = schema.nullable === true
   functionCode += `
+    ${!nullable ? 'if (obj === null) return \'[]\'' : ''}
     if (!Array.isArray(obj)) {
       throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
     }
