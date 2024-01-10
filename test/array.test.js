@@ -397,7 +397,7 @@ test('object array with anyOf and symbol', (t) => {
       required: ['name', 'option']
     }
   }
-  const stringify = build(schema)
+  const stringify = build(schema, { ajv: { strictSchema: false } })
   const value = stringify([
     { name: 'name-0', option: 'Foo' },
     { name: 'name-1', option: 'Bar' }

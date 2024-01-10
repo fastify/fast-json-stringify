@@ -218,7 +218,7 @@ test('symbol value in schema', (t) => {
     required: ['value']
   }
 
-  const stringify = build(schema)
+  const stringify = build(schema, { ajv: { strictSchema: false } })
   t.equal(stringify({ value: 'foo' }), '{"value":"foo"}')
   t.equal(stringify({ value: 'bar' }), '{"value":"bar"}')
   t.equal(stringify({ value: 'baz' }), '{"value":"baz"}')
