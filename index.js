@@ -5,9 +5,6 @@
 const merge = require('@fastify/deepmerge')()
 const clone = require('rfdc')({ proto: true })
 const { RefResolver } = require('json-schema-ref-resolver')
-const Ajv = require('ajv')
-const fastUri = require('fast-uri')
-const ajvFormats = require('ajv-formats')
 
 const validate = require('./lib/schema-validator')
 const Serializer = require('./lib/serializer')
@@ -185,22 +182,8 @@ function build (schema, options) {
   // we cannot use the validator's AJV instance to actually validate the
   // whole schema. Instead, create a new AJV instance with the same options,
   // add all the referenced schemas, and then validate:
-  const ajv = new Ajv({
-    strictSchema: false,
-    validateSchema: false,
-    allowUnionTypes: true,
-    uriResolver: fastUri,
-    ...options.ajv
-  })
-  ajvFormats(ajv)
-  ajv.addKeyword({
-    keyword: 'fjs_type',
-    type: 'object',
-    errors: false,
-    validate: (type, date) => {
-      return date instanceof Date
-    }
-  })
+  const ajv = Validator.createAJVInstanceWithOptions(options.ajv)
+
   if (options.schema) {
     for (const key in options.schema) {
       const schema = options.schema[key]
