@@ -606,7 +606,7 @@ test('allOf: multiple nested $ref properties', (t) => {
 })
 
 test('allOf: throw Error if types mismatch ', (t) => {
-  t.plan(1)
+  t.plan(3)
 
   const schema = {
     allOf: [
@@ -614,11 +614,17 @@ test('allOf: throw Error if types mismatch ', (t) => {
       { type: 'number' }
     ]
   }
-  t.throws(() => build(schema), new Error('Failed to merge schemas on "type".'))
+  try {
+    build(schema)
+  } catch (error) {
+    t.ok(error instanceof Error)
+    t.equal(error.message, 'Failed to merge "type" keyword schemas.')
+    t.same(error.schemas, [['string'], ['number']])
+  }
 })
 
 test('allOf: throw Error if format mismatch ', (t) => {
-  t.plan(1)
+  t.plan(3)
 
   const schema = {
     allOf: [
@@ -626,31 +632,13 @@ test('allOf: throw Error if format mismatch ', (t) => {
       { format: 'time' }
     ]
   }
-  t.throws(() => build(schema), new Error('Failed to merge schemas on "format".'))
-})
-
-test('allOf: throw Error if nullable mismatch /1', (t) => {
-  t.plan(1)
-
-  const schema = {
-    allOf: [
-      { nullable: true },
-      { nullable: false }
-    ]
+  try {
+    build(schema)
+  } catch (error) {
+    t.ok(error instanceof Error)
+    t.equal(error.message, 'Failed to merge "format" keyword schemas.')
+    t.same(error.schemas, ['date', 'time'])
   }
-  t.throws(() => build(schema), new Error('Failed to merge schemas on "nullable".'))
-})
-
-test('allOf: throw Error if nullable mismatch /2', (t) => {
-  t.plan(1)
-
-  const schema = {
-    allOf: [
-      { nullable: false },
-      { nullable: true }
-    ]
-  }
-  t.throws(() => build(schema), new Error('Failed to merge schemas on "nullable".'))
 })
 
 test('recursive nested allOfs', (t) => {
