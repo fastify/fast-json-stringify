@@ -54,7 +54,7 @@
     "fast-uri": "^2.1.0",
     "rfdc": "^1.2.0",
     "json-schema-ref-resolver": "^1.0.1",
-    "merge-json-schemas": "fastify/merge-json-schemas#add-merge-json-schemas-function"
+    "@fastify/merge-json-schemas": "^0.1.0"
   },
   "standard": {
     "ignore": [
