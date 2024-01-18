@@ -616,6 +616,7 @@ test('allOf: throw Error if types mismatch ', (t) => {
   }
   try {
     build(schema)
+    t.fail('should throw the MergeError')
   } catch (error) {
     t.ok(error instanceof Error)
     t.equal(error.message, 'Failed to merge "type" keyword schemas.')
@@ -634,6 +635,7 @@ test('allOf: throw Error if format mismatch ', (t) => {
   }
   try {
     build(schema)
+    t.fail('should throw the MergeError')
   } catch (error) {
     t.ok(error instanceof Error)
     t.equal(error.message, 'Failed to merge "format" keyword schemas.')
