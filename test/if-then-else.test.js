@@ -249,15 +249,7 @@ const alphabetOutput = JSON.stringify({
 const deepFoobarOutput = JSON.stringify({
   foobar: JSON.parse(foobarOutput)
 })
-const noElseGreetingOutput = JSON.stringify({
-  kind: 'greeting',
-  foo: 'FOO',
-  bar: 42,
-  hi: 'HI',
-  hello: 45,
-  a: 'A',
-  b: 35
-})
+const noElseGreetingOutput = JSON.stringify({})
 
 t.test('if-then-else', t => {
   const tests = [
@@ -418,4 +410,61 @@ t.test('if/else with array', (t) => {
 
   t.equal(stringify(['1']), JSON.stringify(['1']))
   t.equal(stringify(['1', '2']), JSON.stringify([1, 2]))
+})
+
+t.test('external recursive if/then/else', (t) => {
+  t.plan(1)
+
+  const externalSchema = {
+    type: 'object',
+    properties: {
+      base: { type: 'string' },
+      self: { $ref: 'externalSchema#' }
+    },
+    if: {
+      type: 'object',
+      properties: {
+        foo: { type: 'string', const: '41' }
+      }
+    },
+    then: {
+      type: 'object',
+      properties: {
+        bar: { type: 'string', const: '42' }
+      }
+    },
+    else: {
+      type: 'object',
+      properties: {
+        baz: { type: 'string', const: '43' }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      a: { $ref: 'externalSchema#/properties/self' },
+      b: { $ref: 'externalSchema#/properties/self' }
+    }
+  }
+
+  const data = {
+    a: {
+      base: 'a',
+      foo: '41',
+      bar: '42',
+      baz: '43',
+      ignore: 'ignored'
+    },
+    b: {
+      base: 'b',
+      foo: 'not-41',
+      bar: '42',
+      baz: '43',
+      ignore: 'ignored'
+    }
+  }
+  const stringify = build(schema, { schema: { externalSchema } })
+  t.equal(stringify(data), '{"a":{"base":"a","bar":"42"},"b":{"base":"b","baz":"43"}}')
 })

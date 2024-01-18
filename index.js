@@ -2,14 +2,13 @@
 
 /* eslint no-prototype-builtins: 0 */
 
-const merge = require('@fastify/deepmerge')()
-const clone = require('rfdc')({ proto: true })
 const { RefResolver } = require('json-schema-ref-resolver')
 
-const validate = require('./lib/schema-validator')
 const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
 const Location = require('./lib/location')
+const validate = require('./lib/schema-validator')
+const mergeSchemas = require('./lib/merge-schemas')
 
 const SINGLE_TICK = /'/g
 
@@ -32,6 +31,8 @@ const addComma = '!addComma && (addComma = true) || (json += \',\')'
 
 let schemaIdCounter = 0
 
+const mergedSchemaRef = Symbol('fjs-merged-schema-ref')
+
 function isValidSchema (schema, name) {
   if (!validate(schema)) {
     if (name) {
@@ -46,13 +47,15 @@ function isValidSchema (schema, name) {
   }
 }
 
-function resolveRef (context, location, ref) {
+function resolveRef (context, location) {
+  const ref = location.schema.$ref
+
   let hashIndex = ref.indexOf('#')
   if (hashIndex === -1) {
     hashIndex = ref.length
   }
 
-  const schemaId = ref.slice(0, hashIndex) || location.getOriginSchemaId()
+  const schemaId = ref.slice(0, hashIndex) || location.schemaId
   const jsonPointer = ref.slice(hashIndex) || '#'
 
   const schema = context.refResolver.getSchema(schemaId, jsonPointer)
@@ -62,10 +65,15 @@ function resolveRef (context, location, ref) {
 
   const newLocation = new Location(schema, schemaId, jsonPointer)
   if (schema.$ref !== undefined) {
-    return resolveRef(context, newLocation, schema.$ref)
+    return resolveRef(context, newLocation)
   }
 
   return newLocation
+}
+
+function getMergedLocation (context, mergedSchemaId) {
+  const mergedSchema = context.refResolver.getSchema(mergedSchemaId, '#')
+  return new Location(mergedSchema, mergedSchemaId, '#')
 }
 
 function getSchemaId (schema, rootSchemaId) {
@@ -85,7 +93,6 @@ function build (schema, options) {
     functionsCounter: 0,
     functionsNamesBySchema: new Map(),
     options,
-    wrapObjects: true,
     refResolver: new RefResolver(),
     rootSchemaId: schema.$id || `__fjs_root_${schemaIdCounter++}`,
     validatorSchemasIds: new Set()
@@ -329,7 +336,7 @@ function buildInnerObject (context, location) {
       }
       let propertyLocation = propertiesLocation.getPropertyLocation(key)
       if (propertyLocation.schema.$ref) {
-        propertyLocation = resolveRef(context, location, propertyLocation.schema.$ref)
+        propertyLocation = resolveRef(context, propertyLocation)
       }
 
       const sanitizedKey = JSON.stringify(key)
@@ -353,16 +360,14 @@ function buildInnerObject (context, location) {
 
   code += `
     let addComma = false
-    let json = '${context.wrapObjects ? '{' : ''}'
+    let json = '{'
   `
-  const wrapObjects = context.wrapObjects
-  context.wrapObjects = true
 
   if (schema.properties) {
     for (const key of Object.keys(schema.properties)) {
       let propertyLocation = propertiesLocation.getPropertyLocation(key)
       if (propertyLocation.schema.$ref) {
-        propertyLocation = resolveRef(context, location, propertyLocation.schema.$ref)
+        propertyLocation = resolveRef(context, propertyLocation)
       }
 
       const sanitizedKey = JSON.stringify(key)
@@ -400,139 +405,65 @@ function buildInnerObject (context, location) {
     code += buildExtraObjectPropertiesSerializer(context, location)
   }
 
-  context.wrapObjects = wrapObjects
   code += `
-  return json${context.wrapObjects ? ' + \'}\'' : ''}
+    return json + '}'
   `
   return code
 }
 
-function mergeAllOfSchema (context, location, schema, mergedSchema) {
-  const allOfLocation = location.getPropertyLocation('allOf')
-
-  for (let i = 0; i < schema.allOf.length; i++) {
-    let allOfSchema = schema.allOf[i]
-
-    if (allOfSchema.$ref) {
-      const allOfSchemaLocation = allOfLocation.getPropertyLocation(i)
-      allOfSchema = resolveRef(context, allOfSchemaLocation, allOfSchema.$ref).schema
-    }
-
-    let allOfSchemaType = allOfSchema.type
-    if (allOfSchemaType === undefined) {
-      allOfSchemaType = inferTypeByKeyword(allOfSchema)
-    }
-
-    if (allOfSchemaType !== undefined) {
-      if (
-        mergedSchema.type !== undefined &&
-        mergedSchema.type !== allOfSchemaType
-      ) {
-        throw new Error('allOf schemas have different type values')
-      }
-      mergedSchema.type = allOfSchemaType
-    }
-
-    if (allOfSchema.format !== undefined) {
-      if (
-        mergedSchema.format !== undefined &&
-        mergedSchema.format !== allOfSchema.format
-      ) {
-        throw new Error('allOf schemas have different format values')
-      }
-      mergedSchema.format = allOfSchema.format
-    }
-
-    if (allOfSchema.nullable !== undefined) {
-      if (
-        mergedSchema.nullable !== undefined &&
-        mergedSchema.nullable !== allOfSchema.nullable
-      ) {
-        throw new Error('allOf schemas have different nullable values')
-      }
-      mergedSchema.nullable = allOfSchema.nullable
-    }
-
-    if (allOfSchema.properties !== undefined) {
-      if (mergedSchema.properties === undefined) {
-        mergedSchema.properties = {}
-      }
-      Object.assign(mergedSchema.properties, allOfSchema.properties)
-    }
-
-    if (allOfSchema.additionalProperties !== undefined) {
-      if (mergedSchema.additionalProperties === undefined) {
-        mergedSchema.additionalProperties = {}
-      }
-      Object.assign(mergedSchema.additionalProperties, allOfSchema.additionalProperties)
-    }
-
-    if (allOfSchema.patternProperties !== undefined) {
-      if (mergedSchema.patternProperties === undefined) {
-        mergedSchema.patternProperties = {}
-      }
-      Object.assign(mergedSchema.patternProperties, allOfSchema.patternProperties)
-    }
-
-    if (allOfSchema.required !== undefined) {
-      if (mergedSchema.required === undefined) {
-        mergedSchema.required = []
-      }
-      mergedSchema.required.push(...allOfSchema.required)
-    }
-
-    if (allOfSchema.oneOf !== undefined) {
-      if (mergedSchema.oneOf === undefined) {
-        mergedSchema.oneOf = []
-      }
-      mergedSchema.oneOf.push(...allOfSchema.oneOf)
-    }
-
-    if (allOfSchema.anyOf !== undefined) {
-      if (mergedSchema.anyOf === undefined) {
-        mergedSchema.anyOf = []
-      }
-      mergedSchema.anyOf.push(...allOfSchema.anyOf)
-    }
-
-    if (allOfSchema.allOf !== undefined) {
-      mergeAllOfSchema(context, location, allOfSchema, mergedSchema)
+function mergeLocations (context, mergedSchemaId, mergedLocations) {
+  for (let i = 0; i < mergedLocations.length; i++) {
+    const location = mergedLocations[i]
+    const schema = location.schema
+    if (schema.$ref) {
+      mergedLocations[i] = resolveRef(context, location)
     }
   }
-  delete mergedSchema.allOf
 
-  mergedSchema.$id = `__fjs_merged_${schemaIdCounter++}`
-  context.refResolver.addSchema(mergedSchema)
-  location.addMergedSchema(mergedSchema, mergedSchema.$id)
+  const mergedSchemas = []
+  for (const location of mergedLocations) {
+    const schema = cloneOriginSchema(location.schema, location.schemaId)
+    delete schema.$id
+
+    mergedSchemas.push(schema)
+  }
+
+  const mergedSchema = mergeSchemas(mergedSchemas)
+  const mergedLocation = new Location(mergedSchema, mergedSchemaId)
+
+  context.refResolver.addSchema(mergedSchema, mergedSchemaId)
+  return mergedLocation
 }
 
-function addIfThenElse (context, location, input) {
-  context.validatorSchemasIds.add(location.getSchemaId())
+function cloneOriginSchema (schema, schemaId) {
+  const clonedSchema = Array.isArray(schema) ? [] : {}
 
-  const schema = merge({}, location.schema)
-  const thenSchema = schema.then
-  const elseSchema = schema.else || { additionalProperties: true }
+  if (
+    schema.$id !== undefined &&
+    schema.$id.charAt(0) !== '#'
+  ) {
+    schemaId = schema.$id
+  }
 
-  delete schema.if
-  delete schema.then
-  delete schema.else
+  if (schema[mergedSchemaRef]) {
+    clonedSchema[mergedSchemaRef] = schema[mergedSchemaRef]
+  }
 
-  const ifLocation = location.getPropertyLocation('if')
-  const ifSchemaRef = ifLocation.getSchemaRef()
+  for (const key in schema) {
+    let value = schema[key]
 
-  const thenLocation = location.getPropertyLocation('then')
-  thenLocation.schema = merge(schema, thenSchema)
-
-  const elseLocation = location.getPropertyLocation('else')
-  elseLocation.schema = merge(schema, elseSchema)
-
-  return `
-    if (validator.validate("${ifSchemaRef}", ${input})) {
-      ${buildValue(context, thenLocation, input)}
-    } else {
-      ${buildValue(context, elseLocation, input)}
+    if (key === '$ref' && value.charAt(0) === '#') {
+      value = schemaId + value
     }
-  `
+
+    if (typeof value === 'object' && value !== null) {
+      value = cloneOriginSchema(value, schemaId)
+    }
+
+    clonedSchema[key] = value
+  }
+
+  return clonedSchema
 }
 
 function toJSON (variableName) {
@@ -582,7 +513,7 @@ function buildArray (context, location) {
   itemsLocation.schema = itemsLocation.schema || {}
 
   if (itemsLocation.schema.$ref) {
-    itemsLocation = resolveRef(context, itemsLocation, itemsLocation.schema.$ref)
+    itemsLocation = resolveRef(context, itemsLocation)
   }
 
   const itemsSchema = itemsLocation.schema
@@ -860,6 +791,159 @@ function buildConstSerializer (location, input) {
   return code
 }
 
+function buildAllOf (context, location, input) {
+  const schema = location.schema
+
+  let mergedSchemaId = schema[mergedSchemaRef]
+  if (mergedSchemaId) {
+    const mergedLocation = getMergedLocation(context, mergedSchemaId)
+    return buildValue(context, mergedLocation, input)
+  }
+
+  mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
+  schema[mergedSchemaRef] = mergedSchemaId
+
+  const { allOf, ...schemaWithoutAllOf } = location.schema
+  const locations = [
+    new Location(
+      schemaWithoutAllOf,
+      location.schemaId,
+      location.jsonPointer
+    )
+  ]
+
+  const allOfsLocation = location.getPropertyLocation('allOf')
+  for (let i = 0; i < allOf.length; i++) {
+    locations.push(allOfsLocation.getPropertyLocation(i))
+  }
+
+  const mergedLocation = mergeLocations(context, mergedSchemaId, locations)
+  return buildValue(context, mergedLocation, input)
+}
+
+function buildOneOf (context, location, input) {
+  context.validatorSchemasIds.add(location.schemaId)
+
+  const schema = location.schema
+
+  const type = schema.anyOf ? 'anyOf' : 'oneOf'
+  const { [type]: oneOfs, ...schemaWithoutAnyOf } = location.schema
+
+  const locationWithoutOneOf = new Location(
+    schemaWithoutAnyOf,
+    location.schemaId,
+    location.jsonPointer
+  )
+  const oneOfsLocation = location.getPropertyLocation(type)
+
+  let code = ''
+
+  for (let index = 0; index < oneOfs.length; index++) {
+    const optionLocation = oneOfsLocation.getPropertyLocation(index)
+    const optionSchema = optionLocation.schema
+
+    let mergedSchemaId = optionSchema[mergedSchemaRef]
+    let mergedLocation = null
+    if (mergedSchemaId) {
+      mergedLocation = getMergedLocation(context, mergedSchemaId)
+    } else {
+      mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
+      optionSchema[mergedSchemaRef] = mergedSchemaId
+
+      mergedLocation = mergeLocations(context, mergedSchemaId, [
+        locationWithoutOneOf,
+        optionLocation
+      ])
+    }
+
+    const nestedResult = buildValue(context, mergedLocation, input)
+    const schemaRef = optionLocation.getSchemaRef()
+    code += `
+      ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}))
+        ${nestedResult}
+    `
+  }
+
+  let schemaRef = location.getSchemaRef()
+  if (schemaRef.startsWith(context.rootSchemaId)) {
+    schemaRef = schemaRef.replace(context.rootSchemaId, '')
+  }
+
+  code += `
+    else throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
+  `
+
+  return code
+}
+
+function buildIfThenElse (context, location, input) {
+  context.validatorSchemasIds.add(location.schemaId)
+
+  const {
+    if: ifSchema,
+    then: thenSchema,
+    else: elseSchema,
+    ...schemaWithoutIfThenElse
+  } = location.schema
+
+  const rootLocation = new Location(
+    schemaWithoutIfThenElse,
+    location.schemaId,
+    location.jsonPointer
+  )
+
+  const ifLocation = location.getPropertyLocation('if')
+  const ifSchemaRef = ifLocation.getSchemaRef()
+
+  const thenLocation = location.getPropertyLocation('then')
+  let thenMergedSchemaId = thenSchema[mergedSchemaRef]
+  let thenMergedLocation = null
+  if (thenMergedSchemaId) {
+    thenMergedLocation = getMergedLocation(context, thenMergedSchemaId)
+  } else {
+    thenMergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
+    thenSchema[mergedSchemaRef] = thenMergedSchemaId
+
+    thenMergedLocation = mergeLocations(context, thenMergedSchemaId, [
+      rootLocation,
+      thenLocation
+    ])
+  }
+
+  if (!elseSchema) {
+    return `
+      if (validator.validate("${ifSchemaRef}", ${input})) {
+        ${buildValue(context, thenMergedLocation, input)}
+      } else {
+        ${buildValue(context, rootLocation, input)}
+      }
+    `
+  }
+
+  const elseLocation = location.getPropertyLocation('else')
+  let elseMergedSchemaId = elseSchema[mergedSchemaRef]
+  let elseMergedLocation = null
+  if (elseMergedSchemaId) {
+    elseMergedLocation = getMergedLocation(context, elseMergedSchemaId)
+  } else {
+    elseMergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
+    elseSchema[mergedSchemaRef] = elseMergedSchemaId
+
+    elseMergedLocation = mergeLocations(context, elseMergedSchemaId, [
+      rootLocation,
+      elseLocation
+    ])
+  }
+
+  return `
+    if (validator.validate("${ifSchemaRef}", ${input})) {
+      ${buildValue(context, thenMergedLocation, input)}
+    } else {
+      ${buildValue(context, elseMergedLocation, input)}
+    }
+  `
+}
+
 function buildValue (context, location, input) {
   let schema = location.schema
 
@@ -868,8 +952,20 @@ function buildValue (context, location, input) {
   }
 
   if (schema.$ref) {
-    location = resolveRef(context, location, schema.$ref)
+    location = resolveRef(context, location)
     schema = location.schema
+  }
+
+  if (schema.allOf) {
+    return buildAllOf(context, location, input)
+  }
+
+  if (schema.anyOf || schema.oneOf) {
+    return buildOneOf(context, location, input)
+  }
+
+  if (schema.if && schema.then) {
+    return buildIfThenElse(context, location, input)
   }
 
   if (schema.type === undefined) {
@@ -879,62 +975,9 @@ function buildValue (context, location, input) {
     }
   }
 
-  if (schema.if && schema.then) {
-    return addIfThenElse(context, location, input)
-  }
-
-  if (schema.allOf) {
-    mergeAllOfSchema(context, location, schema, clone(schema))
-    schema = location.schema
-  }
-
-  const type = schema.type
-
   let code = ''
 
-  if ((type === undefined || type === 'object') && (schema.anyOf || schema.oneOf)) {
-    context.validatorSchemasIds.add(location.getSchemaId())
-
-    if (schema.type === 'object') {
-      context.wrapObjects = false
-      const funcName = buildObject(context, location)
-      code += `
-        json += '{'
-        json += ${funcName}(${input})
-        json += ','
-      `
-    }
-
-    const type = schema.anyOf ? 'anyOf' : 'oneOf'
-    const anyOfLocation = location.getPropertyLocation(type)
-
-    for (let index = 0; index < location.schema[type].length; index++) {
-      const optionLocation = anyOfLocation.getPropertyLocation(index)
-      const schemaRef = optionLocation.getSchemaRef()
-      const nestedResult = buildValue(context, optionLocation, input)
-      code += `
-        ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}))
-          ${nestedResult}
-      `
-    }
-
-    let schemaRef = location.getSchemaRef()
-    if (schemaRef.startsWith(context.rootSchemaId)) {
-      schemaRef = schemaRef.replace(context.rootSchemaId, '')
-    }
-
-    code += `
-      else throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
-    `
-    if (schema.type === 'object') {
-      code += `
-        json += '}'
-      `
-      context.wrapObjects = true
-    }
-    return code
-  }
-
+  const type = schema.type
   const nullable = schema.nullable === true
   if (nullable) {
     code += `
