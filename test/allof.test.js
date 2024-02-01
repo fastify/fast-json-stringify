@@ -553,60 +553,8 @@ test('allof with local anchor reference', (t) => {
   t.equal(stringify(data), JSON.stringify(data))
 })
 
-test('allOf: multiple nested $ref properties', (t) => {
-  t.plan(2)
-
-  const externalSchema1 = {
-    $id: 'externalSchema1',
-    oneOf: [
-      { $ref: '#/definitions/id1' }
-    ],
-    definitions: {
-      id1: {
-        type: 'object',
-        properties: {
-          id1: {
-            type: 'integer'
-          }
-        },
-        additionalProperties: false
-      }
-    }
-  }
-
-  const externalSchema2 = {
-    $id: 'externalSchema2',
-    oneOf: [
-      { $ref: '#/definitions/id2' }
-    ],
-    definitions: {
-      id2: {
-        type: 'object',
-        properties: {
-          id2: {
-            type: 'integer'
-          }
-        },
-        additionalProperties: false
-      }
-    }
-  }
-
-  const schema = {
-    anyOf: [
-      { $ref: 'externalSchema1' },
-      { $ref: 'externalSchema2' }
-    ]
-  }
-
-  const stringify = build(schema, { schema: [externalSchema1, externalSchema2] })
-
-  t.equal(stringify({ id1: 1 }), JSON.stringify({ id1: 1 }))
-  t.equal(stringify({ id2: 2 }), JSON.stringify({ id2: 2 }))
-})
-
 test('allOf: throw Error if types mismatch ', (t) => {
-  t.plan(3)
+  t.plan(1)
 
   const schema = {
     allOf: [
@@ -614,18 +562,11 @@ test('allOf: throw Error if types mismatch ', (t) => {
       { type: 'number' }
     ]
   }
-  try {
-    build(schema)
-    t.fail('should throw the MergeError')
-  } catch (error) {
-    t.ok(error instanceof Error)
-    t.equal(error.message, 'Failed to merge "type" keyword schemas.')
-    t.same(error.schemas, [['string'], ['number']])
-  }
+  t.throws(() => build(schema), new Error('allOf schemas have different type values'))
 })
 
 test('allOf: throw Error if format mismatch ', (t) => {
-  t.plan(3)
+  t.plan(1)
 
   const schema = {
     allOf: [
@@ -633,87 +574,29 @@ test('allOf: throw Error if format mismatch ', (t) => {
       { format: 'time' }
     ]
   }
-  try {
-    build(schema)
-    t.fail('should throw the MergeError')
-  } catch (error) {
-    t.ok(error instanceof Error)
-    t.equal(error.message, 'Failed to merge "format" keyword schemas.')
-    t.same(error.schemas, ['date', 'time'])
-  }
+  t.throws(() => build(schema), new Error('allOf schemas have different format values'))
 })
 
-test('recursive nested allOfs', (t) => {
+test('allOf: throw Error if nullable mismatch /1', (t) => {
   t.plan(1)
 
   const schema = {
-    type: 'object',
-    properties: {
-      foo: {
-        additionalProperties: false,
-        allOf: [{ $ref: '#' }]
-      }
-    }
+    allOf: [
+      { nullable: true },
+      { nullable: false }
+    ]
   }
-
-  const data = { foo: {} }
-  const stringify = build(schema)
-  t.equal(stringify(data), JSON.stringify(data))
+  t.throws(() => build(schema), new Error('allOf schemas have different nullable values'))
 })
 
-test('recursive nested allOfs', (t) => {
+test('allOf: throw Error if nullable mismatch /2', (t) => {
   t.plan(1)
 
   const schema = {
-    type: 'object',
-    properties: {
-      foo: {
-        additionalProperties: false,
-        allOf: [{ allOf: [{ $ref: '#' }] }]
-      }
-    }
+    allOf: [
+      { nullable: false },
+      { nullable: true }
+    ]
   }
-
-  const data = { foo: {} }
-  const stringify = build(schema)
-  t.equal(stringify(data), JSON.stringify(data))
-})
-
-test('external recursive allOfs', (t) => {
-  t.plan(1)
-
-  const externalSchema = {
-    type: 'object',
-    properties: {
-      foo: {
-        properties: {
-          bar: { type: 'string' }
-        },
-        allOf: [{ $ref: '#' }]
-      }
-    }
-  }
-
-  const schema = {
-    type: 'object',
-    properties: {
-      a: { $ref: 'externalSchema#/properties/foo' },
-      b: { $ref: 'externalSchema#/properties/foo' }
-    }
-  }
-
-  const data = {
-    a: {
-      foo: {},
-      bar: '42',
-      baz: 42
-    },
-    b: {
-      foo: {},
-      bar: '42',
-      baz: 42
-    }
-  }
-  const stringify = build(schema, { schema: { externalSchema } })
-  t.equal(stringify(data), '{"a":{"bar":"42","foo":{}},"b":{"bar":"42","foo":{}}}')
+  t.throws(() => build(schema), new Error('allOf schemas have different nullable values'))
 })

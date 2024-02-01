@@ -51,13 +51,13 @@
     "fast-json-stringify": "."
   },
   "dependencies": {
+    "@fastify/deepmerge": "^1.0.0",
     "ajv": "^8.10.0",
     "ajv-formats": "^2.1.1",
     "fast-deep-equal": "^3.1.3",
     "fast-uri": "^2.1.0",
     "rfdc": "^1.2.0",
-    "json-schema-ref-resolver": "^1.0.1",
-    "@fastify/merge-json-schemas": "^0.1.0"
+    "json-schema-ref-resolver": "^1.0.1"
   },
   "standard": {
     "ignore": [
