@@ -121,7 +121,7 @@ test('object with allOf and multiple schema on the allOf', (t) => {
     id: 1,
     name: 'string',
     tag: 'otherString'
-  }), '{"name":"string","id":1,"tag":"otherString"}')
+  }), '{"name":"string","tag":"otherString","id":1}')
 })
 
 test('object with allOf and one schema on the allOf', (t) => {

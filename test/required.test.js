@@ -126,18 +126,17 @@ test('object with multiple required field not in properties schema', (t) => {
     stringify({})
     t.fail()
   } catch (e) {
-    t.equal(e.message, '"key1" is required!')
+    t.equal(e.message, '"num" is required!')
     t.pass()
   }
 
   try {
     stringify({
-      key1: 42,
-      key2: 42
+      num: 42
     })
     t.fail()
   } catch (e) {
-    t.equal(e.message, '"num" is required!')
+    t.equal(e.message, '"key1" is required!')
     t.pass()
   }
 
