@@ -41,6 +41,30 @@ for (let i = 0; i < SHORT_ARRAY_SIZE; i++) {
 
 const benchmarks = [
   {
+    name: 'single enum string',
+    schema: {
+      type: 'string',
+      enum: ['hello world']
+    },
+    input: 'hello world'
+  },
+  {
+    name: 'const string',
+    schema: {
+      type: 'string',
+      const: 'hello world'
+    },
+    input: 'hello world'
+  },
+  {
+    name: 'const number',
+    schema: {
+      type: 'number',
+      const: 123
+    },
+    input: 123
+  },
+  {
     name: 'short string',
     schema: {
       type: 'string'

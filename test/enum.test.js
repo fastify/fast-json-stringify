@@ -3,6 +3,23 @@
 const test = require('tap').test
 const build = require('..')
 
+test('use enum with 1 value', (t) => {
+  t.plan(1)
+  const stringify = build({
+    title: 'Example Schema',
+    type: 'object',
+    properties: {
+      status: {
+        type: 'string',
+        enum: ['ok']
+      }
+    }
+  })
+
+  const obj = { status: 'ok' }
+  t.equal('{"status":"ok"}', stringify(obj))
+})
+
 test('use enum without type', (t) => {
   t.plan(1)
   const stringify = build({
