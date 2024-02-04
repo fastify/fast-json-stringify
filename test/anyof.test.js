@@ -765,3 +765,30 @@ test('external recursive anyOfs', (t) => {
   const stringify = build(schema, { schema: { externalSchema } })
   t.equal(stringify(data), '{"a":{"bar":"42","foo":{}},"b":{"bar":"42","foo":{}}}')
 })
+
+test('should build merged schemas twice', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      enums: {
+        type: 'string',
+        anyOf: [
+          { type: 'string', const: 'FOO' },
+          { type: 'string', const: 'BAR' }
+        ]
+      }
+    }
+  }
+
+  {
+    const stringify = build(schema)
+    t.equal(stringify({ enums: 'FOO' }), '{"enums":"FOO"}')
+  }
+
+  {
+    const stringify = build(schema)
+    t.equal(stringify({ enums: 'BAR' }), '{"enums":"BAR"}')
+  }
+})
