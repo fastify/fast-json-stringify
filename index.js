@@ -29,8 +29,6 @@ const validLargeArrayMechanisms = [
 
 let schemaIdCounter = 0
 
-const mergedSchemaRef = Symbol('fjs-merged-schema-ref')
-
 function isValidSchema (schema, name) {
   if (!validate(schema)) {
     if (name) {
@@ -93,7 +91,8 @@ function build (schema, options) {
     options,
     refResolver: new RefResolver(),
     rootSchemaId: schema.$id || `__fjs_root_${schemaIdCounter++}`,
-    validatorSchemasIds: new Set()
+    validatorSchemasIds: new Set(),
+    mergedSchemasIds: new Map()
   }
 
   const schemaId = getSchemaId(schema, context.rootSchemaId)
@@ -408,7 +407,7 @@ function mergeLocations (context, mergedSchemaId, mergedLocations) {
 
   const mergedSchemas = []
   for (const location of mergedLocations) {
-    const schema = cloneOriginSchema(location.schema, location.schemaId)
+    const schema = cloneOriginSchema(context, location.schema, location.schemaId)
     delete schema.$id
 
     mergedSchemas.push(schema)
@@ -421,7 +420,7 @@ function mergeLocations (context, mergedSchemaId, mergedLocations) {
   return mergedLocation
 }
 
-function cloneOriginSchema (schema, schemaId) {
+function cloneOriginSchema (context, schema, schemaId) {
   const clonedSchema = Array.isArray(schema) ? [] : {}
 
   if (
@@ -431,8 +430,9 @@ function cloneOriginSchema (schema, schemaId) {
     schemaId = schema.$id
   }
 
-  if (schema[mergedSchemaRef]) {
-    clonedSchema[mergedSchemaRef] = schema[mergedSchemaRef]
+  const mergedSchemaRef = context.mergedSchemasIds.get(schema)
+  if (mergedSchemaRef) {
+    context.mergedSchemasIds.set(clonedSchema, mergedSchemaRef)
   }
 
   for (const key in schema) {
@@ -443,7 +443,7 @@ function cloneOriginSchema (schema, schemaId) {
     }
 
     if (typeof value === 'object' && value !== null) {
-      value = cloneOriginSchema(value, schemaId)
+      value = cloneOriginSchema(context, value, schemaId)
     }
 
     clonedSchema[key] = value
@@ -780,14 +780,14 @@ function buildConstSerializer (location, input) {
 function buildAllOf (context, location, input) {
   const schema = location.schema
 
-  let mergedSchemaId = schema[mergedSchemaRef]
+  let mergedSchemaId = context.mergedSchemasIds.get(schema)
   if (mergedSchemaId) {
     const mergedLocation = getMergedLocation(context, mergedSchemaId)
     return buildValue(context, mergedLocation, input)
   }
 
   mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
-  schema[mergedSchemaRef] = mergedSchemaId
+  context.mergedSchemasIds.set(schema, mergedSchemaId)
 
   const { allOf, ...schemaWithoutAllOf } = location.schema
   const locations = [
@@ -828,13 +828,13 @@ function buildOneOf (context, location, input) {
     const optionLocation = oneOfsLocation.getPropertyLocation(index)
     const optionSchema = optionLocation.schema
 
-    let mergedSchemaId = optionSchema[mergedSchemaRef]
+    let mergedSchemaId = context.mergedSchemasIds.get(optionSchema)
     let mergedLocation = null
     if (mergedSchemaId) {
       mergedLocation = getMergedLocation(context, mergedSchemaId)
     } else {
       mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
-      optionSchema[mergedSchemaRef] = mergedSchemaId
+      context.mergedSchemasIds.set(optionSchema, mergedSchemaId)
 
       mergedLocation = mergeLocations(context, mergedSchemaId, [
         locationWithoutOneOf,
@@ -882,13 +882,13 @@ function buildIfThenElse (context, location, input) {
   const ifSchemaRef = ifLocation.getSchemaRef()
 
   const thenLocation = location.getPropertyLocation('then')
-  let thenMergedSchemaId = thenSchema[mergedSchemaRef]
+  let thenMergedSchemaId = context.mergedSchemasIds.get(thenSchema)
   let thenMergedLocation = null
   if (thenMergedSchemaId) {
     thenMergedLocation = getMergedLocation(context, thenMergedSchemaId)
   } else {
     thenMergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
-    thenSchema[mergedSchemaRef] = thenMergedSchemaId
+    context.mergedSchemasIds.set(thenSchema, thenMergedSchemaId)
 
     thenMergedLocation = mergeLocations(context, thenMergedSchemaId, [
       rootLocation,
@@ -907,13 +907,13 @@ function buildIfThenElse (context, location, input) {
   }
 
   const elseLocation = location.getPropertyLocation('else')
-  let elseMergedSchemaId = elseSchema[mergedSchemaRef]
+  let elseMergedSchemaId = context.mergedSchemasIds.get(elseSchema)
   let elseMergedLocation = null
   if (elseMergedSchemaId) {
     elseMergedLocation = getMergedLocation(context, elseMergedSchemaId)
   } else {
     elseMergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
-    elseSchema[mergedSchemaRef] = elseMergedSchemaId
+    context.mergedSchemasIds.set(elseSchema, elseMergedSchemaId)
 
     elseMergedLocation = mergeLocations(context, elseMergedSchemaId, [
       rootLocation,
