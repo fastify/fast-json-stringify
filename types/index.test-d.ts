@@ -3,61 +3,62 @@ import build, { restore, Schema, validLargeArrayMechanisms } from '..'
 import { expectError, expectType } from 'tsd'
 
 // Number schemas
-const schema1: Schema = {
+build({
     type: 'number'
-}
-const schema2: Schema = {
+})(25)
+build({
     type: 'integer'
-}
+})(-5)
+build({
+    type: 'integer'
+})(5n)
 
-build(schema1)(25)
-build(schema2)(-5)
-
-build(schema2, { rounding: 'ceil' })
-build(schema2, { rounding: 'floor' })
-build(schema2, { rounding: 'round' })
-build(schema2, { rounding: 'trunc' })
-expectError(build(schema2, { rounding: 'invalid' }))
+build({
+    type: 'number'
+}, { rounding: 'ceil' })
+build({
+    type: 'number'
+}, { rounding: 'floor' })
+build({
+    type: 'number'
+}, { rounding: 'round' })
+build({
+    type: 'number'
+}, { rounding: 'trunc' })
+expectError(build({
+    type: 'number'
+}, { rounding: 'invalid' }))
 
 // String schema
-const schema3: Schema = {
-    type: 'string'
-}
-
-build(schema3)('foobar')
+build({
+  type: 'string'
+})('foobar')
 
 // Boolean schema
-const schema4: Schema = {
+build({
     type: 'boolean'
-}
-
-build(schema4)(true)
+})(true)
 
 // Null schema
-const schema5: Schema = {
+build({
     type: 'null'
-}
-
-build(schema5)(null)
+})(null)
 
 // Array schemas
-const schema6: Schema = {
+build({
     type: 'array',
     items: { type: 'number' }
-}
-const schema7: Schema = {
+})([25])
+build({
     type: 'array',
     items: [{ type: 'string'}, {type: 'integer'}]
-}
-
-build(schema6)([25])
-build(schema7)(['hello', 42])
+})(['hello', 42])
 
 // Object schemas
-const schema8: Schema = {
+build({
     type: 'object'
-}
-const schema9: Schema = {
+})({})
+build({
     type: 'object',
     properties: {
         foo: { type: 'string' },
@@ -70,14 +71,24 @@ const schema9: Schema = {
     additionalProperties: {
       type: 'boolean'
     }
-}
-
-build(schema8)({})
-build(schema9)({ foo: 'bar' })
-build(schema9, { rounding: 'floor' })({ foo: 'bar' })
+})({ foo: 'bar' })
+build({
+    type: 'object',
+    properties: {
+        foo: { type: 'string' },
+        bar: { type: 'integer' }
+    },
+    required: ['foo'],
+    patternProperties: {
+      'baz*': { type: 'null' }
+    },
+    additionalProperties: {
+      type: 'boolean'
+    }
+}, { rounding: 'floor' })({ foo: 'bar' })
 
 // Reference schemas
-const schema10: Schema = {
+build({
   title: 'Example Schema',
   definitions: {
     num: {
@@ -109,12 +120,10 @@ const schema10: Schema = {
   additionalProperties: {
     $ref: '#/definitions/def'
   }
-}
-
-build(schema10)({ nickname: '', num: { int: 5 }, other: null })
+})({ nickname: '', num: { int: 5 }, other: null })
 
 // Conditional/Combined schemas
-const schema11: Schema = {
+build({
   title: 'Conditional/Combined Schema',
   type: 'object',
   properties: {
@@ -140,24 +149,37 @@ const schema11: Schema = {
       somethingElse: { type: 'null' }
     }
   }
-}
-
-build(schema11)({ something: 'a string', somethingElse: 42 })
+})({ something: 'a string', somethingElse: 42 })
 
 // String schema with format
-const schema12: Schema = {
+
+build({
   type: 'string',
   format: 'date-time'
-}
+})(new Date())
 
-build(schema12)(new Date())
-
+/*
+This overload doesn't work yet - 
+TypeScript chooses the generic for the schema
+before it chooses the overload for the options
+parameter.
 let str: string, ajv: Ajv
-str = build(schema1, { debugMode: true }).code
-ajv = build(schema1, { debugMode: true }).ajv
-str = build(schema1, { mode: 'debug' }).code
-ajv = build(schema1, { mode: 'debug' }).ajv
-str = build(schema1, { mode: 'standalone' })
+str = build({
+    type: 'number'
+}, { debugMode: true }).code
+ajv = build({
+    type: 'number'
+}, { debugMode: true }).ajv
+str = build({
+    type: 'number'
+}, { mode: 'debug' }).code
+ajv = build({
+    type: 'number'
+}, { mode: 'debug' }).ajv
+str = build({
+    type: 'number'
+}, { mode: 'standalone' })
+*/
 
 const debugCompiled = build({
   title: 'default string',

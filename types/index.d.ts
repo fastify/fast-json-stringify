@@ -208,6 +208,9 @@ interface StandaloneOption extends build.Options {
   mode: 'standalone'
 }
 
+type StringCoercible = string | Date | RegExp;
+type IntegerCoercible = number | BigInt;
+
 /**
  * Build a stringify function using a schema of the documents that should be stringified
  * @param schema The schema used to stringify values
@@ -217,8 +220,8 @@ declare function build(schema: build.AnySchema, options: DebugOption): { code: s
 declare function build(schema: build.AnySchema, options: DeprecateDebugOption): { code: string, ajv: Ajv };
 declare function build(schema: build.AnySchema, options: StandaloneOption): string;
 declare function build(schema: build.AnySchema, options?: build.Options): <TDoc = any>(doc: TDoc) => any;
-declare function build(schema: build.StringSchema, options?: build.Options): <TDoc extends string = string>(doc: TDoc) => string;
-declare function build(schema: build.IntegerSchema | build.NumberSchema, options?: build.Options): <TDoc extends number = number>(doc: TDoc) => string;
+declare function build(schema: build.StringSchema, options?: build.Options): <TDoc extends StringCoercible = StringCoercible>(doc: TDoc) => string;
+declare function build(schema: build.IntegerSchema | build.NumberSchema, options?: build.Options): <TDoc extends IntegerCoercible = IntegerCoercible>(doc: TDoc) => string;
 declare function build(schema: build.NullSchema, options?: build.Options): <TDoc extends null = null>(doc: TDoc) => "null";
 declare function build(schema: build.BooleanSchema, options?: build.Options): <TDoc extends boolean = boolean>(doc: TDoc) => string;
 declare function build(schema: build.ArraySchema | build.TupleSchema, options?: build.Options): <TDoc extends any[]= any[]>(doc: TDoc) => string;
