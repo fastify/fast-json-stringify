@@ -195,6 +195,34 @@ buildTest({
   '@data': ['test']
 })
 
+test('array of strings with null and undefined elements coerced to empty string', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        type: 'array',
+        items: {
+          type: 'string'
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const result = stringify({
+    foo: [
+      'foo',
+      'bar',
+      null,
+      undefined
+    ]
+  })
+
+  t.equal(result, '{"foo":["foo","bar","",""]}')
+})
+
 test('invalid items throw', (t) => {
   t.plan(1)
   const schema = {
