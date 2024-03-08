@@ -39,6 +39,7 @@ for (let i = 0; i < SHORT_ARRAY_SIZE; i++) {
   shortArrayOfMultiObject[i] = { s: 'hello world', n: 42, b: true }
 }
 
+
 const benchmarks = [
   {
     name: 'short string',
