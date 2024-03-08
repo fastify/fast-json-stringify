@@ -4,6 +4,22 @@ const t = require('tap')
 const test = t.test
 const build = require('..')
 
+test('serialize short string raw', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string',
+    format: 'raw'
+  }
+
+  const input = 'abcd'
+  const stringify = build(schema)
+  const output = stringify(input)
+
+  t.equal(output, '"abcd"')
+  t.equal(JSON.parse(output), input)
+})
+
 test('serialize short string', (t) => {
   t.plan(2)
 
