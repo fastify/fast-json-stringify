@@ -726,7 +726,7 @@ function buildSingleTypeSerializer (context, location, input) {
       } else if (schema.format === 'time') {
         return `json += serializer.asTime(${input})`
       } else {
-        return `json += serializer.asString(${input})`
+        return `json += serializer.asString(${input},"${schema.format}")`
       }
     }
     case 'integer':
