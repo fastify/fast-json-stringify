@@ -284,7 +284,7 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma) {
       code += `
         if (/${propertyKey.replace(/\\*\//g, '\\/')}/.test(key)) {
           ${addComma}
-          json += serializer.asString(key) + ':'
+          json += serializer.asString(key,null) + ':'
           ${buildValue(context, propertyLocation, 'value')}
           continue
         }
@@ -299,13 +299,13 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma) {
     if (additionalPropertiesSchema === true) {
       code += `
         ${addComma}
-        json += serializer.asString(key) + ':' + JSON.stringify(value)
+        json += serializer.asString(key,null) + ':' + JSON.stringify(value)
       `
     } else {
       const propertyLocation = location.getPropertyLocation('additionalProperties')
       code += `
         ${addComma}
-        json += serializer.asString(key) + ':'
+        json += serializer.asString(key,null) + ':'
         ${buildValue(context, propertyLocation, 'value')}
       `
     }
@@ -726,7 +726,7 @@ function buildSingleTypeSerializer (context, location, input) {
       } else if (schema.format === 'time') {
         return `json += serializer.asTime(${input})`
       } else {
-        return `json += serializer.asString(${input},"${schema?.format}")`
+        return `json += serializer.asString(${input},"${schema.format}")`
       }
     }
     case 'integer':
