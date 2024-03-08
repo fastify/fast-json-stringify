@@ -630,6 +630,25 @@ integer-like values, such as:
 - `'2e4'` - _note this will be converted to `2`, not `20000`_
 - `1.5` - _note this will be converted to `1`_
 
+<a name="raw"></a>
+#### Raw string
+By default the library escape all string. With format "raw" the string isn't escaped. This has a very dangerous potential security issue. Raw format would not escape a double quote char which makes it very easy to inject something into the data. You can use it only if you 200% sure in your data. 
+The advantage is a massive performance improvement
+
+Example:
+```javascript
+const stringify = fastJson({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    'code': {
+	type: 'string',
+	format 'raw'
+    }
+  }
+})
+```
+
 ##### Benchmarks
 
 For reference, here goes some benchmarks for comparison over the three
