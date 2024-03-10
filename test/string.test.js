@@ -48,3 +48,37 @@ test('serialize long string', (t) => {
   t.equal(output, `"${new Array(2e4).fill('\\u0000').join('')}"`)
   t.equal(JSON.parse(output), input)
 })
+
+test('unsafe string', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string',
+    format: 'unsafe'
+  }
+
+  const input = 'abcd'
+  const stringify = build(schema)
+  const output = stringify(input)
+
+  t.equal(output, `"${input}"`)
+  t.equal(JSON.parse(output), input)
+})
+
+test('unsafe unescaped string', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string',
+    format: 'unsafe'
+  }
+
+  const input = 'abcd "abcd"'
+  const stringify = build(schema)
+  const output = stringify(input)
+
+  t.equal(output, `"${input}"`)
+  t.throws(function () {
+    JSON.parse(output)
+  })
+})
