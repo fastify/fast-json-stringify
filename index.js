@@ -728,7 +728,21 @@ function buildSingleTypeSerializer (context, location, input) {
       } else if (schema.format === 'unsafe') {
         return `json += serializer.asUnsafeString(${input})`
       } else {
-        return `json += serializer.asString(${input})`
+        return `
+        if (typeof ${input} !== 'string') {
+          if (${input} === null) {
+            json += '""'
+          } else if (${input} instanceof Date) {
+            json += '"' + ${input}.toISOString() + '"'
+          } else if (${input} instanceof RegExp) {
+            json += serializer.asString(${input}.source)
+          } else {
+            json += serializer.asString(${input}.toString())
+          }
+        } else {
+          json += serializer.asString(${input})
+        }
+        `
       }
     }
     case 'integer':
