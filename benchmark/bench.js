@@ -48,6 +48,14 @@ const benchmarks = [
     input: 'hello world'
   },
   {
+    name: 'unsafe short string',
+    schema: {
+      type: 'string',
+      format: 'unsafe'
+    },
+    input: 'hello world'
+  },
+  {
     name: 'short string with double quote',
     schema: {
       type: 'string'
@@ -62,9 +70,25 @@ const benchmarks = [
     input: longSimpleString
   },
   {
+    name: 'unsafe long string without double quotes',
+    schema: {
+      type: 'string',
+      format: 'unsafe'
+    },
+    input: longSimpleString
+  },
+  {
     name: 'long string',
     schema: {
       type: 'string'
+    },
+    input: longString
+  },
+  {
+    name: 'unsafe long string',
+    schema: {
+      type: 'string',
+      format: 'unsafe'
     },
     input: longString
   },

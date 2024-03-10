@@ -725,6 +725,8 @@ function buildSingleTypeSerializer (context, location, input) {
         return `json += serializer.asDate(${input})`
       } else if (schema.format === 'time') {
         return `json += serializer.asTime(${input})`
+      } else if (schema.format === 'unsafe') {
+        return `json += serializer.asUnsafeString(${input})`
       } else {
         return `json += serializer.asString(${input})`
       }

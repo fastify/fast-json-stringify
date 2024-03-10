@@ -630,6 +630,24 @@ integer-like values, such as:
 - `'2e4'` - _note this will be converted to `2`, not `20000`_
 - `1.5` - _note this will be converted to `1`_
 
+<a name="unsafe"></a>
+#### Unsafe string
+By default, the library escapes all strings. With the 'unsafe' format, the string isn't escaped. This has a potentially dangerous security issue. You can use it only if you are sure that your data doesn't need escaping. The advantage is a significant performance improvement.
+
+Example:
+```javascript
+const stringify = fastJson({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    'code': {
+	    type: 'string',
+	    format 'unsafe'
+    }
+  }
+})
+```
+
 ##### Benchmarks
 
 For reference, here goes some benchmarks for comparison over the three

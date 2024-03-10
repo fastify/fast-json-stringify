@@ -19,6 +19,12 @@ function buildTest (schema, toStringify) {
 }
 
 buildTest({
+  title: 'string',
+  type: 'string',
+  format: 'unsafe'
+}, 'hello world')
+
+buildTest({
   title: 'basic',
   type: 'object',
   properties: {
