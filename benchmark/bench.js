@@ -383,8 +383,14 @@ async function runBenchmarks () {
 
   for (const benchmark of benchmarks) {
     benchmark.name = benchmark.name.padEnd(maxNameLength, '.')
-    const resultMessage = await runBenchmark(benchmark)
-    console.log(resultMessage)
+
+    const resultLibMessage = await runBenchmark({ ...benchmark, native: false })
+    console.log(resultLibMessage + ' (fast-json-stringify)')
+
+    const resultNativeMessage = await runBenchmark({ ...benchmark, native: true })
+    console.log(resultNativeMessage + ' (JSON.stringify)')
+
+    console.log('\n')
   }
 }
 

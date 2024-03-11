@@ -12,7 +12,11 @@ const stringify = FJS(benchmark.schema)
 
 suite
   .add(benchmark.name, () => {
-    stringify(benchmark.input)
+    if (benchmark.native) {
+      JSON.stringify(benchmark.input)
+    } else {
+      stringify(benchmark.input)
+    }
   })
   .on('cycle', (event) => {
     parentPort.postMessage(String(event.target))
