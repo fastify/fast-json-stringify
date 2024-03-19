@@ -37,27 +37,27 @@
   },
   "homepage": "https://github.com/fastify/fast-json-stringify#readme",
   "devDependencies": {
-    "@fastify/pre-commit": "^2.0.2",
-    "@sinclair/typebox": "^0.32.3",
+    "@fastify/pre-commit": "^2.1.0",
+    "@sinclair/typebox": "^0.32.15",
     "benchmark": "^2.1.4",
     "cli-select": "^1.1.2",
     "compile-json-stringify": "^0.1.2",
-    "is-my-json-valid": "^2.20.0",
-    "simple-git": "^3.7.1",
-    "standard": "^17.0.0",
-    "tap": "^16.0.1",
-    "tsd": "^0.30.3",
-    "webpack": "^5.40.0",
+    "is-my-json-valid": "^2.20.6",
+    "simple-git": "^3.23.0",
+    "standard": "^17.1.0",
+    "tap": "^18.7.1",
+    "tsd": "^0.30.7",
+    "webpack": "^5.90.3",
     "fast-json-stringify": "."
   },
   "dependencies": {
-    "ajv": "^8.10.0",
+    "ajv": "^8.12.0",
     "ajv-formats": "^2.1.1",
     "fast-deep-equal": "^3.1.3",
-    "fast-uri": "^2.1.0",
-    "rfdc": "^1.2.0",
+    "fast-uri": "^2.3.0",
+    "rfdc": "^1.3.1",
     "json-schema-ref-resolver": "^1.0.1",
-    "@fastify/merge-json-schemas": "^0.1.0"
+    "@fastify/merge-json-schemas": "^0.1.1"
   },
   "standard": {
     "ignore": [
