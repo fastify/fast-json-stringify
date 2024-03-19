@@ -20,5 +20,5 @@ const render = fjs(schema)
 try {
   render(input)
 } catch (err) {
-  t.equal(err.message, 'The value cannot be converted to a number.')
+  t.equal(err.message, 'The value "phone" cannot be converted to a number.')
 }

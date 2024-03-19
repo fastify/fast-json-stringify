@@ -44,7 +44,7 @@ test('throws on NaN', (t) => {
   }
 
   const stringify = build(schema)
-  t.throws(() => stringify(NaN), new Error('The value cannot be converted to an integer.'))
+  t.throws(() => stringify(NaN), new Error('The value "NaN" cannot be converted to an integer.'))
 })
 
 test('render a float as an integer', (t) => {

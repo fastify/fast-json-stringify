@@ -35,7 +35,7 @@ test('Infinite integers', t => {
     try {
       stringify(v)
     } catch (err) {
-      t.equal(err.message, 'The value cannot be converted to an integer.')
+      t.equal(err.message, `The value "${v}" cannot be converted to an integer.`)
     }
   })
 })
