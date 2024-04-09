@@ -717,3 +717,39 @@ test('external recursive allOfs', (t) => {
   const stringify = build(schema, { schema: { externalSchema } })
   t.equal(stringify(data), '{"a":{"bar":"42","foo":{}},"b":{"bar":"42","foo":{}}}')
 })
+
+test('do not crash with $ref prop', (t) => {
+  t.plan(1)
+
+  const schema = {
+    title: 'object with $ref',
+    type: 'object',
+    properties: {
+      outside: {
+        $ref: '#/$defs/outside'
+      }
+    },
+    $defs: {
+      inside: {
+        type: 'object',
+        properties: {
+          $ref: {
+            type: 'string'
+          }
+        }
+      },
+      outside: {
+        allOf: [{
+          $ref: '#/$defs/inside'
+        }]
+      }
+    }
+  }
+  const stringify = build(schema)
+  const value = stringify({
+    outside: {
+      $ref: 'true'
+    }
+  })
+  t.equal(value, '{"outside":{"$ref":"true"}}')
+})
