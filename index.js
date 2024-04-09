@@ -438,7 +438,7 @@ function cloneOriginSchema (context, schema, schemaId) {
   for (const key in schema) {
     let value = schema[key]
 
-    if (key === '$ref' && value.charAt(0) === '#') {
+    if (key === '$ref' && typeof value === 'string' && value.charAt(0) === '#') {
       value = schemaId + value
     }
 
