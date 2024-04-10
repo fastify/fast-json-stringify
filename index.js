@@ -333,7 +333,7 @@ function buildInnerObject (context, location) {
   )
   const hasRequiredProperties = requiredProperties.includes(propertiesKeys[0])
 
-  let code = ''
+  let code = 'let value\n'
 
   for (const key of requiredProperties) {
     if (!propertiesKeys.includes(key)) {
@@ -360,10 +360,11 @@ function buildInnerObject (context, location) {
     const isRequired = requiredProperties.includes(key)
 
     code += `
-      if (obj[${sanitizedKey}] !== undefined) {
+      value = obj[${sanitizedKey}]
+      if (value !== undefined) {
         ${addComma}
         json += ${JSON.stringify(sanitizedKey + ':')}
-        ${buildValue(context, propertyLocation, `obj[${sanitizedKey}]`)}
+        ${buildValue(context, propertyLocation, 'value')}
       }`
 
     if (defaultValue !== undefined) {
@@ -543,13 +544,15 @@ function buildArray (context, location) {
   }
 
   functionCode += `
+    let value
     let jsonOutput = ''
   `
 
   if (Array.isArray(itemsSchema)) {
     for (let i = 0; i < itemsSchema.length; i++) {
       const item = itemsSchema[i]
-      const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), `obj[${i}]`)
+      functionCode += `value = obj[${i}]`
+      const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), 'value')
       functionCode += `
         if (${i} < arrayLength) {
           if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
@@ -600,33 +603,33 @@ function buildArrayTypeCondition (type, accessor) {
   let condition
   switch (type) {
     case 'null':
-      condition = `obj${accessor} === null`
+      condition = 'value === null'
       break
     case 'string':
-      condition = `typeof obj${accessor} === 'string' ||
-      obj${accessor} === null ||
-      obj${accessor} instanceof Date ||
-      obj${accessor} instanceof RegExp ||
+      condition = `typeof value === 'string' ||
+      value === null ||
+      value instanceof Date ||
+      value instanceof RegExp ||
       (
-        typeof obj${accessor} === "object" &&
-        typeof obj${accessor}.toString === "function" &&
-        obj${accessor}.toString !== Object.prototype.toString
+        typeof value === "object" &&
+        typeof value.toString === "function" &&
+        value.toString !== Object.prototype.toString
       )`
       break
     case 'integer':
-      condition = `Number.isInteger(obj${accessor})`
+      condition = 'Number.isInteger(value)'
       break
     case 'number':
-      condition = `Number.isFinite(obj${accessor})`
+      condition = 'Number.isFinite(value)'
       break
     case 'boolean':
-      condition = `typeof obj${accessor} === 'boolean'`
+      condition = 'typeof value === \'boolean\''
       break
     case 'object':
-      condition = `obj${accessor} && typeof obj${accessor} === 'object' && obj${accessor}.constructor === Object`
+      condition = 'value && typeof value === \'object\' && value.constructor === Object'
       break
     case 'array':
-      condition = `Array.isArray(obj${accessor})`
+      condition = 'Array.isArray(value)'
       break
     default:
       if (Array.isArray(type)) {
