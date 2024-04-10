@@ -548,19 +548,14 @@ function buildArray (context, location) {
 
   if (Array.isArray(itemsSchema)) {
     for (let i = 0; i < itemsSchema.length; i++) {
-      const item = itemsSchema[i]
       const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), `obj[${i}]`)
       functionCode += `
         if (${i} < arrayLength) {
-          if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
-            let json = ''
-            ${tmpRes}
-            jsonOutput += json
-            if (${i} < arrayLength - 1) {
-              jsonOutput += ','
-            }
-          } else {
-            throw new Error(\`Item at ${i} does not match schema definition.\`)
+          let json = ''
+          ${tmpRes}
+          jsonOutput += json
+          if (${i} < arrayLength - 1) {
+            jsonOutput += ','
           }
         }
         `
@@ -594,49 +589,6 @@ function buildArray (context, location) {
 
   context.functions.push(functionCode)
   return functionName
-}
-
-function buildArrayTypeCondition (type, accessor) {
-  let condition
-  switch (type) {
-    case 'null':
-      condition = `obj${accessor} === null`
-      break
-    case 'string':
-      condition = `typeof obj${accessor} === 'string' ||
-      obj${accessor} === null ||
-      obj${accessor} instanceof Date ||
-      obj${accessor} instanceof RegExp ||
-      (
-        typeof obj${accessor} === "object" &&
-        typeof obj${accessor}.toString === "function" &&
-        obj${accessor}.toString !== Object.prototype.toString
-      )`
-      break
-    case 'integer':
-      condition = `Number.isInteger(obj${accessor})`
-      break
-    case 'number':
-      condition = `Number.isFinite(obj${accessor})`
-      break
-    case 'boolean':
-      condition = `typeof obj${accessor} === 'boolean'`
-      break
-    case 'object':
-      condition = `obj${accessor} && typeof obj${accessor} === 'object' && obj${accessor}.constructor === Object`
-      break
-    case 'array':
-      condition = `Array.isArray(obj${accessor})`
-      break
-    default:
-      if (Array.isArray(type)) {
-        const conditions = type.map((subType) => {
-          return buildArrayTypeCondition(subType, accessor)
-        })
-        condition = `(${conditions.join(' || ')})`
-      }
-  }
-  return condition
 }
 
 function generateFuncName (context) {
