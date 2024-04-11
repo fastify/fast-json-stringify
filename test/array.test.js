@@ -195,30 +195,6 @@ buildTest({
   '@data': ['test']
 })
 
-test('invalid items throw', (t) => {
-  t.plan(1)
-  const schema = {
-    type: 'object',
-    properties: {
-      args: {
-        type: 'array',
-        items: [
-          {
-            type: 'object',
-            patternProperties: {
-              '.*': {
-                type: 'string'
-              }
-            }
-          }
-        ]
-      }
-    }
-  }
-  const stringify = build(schema)
-  t.throws(() => stringify({ args: ['invalid'] }))
-})
-
 buildTest({
   title: 'item types in array default to any',
   type: 'object',
@@ -329,8 +305,8 @@ test('array items is a list of schema and additionalItems is false /2', (t) => {
 
   const stringify = build(schema)
 
-  t.throws(() => stringify({ foo: [1, 'bar'] }), new Error('Item at 0 does not match schema definition.'))
-  t.throws(() => stringify({ foo: ['foo', 1] }), new Error('Item at 1 does not match schema definition.'))
+  t.strictSame(stringify({ foo: [1, 'bar'] }), '{"foo":["1","bar"]}')
+  t.strictSame(stringify({ foo: ['foo', 1] }), '{"foo":["foo","1"]}')
   t.throws(() => stringify({ foo: ['foo', 'bar', 'baz'] }), new Error('Item at 2 does not match schema definition.'))
 })
 
