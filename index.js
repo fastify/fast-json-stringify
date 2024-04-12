@@ -156,12 +156,12 @@ function build (schema, options) {
   } else {
     contextFunctionCode = `
     let json
-    function main (input, stream = []) {
-      json = stream
+    function main (input, stream) {
+      json = stream || []
       ${code}
       json.push(null) // close stream
-      if( Array.isArray(stream) ){
-        return stream.join('')
+      if( Array.isArray(json) ){
+        return json.join('')
       }
     }
     ${context.functions.join('\n')}
@@ -368,7 +368,8 @@ function buildInnerObject (context, location) {
       if (value !== undefined) {
         ${addComma}
         json.push(${JSON.stringify(sanitizedKey + ':')})
-        ${buildValue(context, propertyLocation, `obj[${sanitizedKey}]`)}
+        // buildValue: ${JSON.stringify(location.schema)}
+        ${buildValue(context, propertyLocation, `value`)}
       }`
 
     if (defaultValue !== undefined) {
@@ -547,7 +548,12 @@ function buildArray (context, location) {
     functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return .json.push(JSON.stringify(obj))\n`
   }
 
+  functionCode += `
+    let value\n
+  `
+
   if (Array.isArray(itemsSchema)) {
+    functionCode += `json.push('[')\n`
     for (let i = 0; i < itemsSchema.length; i++) {
       const item = itemsSchema[i]
       functionCode += `value = obj[${i}]`
@@ -749,18 +755,15 @@ function buildSingleTypeSerializer (context, location, input) {
     case 'boolean':
       return `json.push(serializer.asBoolean(${input}))`
     case 'object': {
-      const functionsCounter = context.functionsCounter
       const funcName = buildObject(context, location)
-      return functionsCounter === 0 ? `${funcName}(${input},json)` : `${funcName}(${input})`
+      return `${funcName}(${input},json)`
     }
     case 'array': {
       const funcName = buildArray(context, location)
-      return `${funcName}(${input})`
+      return `${funcName}(${input},json)`
     }
-    case undefined: {
-      `json.push(JSON.stringify(${input}))`
-      break
-    }
+    case undefined: 
+      return `json.push(JSON.stringify(${input}))`
     default:
       throw new Error(`${schema.type} unsupported`)
   }
