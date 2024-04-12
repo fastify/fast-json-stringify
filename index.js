@@ -369,7 +369,7 @@ function buildInnerObject (context, location) {
         ${addComma}
         json.push(${JSON.stringify(sanitizedKey + ':')})
         // buildValue: ${JSON.stringify(location.schema)}
-        ${buildValue(context, propertyLocation, `value`)}
+        ${buildValue(context, propertyLocation, 'value')}
       }`
 
     if (defaultValue !== undefined) {
@@ -553,7 +553,7 @@ function buildArray (context, location) {
   `
 
   if (Array.isArray(itemsSchema)) {
-    functionCode += `json.push('[')\n`
+    functionCode += 'json.push(\'[\')\n'
     for (let i = 0; i < itemsSchema.length; i++) {
       const item = itemsSchema[i]
       functionCode += `value = obj[${i}]`
@@ -762,7 +762,7 @@ function buildSingleTypeSerializer (context, location, input) {
       const funcName = buildArray(context, location)
       return `${funcName}(${input},json)`
     }
-    case undefined: 
+    case undefined:
       return `json.push(JSON.stringify(${input}))`
     default:
       throw new Error(`${schema.type} unsupported`)
