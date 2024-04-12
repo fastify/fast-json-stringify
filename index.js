@@ -101,7 +101,7 @@ function build (schema, options) {
     context.refResolver.addSchema(schema, context.rootSchemaId)
   }
 
-  if(context?.options?.enableStream){
+  if (context?.options?.enableStream) {
     addCommand = 'json.push'
   }
 
@@ -354,12 +354,12 @@ function buildInnerObject (context, location) {
     }
   }
 
-  code += `${addCommand}(\'{\')\n`
+  code += `${addCommand}('{')\n`
 
   let addComma = ''
   if (!hasRequiredProperties) {
     code += 'let addComma = false\n'
-    addComma = `!addComma && (addComma = true) || (${addCommand}(\',\'))`
+    addComma = `!addComma && (addComma = true) || (${addCommand}(','))`
   }
 
   for (const key of propertiesKeys) {
@@ -397,7 +397,7 @@ function buildInnerObject (context, location) {
     }
 
     if (hasRequiredProperties) {
-      addComma = `${addCommand}(\',\')`
+      addComma = `${addCommand}(',')`
     }
   }
 
@@ -497,7 +497,7 @@ function buildObject (context, location) {
     // ${schemaRef}
     function ${functionName} (input) {
       const obj = ${toJSON('input')}
-      ${!nullable ? `if (obj === null) return ${addCommand}(\'{}\')` : ''}
+      ${!nullable ? `if (obj === null) return ${addCommand}('{}')` : ''}
 
       ${buildInnerObject(context, location)}
     }
@@ -538,7 +538,7 @@ function buildArray (context, location) {
 
   const nullable = schema.nullable === true
   functionCode += `
-    ${!nullable ? `if (obj === null) return ${addCommand}(\'[]\')` : ''}
+    ${!nullable ? `if (obj === null) return ${addCommand}('[]')` : ''}
     if (!Array.isArray(obj)) {
       throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
     }
@@ -562,7 +562,7 @@ function buildArray (context, location) {
   `
 
   if (Array.isArray(itemsSchema)) {
-    functionCode += `${addCommand}(\'[\')\n`
+    functionCode += `${addCommand}('[')\n`
     for (let i = 0; i < itemsSchema.length; i++) {
       const item = itemsSchema[i]
       functionCode += `value = obj[${i}]`
@@ -729,7 +729,7 @@ function buildSingleTypeSerializer (context, location, input) {
 
   switch (schema.type) {
     case 'null':
-      return `${addCommand}(\'null\')`
+      return `${addCommand}('null')`
     case 'string': {
       if (schema.format === 'date-time') {
         return `${addCommand}(serializer.asDateTime(${input}))`
