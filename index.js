@@ -14,7 +14,8 @@ const SINGLE_TICK = /'/g
 
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
-let addCommand = 'json +='
+let addStartCommand = 'json += '
+let addEndCommand = ''
 
 const validRoundingMethods = [
   'floor',
@@ -102,7 +103,8 @@ function build (schema, options) {
   }
 
   if (context?.options?.enableStream) {
-    addCommand = 'json.push'
+    addStartCommand = 'json.push('
+    addEndCommand = ')'
   }
 
   if (options.schema) {
@@ -297,7 +299,7 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma) {
       code += `
         if (/${propertyKey.replace(/\\*\//g, '\\/')}/.test(key)) {
           ${addComma}
-          ${addCommand}(serializer.asString(key) + ':')
+          ${addStartCommand}serializer.asString(key) + ':'${addEndCommand}
           ${buildValue(context, propertyLocation, 'value')}
           continue
         }
@@ -312,13 +314,13 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma) {
     if (additionalPropertiesSchema === true) {
       code += `
         ${addComma}
-        ${addCommand}(serializer.asString(key) + ':' + JSON.stringify(value))
+        ${addStartCommand}serializer.asString(key) + ':' + JSON.stringify(value)${addEndCommand}
       `
     } else {
       const propertyLocation = location.getPropertyLocation('additionalProperties')
       code += `
         ${addComma}
-        ${addCommand}(serializer.asString(key) + ':')
+        ${addStartCommand}serializer.asString(key) + ':'${addEndCommand}
         ${buildValue(context, propertyLocation, 'value')}
       `
     }
@@ -354,12 +356,12 @@ function buildInnerObject (context, location) {
     }
   }
 
-  code += `${addCommand}('{')\n`
+  code += `${addStartCommand}'{'${addEndCommand}\n`
 
   let addComma = ''
   if (!hasRequiredProperties) {
     code += 'let addComma = false\n'
-    addComma = `!addComma && (addComma = true) || (${addCommand}(','))`
+    addComma = `!addComma && (addComma = true) || (${addStartCommand}','${addEndCommand})`
   }
 
   for (const key of propertiesKeys) {
@@ -376,7 +378,7 @@ function buildInnerObject (context, location) {
       value = obj[${sanitizedKey}]
       if (value !== undefined) {
         ${addComma}
-        ${addCommand}(${JSON.stringify(sanitizedKey + ':')})
+        ${addStartCommand}${JSON.stringify(sanitizedKey + ':')}${addEndCommand}
         // buildValue: ${JSON.stringify(location.schema)}
         ${buildValue(context, propertyLocation, 'value')}
       }`
@@ -384,7 +386,7 @@ function buildInnerObject (context, location) {
     if (defaultValue !== undefined) {
       code += ` else {
         ${addComma}
-        ${addCommand}(${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))})
+        ${addStartCommand}${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))}${addEndCommand}
       }
       `
     } else if (isRequired) {
@@ -397,7 +399,7 @@ function buildInnerObject (context, location) {
     }
 
     if (hasRequiredProperties) {
-      addComma = `${addCommand}(',')`
+      addComma = `${addStartCommand}','${addEndCommand}`
     }
   }
 
@@ -406,7 +408,7 @@ function buildInnerObject (context, location) {
   }
 
   code += `
-    ${addCommand}('}')
+    ${addStartCommand}'}'${addEndCommand}
   `
   return code
 }
@@ -497,7 +499,7 @@ function buildObject (context, location) {
     // ${schemaRef}
     function ${functionName} (input) {
       const obj = ${toJSON('input')}
-      ${!nullable ? `if (obj === null) return ${addCommand}('{}')` : ''}
+      ${!nullable ? `if (obj === null) return ${addStartCommand}'{}'${addEndCommand}` : ''}
 
       ${buildInnerObject(context, location)}
     }
@@ -538,7 +540,7 @@ function buildArray (context, location) {
 
   const nullable = schema.nullable === true
   functionCode += `
-    ${!nullable ? `if (obj === null) return ${addCommand}('[]')` : ''}
+    ${!nullable ? `if (obj === null) return ${addStartCommand}'[]'${addEndCommand}` : ''}
     if (!Array.isArray(obj)) {
       throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
     }
@@ -554,7 +556,7 @@ function buildArray (context, location) {
   }
 
   if (largeArrayMechanism === 'json-stringify') {
-    functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return ${addCommand}(JSON.stringify(obj))\n`
+    functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return ${addStartCommand}JSON.stringify(obj)${addEndCommand}\n`
   }
 
   functionCode += `
@@ -562,7 +564,7 @@ function buildArray (context, location) {
   `
 
   if (Array.isArray(itemsSchema)) {
-    functionCode += `${addCommand}('[')\n`
+    functionCode += `${addStartCommand}'['${addEndCommand}\n`
     for (let i = 0; i < itemsSchema.length; i++) {
       const item = itemsSchema[i]
       functionCode += `value = obj[${i}]`
@@ -572,7 +574,7 @@ function buildArray (context, location) {
           if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
             ${tmpRes}
             if (${i} < arrayLength - 1) {
-              ${addCommand}(',')
+              ${addStartCommand}','${addEndCommand}
             }
           } else {
             throw new Error(\`Item at ${i} does not match schema definition.\`)
@@ -584,24 +586,24 @@ function buildArray (context, location) {
     if (schema.additionalItems) {
       functionCode += `
         for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
-          ${addCommand}(JSON.stringify(obj[i]))
+          ${addStartCommand}JSON.stringify(obj[i])${addEndCommand}
           if (i < arrayLength - 1) {
-            ${addCommand}(',')
+            ${addStartCommand}','${addEndCommand}
           }
         }`
     }
   } else {
     const code = buildValue(context, itemsLocation, 'obj[i]')
-    functionCode += `${addCommand}('[')
+    functionCode += `${addStartCommand}'['${addEndCommand}
       for (let i = 0; i < arrayLength; i++) {
         ${code}
         if (i < arrayLength - 1) {
-          ${addCommand}(',')
+          ${addStartCommand}','${addEndCommand}
         }
       }`
   }
 
-  functionCode += `${addCommand}(']')
+  functionCode += `${addStartCommand}']'${addEndCommand}
   }`
 
   context.functions.push(functionCode)
@@ -729,40 +731,40 @@ function buildSingleTypeSerializer (context, location, input) {
 
   switch (schema.type) {
     case 'null':
-      return `${addCommand}('null')`
+      return `${addStartCommand}'null'${addEndCommand}`
     case 'string': {
       if (schema.format === 'date-time') {
-        return `${addCommand}(serializer.asDateTime(${input}))`
+        return `${addStartCommand}serializer.asDateTime(${input})${addEndCommand}`
       } else if (schema.format === 'date') {
-        return `${addCommand}(serializer.asDate(${input}))`
+        return `${addStartCommand}serializer.asDate(${input})${addEndCommand}`
       } else if (schema.format === 'time') {
-        return `${addCommand}(serializer.asTime(${input}))`
+        return `${addStartCommand}serializer.asTime(${input})${addEndCommand}`
       } else if (schema.format === 'unsafe') {
-        return `${addCommand}(serializer.asUnsafeString(${input}))`
+        return `${addStartCommand}serializer.asUnsafeString(${input})${addEndCommand}`
       } else {
         return `
         if (typeof ${input} !== 'string') {
           if (${input} === null) {
-            ${addCommand}('""')
+            ${addStartCommand}'""'${addEndCommand}
           } else if (${input} instanceof Date) {
-            ${addCommand}('"' + ${input}.toISOString() + '"')
+            ${addStartCommand}'"' + ${input}.toISOString() + '"'${addEndCommand}
           } else if (${input} instanceof RegExp) {
-            ${addCommand}(serializer.asString(${input}.source))
+            ${addStartCommand}serializer.asString(${input}.source)${addEndCommand}
           } else {
-            ${addCommand}(serializer.asString(${input}.toString()))
+            ${addStartCommand}serializer.asString(${input}.toString())${addEndCommand}
           }
         } else {
-          ${addCommand}(serializer.asString(${input}))
+          ${addStartCommand}serializer.asString(${input})${addEndCommand}
         }
         `
       }
     }
     case 'integer':
-      return `${addCommand}(serializer.asInteger(${input}))`
+      return `${addStartCommand}serializer.asInteger(${input})${addEndCommand}`
     case 'number':
-      return `${addCommand}(serializer.asNumber(${input}))`
+      return `${addStartCommand}serializer.asNumber(${input})${addEndCommand}`
     case 'boolean':
-      return `${addCommand}(serializer.asBoolean(${input}))`
+      return `${addStartCommand}serializer.asBoolean(${input})${addEndCommand}`
     case 'object': {
       const funcName = buildObject(context, location)
       return `${funcName}(${input},json)`
@@ -772,7 +774,7 @@ function buildSingleTypeSerializer (context, location, input) {
       return `${funcName}(${input},json)`
     }
     case undefined:
-      return `${addCommand}(JSON.stringify(${input}))`
+      return `${addStartCommand}JSON.stringify(${input})${addEndCommand}`
     default:
       throw new Error(`${schema.type} unsupported`)
   }
@@ -789,12 +791,12 @@ function buildConstSerializer (location, input) {
   if (hasNullType) {
     code += `
       if (${input} === null) {
-        ${addCommand}('null')
+        ${addStartCommand}'null'${addEndCommand}
       } else {
     `
   }
 
-  code += `${addCommand}('${JSON.stringify(schema.const).replace(SINGLE_TICK, "\\'")}')`
+  code += `${addStartCommand}'${JSON.stringify(schema.const).replace(SINGLE_TICK, "\\'")}'${addEndCommand}`
 
   if (hasNullType) {
     code += `
@@ -962,7 +964,7 @@ function buildValue (context, location, input) {
   let schema = location.schema
 
   if (typeof schema === 'boolean') {
-    return `${addCommand}(JSON.stringify(${input}))`
+    return `${addStartCommand}JSON.stringify(${input})${addEndCommand}`
   }
 
   if (schema.$ref) {
@@ -996,7 +998,7 @@ function buildValue (context, location, input) {
   if (nullable) {
     code += `
       if (${input} === null) {
-        ${addCommand}('null')
+        ${addStartCommand}'null'${addEndCommand}
       } else {
     `
   }
