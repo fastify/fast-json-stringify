@@ -156,10 +156,13 @@ function build (schema, options) {
   } else {
     contextFunctionCode = `
     let json
-    function main (input, stream) {
+    function main (input, stream = []) {
       json = stream
       ${code}
       json.push(null) // close stream
+      if( Array.isArray(stream) ){
+        return stream.join('')
+      }
     }
     ${context.functions.join('\n')}
     return main
@@ -541,7 +544,7 @@ function buildArray (context, location) {
   }
 
   if (largeArrayMechanism === 'json-stringify') {
-    functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
+    functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return .json.push(JSON.stringify(obj))\n`
   }
 
   if (Array.isArray(itemsSchema)) {
@@ -746,7 +749,7 @@ function buildSingleTypeSerializer (context, location, input) {
     case 'boolean':
       return `json.push(serializer.asBoolean(${input}))`
     case 'object': {
-      const functionsCounter = context.functionsCounter;
+      const functionsCounter = context.functionsCounter
       const funcName = buildObject(context, location)
       return functionsCounter === 0 ? `${funcName}(${input},json)` : `${funcName}(${input})`
     }
@@ -754,9 +757,10 @@ function buildSingleTypeSerializer (context, location, input) {
       const funcName = buildArray(context, location)
       return `${funcName}(${input})`
     }
-    case undefined:
+    case undefined: {
       `json.push(JSON.stringify(${input}))`
-      return
+      break
+    }
     default:
       throw new Error(`${schema.type} unsupported`)
   }
