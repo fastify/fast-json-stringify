@@ -147,7 +147,7 @@ function build (schema, options) {
   // and the overhead of the intermediate variable 'json'. We can avoid the
   // wrapping and the unnecessary memory allocation by aliasing 'anonymous0' to
   // 'main'
-  if (code === 'json += anonymous0(input)') {
+  if (code === 'anonymous0(input)') {
     contextFunctionCode = `
     ${context.functions.join('\n')}
     const main = anonymous0
@@ -155,10 +155,11 @@ function build (schema, options) {
     `
   } else {
     contextFunctionCode = `
-    function main (input) {
-      let json = ''
+    let json
+    function main (input, stream) {
+      json = stream
       ${code}
-      return json
+      json.push(null) // close stream
     }
     ${context.functions.join('\n')}
     return main
@@ -284,7 +285,7 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma) {
       code += `
         if (/${propertyKey.replace(/\\*\//g, '\\/')}/.test(key)) {
           ${addComma}
-          json += serializer.asString(key) + ':'
+          json.push(serializer.asString(key) + ':')
           ${buildValue(context, propertyLocation, 'value')}
           continue
         }
@@ -299,13 +300,13 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma) {
     if (additionalPropertiesSchema === true) {
       code += `
         ${addComma}
-        json += serializer.asString(key) + ':' + JSON.stringify(value)
+        json.push(serializer.asString(key) + ':' + JSON.stringify(value))
       `
     } else {
       const propertyLocation = location.getPropertyLocation('additionalProperties')
       code += `
         ${addComma}
-        json += serializer.asString(key) + ':'
+        json.push(serializer.asString(key) + ':')
         ${buildValue(context, propertyLocation, 'value')}
       `
     }
@@ -341,12 +342,12 @@ function buildInnerObject (context, location) {
     }
   }
 
-  code += 'let json = \'{\'\n'
+  code += 'json.push(\'{\')\n'
 
   let addComma = ''
   if (!hasRequiredProperties) {
     code += 'let addComma = false\n'
-    addComma = '!addComma && (addComma = true) || (json += \',\')'
+    addComma = '!addComma && (addComma = true) || (json.push(\',\'))'
   }
 
   for (const key of propertiesKeys) {
@@ -363,14 +364,14 @@ function buildInnerObject (context, location) {
       value = obj[${sanitizedKey}]
       if (value !== undefined) {
         ${addComma}
-        json += ${JSON.stringify(sanitizedKey + ':')}
-        ${buildValue(context, propertyLocation, 'value')}
+        json.push(${JSON.stringify(sanitizedKey + ':')})
+        ${buildValue(context, propertyLocation, `obj[${sanitizedKey}]`)}
       }`
 
     if (defaultValue !== undefined) {
       code += ` else {
         ${addComma}
-        json += ${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))}
+        json.push(${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))})
       }
       `
     } else if (isRequired) {
@@ -383,7 +384,7 @@ function buildInnerObject (context, location) {
     }
 
     if (hasRequiredProperties) {
-      addComma = 'json += \',\''
+      addComma = 'json.push(\',\')'
     }
   }
 
@@ -392,7 +393,7 @@ function buildInnerObject (context, location) {
   }
 
   code += `
-    return json + '}'
+    json.push('}')
   `
   return code
 }
@@ -483,7 +484,7 @@ function buildObject (context, location) {
     // ${schemaRef}
     function ${functionName} (input) {
       const obj = ${toJSON('input')}
-      ${!nullable ? 'if (obj === null) return \'{}\'' : ''}
+      ${!nullable ? 'if (obj === null) return json.push(\'{}\')' : ''}
 
       ${buildInnerObject(context, location)}
     }
@@ -524,7 +525,7 @@ function buildArray (context, location) {
 
   const nullable = schema.nullable === true
   functionCode += `
-    ${!nullable ? 'if (obj === null) return \'[]\'' : ''}
+    ${!nullable ? 'if (obj === null) return json.push(\'[]\')' : ''}
     if (!Array.isArray(obj)) {
       throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
     }
@@ -543,11 +544,6 @@ function buildArray (context, location) {
     functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
   }
 
-  functionCode += `
-    let value
-    let jsonOutput = ''
-  `
-
   if (Array.isArray(itemsSchema)) {
     for (let i = 0; i < itemsSchema.length; i++) {
       const item = itemsSchema[i]
@@ -556,11 +552,9 @@ function buildArray (context, location) {
       functionCode += `
         if (${i} < arrayLength) {
           if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
-            let json = ''
             ${tmpRes}
-            jsonOutput += json
             if (${i} < arrayLength - 1) {
-              jsonOutput += ','
+              json.push(',')
             }
           } else {
             throw new Error(\`Item at ${i} does not match schema definition.\`)
@@ -572,27 +566,24 @@ function buildArray (context, location) {
     if (schema.additionalItems) {
       functionCode += `
         for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
-          jsonOutput += JSON.stringify(obj[i])
+          json.push(JSON.stringify(obj[i]))
           if (i < arrayLength - 1) {
-            jsonOutput += ','
+            json.push(',')
           }
         }`
     }
   } else {
     const code = buildValue(context, itemsLocation, 'obj[i]')
-    functionCode += `
+    functionCode += `json.push('[')
       for (let i = 0; i < arrayLength; i++) {
-        let json = ''
         ${code}
-        jsonOutput += json
         if (i < arrayLength - 1) {
-          jsonOutput += ','
+          json.push(',')
         }
       }`
   }
 
-  functionCode += `
-    return \`[\${jsonOutput}]\`
+  functionCode += `json.push(']')
   }`
 
   context.functions.push(functionCode)
@@ -720,50 +711,52 @@ function buildSingleTypeSerializer (context, location, input) {
 
   switch (schema.type) {
     case 'null':
-      return 'json += \'null\''
+      return 'json.push(\'null\')'
     case 'string': {
       if (schema.format === 'date-time') {
-        return `json += serializer.asDateTime(${input})`
+        return `json.push(serializer.asDateTime(${input}))`
       } else if (schema.format === 'date') {
-        return `json += serializer.asDate(${input})`
+        return `json.push(serializer.asDate(${input}))`
       } else if (schema.format === 'time') {
-        return `json += serializer.asTime(${input})`
+        return `json.push(serializer.asTime(${input}))`
       } else if (schema.format === 'unsafe') {
-        return `json += serializer.asUnsafeString(${input})`
+        return `json.push(serializer.asUnsafeString(${input}))`
       } else {
         return `
         if (typeof ${input} !== 'string') {
           if (${input} === null) {
-            json += '""'
+            json.push('""')
           } else if (${input} instanceof Date) {
-            json += '"' + ${input}.toISOString() + '"'
+            json.push('"' + ${input}.toISOString() + '"')
           } else if (${input} instanceof RegExp) {
-            json += serializer.asString(${input}.source)
+            json.push(serializer.asString(${input}.source))
           } else {
-            json += serializer.asString(${input}.toString())
+            json.push(serializer.asString(${input}.toString()))
           }
         } else {
-          json += serializer.asString(${input})
+          json.push(serializer.asString(${input}))
         }
         `
       }
     }
     case 'integer':
-      return `json += serializer.asInteger(${input})`
+      return `json.push(serializer.asInteger(${input}))`
     case 'number':
-      return `json += serializer.asNumber(${input})`
+      return `json.push(serializer.asNumber(${input}))`
     case 'boolean':
-      return `json += serializer.asBoolean(${input})`
+      return `json.push(serializer.asBoolean(${input}))`
     case 'object': {
+      const functionsCounter = context.functionsCounter;
       const funcName = buildObject(context, location)
-      return `json += ${funcName}(${input})`
+      return functionsCounter === 0 ? `${funcName}(${input},json)` : `${funcName}(${input})`
     }
     case 'array': {
       const funcName = buildArray(context, location)
-      return `json += ${funcName}(${input})`
+      return `${funcName}(${input})`
     }
     case undefined:
-      return `json += JSON.stringify(${input})`
+      `json.push(JSON.stringify(${input}))`
+      return
     default:
       throw new Error(`${schema.type} unsupported`)
   }
@@ -780,12 +773,12 @@ function buildConstSerializer (location, input) {
   if (hasNullType) {
     code += `
       if (${input} === null) {
-        json += 'null'
+        json.push('null')
       } else {
     `
   }
 
-  code += `json += '${JSON.stringify(schema.const).replace(SINGLE_TICK, "\\'")}'`
+  code += `json.push('${JSON.stringify(schema.const).replace(SINGLE_TICK, "\\'")}')`
 
   if (hasNullType) {
     code += `
@@ -953,7 +946,7 @@ function buildValue (context, location, input) {
   let schema = location.schema
 
   if (typeof schema === 'boolean') {
-    return `json += JSON.stringify(${input})`
+    return `json.push(JSON.stringify(${input}))`
   }
 
   if (schema.$ref) {
@@ -987,7 +980,7 @@ function buildValue (context, location, input) {
   if (nullable) {
     code += `
       if (${input} === null) {
-        json += 'null'
+        json.push('null')
       } else {
     `
   }
