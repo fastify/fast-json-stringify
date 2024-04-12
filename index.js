@@ -545,7 +545,7 @@ function buildArray (context, location) {
   }
 
   if (largeArrayMechanism === 'json-stringify') {
-    functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return .json.push(JSON.stringify(obj))\n`
+    functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return json.push(JSON.stringify(obj))\n`
   }
 
   functionCode += `
