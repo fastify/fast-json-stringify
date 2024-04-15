@@ -402,14 +402,7 @@ function buildInnerObject (context, location) {
       addComma = 'json += \',\''
     }
   }
-  if (context.options.enableStream) {
-    code += `
-      if( json ){
-        stream.push(json)
-        json = '';
-      }
-    `
-  }
+
   if (schema.patternProperties || schema.additionalProperties) {
     code += buildExtraObjectPropertiesSerializer(context, location, addComma)
   }
@@ -420,8 +413,10 @@ function buildInnerObject (context, location) {
 
   if (context.options.enableStream) {
     code += `
-      stream.push(json)
-      json = ''
+      if( json ){
+        stream.push(json)
+        json = ''
+      }
     `
   }
 
