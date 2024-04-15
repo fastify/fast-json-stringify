@@ -118,7 +118,8 @@ const fastJson = require('fast-json-stringify')
 const stringify = fastJson(mySchema, {
   schema: { ... },
   ajv: { ... },
-  rounding: 'ceil'
+  rounding: 'ceil',
+  enableStream: false
 })
 ```
 
@@ -127,6 +128,7 @@ const stringify = fastJson(mySchema, {
 - `rounding`: setup how the `integer` types will be rounded when not integers. [More details](#integer)
 - `largeArrayMechanism`: set the mechanism that should be used to handle large
 (by default `20000` or more items) arrays. [More details](#largearrays)
+- `enableStream`: write the json on a stream [More details](#stream)
 
 
 <a name="api"></a>
@@ -647,6 +649,37 @@ const stringify = fastJson({
   }
 })
 ```
+
+<a name="stream"></a>
+#### stream
+You can set specific a stream to write
+Example:
+```javascript
+const fastJson = require('fast-json-stringify')
+
+const schema = {
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    foo: {
+      type: 'string'
+    }
+}
+const stringify = fastJson(schema, { enableStream: true })
+
+const data = { foo: 'bar' }
+const stream = new Readable()
+stringify(data, stream);
+
+const chunks = []
+stream.on('data', (chunk) => {
+  const str = Buffer.from(chunk).toString('utf8')
+  console.log('chunk', str)
+  chunks.push(str)
+})
+stream.on('end', () => console.log(chunks.join('')))
+```
+
 
 ##### Benchmarks
 
