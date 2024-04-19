@@ -540,10 +540,11 @@ function buildArray (context, location) {
   }
 
   if (largeArrayMechanism === 'json-stringify') {
-    functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
+    functionCode += `if (arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
   }
 
   functionCode += `
+    const arrayEnd = arrayLength - 1
     let value
     let json = ''
   `
@@ -557,7 +558,7 @@ function buildArray (context, location) {
         if (${i} < arrayLength) {
           if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
             ${tmpRes}
-            if (${i} < arrayLength - 1) {
+            if (${i} < arrayEnd) {
               json += ','
             }
           } else {
@@ -571,7 +572,7 @@ function buildArray (context, location) {
       functionCode += `
         for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
           json += JSON.stringify(obj[i])
-          if (i < arrayLength - 1) {
+          if (i < arrayEnd) {
             json += ','
           }
         }`
@@ -581,7 +582,7 @@ function buildArray (context, location) {
     functionCode += `
       for (let i = 0; i < arrayLength; i++) {
         ${code}
-        if (i < arrayLength - 1) {
+        if (i < arrayEnd) {
           json += ','
         }
       }`
