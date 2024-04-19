@@ -545,7 +545,7 @@ function buildArray (context, location) {
 
   functionCode += `
     let value
-    let jsonOutput = ''
+    let json = ''
   `
 
   if (Array.isArray(itemsSchema)) {
@@ -556,11 +556,9 @@ function buildArray (context, location) {
       functionCode += `
         if (${i} < arrayLength) {
           if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
-            let json = ''
             ${tmpRes}
-            jsonOutput += json
             if (${i} < arrayLength - 1) {
-              jsonOutput += ','
+              json += ','
             }
           } else {
             throw new Error(\`Item at ${i} does not match schema definition.\`)
@@ -572,9 +570,9 @@ function buildArray (context, location) {
     if (schema.additionalItems) {
       functionCode += `
         for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
-          jsonOutput += JSON.stringify(obj[i])
+          json += JSON.stringify(obj[i])
           if (i < arrayLength - 1) {
-            jsonOutput += ','
+            json += ','
           }
         }`
     }
@@ -582,17 +580,15 @@ function buildArray (context, location) {
     const code = buildValue(context, itemsLocation, 'obj[i]')
     functionCode += `
       for (let i = 0; i < arrayLength; i++) {
-        let json = ''
         ${code}
-        jsonOutput += json
         if (i < arrayLength - 1) {
-          jsonOutput += ','
+          json += ','
         }
       }`
   }
 
   functionCode += `
-    return \`[\${jsonOutput}]\`
+    return \`[\${json}]\`
   }`
 
   context.functions.push(functionCode)
