@@ -540,12 +540,13 @@ function buildArray (context, location) {
   }
 
   if (largeArrayMechanism === 'json-stringify') {
-    functionCode += `if (arrayLength && arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
+    functionCode += `if (arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
   }
 
   functionCode += `
+    const arrayEnd = arrayLength - 1
     let value
-    let jsonOutput = ''
+    let json = ''
   `
 
   if (Array.isArray(itemsSchema)) {
@@ -556,11 +557,9 @@ function buildArray (context, location) {
       functionCode += `
         if (${i} < arrayLength) {
           if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
-            let json = ''
             ${tmpRes}
-            jsonOutput += json
-            if (${i} < arrayLength - 1) {
-              jsonOutput += ','
+            if (${i} < arrayEnd) {
+              json += ','
             }
           } else {
             throw new Error(\`Item at ${i} does not match schema definition.\`)
@@ -572,9 +571,9 @@ function buildArray (context, location) {
     if (schema.additionalItems) {
       functionCode += `
         for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
-          jsonOutput += JSON.stringify(obj[i])
-          if (i < arrayLength - 1) {
-            jsonOutput += ','
+          json += JSON.stringify(obj[i])
+          if (i < arrayEnd) {
+            json += ','
           }
         }`
     }
@@ -582,17 +581,15 @@ function buildArray (context, location) {
     const code = buildValue(context, itemsLocation, 'obj[i]')
     functionCode += `
       for (let i = 0; i < arrayLength; i++) {
-        let json = ''
         ${code}
-        jsonOutput += json
-        if (i < arrayLength - 1) {
-          jsonOutput += ','
+        if (i < arrayEnd) {
+          json += ','
         }
       }`
   }
 
   functionCode += `
-    return \`[\${jsonOutput}]\`
+    return \`[\${json}]\`
   }`
 
   context.functions.push(functionCode)
