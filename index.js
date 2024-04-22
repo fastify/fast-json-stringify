@@ -145,11 +145,13 @@ function build (schema, options) {
     const JSON_STR_END_OBJECT = '}'
     const JSON_STR_BEGIN_ARRAY = '['
     const JSON_STR_END_ARRAY = ']'
-    const JSON_STR_EMPTY_OBJECT = JSON_STR_BEGIN_OBJECT + JSON_STR_END_OBJECT
-    const JSON_STR_EMPTY_ARRAY = JSON_STR_BEGIN_ARRAY + JSON_STR_END_ARRAY
     const JSON_STR_COMMA = ','
     const JSON_STR_COLONS = ':'
     const JSON_STR_QUOTE = '"'
+    const JSON_STR_EMPTY_OBJECT = JSON_STR_BEGIN_OBJECT + JSON_STR_END_OBJECT
+    const JSON_STR_EMPTY_ARRAY = JSON_STR_BEGIN_ARRAY + JSON_STR_END_ARRAY
+    const JSON_STR_EMPTY_STRING = JSON_STR_QUOTE + JSON_STR_QUOTE
+    const JSON_STR_NULL = 'null'
   `
 
   // If we have only the invocation of the 'anonymous0' function, we would
@@ -727,7 +729,7 @@ function buildSingleTypeSerializer (context, location, input) {
 
   switch (schema.type) {
     case 'null':
-      return 'json += \'null\''
+      return 'json += JSON_STR_NULL'
     case 'string': {
       if (schema.format === 'date-time') {
         return `json += serializer.asDateTime(${input})`
@@ -741,7 +743,7 @@ function buildSingleTypeSerializer (context, location, input) {
         return `
         if (typeof ${input} !== 'string') {
           if (${input} === null) {
-            json += JSON_STR_QUOTE + JSON_STR_QUOTE
+            json += JSON_STR_EMPTY_STRING
           } else if (${input} instanceof Date) {
             json += JSON_STR_QUOTE + ${input}.toISOString() + JSON_STR_QUOTE
           } else if (${input} instanceof RegExp) {
@@ -787,7 +789,7 @@ function buildConstSerializer (location, input) {
   if (hasNullType) {
     code += `
       if (${input} === null) {
-        json += 'null'
+        json += JSON_STR_NULL
       } else {
     `
   }
@@ -994,7 +996,7 @@ function buildValue (context, location, input) {
   if (nullable) {
     code += `
       if (${input} === null) {
-        json += 'null'
+        json += JSON_STR_NULL
       } else {
     `
   }
