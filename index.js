@@ -387,7 +387,7 @@ function buildInnerObject (context, location) {
       `
     } else if (isRequired) {
       code += ` else {
-        throw new Error('${sanitizedKey} is required!')
+        throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')
       }
       `
     } else {
