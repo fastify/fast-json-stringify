@@ -18,3 +18,19 @@ test('required property containing single quote, contains property', (t) => {
 
   t.throws(() => stringify({}), new Error('"\'" is required!'))
 })
+
+test('required property containing single quote, does not contain property', (t) => {
+  t.plan(1)
+
+  const stringify = build({
+    type: 'object',
+    properties: {
+      a: { type: 'string' }
+    },
+    required: [
+      '\''
+    ]
+  })
+
+  t.throws(() => stringify({}), new Error('"\'" is required!'))
+})
