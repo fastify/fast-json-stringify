@@ -140,7 +140,19 @@ function build (schema, options) {
   const location = new Location(schema, context.rootSchemaId)
   const code = buildValue(context, location, 'input')
 
-  let contextFunctionCode
+  let contextFunctionCode = `
+    const JSON_STR_BEGIN_OBJECT = '{'
+    const JSON_STR_END_OBJECT = '}'
+    const JSON_STR_BEGIN_ARRAY = '['
+    const JSON_STR_END_ARRAY = ']'
+    const JSON_STR_COMMA = ','
+    const JSON_STR_COLONS = ':'
+    const JSON_STR_QUOTE = '"'
+    const JSON_STR_EMPTY_OBJECT = JSON_STR_BEGIN_OBJECT + JSON_STR_END_OBJECT
+    const JSON_STR_EMPTY_ARRAY = JSON_STR_BEGIN_ARRAY + JSON_STR_END_ARRAY
+    const JSON_STR_EMPTY_STRING = JSON_STR_QUOTE + JSON_STR_QUOTE
+    const JSON_STR_NULL = 'null'
+  `
 
   // If we have only the invocation of the 'anonymous0' function, we would
   // basically just wrap the 'anonymous0' function in the 'main' function and
@@ -148,13 +160,13 @@ function build (schema, options) {
   // wrapping and the unnecessary memory allocation by aliasing 'anonymous0' to
   // 'main'
   if (code === 'json += anonymous0(input)') {
-    contextFunctionCode = `
+    contextFunctionCode += `
     ${context.functions.join('\n')}
     const main = anonymous0
     return main
     `
   } else {
-    contextFunctionCode = `
+    contextFunctionCode += `
     function main (input) {
       let json = ''
       ${code}
@@ -284,7 +296,7 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma) {
       code += `
         if (/${propertyKey.replace(/\\*\//g, '\\/')}/.test(key)) {
           ${addComma}
-          json += serializer.asString(key) + ':'
+          json += serializer.asString(key) + JSON_STR_COLONS
           ${buildValue(context, propertyLocation, 'value')}
           continue
         }
@@ -299,13 +311,13 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma) {
     if (additionalPropertiesSchema === true) {
       code += `
         ${addComma}
-        json += serializer.asString(key) + ':' + JSON.stringify(value)
+        json += serializer.asString(key) + JSON_STR_COLONS + JSON.stringify(value)
       `
     } else {
       const propertyLocation = location.getPropertyLocation('additionalProperties')
       code += `
         ${addComma}
-        json += serializer.asString(key) + ':'
+        json += serializer.asString(key) + JSON_STR_COLONS
         ${buildValue(context, propertyLocation, 'value')}
       `
     }
@@ -341,12 +353,12 @@ function buildInnerObject (context, location) {
     }
   }
 
-  code += 'let json = \'{\'\n'
+  code += 'let json = JSON_STR_BEGIN_OBJECT\n'
 
   let addComma = ''
   if (!hasRequiredProperties) {
     code += 'let addComma = false\n'
-    addComma = '!addComma && (addComma = true) || (json += \',\')'
+    addComma = '!addComma && (addComma = true) || (json += JSON_STR_COMMA)'
   }
 
   for (const key of propertiesKeys) {
@@ -392,7 +404,7 @@ function buildInnerObject (context, location) {
   }
 
   code += `
-    return json + '}'
+    return json + JSON_STR_END_OBJECT
   `
   return code
 }
@@ -483,7 +495,7 @@ function buildObject (context, location) {
     // ${schemaRef}
     function ${functionName} (input) {
       const obj = ${toJSON('input')}
-      ${!nullable ? 'if (obj === null) return \'{}\'' : ''}
+      ${!nullable ? 'if (obj === null) return JSON_STR_EMPTY_OBJECT' : ''}
 
       ${buildInnerObject(context, location)}
     }
@@ -524,7 +536,7 @@ function buildArray (context, location) {
 
   const nullable = schema.nullable === true
   functionCode += `
-    ${!nullable ? 'if (obj === null) return \'[]\'' : ''}
+    ${!nullable ? 'if (obj === null) return JSON_STR_EMPTY_ARRAY' : ''}
     if (!Array.isArray(obj)) {
       throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
     }
@@ -559,7 +571,7 @@ function buildArray (context, location) {
           if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
             ${tmpRes}
             if (${i} < arrayEnd) {
-              json += ','
+              json += JSON_STR_COMMA
             }
           } else {
             throw new Error(\`Item at ${i} does not match schema definition.\`)
@@ -573,7 +585,7 @@ function buildArray (context, location) {
         for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
           json += JSON.stringify(obj[i])
           if (i < arrayEnd) {
-            json += ','
+            json += JSON_STR_COMMA
           }
         }`
     }
@@ -583,13 +595,13 @@ function buildArray (context, location) {
       for (let i = 0; i < arrayLength; i++) {
         ${code}
         if (i < arrayEnd) {
-          json += ','
+          json += JSON_STR_COMMA
         }
       }`
   }
 
   functionCode += `
-    return \`[\${json}]\`
+    return JSON_STR_BEGIN_ARRAY + json + JSON_STR_END_ARRAY
   }`
 
   context.functions.push(functionCode)
@@ -717,7 +729,7 @@ function buildSingleTypeSerializer (context, location, input) {
 
   switch (schema.type) {
     case 'null':
-      return 'json += \'null\''
+      return 'json += JSON_STR_NULL'
     case 'string': {
       if (schema.format === 'date-time') {
         return `json += serializer.asDateTime(${input})`
@@ -731,9 +743,9 @@ function buildSingleTypeSerializer (context, location, input) {
         return `
         if (typeof ${input} !== 'string') {
           if (${input} === null) {
-            json += '""'
+            json += JSON_STR_EMPTY_STRING
           } else if (${input} instanceof Date) {
-            json += '"' + ${input}.toISOString() + '"'
+            json += JSON_STR_QUOTE + ${input}.toISOString() + JSON_STR_QUOTE
           } else if (${input} instanceof RegExp) {
             json += serializer.asString(${input}.source)
           } else {
@@ -777,7 +789,7 @@ function buildConstSerializer (location, input) {
   if (hasNullType) {
     code += `
       if (${input} === null) {
-        json += 'null'
+        json += JSON_STR_NULL
       } else {
     `
   }
@@ -984,7 +996,7 @@ function buildValue (context, location, input) {
   if (nullable) {
     code += `
       if (${input} === null) {
-        json += 'null'
+        json += JSON_STR_NULL
       } else {
     `
   }
