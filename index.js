@@ -374,7 +374,7 @@ function buildInnerObject (context, location) {
 
     code += `
       value = obj[${sanitizedKey}]
-      if (value !== undefined) {
+      if ${context.options.stripNull ? '(value != null)' : '(value !== undefined)'} {
         ${addComma}
         json += ${JSON.stringify(sanitizedKey + ':')}
         ${buildValue(context, propertyLocation, 'value')}
