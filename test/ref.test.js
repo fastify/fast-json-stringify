@@ -2128,3 +2128,40 @@ test('ref internal - throw if schema has definition twice with different shape',
     t.equal(err.message, 'There is already another anchor "#uri" in a schema "test".')
   }
 })
+
+test('2 anyOf self ref', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      field: { type: 'string' },
+      field1: {
+        anyOf: [
+          { $ref: '#' },
+          { type: 'null' }
+        ]
+      },
+      field2: {
+        anyOf: [
+          { $ref: '#' },
+          { type: 'null' }
+        ]
+      }
+    }
+  }
+
+  const object = {
+    field: 'a',
+    field1: {
+      field: 'b',
+      field1: null,
+      field2: null
+    },
+    field2: null
+  }
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  t.equal(output, JSON.stringify(object))
+})
