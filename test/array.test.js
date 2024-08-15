@@ -62,6 +62,34 @@ buildTest({
 })
 
 buildTest({
+  title: 'dates tuple $ref',
+  definitions: {
+    dateTime: {
+      type: 'string',
+      format: 'date-time'
+    }
+  },
+  type: 'object',
+  properties: {
+    dates: {
+      type: 'array',
+      minItems: 2,
+      maxItems: 2,
+      items: [
+        {
+          $ref: '#/definitions/dateTime'
+        },
+        {
+          $ref: '#/definitions/dateTime'
+        }
+      ]
+    }
+  }
+}, {
+  dates: [new Date(1), new Date(2)]
+})
+
+buildTest({
   title: 'string array',
   type: 'object',
   properties: {
