@@ -51,7 +51,7 @@
     "webpack": "^5.90.3"
   },
   "dependencies": {
-    "@fastify/merge-json-schemas": "^0.1.1",
+    "@fastify/merge-json-schemas": "^0.2.0",
     "ajv": "^8.12.0",
     "ajv-formats": "^3.0.1",
     "fast-uri": "^3.0.0",
