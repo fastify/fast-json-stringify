@@ -1,14 +1,13 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { deepStrictEqual, throws, ok } = require('node:assert')
 const validator = require('is-my-json-valid')
 const build = require('..')
 const Ajv = require('ajv')
 
-test('error on invalid largeArrayMechanism', (t) => {
-  t.plan(1)
-
-  t.throws(() => build({
+describe('error on invalid largeArrayMechanism', () => {
+  throws(() => build({
     title: 'large array of null values with default mechanism',
     type: 'object',
     properties: {
@@ -24,16 +23,14 @@ test('error on invalid largeArrayMechanism', (t) => {
 })
 
 function buildTest (schema, toStringify, options) {
-  test(`render a ${schema.title} as JSON`, (t) => {
-    t.plan(3)
-
+  describe(`render a ${schema.title} as JSON`, () => {
     const validate = validator(schema)
     const stringify = build(schema, options)
     const output = stringify(toStringify)
 
-    t.same(JSON.parse(output), JSON.parse(JSON.stringify(toStringify)))
-    t.equal(output, JSON.stringify(toStringify))
-    t.ok(validate(JSON.parse(output)), 'valid schema')
+    deepStrictEqual(JSON.parse(output), JSON.parse(JSON.stringify(toStringify)))
+    deepStrictEqual(output, JSON.stringify(toStringify))
+    ok(validate(JSON.parse(output)), 'valid schema')
   })
 }
 
@@ -195,8 +192,7 @@ buildTest({
   '@data': ['test']
 })
 
-test('invalid items throw', (t) => {
-  t.plan(1)
+describe('invalid items throw', (t) => {
   const schema = {
     type: 'object',
     properties: {
@@ -216,7 +212,7 @@ test('invalid items throw', (t) => {
     }
   }
   const stringify = build(schema)
-  t.throws(() => stringify({ args: ['invalid'] }))
+  throws(() => stringify({ args: ['invalid'] }))
 })
 
 buildTest({
@@ -231,9 +227,7 @@ buildTest({
   foo: [1, 'string', {}, null]
 })
 
-test('array items is a list of schema and additionalItems is true, just the described item is validated', (t) => {
-  t.plan(1)
-
+describe('array items is a list of schema and additionalItems is true, just the described item is validated', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -258,12 +252,10 @@ test('array items is a list of schema and additionalItems is true, just the desc
     ]
   })
 
-  t.equal(result, '{"foo":["foo","bar",1]}')
+  deepStrictEqual(result, '{"foo":["foo","bar",1]}')
 })
 
-test('array items is a list of schema and additionalItems is true, just the described item is validated', (t) => {
-  t.plan(1)
-
+describe('array items is a list of schema and additionalItems is true, just the described item is validated', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -287,12 +279,10 @@ test('array items is a list of schema and additionalItems is true, just the desc
     foo: ['foo']
   })
 
-  t.equal(result, '{"foo":["foo"]}')
+  deepStrictEqual(result, '{"foo":["foo"]}')
 })
 
-test('array items is a list of schema and additionalItems is false /1', (t) => {
-  t.plan(1)
-
+describe('array items is a list of schema and additionalItems is false /1', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -307,12 +297,10 @@ test('array items is a list of schema and additionalItems is false /1', (t) => {
   }
 
   const stringify = build(schema)
-  t.throws(() => stringify({ foo: ['foo', 'bar'] }), new Error('Item at 1 does not match schema definition.'))
+  throws(() => stringify({ foo: ['foo', 'bar'] }), new Error('Item at 1 does not match schema definition.'))
 })
 
-test('array items is a list of schema and additionalItems is false /2', (t) => {
-  t.plan(3)
-
+describe('array items is a list of schema and additionalItems is false /2', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -329,14 +317,12 @@ test('array items is a list of schema and additionalItems is false /2', (t) => {
 
   const stringify = build(schema)
 
-  t.throws(() => stringify({ foo: [1, 'bar'] }), new Error('Item at 0 does not match schema definition.'))
-  t.throws(() => stringify({ foo: ['foo', 1] }), new Error('Item at 1 does not match schema definition.'))
-  t.throws(() => stringify({ foo: ['foo', 'bar', 'baz'] }), new Error('Item at 2 does not match schema definition.'))
+  throws(() => stringify({ foo: [1, 'bar'] }), new Error('Item at 0 does not match schema definition.'))
+  throws(() => stringify({ foo: ['foo', 1] }), new Error('Item at 1 does not match schema definition.'))
+  throws(() => stringify({ foo: ['foo', 'bar', 'baz'] }), new Error('Item at 2 does not match schema definition.'))
 })
 
-test('array items is a schema and additionalItems is false', (t) => {
-  t.plan(2)
-
+describe('array items is a schema and additionalItems is false', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -354,13 +340,12 @@ test('array items is a schema and additionalItems is false', (t) => {
   const ajv = new Ajv({ allErrors: true, strict: false })
 
   const validate = ajv.compile(schema)
-  t.same(stringify({ foo: ['foo', 'bar'] }), '{"foo":["foo","bar"]}')
-  t.equal(validate({ foo: ['foo', 'bar'] }), true)
+  deepStrictEqual(stringify({ foo: ['foo', 'bar'] }), '{"foo":["foo","bar"]}')
+  deepStrictEqual(validate({ foo: ['foo', 'bar'] }), true)
 })
 
 // https://github.com/fastify/fast-json-stringify/issues/279
-test('object array with anyOf and symbol', (t) => {
-  t.plan(1)
+describe('object array with anyOf and symbol', (t) => {
   const ArrayKind = Symbol('ArrayKind')
   const ObjectKind = Symbol('LiteralKind')
   const UnionKind = Symbol('UnionKind')
@@ -402,12 +387,10 @@ test('object array with anyOf and symbol', (t) => {
     { name: 'name-0', option: 'Foo' },
     { name: 'name-1', option: 'Bar' }
   ])
-  t.equal(value, '[{"name":"name-0","option":"Foo"},{"name":"name-1","option":"Bar"}]')
+  deepStrictEqual(value, '[{"name":"name-0","option":"Foo"},{"name":"name-1","option":"Bar"}]')
 })
 
-test('different arrays with same item schemas', (t) => {
-  t.plan(1)
-
+describe('different arrays with same item schemas', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -427,7 +410,7 @@ test('different arrays with same item schemas', (t) => {
   const stringify = build(schema)
   const data = { array1: ['bar'], array2: ['foo', 'bar'] }
 
-  t.equal(stringify(data), '{"array1":["bar"],"array2":["foo","bar"]}')
+  deepStrictEqual(stringify(data), '{"array1":["bar"],"array2":["foo","bar"]}')
 })
 
 const largeArray = new Array(2e4).fill({ a: 'test', b: 1 })
@@ -554,10 +537,8 @@ buildTest({
   largeArrayMechanism: 'default'
 })
 
-test('error on invalid value for largeArraySize /1', (t) => {
-  t.plan(1)
-
-  t.throws(() => build({
+describe('error on invalid value for largeArraySize /1', () => {
+  throws(() => build({
     title: 'large array of null values with default mechanism',
     type: 'object',
     properties: {
@@ -571,10 +552,8 @@ test('error on invalid value for largeArraySize /1', (t) => {
   }), Error('Unsupported large array size. Expected integer-like, got string with value invalid'))
 })
 
-test('error on invalid value for largeArraySize /2', (t) => {
-  t.plan(1)
-
-  t.throws(() => build({
+describe('error on invalid value for largeArraySize /2', () => {
+  throws(() => build({
     title: 'large array of null values with default mechanism',
     type: 'object',
     properties: {
@@ -588,10 +567,8 @@ test('error on invalid value for largeArraySize /2', (t) => {
   }), Error('Unsupported large array size. Expected integer-like, got number with value Infinity'))
 })
 
-test('error on invalid value for largeArraySize /3', (t) => {
-  t.plan(1)
-
-  t.throws(() => build({
+describe('error on invalid value for largeArraySize /3', () => {
+  throws(() => build({
     title: 'large array of null values with default mechanism',
     type: 'object',
     properties: {

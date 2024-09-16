@@ -1,12 +1,11 @@
 'use strict'
 
-const { test } = require('tap')
+const { describe } = require('node:test')
+const { equal, deepStrictEqual } = require('node:assert')
 const clone = require('rfdc/default')
 const build = require('..')
 
-test('oneOf with $ref should not change the input schema', t => {
-  t.plan(2)
-
+describe('oneOf with $ref should not change the input schema', t => {
   const referenceSchema = {
     $id: 'externalId',
     type: 'object',
@@ -32,13 +31,11 @@ test('oneOf with $ref should not change the input schema', t => {
   })
 
   const value = stringify({ people: { name: 'hello', foo: 'bar' } })
-  t.equal(value, '{"people":{"name":"hello"}}')
-  t.same(schema, clonedSchema)
+  equal(value, '{"people":{"name":"hello"}}')
+  deepStrictEqual(schema, clonedSchema)
 })
 
-test('oneOf and anyOf with $ref should not change the input schema', t => {
-  t.plan(3)
-
+describe('oneOf and anyOf with $ref should not change the input schema', t => {
   const referenceSchema = {
     $id: 'externalSchema',
     type: 'object',
@@ -75,14 +72,12 @@ test('oneOf and anyOf with $ref should not change the input schema', t => {
   const valueAny1 = stringify({ people: { name: 'hello', foo: 'bar' }, love: 'music' })
   const valueAny2 = stringify({ people: { name: 'hello', foo: 'bar' }, love: true })
 
-  t.equal(valueAny1, '{"people":{"name":"hello"},"love":"music"}')
-  t.equal(valueAny2, '{"people":{"name":"hello"},"love":true}')
-  t.same(schema, clonedSchema)
+  equal(valueAny1, '{"people":{"name":"hello"},"love":"music"}')
+  equal(valueAny2, '{"people":{"name":"hello"},"love":true}')
+  deepStrictEqual(schema, clonedSchema)
 })
 
-test('multiple $ref tree', t => {
-  t.plan(2)
-
+describe('multiple $ref tree', t => {
   const referenceDeepSchema = {
     $id: 'deepId',
     type: 'number'
@@ -118,13 +113,11 @@ test('multiple $ref tree', t => {
   })
 
   const value = stringify({ people: { name: 'hello', foo: 'bar', age: 42 } })
-  t.equal(value, '{"people":{"name":"hello","age":42}}')
-  t.same(schema, clonedSchema)
+  equal(value, '{"people":{"name":"hello","age":42}}')
+  deepStrictEqual(schema, clonedSchema)
 })
 
-test('must not mutate items $ref', t => {
-  t.plan(2)
-
+describe('must not mutate items $ref', t => {
   const referenceSchema = {
     $id: 'ShowSchema',
     $schema: 'http://json-schema.org/draft-07/schema#',
@@ -152,13 +145,11 @@ test('must not mutate items $ref', t => {
   })
 
   const value = stringify([{ name: 'foo' }])
-  t.equal(value, '[{"name":"foo"}]')
-  t.same(schema, clonedSchema)
+  equal(value, '[{"name":"foo"}]')
+  deepStrictEqual(schema, clonedSchema)
 })
 
-test('must not mutate items referred by $ref', t => {
-  t.plan(2)
-
+describe('must not mutate items referred by $ref', t => {
   const firstSchema = {
     $id: 'example1',
     type: 'object',
@@ -191,6 +182,6 @@ test('must not mutate items referred by $ref', t => {
   })
 
   const value = stringify({ name: { name: 'foo' } })
-  t.equal(value, '{"name":{"name":"foo"}}')
-  t.same(firstSchema, clonedSchema)
+  equal(value, '{"name":{"name":"foo"}}')
+  deepStrictEqual(firstSchema, clonedSchema)
 })

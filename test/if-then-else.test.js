@@ -1,6 +1,7 @@
 'use strict'
 
-const t = require('tap')
+const { describe, it } = require('node:test')
+const { equal } = require('node:assert')
 const build = require('..')
 
 process.env.TZ = 'UTC'
@@ -251,7 +252,7 @@ const deepFoobarOutput = JSON.stringify({
 })
 const noElseGreetingOutput = JSON.stringify({})
 
-t.test('if-then-else', t => {
+describe('if-then-else', t => {
   const tests = [
     {
       name: 'foobar',
@@ -315,156 +316,142 @@ t.test('if-then-else', t => {
     }
   ]
 
-  tests.forEach(test => {
-    t.test(test.name + ' - normal', t => {
-      t.plan(1)
-
-      const stringify = build(JSON.parse(JSON.stringify(test.schema)), { ajv: { strictTypes: false } })
-      const serialized = stringify(test.input)
-      t.equal(serialized, test.expected)
+  tests.forEach(singleTest => {
+    it(singleTest.name + ' - normal', () => {
+      const stringify = build(JSON.parse(JSON.stringify(singleTest.schema)), { ajv: { strictTypes: false } })
+      const serialized = stringify(singleTest.input)
+      equal(serialized, singleTest.expected)
     })
   })
 
-  t.end()
-})
-
-t.test('nested if/then', t => {
-  t.plan(2)
-
-  const schema = {
-    type: 'object',
-    properties: { a: { type: 'string' } },
-    if: {
+  it('nested if/then', t => {
+    const schema = {
       type: 'object',
-      properties: { foo: { type: 'string' } }
-    },
-    then: {
-      properties: { bar: { type: 'string' } },
+      properties: { a: { type: 'string' } },
       if: {
         type: 'object',
-        properties: { foo1: { type: 'string' } }
+        properties: { foo: { type: 'string' } }
       },
       then: {
-        properties: { bar1: { type: 'string' } }
+        properties: { bar: { type: 'string' } },
+        if: {
+          type: 'object',
+          properties: { foo1: { type: 'string' } }
+        },
+        then: {
+          properties: { bar1: { type: 'string' } }
+        }
       }
     }
-  }
 
-  const stringify = build(schema)
+    const stringify = build(schema)
 
-  t.equal(
-    stringify({ a: 'A', foo: 'foo', bar: 'bar' }),
-    JSON.stringify({ a: 'A', bar: 'bar' })
-  )
+    equal(
+      stringify({ a: 'A', foo: 'foo', bar: 'bar' }),
+      JSON.stringify({ a: 'A', bar: 'bar' })
+    )
 
-  t.equal(
-    stringify({ a: 'A', foo: 'foo', bar: 'bar', foo1: 'foo1', bar1: 'bar1' }),
-    JSON.stringify({ a: 'A', bar: 'bar', bar1: 'bar1' })
-  )
-})
+    equal(
+      stringify({ a: 'A', foo: 'foo', bar: 'bar', foo1: 'foo1', bar1: 'bar1' }),
+      JSON.stringify({ a: 'A', bar: 'bar', bar1: 'bar1' })
+    )
+  })
 
-t.test('if/else with string format', (t) => {
-  t.plan(2)
+  it('if/else with string format', () => {
+    const schema = {
+      if: { type: 'string' },
+      then: { type: 'string', format: 'date' },
+      else: { const: 'Invalid' }
+    }
 
-  const schema = {
-    if: { type: 'string' },
-    then: { type: 'string', format: 'date' },
-    else: { const: 'Invalid' }
-  }
+    const stringify = build(schema)
 
-  const stringify = build(schema)
+    const date = new Date(1674263005800)
 
-  const date = new Date(1674263005800)
+    equal(stringify(date), '"2023-01-21"')
+    equal(stringify('Invalid'), '"Invalid"')
+  })
 
-  t.equal(stringify(date), '"2023-01-21"')
-  t.equal(stringify('Invalid'), '"Invalid"')
-})
+  it('if/else with const integers', () => {
+    const schema = {
+      type: 'number',
+      if: { type: 'number', minimum: 42 },
+      then: { const: 66 },
+      else: { const: 33 }
+    }
 
-t.test('if/else with const integers', (t) => {
-  t.plan(2)
+    const stringify = build(schema)
 
-  const schema = {
-    type: 'number',
-    if: { type: 'number', minimum: 42 },
-    then: { const: 66 },
-    else: { const: 33 }
-  }
+    equal(stringify(100.32), '66')
+    equal(stringify(10.12), '33')
+  })
 
-  const stringify = build(schema)
+  it('if/else with array', () => {
+    const schema = {
+      type: 'array',
+      if: { type: 'array', maxItems: 1 },
+      then: { items: { type: 'string' } },
+      else: { items: { type: 'number' } }
+    }
 
-  t.equal(stringify(100.32), '66')
-  t.equal(stringify(10.12), '33')
-})
+    const stringify = build(schema)
 
-t.test('if/else with array', (t) => {
-  t.plan(2)
+    equal(stringify(['1']), JSON.stringify(['1']))
+    equal(stringify(['1', '2']), JSON.stringify([1, 2]))
+  })
 
-  const schema = {
-    type: 'array',
-    if: { type: 'array', maxItems: 1 },
-    then: { items: { type: 'string' } },
-    else: { items: { type: 'number' } }
-  }
-
-  const stringify = build(schema)
-
-  t.equal(stringify(['1']), JSON.stringify(['1']))
-  t.equal(stringify(['1', '2']), JSON.stringify([1, 2]))
-})
-
-t.test('external recursive if/then/else', (t) => {
-  t.plan(1)
-
-  const externalSchema = {
-    type: 'object',
-    properties: {
-      base: { type: 'string' },
-      self: { $ref: 'externalSchema#' }
-    },
-    if: {
+  it('external recursive if/then/else', () => {
+    const externalSchema = {
       type: 'object',
       properties: {
-        foo: { type: 'string', const: '41' }
+        base: { type: 'string' },
+        self: { $ref: 'externalSchema#' }
+      },
+      if: {
+        type: 'object',
+        properties: {
+          foo: { type: 'string', const: '41' }
+        }
+      },
+      then: {
+        type: 'object',
+        properties: {
+          bar: { type: 'string', const: '42' }
+        }
+      },
+      else: {
+        type: 'object',
+        properties: {
+          baz: { type: 'string', const: '43' }
+        }
       }
-    },
-    then: {
+    }
+
+    const schema = {
       type: 'object',
       properties: {
-        bar: { type: 'string', const: '42' }
-      }
-    },
-    else: {
-      type: 'object',
-      properties: {
-        baz: { type: 'string', const: '43' }
+        a: { $ref: 'externalSchema#/properties/self' },
+        b: { $ref: 'externalSchema#/properties/self' }
       }
     }
-  }
 
-  const schema = {
-    type: 'object',
-    properties: {
-      a: { $ref: 'externalSchema#/properties/self' },
-      b: { $ref: 'externalSchema#/properties/self' }
+    const data = {
+      a: {
+        base: 'a',
+        foo: '41',
+        bar: '42',
+        baz: '43',
+        ignore: 'ignored'
+      },
+      b: {
+        base: 'b',
+        foo: 'not-41',
+        bar: '42',
+        baz: '43',
+        ignore: 'ignored'
+      }
     }
-  }
-
-  const data = {
-    a: {
-      base: 'a',
-      foo: '41',
-      bar: '42',
-      baz: '43',
-      ignore: 'ignored'
-    },
-    b: {
-      base: 'b',
-      foo: 'not-41',
-      bar: '42',
-      baz: '43',
-      ignore: 'ignored'
-    }
-  }
-  const stringify = build(schema, { schema: { externalSchema } })
-  t.equal(stringify(data), '{"a":{"base":"a","bar":"42"},"b":{"base":"b","baz":"43"}}')
+    const stringify = build(schema, { schema: { externalSchema } })
+    equal(stringify(data), '{"a":{"base":"a","bar":"42"},"b":{"base":"b","baz":"43"}}')
+  })
 })

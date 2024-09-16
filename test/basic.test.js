@@ -1,20 +1,19 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { deepStrictEqual, ok, throws } = require('node:assert')
 const validator = require('is-my-json-valid')
 const build = require('..')
 
 function buildTest (schema, toStringify) {
-  test(`render a ${schema.title} as JSON`, (t) => {
-    t.plan(3)
-
+  describe(`render a ${schema.title} as JSON`, () => {
     const validate = validator(schema)
     const stringify = build(schema)
     const output = stringify(toStringify)
 
-    t.same(JSON.parse(output), toStringify)
-    t.equal(output, JSON.stringify(toStringify))
-    t.ok(validate(JSON.parse(output)), 'valid schema')
+    deepStrictEqual(JSON.parse(output), toStringify)
+    deepStrictEqual(output, JSON.stringify(toStringify))
+    ok(validate(JSON.parse(output)), 'valid schema')
   })
 }
 
@@ -267,7 +266,7 @@ buildTest({
   readonly: true
 })
 
-test('throw an error or coerce numbers and integers that are not numbers', (t) => {
+describe('throw an error or coerce numbers and integers that are not numbers', (t) => {
   const stringify = build({
     title: 'basic',
     type: 'object',
@@ -285,7 +284,7 @@ test('throw an error or coerce numbers and integers that are not numbers', (t) =
     stringify({ age: 'hello  ', distance: 'long' })
     t.fail('should throw an error')
   } catch (err) {
-    t.ok(err)
+    ok(err)
   }
 
   const result = stringify({
@@ -293,12 +292,10 @@ test('throw an error or coerce numbers and integers that are not numbers', (t) =
     distance: true
   })
 
-  t.same(JSON.parse(result), { age: 42, distance: 1 })
-  t.end()
+  deepStrictEqual(JSON.parse(result), { age: 42, distance: 1 })
 })
 
-test('Should throw on invalid schema', t => {
-  t.plan(1)
+describe('Should throw on invalid schema', t => {
   try {
     build({
       type: 'Dinosaur',
@@ -308,14 +305,12 @@ test('Should throw on invalid schema', t => {
     })
     t.fail('should be an invalid schema')
   } catch (err) {
-    t.ok(err)
+    ok(err)
   }
 })
 
-test('additionalProperties - throw on unknown type', (t) => {
-  t.plan(1)
-
-  try {
+describe('additionalProperties - throw on unknown type', () => {
+  throws(() => {
     build({
       title: 'check array coerce',
       type: 'object',
@@ -324,15 +319,10 @@ test('additionalProperties - throw on unknown type', (t) => {
         type: 'strangetype'
       }
     })
-    t.fail('should be an invalid schema')
-  } catch (err) {
-    t.ok(err)
-  }
+  }, { message: 'schema is invalid: data/additionalProperties/type must be equal to one of the allowed values' })
 })
 
-test('patternProperties - throw on unknown type', (t) => {
-  t.plan(1)
-
+describe('patternProperties - throw on unknown type', (t) => {
   try {
     build({
       title: 'check array coerce',
@@ -346,13 +336,11 @@ test('patternProperties - throw on unknown type', (t) => {
     })
     t.fail('should be an invalid schema')
   } catch (err) {
-    t.ok(err)
+    ok(err)
   }
 })
 
-test('render a double quote as JSON /1', (t) => {
-  t.plan(2)
-
+describe('render a double quote as JSON /1', () => {
   const schema = {
     type: 'string'
   }
@@ -362,13 +350,11 @@ test('render a double quote as JSON /1', (t) => {
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, JSON.stringify(toStringify))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  deepStrictEqual(output, JSON.stringify(toStringify))
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('render a double quote as JSON /2', (t) => {
-  t.plan(2)
-
+describe('render a double quote as JSON /2', () => {
   const schema = {
     type: 'string'
   }
@@ -378,13 +364,11 @@ test('render a double quote as JSON /2', (t) => {
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, JSON.stringify(toStringify))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  deepStrictEqual(output, JSON.stringify(toStringify))
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('render a long string', (t) => {
-  t.plan(2)
-
+describe('render a long string', () => {
   const schema = {
     type: 'string'
   }
@@ -394,13 +378,11 @@ test('render a long string', (t) => {
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, JSON.stringify(toStringify))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  deepStrictEqual(output, JSON.stringify(toStringify))
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('returns JSON.stringify if schema type is boolean', t => {
-  t.plan(1)
-
+describe('returns JSON.stringify if schema type is boolean', t => {
   const schema = {
     type: 'array',
     items: true
@@ -408,5 +390,5 @@ test('returns JSON.stringify if schema type is boolean', t => {
 
   const array = [1, true, 'test']
   const stringify = build(schema)
-  t.equal(stringify(array), JSON.stringify(array))
+  deepStrictEqual(stringify(array), JSON.stringify(array))
 })

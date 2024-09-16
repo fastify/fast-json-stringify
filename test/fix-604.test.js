@@ -1,6 +1,7 @@
 'use strict'
 
-const t = require('tap')
+const { describe } = require('node:test')
+const { throws } = require('node:assert')
 const fjs = require('..')
 const schema = {
   type: 'object',
@@ -15,10 +16,12 @@ const input = {
   phone: 'phone'
 }
 
-const render = fjs(schema)
+describe('fix #604', () => {
+  const render = fjs(schema)
 
-try {
-  render(input)
-} catch (err) {
-  t.equal(err.message, 'The value "phone" cannot be converted to a number.')
-}
+  throws(() => {
+    render(input)
+  }, {
+    message: 'The value "phone" cannot be converted to a number.'
+  })
+})

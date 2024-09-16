@@ -1,17 +1,16 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { equal } = require('node:assert')
 const build = require('..')
 
 function buildTest (schema, toStringify, expected) {
-  test(`render a ${schema.title} with default as JSON`, (t) => {
-    t.plan(1)
-
+  describe(`render a ${schema.title} with default as JSON`, () => {
     const stringify = build(schema)
 
     const output = stringify(toStringify)
 
-    t.equal(output, JSON.stringify(expected))
+    equal(output, JSON.stringify(expected))
   })
 }
 

@@ -1,11 +1,11 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { equal } = require('node:assert')
 const webpack = require('webpack')
 const path = require('path')
 
-test('the library should work with webpack', async (t) => {
-  t.plan(1)
+describe('the library should work with webpack', async (t) => {
   const targetdir = path.resolve(__dirname, '..', '.cache')
   const targetname = path.join(targetdir, 'webpacktest.js')
   const wopts = {
@@ -46,5 +46,5 @@ test('the library should work with webpack', async (t) => {
   })
 
   const obj = { foo: '42', bar: true }
-  t.equal(stringify(obj), '{"foo":"42","bar":true}')
+  equal(stringify(obj), '{"foo":"42","bar":true}')
 })

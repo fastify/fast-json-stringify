@@ -1,11 +1,10 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { equal } = require('node:assert')
 const build = require('..')
 
-test('use toJSON method on object types', (t) => {
-  t.plan(1)
-
+describe('use toJSON method on object types', (t) => {
   const stringify = build({
     title: 'simple object',
     type: 'object',
@@ -22,12 +21,10 @@ test('use toJSON method on object types', (t) => {
     }
   }
 
-  t.equal('{"productName":"cola"}', stringify(object))
+  equal('{"productName":"cola"}', stringify(object))
 })
 
-test('use toJSON method on nested object types', (t) => {
-  t.plan(1)
-
+describe('use toJSON method on nested object types', (t) => {
   const stringify = build({
     title: 'simple array',
     type: 'array',
@@ -55,12 +52,10 @@ test('use toJSON method on nested object types', (t) => {
     }
   ]
 
-  t.equal('[{"productName":"cola"},{"productName":"sprite"}]', stringify(array))
+  equal('[{"productName":"cola"},{"productName":"sprite"}]', stringify(array))
 })
 
-test('not use toJSON if does not exist', (t) => {
-  t.plan(1)
-
+describe('not use toJSON if does not exist', (t) => {
   const stringify = build({
     title: 'simple object',
     type: 'object',
@@ -79,12 +74,10 @@ test('not use toJSON if does not exist', (t) => {
     product: { name: 'cola' }
   }
 
-  t.equal('{"product":{"name":"cola"}}', stringify(object))
+  equal('{"product":{"name":"cola"}}', stringify(object))
 })
 
-test('not fail on null object declared nullable', (t) => {
-  t.plan(1)
-
+describe('not fail on null object declared nullable', (t) => {
   const stringify = build({
     title: 'simple object',
     type: 'object',
@@ -100,12 +93,10 @@ test('not fail on null object declared nullable', (t) => {
       }
     }
   })
-  t.equal('null', stringify(null))
+  equal('null', stringify(null))
 })
 
-test('not fail on null sub-object declared nullable', (t) => {
-  t.plan(1)
-
+describe('not fail on null sub-object declared nullable', (t) => {
   const stringify = build({
     title: 'simple object',
     type: 'object',
@@ -124,12 +115,10 @@ test('not fail on null sub-object declared nullable', (t) => {
   const object = {
     product: null
   }
-  t.equal('{"product":null}', stringify(object))
+  equal('{"product":null}', stringify(object))
 })
 
-test('on non nullable null sub-object it should coerce to {}', (t) => {
-  t.plan(1)
-
+describe('on non nullable null sub-object it should coerce to {}', (t) => {
   const stringify = build({
     title: 'simple object',
     type: 'object',
@@ -150,12 +139,10 @@ test('on non nullable null sub-object it should coerce to {}', (t) => {
   }
 
   const result = stringify(object)
-  t.equal(result, JSON.stringify({ product: {} }))
+  equal(result, JSON.stringify({ product: {} }))
 })
 
-test('on non nullable null object it should coerce to {}', (t) => {
-  t.plan(1)
-
+describe('on non nullable null object it should coerce to {}', (t) => {
   const stringify = build({
     title: 'simple object',
     nullable: false,
@@ -174,12 +161,10 @@ test('on non nullable null object it should coerce to {}', (t) => {
   })
 
   const result = stringify(null)
-  t.equal(result, '{}')
+  equal(result, '{}')
 })
 
-test('on non-nullable null object it should skip rendering, skipping required fields checks', (t) => {
-  t.plan(1)
-
+describe('on non-nullable null object it should skip rendering, skipping required fields checks', (t) => {
   const stringify = build({
     title: 'simple object',
     nullable: false,
@@ -199,5 +184,5 @@ test('on non-nullable null object it should skip rendering, skipping required fi
   })
 
   const result = stringify(null)
-  t.equal(result, '{}')
+  equal(result, '{}')
 })

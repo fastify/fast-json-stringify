@@ -1,24 +1,20 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { doesNotThrow } = require('node:assert')
 const build = require('..')
 
-test('Should clean the cache', (t) => {
-  t.plan(1)
-
+describe('Should clean the cache', () => {
   const schema = {
     $id: 'test',
     type: 'string'
   }
 
-  build(schema)
-  build(schema)
-  t.pass()
+  doesNotThrow(() => build(schema))
+  doesNotThrow(() => build(schema))
 })
 
-test('Should clean the cache with external schemas', (t) => {
-  t.plan(1)
-
+describe('Should clean the cache with external schemas', () => {
   const schema = {
     $id: 'test',
     definitions: {
@@ -39,7 +35,6 @@ test('Should clean the cache with external schemas', (t) => {
     }
   }
 
-  build(schema)
-  build(schema)
-  t.pass()
+  doesNotThrow(() => build(schema))
+  doesNotThrow(() => build(schema))
 })

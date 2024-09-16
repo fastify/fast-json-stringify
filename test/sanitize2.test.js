@@ -1,18 +1,18 @@
 'use strict'
 
-const t = require('tap')
+const { describe } = require('node:test')
 const build = require('..')
 
-const payload = '(throw "pwoned")'
+describe('sanitize 2', () => {
+  const payload = '(throw "pwoned")'
 
-const stringify = build({
-  properties: {
-    [`*///\\\\\\']);${payload};{/*`]: {
-      type: 'number'
+  const stringify = build({
+    properties: {
+      [`*///\\\\\\']);${payload};{/*`]: {
+        type: 'number'
+      }
     }
-  }
+  })
+
+  stringify({})
 })
-
-stringify({})
-
-t.pass('no crashes')

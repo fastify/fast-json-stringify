@@ -1,12 +1,10 @@
 'use strict'
 
-const t = require('tap')
-const test = t.test
+const { describe } = require('node:test')
+const { equal } = require('node:assert')
 const build = require('..')
 
-test('render a bigint as JSON', (t) => {
-  t.plan(1)
-
+describe('render a bigint as JSON', () => {
   const schema = {
     title: 'bigint',
     type: 'integer'
@@ -15,12 +13,10 @@ test('render a bigint as JSON', (t) => {
   const stringify = build(schema)
   const output = stringify(1615n)
 
-  t.equal(output, '1615')
+  equal(output, '1615')
 })
 
-test('render an object with a bigint as JSON', (t) => {
-  t.plan(1)
-
+describe('render an object with a bigint as JSON', () => {
   const schema = {
     title: 'object with bigint',
     type: 'object',
@@ -36,12 +32,10 @@ test('render an object with a bigint as JSON', (t) => {
     id: 1615n
   })
 
-  t.equal(output, '{"id":1615}')
+  equal(output, '{"id":1615}')
 })
 
-test('render an array with a bigint as JSON', (t) => {
-  t.plan(1)
-
+describe('render an array with a bigint as JSON', () => {
   const schema = {
     title: 'array with bigint',
     type: 'array',
@@ -53,12 +47,10 @@ test('render an array with a bigint as JSON', (t) => {
   const stringify = build(schema)
   const output = stringify([1615n])
 
-  t.equal(output, '[1615]')
+  equal(output, '[1615]')
 })
 
-test('render an object with an additionalProperty of type bigint as JSON', (t) => {
-  t.plan(1)
-
+describe('render an object with an additionalProperty of type bigint as JSON', () => {
   const schema = {
     title: 'object with bigint',
     type: 'object',
@@ -72,5 +64,5 @@ test('render an object with an additionalProperty of type bigint as JSON', (t) =
     num: 1615n
   })
 
-  t.equal(output, '{"num":1615}')
+  equal(output, '{"num":1615}')
 })

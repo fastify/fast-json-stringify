@@ -1,9 +1,10 @@
 'use strict'
 
-const t = require('tap')
+const { describe } = require('node:test')
+const { equal } = require('node:assert')
 const build = require('..')
 
-t.test('nested ref requires ajv', async t => {
+describe('nested ref requires ajv', async t => {
   const schemaA = {
     $id: 'urn:schema:a',
     definitions: {
@@ -44,5 +45,5 @@ t.test('nested ref requires ajv', async t => {
       }
     }
   })
-  t.same(result, '{"results":{"items":{"bar":["baz"]}}}')
+  equal(result, '{"results":{"items":{"bar":["baz"]}}}')
 })

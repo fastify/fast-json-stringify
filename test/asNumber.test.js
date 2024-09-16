@@ -1,13 +1,13 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { deepStrictEqual } = require('node:assert')
 
-test('asNumber should convert BigInt', (t) => {
-  t.plan(1)
+describe('asNumber should convert BigInt', () => {
   const Serializer = require('../lib/serializer')
   const serializer = new Serializer()
 
   const number = serializer.asNumber(11753021440n)
 
-  t.equal(number, '11753021440')
+  deepStrictEqual(number, '11753021440')
 })

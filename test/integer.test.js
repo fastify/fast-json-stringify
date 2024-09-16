@@ -1,14 +1,12 @@
 'use strict'
 
-const t = require('tap')
-const test = t.test
+const { test } = require('node:test')
+const { throws, equal, ok } = require('node:assert')
 const validator = require('is-my-json-valid')
 const build = require('..')
 const ROUNDING_TYPES = ['ceil', 'floor', 'round']
 
-test('render an integer as JSON', (t) => {
-  t.plan(2)
-
+test('render an integer as JSON', () => {
   const schema = {
     title: 'integer',
     type: 'integer'
@@ -18,36 +16,33 @@ test('render an integer as JSON', (t) => {
   const stringify = build(schema)
   const output = stringify(1615)
 
-  t.equal(output, '1615')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '1615')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('render a float as an integer', (t) => {
-  t.plan(2)
+test('render a float as an integer', () => {
   try {
     build({
       title: 'float as integer',
       type: 'integer'
     }, { rounding: 'foobar' })
   } catch (error) {
-    t.ok(error)
-    t.equal(error.message, 'Unsupported integer rounding method foobar')
+    ok(error)
+    equal(error.message, 'Unsupported integer rounding method foobar')
   }
 })
 
-test('throws on NaN', (t) => {
-  t.plan(1)
-
+test('throws on NaN', () => {
   const schema = {
     title: 'integer',
     type: 'integer'
   }
 
   const stringify = build(schema)
-  t.throws(() => stringify(NaN), new Error('The value "NaN" cannot be converted to an integer.'))
+  throws(() => stringify(NaN), new Error('The value "NaN" cannot be converted to an integer.'))
 })
 
-test('render a float as an integer', (t) => {
+test('render a float as an integer', () => {
   const cases = [
     { input: Math.PI, output: '3' },
     { input: 5.0, output: '5' },
@@ -74,7 +69,6 @@ test('render a float as an integer', (t) => {
     { input: 45.95, output: '46', rounding: 'round' }
   ]
 
-  t.plan(cases.length * 2)
   cases.forEach(checkInteger)
 
   function checkInteger ({ input, output, rounding }) {
@@ -87,14 +81,12 @@ test('render a float as an integer', (t) => {
     const stringify = build(schema, { rounding })
     const str = stringify(input)
 
-    t.equal(str, output)
-    t.ok(validate(JSON.parse(str)), 'valid schema')
+    equal(str, output)
+    ok(validate(JSON.parse(str)), 'valid schema')
   }
 })
 
-test('render an object with an integer as JSON', (t) => {
-  t.plan(2)
-
+test('render an object with an integer as JSON', () => {
   const schema = {
     title: 'object with integer',
     type: 'object',
@@ -111,13 +103,11 @@ test('render an object with an integer as JSON', (t) => {
     id: 1615
   })
 
-  t.equal(output, '{"id":1615}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"id":1615}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('render an array with an integer as JSON', (t) => {
-  t.plan(2)
-
+test('render an array with an integer as JSON', () => {
   const schema = {
     title: 'array with integer',
     type: 'array',
@@ -130,13 +120,11 @@ test('render an array with an integer as JSON', (t) => {
   const stringify = build(schema)
   const output = stringify([1615])
 
-  t.equal(output, '[1615]')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '[1615]')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('render an object with an additionalProperty of type integer as JSON', (t) => {
-  t.plan(2)
-
+test('render an object with an additionalProperty of type integer as JSON', () => {
   const schema = {
     title: 'object with integer',
     type: 'object',
@@ -151,44 +139,38 @@ test('render an object with an additionalProperty of type integer as JSON', (t) 
     num: 1615
   })
 
-  t.equal(output, '{"num":1615}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"num":1615}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('should round integer object parameter', t => {
-  t.plan(2)
-
   const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
   const validate = validator(schema)
   const stringify = build(schema, { rounding: 'ceil' })
   const output = stringify({ magic: 4.2 })
 
-  t.equal(output, '{"magic":5}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"magic":5}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('should not stringify a property if it does not exist', t => {
-  t.plan(2)
-
   const schema = { title: 'Example Schema', type: 'object', properties: { age: { type: 'integer' } } }
   const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify({})
 
-  t.equal(output, '{}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 ROUNDING_TYPES.forEach((rounding) => {
   test(`should not stringify a property if it does not exist (rounding: ${rounding})`, t => {
-    t.plan(2)
-
     const schema = { type: 'object', properties: { magic: { type: 'integer' } } }
     const validate = validator(schema)
     const stringify = build(schema, { rounding })
     const output = stringify({})
 
-    t.equal(output, '{}')
-    t.ok(validate(JSON.parse(output)), 'valid schema')
+    equal(output, '{}')
+    ok(validate(JSON.parse(output)), 'valid schema')
   })
 })

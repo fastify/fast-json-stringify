@@ -1,6 +1,7 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
+const { throws, equal } = require('node:assert')
 const build = require('..')
 
 test('Finite numbers', t => {
@@ -9,21 +10,17 @@ test('Finite numbers', t => {
     Number.MAX_SAFE_INTEGER, Number.MAX_VALUE,
     Number.MIN_SAFE_INTEGER, Number.MIN_VALUE]
 
-  t.plan(values.length)
-
   const schema = {
     type: 'number'
   }
 
   const stringify = build(schema)
 
-  values.forEach(v => t.equal(stringify(v), JSON.stringify(v)))
+  values.forEach(v => equal(stringify(v), JSON.stringify(v)))
 })
 
 test('Infinite integers', t => {
   const values = [Infinity, -Infinity]
-
-  t.plan(values.length)
 
   const schema = {
     type: 'integer'
@@ -32,18 +29,16 @@ test('Infinite integers', t => {
   const stringify = build(schema)
 
   values.forEach(v => {
-    try {
+    throws(() => {
       stringify(v)
-    } catch (err) {
-      t.equal(err.message, `The value "${v}" cannot be converted to an integer.`)
-    }
+    }, {
+      message: `The value "${v}" cannot be converted to an integer.`
+    })
   })
 })
 
 test('Infinite numbers', t => {
   const values = [Infinity, -Infinity]
-
-  t.plan(values.length)
 
   const schema = {
     type: 'number'
@@ -51,5 +46,5 @@ test('Infinite numbers', t => {
 
   const stringify = build(schema)
 
-  values.forEach(v => t.equal(stringify(v), JSON.stringify(v)))
+  values.forEach(v => equal(stringify(v), JSON.stringify(v)))
 })

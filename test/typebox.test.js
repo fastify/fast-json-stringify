@@ -1,12 +1,11 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { equal } = require('node:assert')
 const build = require('..')
 
-test('nested object in pattern properties for typebox', (t) => {
+describe('nested object in pattern properties for typebox', (t) => {
   const { Type } = require('@sinclair/typebox')
-
-  t.plan(1)
 
   const nestedSchema = Type.Object({
     nestedKey1: Type.String()
@@ -32,5 +31,5 @@ test('nested object in pattern properties for typebox', (t) => {
       }
     }
   })
-  t.equal(value, '{"key1":{"nestedKey":{"nestedKey1":"value1"}},"key2":{"nestedKey":{"nestedKey1":"value2"}}}')
+  equal(value, '{"key1":{"nestedKey":{"nestedKey1":"value1"}},"key2":{"nestedKey":{"nestedKey1":"value2"}}}')
 })

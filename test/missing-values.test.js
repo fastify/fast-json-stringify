@@ -1,11 +1,10 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { equal } = require('node:assert')
 const build = require('..')
 
-test('missing values', (t) => {
-  t.plan(3)
-
+describe('missing values', (t) => {
   const stringify = build({
     title: 'object with missing values',
     type: 'object',
@@ -22,14 +21,12 @@ test('missing values', (t) => {
     }
   })
 
-  t.equal('{"val":"value"}', stringify({ val: 'value' }))
-  t.equal('{"str":"string","val":"value"}', stringify({ str: 'string', val: 'value' }))
-  t.equal('{"str":"string","num":42,"val":"value"}', stringify({ str: 'string', num: 42, val: 'value' }))
+  equal('{"val":"value"}', stringify({ val: 'value' }))
+  equal('{"str":"string","val":"value"}', stringify({ str: 'string', val: 'value' }))
+  equal('{"str":"string","num":42,"val":"value"}', stringify({ str: 'string', num: 42, val: 'value' }))
 })
 
-test('handle null when value should be string', (t) => {
-  t.plan(1)
-
+describe('handle null when value should be string', (t) => {
   const stringify = build({
     type: 'object',
     properties: {
@@ -39,12 +36,10 @@ test('handle null when value should be string', (t) => {
     }
   })
 
-  t.equal('{"str":""}', stringify({ str: null }))
+  equal('{"str":""}', stringify({ str: null }))
 })
 
-test('handle null when value should be integer', (t) => {
-  t.plan(1)
-
+describe('handle null when value should be integer', (t) => {
   const stringify = build({
     type: 'object',
     properties: {
@@ -54,12 +49,10 @@ test('handle null when value should be integer', (t) => {
     }
   })
 
-  t.equal('{"int":0}', stringify({ int: null }))
+  equal('{"int":0}', stringify({ int: null }))
 })
 
-test('handle null when value should be number', (t) => {
-  t.plan(1)
-
+describe('handle null when value should be number', (t) => {
   const stringify = build({
     type: 'object',
     properties: {
@@ -69,12 +62,10 @@ test('handle null when value should be number', (t) => {
     }
   })
 
-  t.equal('{"num":0}', stringify({ num: null }))
+  equal('{"num":0}', stringify({ num: null }))
 })
 
-test('handle null when value should be boolean', (t) => {
-  t.plan(1)
-
+describe('handle null when value should be boolean', (t) => {
   const stringify = build({
     type: 'object',
     properties: {
@@ -84,5 +75,5 @@ test('handle null when value should be boolean', (t) => {
     }
   })
 
-  t.equal('{"bool":false}', stringify({ bool: null }))
+  equal('{"bool":false}', stringify({ bool: null }))
 })

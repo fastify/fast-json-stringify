@@ -1,12 +1,11 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { equal, ok } = require('node:assert')
 const validator = require('is-my-json-valid')
 const build = require('..')
 
-test('render a string with surrogate pairs as JSON:test 1', (t) => {
-  t.plan(2)
-
+describe('render a string with surrogate pairs as JSON:test 1', (t) => {
   const schema = {
     title: 'surrogate',
     type: 'string'
@@ -16,13 +15,11 @@ test('render a string with surrogate pairs as JSON:test 1', (t) => {
   const stringify = build(schema)
   const output = stringify('𝌆')
 
-  t.equal(output, '"𝌆"')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '"𝌆"')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('render a string with surrogate pairs as JSON: test 2', (t) => {
-  t.plan(2)
-
+describe('render a string with surrogate pairs as JSON: test 2', (t) => {
   const schema = {
     title: 'long',
     type: 'string'
@@ -32,13 +29,11 @@ test('render a string with surrogate pairs as JSON: test 2', (t) => {
   const stringify = build(schema)
   const output = stringify('\uD834\uDF06')
 
-  t.equal(output, '"𝌆"')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '"𝌆"')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('render a string with Unpaired surrogate code as JSON', (t) => {
-  t.plan(2)
-
+describe('render a string with Unpaired surrogate code as JSON', (t) => {
   const schema = {
     title: 'surrogate',
     type: 'string'
@@ -47,13 +42,11 @@ test('render a string with Unpaired surrogate code as JSON', (t) => {
   const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify('\uDF06\uD834')
-  t.equal(output, JSON.stringify('\uDF06\uD834'))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, JSON.stringify('\uDF06\uD834'))
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('render a string with lone surrogate code as JSON', (t) => {
-  t.plan(2)
-
+describe('render a string with lone surrogate code as JSON', (t) => {
   const schema = {
     title: 'surrogate',
     type: 'string'
@@ -62,6 +55,6 @@ test('render a string with lone surrogate code as JSON', (t) => {
   const validate = validator(schema)
   const stringify = build(schema)
   const output = stringify('\uDEAD')
-  t.equal(output, JSON.stringify('\uDEAD'))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, JSON.stringify('\uDEAD'))
+  ok(validate(JSON.parse(output)), 'valid schema')
 })

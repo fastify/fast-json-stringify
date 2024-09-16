@@ -1,10 +1,10 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { equal } = require('node:assert')
 const build = require('..')
 
-test('use enum without type', (t) => {
-  t.plan(1)
+describe('use enum without type', (t) => {
   const stringify = build({
     title: 'Example Schema',
     type: 'object',
@@ -17,11 +17,10 @@ test('use enum without type', (t) => {
   })
 
   const obj = { order: 'asc' }
-  t.equal('{"order":"asc"}', stringify(obj))
+  equal('{"order":"asc"}', stringify(obj))
 })
 
-test('use enum without type', (t) => {
-  t.plan(1)
+describe('use enum without type', (t) => {
   const stringify = build({
     title: 'Example Schema',
     type: 'object',
@@ -33,5 +32,5 @@ test('use enum without type', (t) => {
   })
 
   const obj = { order: 'asc' }
-  t.equal('{"order":"asc"}', stringify(obj))
+  equal('{"order":"asc"}', stringify(obj))
 })

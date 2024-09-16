@@ -1,12 +1,10 @@
 'use strict'
 
-const t = require('tap')
-const test = t.test
+const { describe } = require('node:test')
+const { deepStrictEqual, throws } = require('node:assert')
 const build = require('..')
 
-test('serialize short string', (t) => {
-  t.plan(2)
-
+describe('serialize short string', (t) => {
   const schema = {
     type: 'string'
   }
@@ -15,13 +13,11 @@ test('serialize short string', (t) => {
   const stringify = build(schema)
   const output = stringify(input)
 
-  t.equal(output, '"abcd"')
-  t.equal(JSON.parse(output), input)
+  deepStrictEqual(output, '"abcd"')
+  deepStrictEqual(JSON.parse(output), input)
 })
 
-test('serialize short string', (t) => {
-  t.plan(2)
-
+describe('serialize short string', (t) => {
   const schema = {
     type: 'string'
   }
@@ -30,13 +26,11 @@ test('serialize short string', (t) => {
   const stringify = build(schema)
   const output = stringify(input)
 
-  t.equal(output, '"\\u0000"')
-  t.equal(JSON.parse(output), input)
+  deepStrictEqual(output, '"\\u0000"')
+  deepStrictEqual(JSON.parse(output), input)
 })
 
-test('serialize long string', (t) => {
-  t.plan(2)
-
+describe('serialize long string', (t) => {
   const schema = {
     type: 'string'
   }
@@ -45,13 +39,11 @@ test('serialize long string', (t) => {
   const stringify = build(schema)
   const output = stringify(input)
 
-  t.equal(output, `"${new Array(2e4).fill('\\u0000').join('')}"`)
-  t.equal(JSON.parse(output), input)
+  deepStrictEqual(output, `"${new Array(2e4).fill('\\u0000').join('')}"`)
+  deepStrictEqual(JSON.parse(output), input)
 })
 
-test('unsafe string', (t) => {
-  t.plan(2)
-
+describe('unsafe string', (t) => {
   const schema = {
     type: 'string',
     format: 'unsafe'
@@ -61,13 +53,11 @@ test('unsafe string', (t) => {
   const stringify = build(schema)
   const output = stringify(input)
 
-  t.equal(output, `"${input}"`)
-  t.equal(JSON.parse(output), input)
+  deepStrictEqual(output, `"${input}"`)
+  deepStrictEqual(JSON.parse(output), input)
 })
 
-test('unsafe unescaped string', (t) => {
-  t.plan(2)
-
+describe('unsafe unescaped string', (t) => {
   const schema = {
     type: 'string',
     format: 'unsafe'
@@ -77,8 +67,8 @@ test('unsafe unescaped string', (t) => {
   const stringify = build(schema)
   const output = stringify(input)
 
-  t.equal(output, `"${input}"`)
-  t.throws(function () {
+  deepStrictEqual(output, `"${input}"`)
+  throws(() => {
     JSON.parse(output)
   })
 })

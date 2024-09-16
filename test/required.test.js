@@ -1,11 +1,10 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { throws } = require('node:assert')
 const build = require('..')
 
-test('object with required field', (t) => {
-  t.plan(3)
-
+describe('object with required field', (t) => {
   const schema = {
     title: 'object with required field',
     type: 'object',
@@ -24,22 +23,15 @@ test('object with required field', (t) => {
   stringify({
     str: 'string'
   })
-  t.pass()
 
-  try {
-    stringify({
-      num: 42
-    })
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"str" is required!')
-    t.pass()
-  }
+  throws(() => {
+    stringify({ num: 42 })
+  }, {
+    message: '"str" is required!'
+  })
 })
 
-test('object with required field not in properties schema', (t) => {
-  t.plan(4)
-
+describe('object with required field not in properties schema', (t) => {
   const schema = {
     title: 'object with required field',
     type: 'object',
@@ -52,28 +44,19 @@ test('object with required field not in properties schema', (t) => {
   }
   const stringify = build(schema)
 
-  try {
+  throws(() => {
     stringify({})
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"str" is required!')
-    t.pass()
-  }
-
-  try {
-    stringify({
-      num: 42
-    })
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"str" is required!')
-    t.pass()
-  }
+  }, {
+    message: '"str" is required!'
+  })
+  throws(() => {
+    stringify({ num: 42 })
+  }, {
+    message: '"str" is required!'
+  })
 })
 
-test('object with required field not in properties schema with additional properties true', (t) => {
-  t.plan(4)
-
+describe('object with required field not in properties schema with additional properties true', (t) => {
   const schema = {
     title: 'object with required field',
     type: 'object',
@@ -87,28 +70,20 @@ test('object with required field not in properties schema with additional proper
   }
   const stringify = build(schema)
 
-  try {
+  throws(() => {
     stringify({})
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"str" is required!')
-    t.pass()
-  }
+  }, {
+    message: '"str" is required!'
+  })
 
-  try {
-    stringify({
-      num: 42
-    })
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"str" is required!')
-    t.pass()
-  }
+  throws(() => {
+    stringify({ num: 42 })
+  }, {
+    message: '"str" is required!'
+  })
 })
 
-test('object with multiple required field not in properties schema', (t) => {
-  t.plan(6)
-
+describe('object with multiple required field not in properties schema', (t) => {
   const schema = {
     title: 'object with required field',
     type: 'object',
@@ -122,40 +97,32 @@ test('object with multiple required field not in properties schema', (t) => {
   }
   const stringify = build(schema)
 
-  try {
+  throws(() => {
     stringify({})
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"key1" is required!')
-    t.pass()
-  }
+  }, {
+    message: '"key1" is required!'
+  })
 
-  try {
+  throws(() => {
     stringify({
       key1: 42,
       key2: 42
     })
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"num" is required!')
-    t.pass()
-  }
+  }, {
+    message: '"num" is required!'
+  })
 
-  try {
+  throws(() => {
     stringify({
       num: 42,
       key1: 'some'
     })
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"key2" is required!')
-    t.pass()
-  }
+  }, {
+    message: '"key2" is required!'
+  })
 })
 
-test('object with required bool', (t) => {
-  t.plan(2)
-
+describe('object with required bool', (t) => {
   const schema = {
     title: 'object with required field',
     type: 'object',
@@ -169,22 +136,18 @@ test('object with required bool', (t) => {
   }
   const stringify = build(schema)
 
-  try {
+  throws(() => {
     stringify({})
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"bool" is required!')
-    t.pass()
-  }
+  }, {
+    message: '"bool" is required!'
+  })
 
   stringify({
     bool: false
   })
 })
 
-test('required nullable', (t) => {
-  t.plan(1)
-
+describe('required nullable', (t) => {
   const schema = {
     title: 'object with required field',
     type: 'object',
@@ -201,12 +164,9 @@ test('required nullable', (t) => {
   stringify({
     null: null
   })
-  t.pass()
 })
 
-test('required numbers', (t) => {
-  t.plan(3)
-
+describe('required numbers', (t) => {
   const schema = {
     title: 'object with required field',
     type: 'object',
@@ -225,15 +185,9 @@ test('required numbers', (t) => {
   stringify({
     num: 42
   })
-  t.pass()
-
-  try {
-    stringify({
-      num: 'aaa'
-    })
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, 'The value "aaa" cannot be converted to an integer.')
-    t.pass()
-  }
+  throws(() => {
+    stringify({ num: 'aaa' })
+  }, {
+    message: 'The value "aaa" cannot be converted to an integer.'
+  })
 })

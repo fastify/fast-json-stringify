@@ -1,11 +1,10 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { throws } = require('node:assert')
 const build = require('..')
 
-test('required property containing single quote, contains property', (t) => {
-  t.plan(1)
-
+describe('required property containing single quote, contains property', (t) => {
   const stringify = build({
     type: 'object',
     properties: {
@@ -16,12 +15,10 @@ test('required property containing single quote, contains property', (t) => {
     ]
   })
 
-  t.throws(() => stringify({}), new Error('"\'" is required!'))
+  throws(() => stringify({}), new Error('"\'" is required!'))
 })
 
-test('required property containing double quote, contains property', (t) => {
-  t.plan(1)
-
+describe('required property containing double quote, contains property', (t) => {
   const stringify = build({
     type: 'object',
     properties: {
@@ -32,12 +29,10 @@ test('required property containing double quote, contains property', (t) => {
     ]
   })
 
-  t.throws(() => stringify({}), new Error('""" is required!'))
+  throws(() => stringify({}), new Error('""" is required!'))
 })
 
-test('required property containing single quote, does not contain property', (t) => {
-  t.plan(1)
-
+describe('required property containing single quote, does not contain property', (t) => {
   const stringify = build({
     type: 'object',
     properties: {
@@ -48,12 +43,10 @@ test('required property containing single quote, does not contain property', (t)
     ]
   })
 
-  t.throws(() => stringify({}), new Error('"\'" is required!'))
+  throws(() => stringify({}), new Error('"\'" is required!'))
 })
 
-test('required property containing double quote, does not contain property', (t) => {
-  t.plan(1)
-
+describe('required property containing double quote, does not contain property', (t) => {
   const stringify = build({
     type: 'object',
     properties: {
@@ -64,5 +57,5 @@ test('required property containing double quote, does not contain property', (t)
     ]
   })
 
-  t.throws(() => stringify({}), new Error('""" is required!'))
+  throws(() => stringify({}), new Error('""" is required!'))
 })

@@ -1,11 +1,10 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { equal, throws } = require('node:assert')
 const build = require('..')
 
-test('possibly nullable integer primitive alternative', (t) => {
-  t.plan(1)
-
+describe('possibly nullable integer primitive alternative', (t) => {
   const schema = {
     title: 'simple object with multi-type nullable primitive',
     type: 'object',
@@ -21,12 +20,10 @@ test('possibly nullable integer primitive alternative', (t) => {
   const value = stringify({
     data: 4
   })
-  t.equal(value, '{"data":4}')
+  equal(value, '{"data":4}')
 })
 
-test('possibly nullable number primitive alternative', (t) => {
-  t.plan(1)
-
+describe('possibly nullable number primitive alternative', (t) => {
   const schema = {
     title: 'simple object with multi-type nullable primitive',
     type: 'object',
@@ -42,12 +39,10 @@ test('possibly nullable number primitive alternative', (t) => {
   const value = stringify({
     data: 4
   })
-  t.equal(value, '{"data":4}')
+  equal(value, '{"data":4}')
 })
 
-test('possibly nullable integer primitive alternative with null value', (t) => {
-  t.plan(1)
-
+describe('possibly nullable integer primitive alternative with null value', (t) => {
   const schema = {
     title: 'simple object with multi-type nullable primitive',
     type: 'object',
@@ -63,12 +58,10 @@ test('possibly nullable integer primitive alternative with null value', (t) => {
   const value = stringify({
     data: null
   })
-  t.equal(value, '{"data":0}')
+  equal(value, '{"data":0}')
 })
 
-test('possibly nullable number primitive alternative with null value', (t) => {
-  t.plan(1)
-
+describe('possibly nullable number primitive alternative with null value', (t) => {
   const schema = {
     title: 'simple object with multi-type nullable primitive',
     type: 'object',
@@ -84,12 +77,10 @@ test('possibly nullable number primitive alternative with null value', (t) => {
   const value = stringify({
     data: null
   })
-  t.equal(value, '{"data":0}')
+  equal(value, '{"data":0}')
 })
 
-test('possibly nullable number primitive alternative with null value', (t) => {
-  t.plan(1)
-
+describe('possibly nullable number primitive alternative with null value', (t) => {
   const schema = {
     title: 'simple object with multi-type nullable primitive',
     type: 'object',
@@ -105,12 +96,10 @@ test('possibly nullable number primitive alternative with null value', (t) => {
   const value = stringify({
     data: null
   })
-  t.equal(value, '{"data":false}')
+  equal(value, '{"data":false}')
 })
 
-test('nullable integer primitive', (t) => {
-  t.plan(1)
-
+describe('nullable integer primitive', (t) => {
   const schema = {
     title: 'simple object with nullable primitive',
     type: 'object',
@@ -126,12 +115,10 @@ test('nullable integer primitive', (t) => {
   const value = stringify({
     data: 4
   })
-  t.equal(value, '{"data":4}')
+  equal(value, '{"data":4}')
 })
 
-test('nullable number primitive', (t) => {
-  t.plan(1)
-
+describe('nullable number primitive', (t) => {
   const schema = {
     title: 'simple object with nullable primitive',
     type: 'object',
@@ -147,12 +134,10 @@ test('nullable number primitive', (t) => {
   const value = stringify({
     data: 4
   })
-  t.equal(value, '{"data":4}')
+  equal(value, '{"data":4}')
 })
 
-test('nullable primitive with null value', (t) => {
-  t.plan(1)
-
+describe('nullable primitive with null value', (t) => {
   const schema = {
     title: 'simple object with nullable primitive',
     type: 'object',
@@ -168,12 +153,10 @@ test('nullable primitive with null value', (t) => {
   const value = stringify({
     data: null
   })
-  t.equal(value, '{"data":null}')
+  equal(value, '{"data":null}')
 })
 
-test('nullable number primitive with null value', (t) => {
-  t.plan(1)
-
+describe('nullable number primitive with null value', (t) => {
   const schema = {
     title: 'simple object with nullable primitive',
     type: 'object',
@@ -189,12 +172,10 @@ test('nullable number primitive with null value', (t) => {
   const value = stringify({
     data: null
   })
-  t.equal(value, '{"data":null}')
+  equal(value, '{"data":null}')
 })
 
-test('possibly null object with multi-type property', (t) => {
-  t.plan(3)
-
+describe('possibly null object with multi-type property', (t) => {
   const schema = {
     title: 'simple object with multi-type property',
     type: 'object',
@@ -211,26 +192,24 @@ test('possibly null object with multi-type property', (t) => {
   }
   const stringify = build(schema)
 
-  t.equal(stringify({
+  equal(stringify({
     objectOrNull: {
       stringOrNumber: 'string'
     }
   }), '{"objectOrNull":{"stringOrNumber":"string"}}')
 
-  t.equal(stringify({
+  equal(stringify({
     objectOrNull: {
       stringOrNumber: 42
     }
   }), '{"objectOrNull":{"stringOrNumber":42}}')
 
-  t.equal(stringify({
+  equal(stringify({
     objectOrNull: null
   }), '{"objectOrNull":null}')
 })
 
-test('object with possibly null array of multiple types', (t) => {
-  t.plan(5)
-
+describe('object with possibly null array of multiple types', (t) => {
   const schema = {
     title: 'object with array of multiple types',
     type: 'object',
@@ -249,7 +228,7 @@ test('object with possibly null array of multiple types', (t) => {
     const value = stringify({
       arrayOfStringsAndNumbers: null
     })
-    t.equal(value, '{"arrayOfStringsAndNumbers":null}')
+    equal(value, '{"arrayOfStringsAndNumbers":null}')
   } catch (e) {
     console.log(e)
     t.fail()
@@ -259,28 +238,26 @@ test('object with possibly null array of multiple types', (t) => {
     const value = stringify({
       arrayOfStringsAndNumbers: ['string1', 'string2']
     })
-    t.equal(value, '{"arrayOfStringsAndNumbers":["string1","string2"]}')
+    equal(value, '{"arrayOfStringsAndNumbers":["string1","string2"]}')
   } catch (e) {
     console.log(e)
     t.fail()
   }
 
-  t.equal(stringify({
+  equal(stringify({
     arrayOfStringsAndNumbers: [42, 7]
   }), '{"arrayOfStringsAndNumbers":[42,7]}')
 
-  t.equal(stringify({
+  equal(stringify({
     arrayOfStringsAndNumbers: ['string1', 42, 7, 'string2']
   }), '{"arrayOfStringsAndNumbers":["string1",42,7,"string2"]}')
 
-  t.equal(stringify({
+  equal(stringify({
     arrayOfStringsAndNumbers: ['string1', null, 42, 7, 'string2', null]
   }), '{"arrayOfStringsAndNumbers":["string1",null,42,7,"string2",null]}')
 })
 
-test('object with tuple of multiple types', (t) => {
-  t.plan(2)
-
+describe('object with tuple of multiple types', (t) => {
   const schema = {
     title: 'object with array of multiple types',
     type: 'object',
@@ -307,7 +284,7 @@ test('object with tuple of multiple types', (t) => {
     const value = stringify({
       fixedTupleOfStringsAndNumbers: ['string1', 42, 7]
     })
-    t.equal(value, '{"fixedTupleOfStringsAndNumbers":["string1",42,7]}')
+    equal(value, '{"fixedTupleOfStringsAndNumbers":["string1",42,7]}')
   } catch (e) {
     console.log(e)
     t.fail()
@@ -317,16 +294,14 @@ test('object with tuple of multiple types', (t) => {
     const value = stringify({
       fixedTupleOfStringsAndNumbers: ['string1', 42, 'string2']
     })
-    t.equal(value, '{"fixedTupleOfStringsAndNumbers":["string1",42,"string2"]}')
+    equal(value, '{"fixedTupleOfStringsAndNumbers":["string1",42,"string2"]}')
   } catch (e) {
     console.log(e)
     t.fail()
   }
 })
 
-test('object with anyOf and multiple types', (t) => {
-  t.plan(3)
-
+describe('object with anyOf and multiple types', (t) => {
   const schema = {
     title: 'object with anyOf and multiple types',
     type: 'object',
@@ -354,23 +329,22 @@ test('object with anyOf and multiple types', (t) => {
     const value = stringify({
       objectOrBoolean: { stringOrNumber: 'string' }
     })
-    t.equal(value, '{"objectOrBoolean":{"stringOrNumber":"string"}}')
+    equal(value, '{"objectOrBoolean":{"stringOrNumber":"string"}}')
   } catch (e) {
     console.log(e)
     t.fail()
   }
 
-  t.equal(stringify({
+  equal(stringify({
     objectOrBoolean: { stringOrNumber: 42 }
   }), '{"objectOrBoolean":{"stringOrNumber":42}}')
 
-  t.equal(stringify({
+  equal(stringify({
     objectOrBoolean: true
   }), '{"objectOrBoolean":true}')
 })
 
-test('string type array can handle dates', (t) => {
-  t.plan(1)
+describe('string type array can handle dates', (t) => {
   const schema = {
     type: 'object',
     properties: {
@@ -383,11 +357,10 @@ test('string type array can handle dates', (t) => {
     date: new Date('2018-04-20T07:52:31.017Z'),
     dateObject: new Date('2018-04-21T07:52:31.017Z')
   })
-  t.equal(value, '{"date":"2018-04-20T07:52:31.017Z","dateObject":"2018-04-21T07:52:31.017Z"}')
+  equal(value, '{"date":"2018-04-20T07:52:31.017Z","dateObject":"2018-04-21T07:52:31.017Z"}')
 })
 
-test('object that is simultaneously a string and a json', (t) => {
-  t.plan(2)
+describe('object that is simultaneously a string and a json', (t) => {
   const schema = {
     type: 'object',
     properties: {
@@ -406,14 +379,13 @@ test('object that is simultaneously a string and a json', (t) => {
 
   const stringify = build(schema)
   const valueStr = stringify({ simultaneously: likeObjectId })
-  t.equal(valueStr, '{"simultaneously":"hello"}')
+  equal(valueStr, '{"simultaneously":"hello"}')
 
   const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
-  t.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
+  equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
 
-test('object that is simultaneously a string and a json switched', (t) => {
-  t.plan(2)
+describe('object that is simultaneously a string and a json switched', (t) => {
   const schema = {
     type: 'object',
     properties: {
@@ -432,15 +404,13 @@ test('object that is simultaneously a string and a json switched', (t) => {
 
   const stringify = build(schema)
   const valueStr = stringify({ simultaneously: likeObjectId })
-  t.equal(valueStr, '{"simultaneously":{}}')
+  equal(valueStr, '{"simultaneously":{}}')
 
   const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
-  t.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
+  equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
 
-test('class instance that is simultaneously a string and a json', (t) => {
-  t.plan(2)
-
+describe('class instance that is simultaneously a string and a json', (t) => {
   const schema = {
     type: 'object',
     properties: {
@@ -461,14 +431,13 @@ test('class instance that is simultaneously a string and a json', (t) => {
 
   const stringify = build(schema)
   const valueStr = stringify({ simultaneously: likeObjectId })
-  t.equal(valueStr, '{"simultaneously":"hello"}')
+  equal(valueStr, '{"simultaneously":"hello"}')
 
   const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
-  t.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
+  equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
 
-test('should not throw an error when type is array and object is null, it should instead coerce to []', (t) => {
-  t.plan(1)
+describe('should not throw an error when type is array and object is null, it should instead coerce to []', (t) => {
   const schema = {
     type: 'object',
     properties: {
@@ -483,11 +452,10 @@ test('should not throw an error when type is array and object is null, it should
 
   const stringify = build(schema)
   const result = stringify({ arr: null })
-  t.equal(result, JSON.stringify({ arr: [] }))
+  equal(result, JSON.stringify({ arr: [] }))
 })
 
-test('should throw an error when type is array and object is not an array', (t) => {
-  t.plan(1)
+describe('should throw an error when type is array and object is not an array', (t) => {
   const schema = {
     type: 'object',
     properties: {
@@ -501,11 +469,10 @@ test('should throw an error when type is array and object is not an array', (t) 
   }
 
   const stringify = build(schema)
-  t.throws(() => stringify({ arr: { foo: 'hello' } }), new TypeError('The value of \'#/properties/arr\' does not match schema definition.'))
+  throws(() => stringify({ arr: { foo: 'hello' } }), new TypeError('The value of \'#/properties/arr\' does not match schema definition.'))
 })
 
-test('should throw an error when type is array and object is not an array with external schema', (t) => {
-  t.plan(1)
+describe('should throw an error when type is array and object is not an array with external schema', (t) => {
   const schema = {
     type: 'object',
     properties: {
@@ -529,12 +496,10 @@ test('should throw an error when type is array and object is not an array with e
   }
 
   const stringify = build(schema, { schema: externalSchema })
-  t.throws(() => stringify({ arr: { foo: 'hello' } }), new TypeError('The value of \'arrayOfNumbers#/definitions/arr\' does not match schema definition.'))
+  throws(() => stringify({ arr: { foo: 'hello' } }), new TypeError('The value of \'arrayOfNumbers#/definitions/arr\' does not match schema definition.'))
 })
 
-test('throw an error if none of types matches', (t) => {
-  t.plan(1)
-
+describe('throw an error if none of types matches', (t) => {
   const schema = {
     title: 'simple object with multi-type nullable primitive',
     type: 'object',
@@ -546,5 +511,5 @@ test('throw an error if none of types matches', (t) => {
   }
 
   const stringify = build(schema)
-  t.throws(() => stringify({ data: 'string' }), 'The value "string" does not match schema definition.')
+  throws(() => stringify({ data: 'string' }), 'The value "string" does not match schema definition.')
 })

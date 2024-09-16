@@ -1,12 +1,11 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { ok, equal } = require('node:assert')
 const validator = require('is-my-json-valid')
 const build = require('..')
 
-test('schema with const string', (t) => {
-  t.plan(2)
-
+describe('schema with const string', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -20,13 +19,11 @@ test('schema with const string', (t) => {
     foo: 'bar'
   })
 
-  t.equal(output, '{"foo":"bar"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"foo":"bar"}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('schema with const string and different input', (t) => {
-  t.plan(2)
-
+describe('schema with const string and different input', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -40,13 +37,11 @@ test('schema with const string and different input', (t) => {
     foo: 'baz'
   })
 
-  t.equal(output, '{"foo":"bar"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"foo":"bar"}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('schema with const string and different type input', (t) => {
-  t.plan(2)
-
+describe('schema with const string and different type input', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -60,13 +55,11 @@ test('schema with const string and different type input', (t) => {
     foo: 1
   })
 
-  t.equal(output, '{"foo":"bar"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"foo":"bar"}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('schema with const string and no input', (t) => {
-  t.plan(2)
-
+describe('schema with const string and no input', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -78,13 +71,11 @@ test('schema with const string and no input', (t) => {
   const stringify = build(schema)
   const output = stringify({})
 
-  t.equal(output, '{}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('schema with const string that contains \'', (t) => {
-  t.plan(2)
-
+describe('schema with const string that contains \'', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -98,13 +89,11 @@ test('schema with const string that contains \'', (t) => {
     foo: "'bar'"
   })
 
-  t.equal(output, '{"foo":"\'bar\'"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"foo":"\'bar\'"}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('schema with const number', (t) => {
-  t.plan(2)
-
+describe('schema with const number', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -118,13 +107,11 @@ test('schema with const number', (t) => {
     foo: 1
   })
 
-  t.equal(output, '{"foo":1}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"foo":1}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('schema with const number and different input', (t) => {
-  t.plan(2)
-
+describe('schema with const number and different input', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -138,13 +125,11 @@ test('schema with const number and different input', (t) => {
     foo: 2
   })
 
-  t.equal(output, '{"foo":1}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"foo":1}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('schema with const bool', (t) => {
-  t.plan(2)
-
+describe('schema with const bool', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -158,13 +143,11 @@ test('schema with const bool', (t) => {
     foo: true
   })
 
-  t.equal(output, '{"foo":true}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"foo":true}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('schema with const number', (t) => {
-  t.plan(2)
-
+describe('schema with const number', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -178,13 +161,11 @@ test('schema with const number', (t) => {
     foo: 1
   })
 
-  t.equal(output, '{"foo":1}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"foo":1}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('schema with const null', (t) => {
-  t.plan(2)
-
+describe('schema with const null', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -198,13 +179,11 @@ test('schema with const null', (t) => {
     foo: null
   })
 
-  t.equal(output, '{"foo":null}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"foo":null}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('schema with const array', (t) => {
-  t.plan(2)
-
+describe('schema with const array', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -218,13 +197,11 @@ test('schema with const array', (t) => {
     foo: [1, 2, 3]
   })
 
-  t.equal(output, '{"foo":[1,2,3]}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"foo":[1,2,3]}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('schema with const object', (t) => {
-  t.plan(2)
-
+describe('schema with const object', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -238,13 +215,11 @@ test('schema with const object', (t) => {
     foo: { bar: 'baz' }
   })
 
-  t.equal(output, '{"foo":{"bar":"baz"}}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"foo":{"bar":"baz"}}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('schema with const and null as type', (t) => {
-  t.plan(4)
-
+describe('schema with const and null as type', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -258,17 +233,15 @@ test('schema with const and null as type', (t) => {
     foo: null
   })
 
-  t.equal(output, '{"foo":null}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"foo":null}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 
   const output2 = stringify({ foo: 'baz' })
-  t.equal(output2, '{"foo":"baz"}')
-  t.ok(validate(JSON.parse(output2)), 'valid schema')
+  equal(output2, '{"foo":"baz"}')
+  ok(validate(JSON.parse(output2)), 'valid schema')
 })
 
-test('schema with const as nullable', (t) => {
-  t.plan(4)
-
+describe('schema with const as nullable', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -282,19 +255,17 @@ test('schema with const as nullable', (t) => {
     foo: null
   })
 
-  t.equal(output, '{"foo":null}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(output, '{"foo":null}')
+  ok(validate(JSON.parse(output)), 'valid schema')
 
   const output2 = stringify({
     foo: 'baz'
   })
-  t.equal(output2, '{"foo":"baz"}')
-  t.ok(validate(JSON.parse(output2)), 'valid schema')
+  equal(output2, '{"foo":"baz"}')
+  ok(validate(JSON.parse(output2)), 'valid schema')
 })
 
-test('schema with const and invalid object', (t) => {
-  t.plan(2)
-
+describe('schema with const and invalid object', () => {
   const schema = {
     type: 'object',
     properties: {
@@ -309,6 +280,6 @@ test('schema with const and invalid object', (t) => {
     foo: { foo: 'baz' }
   })
 
-  t.equal(result, '{"foo":{"foo":"bar"}}')
-  t.ok(validate(JSON.parse(result)), 'valid schema')
+  equal(result, '{"foo":{"foo":"bar"}}')
+  ok(validate(JSON.parse(result)), 'valid schema')
 })

@@ -13,7 +13,7 @@
     "lint": "standard",
     "lint:fix": "standard --fix",
     "test:typescript": "tsd",
-    "test:unit": "tap",
+    "test:unit": "node --test",
     "test": "npm run test:unit && npm run test:typescript"
   },
   "precommit": [
@@ -46,7 +46,6 @@
     "is-my-json-valid": "^2.20.6",
     "simple-git": "^3.23.0",
     "standard": "^17.1.0",
-    "tap": "^19.2.5",
     "tsd": "^0.31.0",
     "webpack": "^5.90.3"
   },

@@ -1,5 +1,7 @@
 'use strict'
 
+const { it } = require('node:test')
+const { equal, ok } = require('node:assert')
 const build = require('../..')
 
 function runTests (t, testsuite, skippedTests) {
@@ -7,20 +9,15 @@ function runTests (t, testsuite, skippedTests) {
     const stringify = build(scenario.schema)
     for (const test of scenario.tests) {
       if (skippedTests.indexOf(test.description) !== -1) {
-        t.comment('skip %s', test.description)
+        console.log(`skip ${test.description}`)
         continue
       }
-      t.test(test.description, (t) => {
-        t.plan(1)
+      it(test.description, (t) => {
         try {
           const output = stringify(test.data)
-          t.equal(output, JSON.stringify(test.data), 'compare payloads')
+          equal(output, JSON.stringify(test.data), 'compare payloads')
         } catch (err) {
-          if (test.valid === false) {
-            t.pass('payload is invalid')
-          } else {
-            t.fail('payload should be valid: ' + err.message)
-          }
+          ok(test.valid === false)
         }
       })
     }

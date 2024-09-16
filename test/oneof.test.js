@@ -1,11 +1,10 @@
 'use strict'
 
-const { test } = require('tap')
+const { describe } = require('node:test')
+const { equal, throws } = require('node:assert')
 const build = require('..')
 
-test('object with multiple types field', (t) => {
-  t.plan(2)
-
+describe('object with multiple types field', (t) => {
   const schema = {
     title: 'object with multiple types field',
     type: 'object',
@@ -21,13 +20,11 @@ test('object with multiple types field', (t) => {
   }
   const stringify = build(schema)
 
-  t.equal(stringify({ str: 'string' }), '{"str":"string"}')
-  t.equal(stringify({ str: true }), '{"str":true}')
+  equal(stringify({ str: 'string' }), '{"str":"string"}')
+  equal(stringify({ str: true }), '{"str":true}')
 })
 
-test('object with field of type object or null', (t) => {
-  t.plan(2)
-
+describe('object with field of type object or null', (t) => {
   const schema = {
     title: 'object with field of type object or null',
     type: 'object',
@@ -48,18 +45,16 @@ test('object with field of type object or null', (t) => {
   }
   const stringify = build(schema)
 
-  t.equal(stringify({ prop: null }), '{"prop":null}')
+  equal(stringify({ prop: null }), '{"prop":null}')
 
-  t.equal(stringify({
+  equal(stringify({
     prop: {
       str: 'string', remove: 'this'
     }
   }), '{"prop":{"str":"string"}}')
 })
 
-test('object with field of type object or array', (t) => {
-  t.plan(2)
-
+describe('object with field of type object or array', (t) => {
   const schema = {
     title: 'object with field of type object or array',
     type: 'object',
@@ -80,18 +75,16 @@ test('object with field of type object or array', (t) => {
   }
   const stringify = build(schema)
 
-  t.equal(stringify({
+  equal(stringify({
     prop: { str: 'string' }
   }), '{"prop":{"str":"string"}}')
 
-  t.equal(stringify({
+  equal(stringify({
     prop: ['string']
   }), '{"prop":["string"]}')
 })
 
-test('object with field of type string and coercion disable ', (t) => {
-  t.plan(1)
-
+describe('object with field of type string and coercion disable ', (t) => {
   const schema = {
     title: 'object with field of type string',
     type: 'object',
@@ -104,12 +97,10 @@ test('object with field of type string and coercion disable ', (t) => {
     }
   }
   const stringify = build(schema)
-  t.throws(() => stringify({ str: 1 }))
+  throws(() => stringify({ str: 1 }))
 })
 
-test('object with field of type string and coercion enable ', (t) => {
-  t.plan(1)
-
+describe('object with field of type string and coercion enable ', (t) => {
   const schema = {
     title: 'object with field of type string',
     type: 'object',
@@ -132,12 +123,10 @@ test('object with field of type string and coercion enable ', (t) => {
   const value = stringify({
     str: 1
   })
-  t.equal(value, '{"str":"1"}')
+  equal(value, '{"str":"1"}')
 })
 
-test('object with field with type union of multiple objects', (t) => {
-  t.plan(2)
-
+describe('object with field with type union of multiple objects', (t) => {
   const schema = {
     title: 'object with oneOf property value containing objects',
     type: 'object',
@@ -166,14 +155,12 @@ test('object with field with type union of multiple objects', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify({ oneOfSchema: { baz: 5 } }), '{"oneOfSchema":{"baz":5}}')
+  equal(stringify({ oneOfSchema: { baz: 5 } }), '{"oneOfSchema":{"baz":5}}')
 
-  t.equal(stringify({ oneOfSchema: { bar: 'foo' } }), '{"oneOfSchema":{"bar":"foo"}}')
+  equal(stringify({ oneOfSchema: { bar: 'foo' } }), '{"oneOfSchema":{"bar":"foo"}}')
 })
 
-test('null value in schema', (t) => {
-  t.plan(0)
-
+describe('null value in schema', (t) => {
   const schema = {
     title: 'schema with null child',
     type: 'string',
@@ -184,9 +171,7 @@ test('null value in schema', (t) => {
   build(schema)
 })
 
-test('oneOf and $ref together', (t) => {
-  t.plan(2)
-
+describe('oneOf and $ref together', (t) => {
   const schema = {
     type: 'object',
     properties: {
@@ -210,14 +195,12 @@ test('oneOf and $ref together', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify({ cs: 'franco' }), '{"cs":"franco"}')
+  equal(stringify({ cs: 'franco' }), '{"cs":"franco"}')
 
-  t.equal(stringify({ cs: true }), '{"cs":true}')
+  equal(stringify({ cs: true }), '{"cs":true}')
 })
 
-test('oneOf and $ref: 2 levels are fine', (t) => {
-  t.plan(1)
-
+describe('oneOf and $ref: 2 levels are fine', (t) => {
   const schema = {
     type: 'object',
     properties: {
@@ -250,12 +233,10 @@ test('oneOf and $ref: 2 levels are fine', (t) => {
   const value = stringify({
     cs: 3
   })
-  t.equal(value, '{"cs":3}')
+  equal(value, '{"cs":3}')
 })
 
-test('oneOf and $ref: multiple levels should throw at build.', (t) => {
-  t.plan(3)
-
+describe('oneOf and $ref: multiple levels should throw at build.', (t) => {
   const schema = {
     type: 'object',
     properties: {
@@ -289,14 +270,12 @@ test('oneOf and $ref: multiple levels should throw at build.', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify({ cs: 3 }), '{"cs":3}')
-  t.equal(stringify({ cs: true }), '{"cs":true}')
-  t.equal(stringify({ cs: 'pippo' }), '{"cs":"pippo"}')
+  equal(stringify({ cs: 3 }), '{"cs":3}')
+  equal(stringify({ cs: true }), '{"cs":true}')
+  equal(stringify({ cs: 'pippo' }), '{"cs":"pippo"}')
 })
 
-test('oneOf and $ref - multiple external $ref', (t) => {
-  t.plan(2)
-
+describe('oneOf and $ref - multiple external $ref', (t) => {
   const externalSchema = {
     external: {
       definitions: {
@@ -345,14 +324,11 @@ test('oneOf and $ref - multiple external $ref', (t) => {
   const output = stringify(object)
 
   JSON.parse(output)
-  t.pass()
 
-  t.equal(output, '{"obj":{"prop":{"prop2":"test"}}}')
+  equal(output, '{"obj":{"prop":{"prop2":"test"}}}')
 })
 
-test('oneOf with enum with more than 100 entries', (t) => {
-  t.plan(1)
-
+describe('oneOf with enum with more than 100 entries', (t) => {
   const schema = {
     title: 'type array that may have one of declared items',
     type: 'array',
@@ -369,12 +345,10 @@ test('oneOf with enum with more than 100 entries', (t) => {
   const stringify = build(schema)
 
   const value = stringify(['EUR', 'USD', null])
-  t.equal(value, '["EUR","USD",null]')
+  equal(value, '["EUR","USD",null]')
 })
 
-test('oneOf object with field of type string with format or null', (t) => {
-  t.plan(1)
-
+describe('oneOf object with field of type string with format or null', (t) => {
   const toStringify = new Date()
 
   const withOneOfSchema = {
@@ -393,14 +367,12 @@ test('oneOf object with field of type string with format or null', (t) => {
 
   const withOneOfStringify = build(withOneOfSchema)
 
-  t.equal(withOneOfStringify({
+  equal(withOneOfStringify({
     prop: toStringify
   }), `{"prop":"${toStringify.toISOString()}"}`)
 })
 
-test('one array item match oneOf types', (t) => {
-  t.plan(3)
-
+describe('one array item match oneOf types', (t) => {
   const schema = {
     type: 'object',
     additionalProperties: false,
@@ -425,14 +397,12 @@ test('one array item match oneOf types', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify({ data: ['foo'] }), '{"data":["foo"]}')
-  t.equal(stringify({ data: [1] }), '{"data":[1]}')
-  t.throws(() => stringify({ data: [false, 'foo'] }))
+  equal(stringify({ data: ['foo'] }), '{"data":["foo"]}')
+  equal(stringify({ data: [1] }), '{"data":[1]}')
+  throws(() => stringify({ data: [false, 'foo'] }))
 })
 
-test('some array items match oneOf types', (t) => {
-  t.plan(2)
-
+describe('some array items match oneOf types', (t) => {
   const schema = {
     type: 'object',
     additionalProperties: false,
@@ -457,13 +427,11 @@ test('some array items match oneOf types', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify({ data: ['foo', 5] }), '{"data":["foo",5]}')
-  t.throws(() => stringify({ data: [false, 'foo', true, 5] }))
+  equal(stringify({ data: ['foo', 5] }), '{"data":["foo",5]}')
+  throws(() => stringify({ data: [false, 'foo', true, 5] }))
 })
 
-test('all array items does not match oneOf types', (t) => {
-  t.plan(1)
-
+describe('all array items does not match oneOf types', (t) => {
   const schema = {
     type: 'object',
     additionalProperties: false,
@@ -488,5 +456,5 @@ test('all array items does not match oneOf types', (t) => {
 
   const stringify = build(schema)
 
-  t.throws(() => stringify({ data: [null, false, true, undefined, [], {}] }))
+  throws(() => stringify({ data: [null, false, true, undefined, [], {}] }))
 })

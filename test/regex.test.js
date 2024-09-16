@@ -1,12 +1,11 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { equal, ok } = require('node:assert')
 const validator = require('is-my-json-valid')
 const build = require('..')
 
-test('object with RexExp', (t) => {
-  t.plan(3)
-
+describe('object with RexExp', (t) => {
   const schema = {
     title: 'object with RegExp',
     type: 'object',
@@ -26,8 +25,7 @@ test('object with RexExp', (t) => {
   const output = stringify(obj)
 
   JSON.parse(output)
-  t.pass()
 
-  t.equal(obj.reg.source, new RegExp(JSON.parse(output).reg).source)
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  equal(obj.reg.source, new RegExp(JSON.parse(output).reg).source)
+  ok(validate(JSON.parse(output)), 'valid schema')
 })

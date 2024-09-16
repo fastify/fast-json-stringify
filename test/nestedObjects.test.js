@@ -1,11 +1,10 @@
 'use strict'
 
-const test = require('tap').test
+const { describe } = require('node:test')
+const { equal } = require('node:assert')
 const build = require('..')
 
-test('nested objects with same properties', (t) => {
-  t.plan(1)
-
+describe('nested objects with same properties', (t) => {
   const schema = {
     title: 'nested objects with same properties',
     type: 'object',
@@ -28,12 +27,10 @@ test('nested objects with same properties', (t) => {
       numberProperty: 42
     }
   })
-  t.equal(value, '{"stringProperty":"string1","objectProperty":{"stringProperty":"string2","numberProperty":42}}')
+  equal(value, '{"stringProperty":"string1","objectProperty":{"stringProperty":"string2","numberProperty":42}}')
 })
 
-test('names collision', (t) => {
-  t.plan(1)
-
+describe('names collision', (t) => {
   const schema = {
     title: 'nested objects with same properties',
     type: 'object',
@@ -59,5 +56,5 @@ test('names collision', (t) => {
     tes: { b: 'b', t: {} }
   }
 
-  t.equal(stringify(data), JSON.stringify(data))
+  equal(stringify(data), JSON.stringify(data))
 })
