@@ -13,7 +13,7 @@
     "lint": "standard",
     "lint:fix": "standard --fix",
     "test:typescript": "tsd",
-    "test:unit": "node --test",
+    "test:unit": "c8 node --test",
     "test": "npm run test:unit && npm run test:typescript"
   },
   "precommit": [
@@ -40,6 +40,7 @@
     "@fastify/pre-commit": "^2.1.0",
     "@sinclair/typebox": "^0.33.4",
     "benchmark": "^2.1.4",
+    "c8": "^10.1.2",
     "cli-select": "^1.1.2",
     "compile-json-stringify": "^0.1.2",
     "fast-json-stringify": ".",
