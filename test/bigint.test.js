@@ -1,7 +1,7 @@
 'use strict'
 
-const t = require('tap')
-const test = t.test
+const { test } = require('node:test')
+
 const build = require('..')
 
 test('render a bigint as JSON', (t) => {
@@ -15,7 +15,7 @@ test('render a bigint as JSON', (t) => {
   const stringify = build(schema)
   const output = stringify(1615n)
 
-  t.equal(output, '1615')
+  t.assert.equal(output, '1615')
 })
 
 test('render an object with a bigint as JSON', (t) => {
@@ -36,7 +36,7 @@ test('render an object with a bigint as JSON', (t) => {
     id: 1615n
   })
 
-  t.equal(output, '{"id":1615}')
+  t.assert.equal(output, '{"id":1615}')
 })
 
 test('render an array with a bigint as JSON', (t) => {
@@ -53,7 +53,7 @@ test('render an array with a bigint as JSON', (t) => {
   const stringify = build(schema)
   const output = stringify([1615n])
 
-  t.equal(output, '[1615]')
+  t.assert.equal(output, '[1615]')
 })
 
 test('render an object with an additionalProperty of type bigint as JSON', (t) => {
@@ -72,5 +72,5 @@ test('render an object with an additionalProperty of type bigint as JSON', (t) =
     num: 1615n
   })
 
-  t.equal(output, '{"num":1615}')
+  t.assert.equal(output, '{"num":1615}')
 })

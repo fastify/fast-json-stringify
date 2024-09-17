@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test, after } = require('node:test')
 const fjs = require('..')
 const fs = require('fs')
 const path = require('path')
@@ -22,23 +22,29 @@ const tmpDir = 'test/fixtures'
 
 test('activate standalone mode', async (t) => {
   t.plan(3)
-  const code = build({ mode: 'standalone' })
-  t.type(code, 'string')
-  t.equal(code.indexOf('ajv'), -1)
 
-  const destination = path.resolve(tmpDir, 'standalone.js')
-
-  t.teardown(async () => {
+  after(async () => {
     await fs.promises.rm(destination, { force: true })
   })
 
+  const code = build({ mode: 'standalone' })
+  t.assert.ok(typeof code === 'string')
+  t.assert.equal(code.indexOf('ajv'), -1)
+
+  const destination = path.resolve(tmpDir, 'standalone.js')
+
   await fs.promises.writeFile(destination, code)
   const standalone = require(destination)
-  t.same(standalone({ firstName: 'Foo', surname: 'bar' }), JSON.stringify({ firstName: 'Foo' }), 'surname evicted')
+  t.assert.equal(standalone({ firstName: 'Foo', surname: 'bar' }), JSON.stringify({ firstName: 'Foo' }), 'surname evicted')
 })
 
 test('test ajv schema', async (t) => {
   t.plan(3)
+
+  after(async () => {
+    await fs.promises.rm(destination, { force: true })
+  })
+
   const code = build({ mode: 'standalone' }, {
     type: 'object',
     properties: {
@@ -86,18 +92,14 @@ test('test ajv schema', async (t) => {
       }
     }
   })
-  t.type(code, 'string')
-  t.equal(code.indexOf('ajv') > 0, true)
+  t.assert.ok(typeof code === 'string')
+  t.assert.equal(code.indexOf('ajv') > 0, true)
 
   const destination = path.resolve(tmpDir, 'standalone2.js')
 
-  t.teardown(async () => {
-    await fs.promises.rm(destination, { force: true })
-  })
-
   await fs.promises.writeFile(destination, code)
   const standalone = require(destination)
-  t.same(standalone({
+  t.assert.equal(standalone({
     kind: 'foobar',
     foo: 'FOO',
     list: [{
@@ -122,6 +124,11 @@ test('test ajv schema', async (t) => {
 
 test('no need to keep external schemas once compiled', async (t) => {
   t.plan(1)
+
+  after(async () => {
+    await fs.promises.rm(destination, { force: true })
+  })
+
   const externalSchema = {
     first: {
       definitions: {
@@ -145,18 +152,18 @@ test('no need to keep external schemas once compiled', async (t) => {
 
   const destination = path.resolve(tmpDir, 'standalone3.js')
 
-  t.teardown(async () => {
-    await fs.promises.rm(destination, { force: true })
-  })
-
   await fs.promises.writeFile(destination, code)
   const standalone = require(destination)
 
-  t.same(standalone({ id1: 5 }), JSON.stringify({ id1: 5 }), 'serialization works with external schemas')
+  t.assert.equal(standalone({ id1: 5 }), JSON.stringify({ id1: 5 }), 'serialization works with external schemas')
 })
 
 test('no need to keep external schemas once compiled - with oneOf validator', async (t) => {
   t.plan(2)
+
+  after(async () => {
+    await fs.promises.rm(destination, { force: true })
+  })
 
   const externalSchema = {
     ext: {
@@ -204,13 +211,9 @@ test('no need to keep external schemas once compiled - with oneOf validator', as
 
   const destination = path.resolve(tmpDir, 'standalone-oneOf-ref.js')
 
-  t.teardown(async () => {
-    await fs.promises.rm(destination, { force: true })
-  })
-
   await fs.promises.writeFile(destination, code)
   const stringify = require(destination)
 
-  t.equal(stringify({ oneOfSchema: { baz: 5 } }), '{"oneOfSchema":{"baz":5}}')
-  t.equal(stringify({ oneOfSchema: { bar: 'foo' } }), '{"oneOfSchema":{"bar":"foo"}}')
+  t.assert.equal(stringify({ oneOfSchema: { baz: 5 } }), '{"oneOfSchema":{"baz":5}}')
+  t.assert.equal(stringify({ oneOfSchema: { bar: 'foo' } }), '{"oneOfSchema":{"bar":"foo"}}')
 })

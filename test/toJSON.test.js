@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('use toJSON method on object types', (t) => {
@@ -22,7 +22,7 @@ test('use toJSON method on object types', (t) => {
     }
   }
 
-  t.equal('{"productName":"cola"}', stringify(object))
+  t.assert.equal('{"productName":"cola"}', stringify(object))
 })
 
 test('use toJSON method on nested object types', (t) => {
@@ -55,7 +55,7 @@ test('use toJSON method on nested object types', (t) => {
     }
   ]
 
-  t.equal('[{"productName":"cola"},{"productName":"sprite"}]', stringify(array))
+  t.assert.equal('[{"productName":"cola"},{"productName":"sprite"}]', stringify(array))
 })
 
 test('not use toJSON if does not exist', (t) => {
@@ -79,7 +79,7 @@ test('not use toJSON if does not exist', (t) => {
     product: { name: 'cola' }
   }
 
-  t.equal('{"product":{"name":"cola"}}', stringify(object))
+  t.assert.equal('{"product":{"name":"cola"}}', stringify(object))
 })
 
 test('not fail on null object declared nullable', (t) => {
@@ -100,7 +100,7 @@ test('not fail on null object declared nullable', (t) => {
       }
     }
   })
-  t.equal('null', stringify(null))
+  t.assert.equal('null', stringify(null))
 })
 
 test('not fail on null sub-object declared nullable', (t) => {
@@ -124,7 +124,7 @@ test('not fail on null sub-object declared nullable', (t) => {
   const object = {
     product: null
   }
-  t.equal('{"product":null}', stringify(object))
+  t.assert.equal('{"product":null}', stringify(object))
 })
 
 test('on non nullable null sub-object it should coerce to {}', (t) => {
@@ -150,7 +150,7 @@ test('on non nullable null sub-object it should coerce to {}', (t) => {
   }
 
   const result = stringify(object)
-  t.equal(result, JSON.stringify({ product: {} }))
+  t.assert.equal(result, JSON.stringify({ product: {} }))
 })
 
 test('on non nullable null object it should coerce to {}', (t) => {
@@ -174,7 +174,7 @@ test('on non nullable null object it should coerce to {}', (t) => {
   })
 
   const result = stringify(null)
-  t.equal(result, '{}')
+  t.assert.equal(result, '{}')
 })
 
 test('on non-nullable null object it should skip rendering, skipping required fields checks', (t) => {
@@ -199,5 +199,5 @@ test('on non-nullable null object it should skip rendering, skipping required fi
   })
 
   const result = stringify(null)
-  t.equal(result, '{}')
+  t.assert.equal(result, '{}')
 })

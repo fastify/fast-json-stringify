@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('required property containing single quote, contains property', (t) => {
@@ -16,7 +16,7 @@ test('required property containing single quote, contains property', (t) => {
     ]
   })
 
-  t.throws(() => stringify({}), new Error('"\'" is required!'))
+  t.assert.throws(() => stringify({}), new Error('"\'" is required!'))
 })
 
 test('required property containing double quote, contains property', (t) => {
@@ -32,7 +32,7 @@ test('required property containing double quote, contains property', (t) => {
     ]
   })
 
-  t.throws(() => stringify({}), new Error('""" is required!'))
+  t.assert.throws(() => stringify({}), new Error('""" is required!'))
 })
 
 test('required property containing single quote, does not contain property', (t) => {
@@ -48,7 +48,7 @@ test('required property containing single quote, does not contain property', (t)
     ]
   })
 
-  t.throws(() => stringify({}), new Error('"\'" is required!'))
+  t.assert.throws(() => stringify({}), new Error('"\'" is required!'))
 })
 
 test('required property containing double quote, does not contain property', (t) => {
@@ -64,5 +64,5 @@ test('required property containing double quote, does not contain property', (t)
     ]
   })
 
-  t.throws(() => stringify({}), new Error('""" is required!'))
+  t.assert.throws(() => stringify({}), new Error('""" is required!'))
 })

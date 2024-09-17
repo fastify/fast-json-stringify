@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('can stringify recursive directory tree (issue #181)', (t) => {
@@ -25,7 +25,7 @@ test('can stringify recursive directory tree (issue #181)', (t) => {
   }
   const stringify = build(schema)
 
-  t.equal(stringify([
+  t.assert.equal(stringify([
     { name: 'directory 1', subDirectories: [] },
     {
       name: 'directory 2',
@@ -68,7 +68,7 @@ test('can stringify when recursion in external schema', t => {
   })
 
   const value = stringify({ people: { name: 'Elizabeth', children: [{ name: 'Charles' }] } })
-  t.equal(value, '{"people":{"name":"Elizabeth","children":[{"name":"Charles"}]}}')
+  t.assert.equal(value, '{"people":{"name":"Elizabeth","children":[{"name":"Charles"}]}}')
 })
 
 test('use proper serialize function', t => {
@@ -133,7 +133,7 @@ test('use proper serialize function', t => {
       ]
     }
   })
-  t.equal(value, '{"people":{"name":"Elizabeth","children":[{"name":"Charles","children":[{"name":"William","children":[{"name":"George"},{"name":"Charlotte"}]},{"name":"Harry"}]}]},"directory":{"name":"directory 1","subDirectories":[{"name":"directory 1.1","subDirectories":[]},{"name":"directory 1.2","subDirectories":[{"name":"directory 1.2.1","subDirectories":[]},{"name":"directory 1.2.2","subDirectories":[]}]}]}}')
+  t.assert.equal(value, '{"people":{"name":"Elizabeth","children":[{"name":"Charles","children":[{"name":"William","children":[{"name":"George"},{"name":"Charlotte"}]},{"name":"Harry"}]}]},"directory":{"name":"directory 1","subDirectories":[{"name":"directory 1.1","subDirectories":[]},{"name":"directory 1.2","subDirectories":[{"name":"directory 1.2.1","subDirectories":[]},{"name":"directory 1.2.2","subDirectories":[]}]}]}}')
 })
 
 test('can stringify recursive references in object types (issue #365)', t => {
@@ -176,7 +176,7 @@ test('can stringify recursive references in object types (issue #365)', t => {
     }
   }
   const value = stringify(data)
-  t.equal(value, '{"category":{"parent":{"parent":{"parent":{"parent":{}}}}}}')
+  t.assert.equal(value, '{"category":{"parent":{"parent":{"parent":{"parent":{}}}}}}')
 })
 
 test('can stringify recursive inline $id references (issue #410)', t => {
@@ -241,5 +241,5 @@ test('can stringify recursive inline $id references (issue #410)', t => {
     ]
   }
   const value = stringify(data)
-  t.equal(value, '{"id":"0","nodes":[{"id":"1","nodes":[{"id":"2","nodes":[{"id":"3","nodes":[]},{"id":"4","nodes":[]},{"id":"5","nodes":[]}]}]},{"id":"6","nodes":[{"id":"7","nodes":[{"id":"8","nodes":[]},{"id":"9","nodes":[]},{"id":"10","nodes":[]}]}]},{"id":"11","nodes":[{"id":"12","nodes":[{"id":"13","nodes":[]},{"id":"14","nodes":[]},{"id":"15","nodes":[]}]}]}]}')
+  t.assert.equal(value, '{"id":"0","nodes":[{"id":"1","nodes":[{"id":"2","nodes":[{"id":"3","nodes":[]},{"id":"4","nodes":[]},{"id":"5","nodes":[]}]}]},{"id":"6","nodes":[{"id":"7","nodes":[{"id":"8","nodes":[]},{"id":"9","nodes":[]},{"id":"10","nodes":[]}]}]},{"id":"11","nodes":[{"id":"12","nodes":[{"id":"13","nodes":[]},{"id":"14","nodes":[]},{"id":"15","nodes":[]}]}]}]}')
 })

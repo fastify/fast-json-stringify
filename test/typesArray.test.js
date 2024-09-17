@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('possibly nullable integer primitive alternative', (t) => {
@@ -21,7 +21,7 @@ test('possibly nullable integer primitive alternative', (t) => {
   const value = stringify({
     data: 4
   })
-  t.equal(value, '{"data":4}')
+  t.assert.equal(value, '{"data":4}')
 })
 
 test('possibly nullable number primitive alternative', (t) => {
@@ -42,7 +42,7 @@ test('possibly nullable number primitive alternative', (t) => {
   const value = stringify({
     data: 4
   })
-  t.equal(value, '{"data":4}')
+  t.assert.equal(value, '{"data":4}')
 })
 
 test('possibly nullable integer primitive alternative with null value', (t) => {
@@ -63,7 +63,7 @@ test('possibly nullable integer primitive alternative with null value', (t) => {
   const value = stringify({
     data: null
   })
-  t.equal(value, '{"data":0}')
+  t.assert.equal(value, '{"data":0}')
 })
 
 test('possibly nullable number primitive alternative with null value', (t) => {
@@ -84,7 +84,7 @@ test('possibly nullable number primitive alternative with null value', (t) => {
   const value = stringify({
     data: null
   })
-  t.equal(value, '{"data":0}')
+  t.assert.equal(value, '{"data":0}')
 })
 
 test('possibly nullable number primitive alternative with null value', (t) => {
@@ -105,7 +105,7 @@ test('possibly nullable number primitive alternative with null value', (t) => {
   const value = stringify({
     data: null
   })
-  t.equal(value, '{"data":false}')
+  t.assert.equal(value, '{"data":false}')
 })
 
 test('nullable integer primitive', (t) => {
@@ -126,7 +126,7 @@ test('nullable integer primitive', (t) => {
   const value = stringify({
     data: 4
   })
-  t.equal(value, '{"data":4}')
+  t.assert.equal(value, '{"data":4}')
 })
 
 test('nullable number primitive', (t) => {
@@ -147,7 +147,7 @@ test('nullable number primitive', (t) => {
   const value = stringify({
     data: 4
   })
-  t.equal(value, '{"data":4}')
+  t.assert.equal(value, '{"data":4}')
 })
 
 test('nullable primitive with null value', (t) => {
@@ -168,7 +168,7 @@ test('nullable primitive with null value', (t) => {
   const value = stringify({
     data: null
   })
-  t.equal(value, '{"data":null}')
+  t.assert.equal(value, '{"data":null}')
 })
 
 test('nullable number primitive with null value', (t) => {
@@ -189,7 +189,7 @@ test('nullable number primitive with null value', (t) => {
   const value = stringify({
     data: null
   })
-  t.equal(value, '{"data":null}')
+  t.assert.equal(value, '{"data":null}')
 })
 
 test('possibly null object with multi-type property', (t) => {
@@ -211,19 +211,19 @@ test('possibly null object with multi-type property', (t) => {
   }
   const stringify = build(schema)
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     objectOrNull: {
       stringOrNumber: 'string'
     }
   }), '{"objectOrNull":{"stringOrNumber":"string"}}')
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     objectOrNull: {
       stringOrNumber: 42
     }
   }), '{"objectOrNull":{"stringOrNumber":42}}')
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     objectOrNull: null
   }), '{"objectOrNull":null}')
 })
@@ -249,7 +249,7 @@ test('object with possibly null array of multiple types', (t) => {
     const value = stringify({
       arrayOfStringsAndNumbers: null
     })
-    t.equal(value, '{"arrayOfStringsAndNumbers":null}')
+    t.assert.equal(value, '{"arrayOfStringsAndNumbers":null}')
   } catch (e) {
     console.log(e)
     t.fail()
@@ -259,21 +259,21 @@ test('object with possibly null array of multiple types', (t) => {
     const value = stringify({
       arrayOfStringsAndNumbers: ['string1', 'string2']
     })
-    t.equal(value, '{"arrayOfStringsAndNumbers":["string1","string2"]}')
+    t.assert.equal(value, '{"arrayOfStringsAndNumbers":["string1","string2"]}')
   } catch (e) {
     console.log(e)
     t.fail()
   }
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     arrayOfStringsAndNumbers: [42, 7]
   }), '{"arrayOfStringsAndNumbers":[42,7]}')
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     arrayOfStringsAndNumbers: ['string1', 42, 7, 'string2']
   }), '{"arrayOfStringsAndNumbers":["string1",42,7,"string2"]}')
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     arrayOfStringsAndNumbers: ['string1', null, 42, 7, 'string2', null]
   }), '{"arrayOfStringsAndNumbers":["string1",null,42,7,"string2",null]}')
 })
@@ -307,7 +307,7 @@ test('object with tuple of multiple types', (t) => {
     const value = stringify({
       fixedTupleOfStringsAndNumbers: ['string1', 42, 7]
     })
-    t.equal(value, '{"fixedTupleOfStringsAndNumbers":["string1",42,7]}')
+    t.assert.equal(value, '{"fixedTupleOfStringsAndNumbers":["string1",42,7]}')
   } catch (e) {
     console.log(e)
     t.fail()
@@ -317,7 +317,7 @@ test('object with tuple of multiple types', (t) => {
     const value = stringify({
       fixedTupleOfStringsAndNumbers: ['string1', 42, 'string2']
     })
-    t.equal(value, '{"fixedTupleOfStringsAndNumbers":["string1",42,"string2"]}')
+    t.assert.equal(value, '{"fixedTupleOfStringsAndNumbers":["string1",42,"string2"]}')
   } catch (e) {
     console.log(e)
     t.fail()
@@ -354,17 +354,17 @@ test('object with anyOf and multiple types', (t) => {
     const value = stringify({
       objectOrBoolean: { stringOrNumber: 'string' }
     })
-    t.equal(value, '{"objectOrBoolean":{"stringOrNumber":"string"}}')
+    t.assert.equal(value, '{"objectOrBoolean":{"stringOrNumber":"string"}}')
   } catch (e) {
     console.log(e)
     t.fail()
   }
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     objectOrBoolean: { stringOrNumber: 42 }
   }), '{"objectOrBoolean":{"stringOrNumber":42}}')
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     objectOrBoolean: true
   }), '{"objectOrBoolean":true}')
 })
@@ -383,7 +383,7 @@ test('string type array can handle dates', (t) => {
     date: new Date('2018-04-20T07:52:31.017Z'),
     dateObject: new Date('2018-04-21T07:52:31.017Z')
   })
-  t.equal(value, '{"date":"2018-04-20T07:52:31.017Z","dateObject":"2018-04-21T07:52:31.017Z"}')
+  t.assert.equal(value, '{"date":"2018-04-20T07:52:31.017Z","dateObject":"2018-04-21T07:52:31.017Z"}')
 })
 
 test('object that is simultaneously a string and a json', (t) => {
@@ -406,10 +406,10 @@ test('object that is simultaneously a string and a json', (t) => {
 
   const stringify = build(schema)
   const valueStr = stringify({ simultaneously: likeObjectId })
-  t.equal(valueStr, '{"simultaneously":"hello"}')
+  t.assert.equal(valueStr, '{"simultaneously":"hello"}')
 
   const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
-  t.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
+  t.assert.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
 
 test('object that is simultaneously a string and a json switched', (t) => {
@@ -432,10 +432,10 @@ test('object that is simultaneously a string and a json switched', (t) => {
 
   const stringify = build(schema)
   const valueStr = stringify({ simultaneously: likeObjectId })
-  t.equal(valueStr, '{"simultaneously":{}}')
+  t.assert.equal(valueStr, '{"simultaneously":{}}')
 
   const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
-  t.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
+  t.assert.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
 
 test('class instance that is simultaneously a string and a json', (t) => {
@@ -461,10 +461,10 @@ test('class instance that is simultaneously a string and a json', (t) => {
 
   const stringify = build(schema)
   const valueStr = stringify({ simultaneously: likeObjectId })
-  t.equal(valueStr, '{"simultaneously":"hello"}')
+  t.assert.equal(valueStr, '{"simultaneously":"hello"}')
 
   const valueObj = stringify({ simultaneously: { foo: likeObjectId } })
-  t.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
+  t.assert.equal(valueObj, '{"simultaneously":{"foo":"hello"}}')
 })
 
 test('should not throw an error when type is array and object is null, it should instead coerce to []', (t) => {
@@ -483,7 +483,7 @@ test('should not throw an error when type is array and object is null, it should
 
   const stringify = build(schema)
   const result = stringify({ arr: null })
-  t.equal(result, JSON.stringify({ arr: [] }))
+  t.assert.equal(result, JSON.stringify({ arr: [] }))
 })
 
 test('should throw an error when type is array and object is not an array', (t) => {
@@ -501,7 +501,7 @@ test('should throw an error when type is array and object is not an array', (t) 
   }
 
   const stringify = build(schema)
-  t.throws(() => stringify({ arr: { foo: 'hello' } }), new TypeError('The value of \'#/properties/arr\' does not match schema definition.'))
+  t.assert.throws(() => stringify({ arr: { foo: 'hello' } }), new TypeError('The value of \'#/properties/arr\' does not match schema definition.'))
 })
 
 test('should throw an error when type is array and object is not an array with external schema', (t) => {
@@ -529,7 +529,7 @@ test('should throw an error when type is array and object is not an array with e
   }
 
   const stringify = build(schema, { schema: externalSchema })
-  t.throws(() => stringify({ arr: { foo: 'hello' } }), new TypeError('The value of \'arrayOfNumbers#/definitions/arr\' does not match schema definition.'))
+  t.assert.throws(() => stringify({ arr: { foo: 'hello' } }), new TypeError('The value of \'arrayOfNumbers#/definitions/arr\' does not match schema definition.'))
 })
 
 test('throw an error if none of types matches', (t) => {
@@ -546,5 +546,5 @@ test('throw an error if none of types matches', (t) => {
   }
 
   const stringify = build(schema)
-  t.throws(() => stringify({ data: 'string' }), 'The value "string" does not match schema definition.')
+  t.assert.throws(() => stringify({ data: 'string' }), 'The value "string" does not match schema definition.')
 })

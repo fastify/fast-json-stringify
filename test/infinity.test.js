@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('Finite numbers', t => {
@@ -17,7 +17,7 @@ test('Finite numbers', t => {
 
   const stringify = build(schema)
 
-  values.forEach(v => t.equal(stringify(v), JSON.stringify(v)))
+  values.forEach(v => t.assert.equal(stringify(v), JSON.stringify(v)))
 })
 
 test('Infinite integers', t => {
@@ -35,7 +35,7 @@ test('Infinite integers', t => {
     try {
       stringify(v)
     } catch (err) {
-      t.equal(err.message, `The value "${v}" cannot be converted to an integer.`)
+      t.assert.equal(err.message, `The value "${v}" cannot be converted to an integer.`)
     }
   })
 })
@@ -51,5 +51,5 @@ test('Infinite numbers', t => {
 
   const stringify = build(schema)
 
-  values.forEach(v => t.equal(stringify(v), JSON.stringify(v)))
+  values.forEach(v => t.assert.equal(stringify(v), JSON.stringify(v)))
 })

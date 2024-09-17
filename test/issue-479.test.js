@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const build = require('..')
 
 test('should validate anyOf after allOf merge', (t) => {
@@ -51,7 +51,7 @@ test('should validate anyOf after allOf merge', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(
+  t.assert.equal(
     stringify({ name: 'foo', union: 'a8f1cc50-5530-5c62-9109-5ba9589a6ae1' }),
     '{"name":"foo","union":"a8f1cc50-5530-5c62-9109-5ba9589a6ae1"}')
 })

@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const webpack = require('webpack')
 const path = require('path')
 
@@ -46,5 +46,5 @@ test('the library should work with webpack', async (t) => {
   })
 
   const obj = { foo: '42', bar: true }
-  t.equal(stringify(obj), '{"foo":"42","bar":true}')
+  t.assert.equal(stringify(obj), '{"foo":"42","bar":true}')
 })

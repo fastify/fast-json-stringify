@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const validator = require('is-my-json-valid')
 const build = require('..')
 
@@ -19,8 +19,8 @@ test('render a date in a string as JSON', (t) => {
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, JSON.stringify(toStringify))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, JSON.stringify(toStringify))
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('render a date in a string when format is date-format as ISOString', (t) => {
@@ -37,8 +37,8 @@ test('render a date in a string when format is date-format as ISOString', (t) =>
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, JSON.stringify(toStringify))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, JSON.stringify(toStringify))
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('render a nullable date in a string when format is date-format as ISOString', (t) => {
@@ -56,8 +56,8 @@ test('render a nullable date in a string when format is date-format as ISOString
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, JSON.stringify(toStringify))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, JSON.stringify(toStringify))
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('render a date in a string when format is date as YYYY-MM-DD', (t) => {
@@ -74,8 +74,8 @@ test('render a date in a string when format is date as YYYY-MM-DD', (t) => {
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, '"2023-01-21"')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '"2023-01-21"')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('render a nullable date in a string when format is date as YYYY-MM-DD', (t) => {
@@ -93,8 +93,8 @@ test('render a nullable date in a string when format is date as YYYY-MM-DD', (t)
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, '"2023-01-21"')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '"2023-01-21"')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('verify padding for rendered date in a string when format is date', (t) => {
@@ -111,8 +111,8 @@ test('verify padding for rendered date in a string when format is date', (t) => 
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, '"2020-01-01"')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '"2020-01-01"')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('render a date in a string when format is time as kk:mm:ss', (t) => {
@@ -130,10 +130,10 @@ test('render a date in a string when format is time as kk:mm:ss', (t) => {
   const output = stringify(toStringify)
 
   validate(JSON.parse(output))
-  t.equal(validate.errors, null)
+  t.assert.equal(validate.errors, null)
 
-  t.equal(output, '"01:03:25"')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '"01:03:25"')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('render a nullable date in a string when format is time as kk:mm:ss', (t) => {
@@ -152,10 +152,10 @@ test('render a nullable date in a string when format is time as kk:mm:ss', (t) =
   const output = stringify(toStringify)
 
   validate(JSON.parse(output))
-  t.equal(validate.errors, null)
+  t.assert.equal(validate.errors, null)
 
-  t.equal(output, '"01:03:25"')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '"01:03:25"')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('render a midnight time', (t) => {
@@ -173,10 +173,10 @@ test('render a midnight time', (t) => {
   const output = stringify(midnight)
 
   validate(JSON.parse(output))
-  t.equal(validate.errors, null)
+  t.assert.equal(validate.errors, null)
 
-  t.equal(output, '"00:03:25"')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '"00:03:25"')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('verify padding for rendered date in a string when format is time', (t) => {
@@ -194,10 +194,10 @@ test('verify padding for rendered date in a string when format is time', (t) => 
   const output = stringify(toStringify)
 
   validate(JSON.parse(output))
-  t.equal(validate.errors, null)
+  t.assert.equal(validate.errors, null)
 
-  t.equal(output, '"01:01:01"')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '"01:01:01"')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('render a nested object in a string when type is date-format as ISOString', (t) => {
@@ -219,11 +219,11 @@ test('render a nested object in a string when type is date-format as ISOString',
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, JSON.stringify(toStringify))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, JSON.stringify(toStringify))
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
-test('serializing null value', t => {
+test('serializing null value', async t => {
   const input = { updatedAt: null }
 
   function createSchema (properties) {
@@ -247,10 +247,10 @@ test('serializing null value', t => {
 
   t.plan(3)
 
-  t.test('type::string', t => {
+  await t.test('type::string', async t => {
     t.plan(3)
 
-    t.test('format::date-time', t => {
+    await t.test('format::date-time', t => {
       t.plan(2)
 
       const prop = {
@@ -265,11 +265,11 @@ test('serializing null value', t => {
         validate
       } = serialize(createSchema(prop), input)
 
-      t.equal(output, '{"updatedAt":""}')
-      t.notOk(validate(JSON.parse(output)), 'an empty string is not a date-time format')
+      t.assert.equal(output, '{"updatedAt":""}')
+      t.assert.equal(validate(JSON.parse(output)), false, 'an empty string is not a date-time format')
     })
 
-    t.test('format::date', t => {
+    await t.test('format::date', t => {
       t.plan(2)
 
       const prop = {
@@ -284,11 +284,11 @@ test('serializing null value', t => {
         validate
       } = serialize(createSchema(prop), input)
 
-      t.equal(output, '{"updatedAt":""}')
-      t.notOk(validate(JSON.parse(output)), 'an empty string is not a date format')
+      t.assert.equal(output, '{"updatedAt":""}')
+      t.assert.equal(validate(JSON.parse(output)), false, 'an empty string is not a date format')
     })
 
-    t.test('format::time', t => {
+    await t.test('format::time', t => {
       t.plan(2)
 
       const prop = {
@@ -303,15 +303,15 @@ test('serializing null value', t => {
         validate
       } = serialize(createSchema(prop), input)
 
-      t.equal(output, '{"updatedAt":""}')
-      t.notOk(validate(JSON.parse(output)), 'an empty string is not a time format')
+      t.assert.equal(output, '{"updatedAt":""}')
+      t.assert.equal(validate(JSON.parse(output)), false, 'an empty string is not a time format')
     })
   })
 
-  t.test('type::array', t => {
+  await t.test('type::array', async t => {
     t.plan(6)
 
-    t.test('format::date-time', t => {
+    await t.test('format::date-time', t => {
       t.plan(2)
 
       const prop = {
@@ -326,11 +326,11 @@ test('serializing null value', t => {
         validate
       } = serialize(createSchema(prop), input)
 
-      t.equal(output, '{"updatedAt":""}')
-      t.notOk(validate(JSON.parse(output)), 'an empty string is not a date-time format')
+      t.assert.equal(output, '{"updatedAt":""}')
+      t.assert.equal(validate(JSON.parse(output)), false, 'an empty string is not a date-time format')
     })
 
-    t.test('format::date', t => {
+    await t.test('format::date', t => {
       t.plan(2)
 
       const prop = {
@@ -345,11 +345,11 @@ test('serializing null value', t => {
         validate
       } = serialize(createSchema(prop), input)
 
-      t.equal(output, '{"updatedAt":""}')
-      t.notOk(validate(JSON.parse(output)), 'an empty string is not a date format')
+      t.assert.equal(output, '{"updatedAt":""}')
+      t.assert.equal(validate(JSON.parse(output)), false, 'an empty string is not a date format')
     })
 
-    t.test('format::date', t => {
+    await t.test('format::date', t => {
       t.plan(2)
 
       const prop = {
@@ -364,11 +364,11 @@ test('serializing null value', t => {
         validate
       } = serialize(createSchema(prop), input)
 
-      t.equal(output, '{"updatedAt":""}')
-      t.notOk(validate(JSON.parse(output)), 'an empty string is not a date format')
+      t.assert.equal(output, '{"updatedAt":""}')
+      t.assert.equal(validate(JSON.parse(output)), false, 'an empty string is not a date format')
     })
 
-    t.test('format::time, Date object', t => {
+    await t.test('format::time, Date object', t => {
       t.plan(1)
 
       const schema = {
@@ -389,10 +389,10 @@ test('serializing null value', t => {
       const input = { updatedAt: date }
       const { output } = serialize(schema, input)
 
-      t.equal(output, JSON.stringify({ updatedAt: '01:03:25' }))
+      t.assert.equal(output, JSON.stringify({ updatedAt: '01:03:25' }))
     })
 
-    t.test('format::time, Date object', t => {
+    await t.test('format::time, Date object', t => {
       t.plan(1)
 
       const schema = {
@@ -407,10 +407,10 @@ test('serializing null value', t => {
       const date = new Date(1674263005800)
       const { output } = serialize(schema, date)
 
-      t.equal(output, '"01:03:25"')
+      t.assert.equal(output, '"01:03:25"')
     })
 
-    t.test('format::time, Date object', t => {
+    await t.test('format::time, Date object', t => {
       t.plan(1)
 
       const schema = {
@@ -424,14 +424,14 @@ test('serializing null value', t => {
 
       const { output } = serialize(schema, 42)
 
-      t.equal(output, JSON.stringify(42))
+      t.assert.equal(output, JSON.stringify(42))
     })
   })
 
-  t.test('type::array::nullable', t => {
+  await t.test('type::array::nullable', async t => {
     t.plan(3)
 
-    t.test('format::date-time', t => {
+    await t.test('format::date-time', t => {
       t.plan(2)
 
       const prop = {
@@ -446,11 +446,11 @@ test('serializing null value', t => {
         validate
       } = serialize(createSchema(prop), input)
 
-      t.equal(output, '{"updatedAt":null}')
-      t.ok(validate(JSON.parse(output)), 'valid schema')
+      t.assert.equal(output, '{"updatedAt":null}')
+      t.assert.ok(validate(JSON.parse(output)), 'valid schema')
     })
 
-    t.test('format::date', t => {
+    await t.test('format::date', t => {
       t.plan(2)
 
       const prop = {
@@ -465,11 +465,11 @@ test('serializing null value', t => {
         validate
       } = serialize(createSchema(prop), input)
 
-      t.equal(output, '{"updatedAt":null}')
-      t.ok(validate(JSON.parse(output)), 'valid schema')
+      t.assert.equal(output, '{"updatedAt":null}')
+      t.assert.ok(validate(JSON.parse(output)), 'valid schema')
     })
 
-    t.test('format::time', t => {
+    await t.test('format::time', t => {
       t.plan(2)
 
       const prop = {
@@ -484,8 +484,8 @@ test('serializing null value', t => {
         validate
       } = serialize(createSchema(prop), input)
 
-      t.equal(output, '{"updatedAt":null}')
-      t.ok(validate(JSON.parse(output)), 'valid schema')
+      t.assert.equal(output, '{"updatedAt":null}')
+      t.assert.ok(validate(JSON.parse(output)), 'valid schema')
     })
   })
 })
@@ -503,7 +503,7 @@ test('Validate Date object as string type', (t) => {
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, JSON.stringify(toStringify))
+  t.assert.equal(output, JSON.stringify(toStringify))
 })
 
 test('nullable date', (t) => {
@@ -524,7 +524,7 @@ test('nullable date', (t) => {
   const data = new Date(1674263005800)
   const result = stringify(data)
 
-  t.same(result, '"2023-01-21"')
+  t.assert.equal(result, '"2023-01-21"')
 })
 
 test('non-date format should not affect data serialization (issue #491)', (t) => {
@@ -543,7 +543,7 @@ test('non-date format should not affect data serialization (issue #491)', (t) =>
 
   const stringify = build(schema)
   const data = { hello: 123n }
-  t.equal(stringify(data), '{"hello":"123"}')
+  t.assert.equal(stringify(data), '{"hello":"123"}')
 })
 
 test('should serialize also an invalid string value, even if it is not a valid date', (t) => {
@@ -561,8 +561,8 @@ test('should serialize also an invalid string value, even if it is not a valid d
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, JSON.stringify(toStringify))
-  t.not(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, JSON.stringify(toStringify))
+  t.assert.equal(validate(JSON.parse(output)), false, 'valid schema')
 })
 
 test('should throw an error if value can not be transformed to date-time', (t) => {
@@ -579,8 +579,8 @@ test('should throw an error if value can not be transformed to date-time', (t) =
   const validate = validator(schema)
   const stringify = build(schema)
 
-  t.throws(() => stringify(toStringify), new Error('The value "true" cannot be converted to a date-time.'))
-  t.not(validate(toStringify))
+  t.assert.throws(() => stringify(toStringify), new Error('The value "true" cannot be converted to a date-time.'))
+  t.assert.equal(validate(toStringify), false)
 })
 
 test('should throw an error if value can not be transformed to date', (t) => {
@@ -597,8 +597,8 @@ test('should throw an error if value can not be transformed to date', (t) => {
   const validate = validator(schema)
   const stringify = build(schema)
 
-  t.throws(() => stringify(toStringify), new Error('The value "true" cannot be converted to a date.'))
-  t.not(validate(toStringify))
+  t.assert.throws(() => stringify(toStringify), new Error('The value "true" cannot be converted to a date.'))
+  t.assert.equal(validate(toStringify), false)
 })
 
 test('should throw an error if value can not be transformed to time', (t) => {
@@ -615,8 +615,8 @@ test('should throw an error if value can not be transformed to time', (t) => {
   const validate = validator(schema)
   const stringify = build(schema)
 
-  t.throws(() => stringify(toStringify), new Error('The value "true" cannot be converted to a time.'))
-  t.not(validate(toStringify))
+  t.assert.throws(() => stringify(toStringify), new Error('The value "true" cannot be converted to a time.'))
+  t.assert.equal(validate(toStringify), false)
 })
 
 test('should serialize also an invalid string value, even if it is not a valid time', (t) => {
@@ -634,6 +634,6 @@ test('should serialize also an invalid string value, even if it is not a valid t
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, JSON.stringify(toStringify))
-  t.not(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, JSON.stringify(toStringify))
+  t.assert.equal(validate(JSON.parse(output)), false, 'valid schema')
 })

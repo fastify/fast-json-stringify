@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const validator = require('is-my-json-valid')
 const build = require('..')
 const Ajv = require('ajv')
@@ -8,7 +8,7 @@ const Ajv = require('ajv')
 test('error on invalid largeArrayMechanism', (t) => {
   t.plan(1)
 
-  t.throws(() => build({
+  t.assert.throws(() => build({
     title: 'large array of null values with default mechanism',
     type: 'object',
     properties: {
@@ -31,9 +31,9 @@ function buildTest (schema, toStringify, options) {
     const stringify = build(schema, options)
     const output = stringify(toStringify)
 
-    t.same(JSON.parse(output), JSON.parse(JSON.stringify(toStringify)))
-    t.equal(output, JSON.stringify(toStringify))
-    t.ok(validate(JSON.parse(output)), 'valid schema')
+    t.assert.deepStrictEqual(JSON.parse(output), JSON.parse(JSON.stringify(toStringify)))
+    t.assert.equal(output, JSON.stringify(toStringify))
+    t.assert.ok(validate(JSON.parse(output)), 'valid schema')
   })
 }
 
@@ -216,7 +216,7 @@ test('invalid items throw', (t) => {
     }
   }
   const stringify = build(schema)
-  t.throws(() => stringify({ args: ['invalid'] }))
+  t.assert.throws(() => stringify({ args: ['invalid'] }))
 })
 
 buildTest({
@@ -258,7 +258,7 @@ test('array items is a list of schema and additionalItems is true, just the desc
     ]
   })
 
-  t.equal(result, '{"foo":["foo","bar",1]}')
+  t.assert.equal(result, '{"foo":["foo","bar",1]}')
 })
 
 test('array items is a list of schema and additionalItems is true, just the described item is validated', (t) => {
@@ -287,7 +287,7 @@ test('array items is a list of schema and additionalItems is true, just the desc
     foo: ['foo']
   })
 
-  t.equal(result, '{"foo":["foo"]}')
+  t.assert.equal(result, '{"foo":["foo"]}')
 })
 
 test('array items is a list of schema and additionalItems is false /1', (t) => {
@@ -307,7 +307,7 @@ test('array items is a list of schema and additionalItems is false /1', (t) => {
   }
 
   const stringify = build(schema)
-  t.throws(() => stringify({ foo: ['foo', 'bar'] }), new Error('Item at 1 does not match schema definition.'))
+  t.assert.throws(() => stringify({ foo: ['foo', 'bar'] }), new Error('Item at 1 does not match schema definition.'))
 })
 
 test('array items is a list of schema and additionalItems is false /2', (t) => {
@@ -329,9 +329,9 @@ test('array items is a list of schema and additionalItems is false /2', (t) => {
 
   const stringify = build(schema)
 
-  t.throws(() => stringify({ foo: [1, 'bar'] }), new Error('Item at 0 does not match schema definition.'))
-  t.throws(() => stringify({ foo: ['foo', 1] }), new Error('Item at 1 does not match schema definition.'))
-  t.throws(() => stringify({ foo: ['foo', 'bar', 'baz'] }), new Error('Item at 2 does not match schema definition.'))
+  t.assert.throws(() => stringify({ foo: [1, 'bar'] }), new Error('Item at 0 does not match schema definition.'))
+  t.assert.throws(() => stringify({ foo: ['foo', 1] }), new Error('Item at 1 does not match schema definition.'))
+  t.assert.throws(() => stringify({ foo: ['foo', 'bar', 'baz'] }), new Error('Item at 2 does not match schema definition.'))
 })
 
 test('array items is a schema and additionalItems is false', (t) => {
@@ -354,8 +354,8 @@ test('array items is a schema and additionalItems is false', (t) => {
   const ajv = new Ajv({ allErrors: true, strict: false })
 
   const validate = ajv.compile(schema)
-  t.same(stringify({ foo: ['foo', 'bar'] }), '{"foo":["foo","bar"]}')
-  t.equal(validate({ foo: ['foo', 'bar'] }), true)
+  t.assert.equal(stringify({ foo: ['foo', 'bar'] }), '{"foo":["foo","bar"]}')
+  t.assert.equal(validate({ foo: ['foo', 'bar'] }), true)
 })
 
 // https://github.com/fastify/fast-json-stringify/issues/279
@@ -402,7 +402,7 @@ test('object array with anyOf and symbol', (t) => {
     { name: 'name-0', option: 'Foo' },
     { name: 'name-1', option: 'Bar' }
   ])
-  t.equal(value, '[{"name":"name-0","option":"Foo"},{"name":"name-1","option":"Bar"}]')
+  t.assert.equal(value, '[{"name":"name-0","option":"Foo"},{"name":"name-1","option":"Bar"}]')
 })
 
 test('different arrays with same item schemas', (t) => {
@@ -427,7 +427,7 @@ test('different arrays with same item schemas', (t) => {
   const stringify = build(schema)
   const data = { array1: ['bar'], array2: ['foo', 'bar'] }
 
-  t.equal(stringify(data), '{"array1":["bar"],"array2":["foo","bar"]}')
+  t.assert.equal(stringify(data), '{"array1":["bar"],"array2":["foo","bar"]}')
 })
 
 const largeArray = new Array(2e4).fill({ a: 'test', b: 1 })
@@ -557,7 +557,7 @@ buildTest({
 test('error on invalid value for largeArraySize /1', (t) => {
   t.plan(1)
 
-  t.throws(() => build({
+  t.assert.throws(() => build({
     title: 'large array of null values with default mechanism',
     type: 'object',
     properties: {
@@ -574,7 +574,7 @@ test('error on invalid value for largeArraySize /1', (t) => {
 test('error on invalid value for largeArraySize /2', (t) => {
   t.plan(1)
 
-  t.throws(() => build({
+  t.assert.throws(() => build({
     title: 'large array of null values with default mechanism',
     type: 'object',
     properties: {
@@ -591,7 +591,7 @@ test('error on invalid value for largeArraySize /2', (t) => {
 test('error on invalid value for largeArraySize /3', (t) => {
   t.plan(1)
 
-  t.throws(() => build({
+  t.assert.throws(() => build({
     title: 'large array of null values with default mechanism',
     type: 'object',
     properties: {

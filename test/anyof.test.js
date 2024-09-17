@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const build = require('..')
 
 process.env.TZ = 'UTC'
@@ -23,11 +23,11 @@ test('object with multiple types field', (t) => {
   }
   const stringify = build(schema)
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     str: 'string'
   }), '{"str":"string"}')
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     str: true
   }), '{"str":true}')
 })
@@ -55,11 +55,11 @@ test('object with field of type object or null', (t) => {
   }
   const stringify = build(schema)
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     prop: null
   }), '{"prop":null}')
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     prop: {
       str: 'string'
     }
@@ -89,13 +89,13 @@ test('object with field of type object or array', (t) => {
   }
   const stringify = build(schema)
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     prop: {
       str: 'string'
     }
   }), '{"prop":{"str":"string"}}')
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     prop: ['string']
   }), '{"prop":["string"]}')
 })
@@ -115,7 +115,7 @@ test('object with field of type string and coercion disable ', (t) => {
     }
   }
   const stringify = build(schema)
-  t.throws(() => stringify({ str: 1 }))
+  t.assert.throws(() => stringify({ str: 1 }))
 })
 
 test('object with field of type string and coercion enable ', (t) => {
@@ -143,7 +143,7 @@ test('object with field of type string and coercion enable ', (t) => {
   const value = stringify({
     str: 1
   })
-  t.equal(value, '{"str":"1"}')
+  t.assert.equal(value, '{"str":"1"}')
 })
 
 test('object with field with type union of multiple objects', (t) => {
@@ -177,9 +177,9 @@ test('object with field with type union of multiple objects', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify({ anyOfSchema: { baz: 5 } }), '{"anyOfSchema":{"baz":5}}')
+  t.assert.equal(stringify({ anyOfSchema: { baz: 5 } }), '{"anyOfSchema":{"baz":5}}')
 
-  t.equal(stringify({ anyOfSchema: { bar: 'foo' } }), '{"anyOfSchema":{"bar":"foo"}}')
+  t.assert.equal(stringify({ anyOfSchema: { bar: 'foo' } }), '{"anyOfSchema":{"bar":"foo"}}')
 })
 
 test('null value in schema', (t) => {
@@ -219,10 +219,10 @@ test('symbol value in schema', (t) => {
   }
 
   const stringify = build(schema)
-  t.equal(stringify({ value: 'foo' }), '{"value":"foo"}')
-  t.equal(stringify({ value: 'bar' }), '{"value":"bar"}')
-  t.equal(stringify({ value: 'baz' }), '{"value":"baz"}')
-  t.throws(() => stringify({ value: 'qux' }))
+  t.assert.equal(stringify({ value: 'foo' }), '{"value":"foo"}')
+  t.assert.equal(stringify({ value: 'bar' }), '{"value":"bar"}')
+  t.assert.equal(stringify({ value: 'baz' }), '{"value":"baz"}')
+  t.assert.throws(() => stringify({ value: 'qux' }))
 })
 
 test('anyOf and $ref together', (t) => {
@@ -251,9 +251,9 @@ test('anyOf and $ref together', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify({ cs: 'franco' }), '{"cs":"franco"}')
+  t.assert.equal(stringify({ cs: 'franco' }), '{"cs":"franco"}')
 
-  t.equal(stringify({ cs: true }), '{"cs":true}')
+  t.assert.equal(stringify({ cs: true }), '{"cs":true}')
 })
 
 test('anyOf and $ref: 2 levels are fine', (t) => {
@@ -289,7 +289,7 @@ test('anyOf and $ref: 2 levels are fine', (t) => {
 
   const stringify = build(schema)
   const value = stringify({ cs: 3 })
-  t.equal(value, '{"cs":3}')
+  t.assert.equal(value, '{"cs":3}')
 })
 
 test('anyOf and $ref: multiple levels should throw at build.', (t) => {
@@ -328,9 +328,9 @@ test('anyOf and $ref: multiple levels should throw at build.', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify({ cs: 3 }), '{"cs":3}')
-  t.equal(stringify({ cs: true }), '{"cs":true}')
-  t.equal(stringify({ cs: 'pippo' }), '{"cs":"pippo"}')
+  t.assert.equal(stringify({ cs: 3 }), '{"cs":3}')
+  t.assert.equal(stringify({ cs: true }), '{"cs":true}')
+  t.assert.equal(stringify({ cs: 'pippo' }), '{"cs":"pippo"}')
 })
 
 test('anyOf and $ref - multiple external $ref', (t) => {
@@ -383,10 +383,8 @@ test('anyOf and $ref - multiple external $ref', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"obj":{"prop":{"prop2":"test"}}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"prop":{"prop2":"test"}}}')
 })
 
 test('anyOf looks for all of the array items', (t) => {
@@ -421,7 +419,7 @@ test('anyOf looks for all of the array items', (t) => {
   const stringify = build(schema)
 
   const value = stringify([{ savedId: 'great' }, { error: 'oops' }])
-  t.equal(value, '[{"savedId":"great"},{"error":"oops"}]')
+  t.assert.equal(value, '[{"savedId":"great"},{"error":"oops"}]')
 })
 
 test('anyOf with enum with more than 100 entries', (t) => {
@@ -443,7 +441,7 @@ test('anyOf with enum with more than 100 entries', (t) => {
   const stringify = build(schema)
 
   const value = stringify(['EUR', 'USD', null])
-  t.equal(value, '["EUR","USD",null]')
+  t.assert.equal(value, '["EUR","USD",null]')
 })
 
 test('anyOf object with field date-time of type string with format or null', (t) => {
@@ -465,7 +463,7 @@ test('anyOf object with field date-time of type string with format or null', (t)
 
   const withOneOfStringify = build(withOneOfSchema)
 
-  t.equal(withOneOfStringify({
+  t.assert.equal(withOneOfStringify({
     prop: toStringify
   }), `{"prop":"${toStringify.toISOString()}"}`)
 })
@@ -495,7 +493,7 @@ test('anyOf object with nested field date-time of type string with format or nul
     prop: { nestedProp: new Date() }
   }
 
-  t.equal(withOneOfStringify(data), JSON.stringify(data))
+  t.assert.equal(withOneOfStringify(data), JSON.stringify(data))
 })
 
 test('anyOf object with nested field date of type string with format or null', (t) => {
@@ -523,7 +521,7 @@ test('anyOf object with nested field date of type string with format or null', (
     prop: { nestedProp: new Date(1674263005800) }
   }
 
-  t.equal(withOneOfStringify(data), '{"prop":{"nestedProp":"2023-01-21"}}')
+  t.assert.equal(withOneOfStringify(data), '{"prop":{"nestedProp":"2023-01-21"}}')
 })
 
 test('anyOf object with nested field time of type string with format or null', (t) => {
@@ -550,7 +548,7 @@ test('anyOf object with nested field time of type string with format or null', (
   const data = {
     prop: { nestedProp: new Date(1674263005800) }
   }
-  t.equal(withOneOfStringify(data), '{"prop":{"nestedProp":"01:03:25"}}')
+  t.assert.equal(withOneOfStringify(data), '{"prop":{"nestedProp":"01:03:25"}}')
 })
 
 test('anyOf object with field date of type string with format or null', (t) => {
@@ -571,7 +569,7 @@ test('anyOf object with field date of type string with format or null', (t) => {
   }
 
   const withOneOfStringify = build(withOneOfSchema)
-  t.equal(withOneOfStringify({
+  t.assert.equal(withOneOfStringify({
     prop: toStringify
   }), '{"prop":"2011-01-01"}')
 })
@@ -594,7 +592,7 @@ test('anyOf object with invalid field date of type string with format or null', 
   }
 
   const withOneOfStringify = build(withOneOfSchema)
-  t.throws(() => withOneOfStringify({ prop: toStringify }))
+  t.assert.throws(() => withOneOfStringify({ prop: toStringify }))
 })
 
 test('anyOf with a nested external schema', (t) => {
@@ -614,7 +612,7 @@ test('anyOf with a nested external schema', (t) => {
   const schema = { anyOf: [{ $ref: 'external' }] }
 
   const stringify = build(schema, { schema: externalSchemas })
-  t.equal(stringify('foo'), '"foo"')
+  t.assert.equal(stringify('foo'), '"foo"')
 })
 
 test('object with ref and validated properties', (t) => {
@@ -642,7 +640,7 @@ test('object with ref and validated properties', (t) => {
   }
 
   const stringify = build(schema, { schema: externalSchemas })
-  t.equal(stringify({ id: 1, reference: 'hi' }), '{"id":1,"reference":"hi"}')
+  t.assert.equal(stringify({ id: 1, reference: 'hi' }), '{"id":1,"reference":"hi"}')
 })
 
 test('anyOf required props', (t) => {
@@ -659,9 +657,9 @@ test('anyOf required props', (t) => {
     anyOf: [{ required: ['prop2'] }, { required: ['prop3'] }]
   }
   const stringify = build(schema)
-  t.equal(stringify({ prop1: 'test', prop2: 'test2' }), '{"prop1":"test","prop2":"test2"}')
-  t.equal(stringify({ prop1: 'test', prop3: 'test3' }), '{"prop1":"test","prop3":"test3"}')
-  t.equal(stringify({ prop1: 'test', prop2: 'test2', prop3: 'test3' }), '{"prop1":"test","prop2":"test2","prop3":"test3"}')
+  t.assert.equal(stringify({ prop1: 'test', prop2: 'test2' }), '{"prop1":"test","prop2":"test2"}')
+  t.assert.equal(stringify({ prop1: 'test', prop3: 'test3' }), '{"prop1":"test","prop3":"test3"}')
+  t.assert.equal(stringify({ prop1: 'test', prop2: 'test2', prop3: 'test3' }), '{"prop1":"test","prop2":"test2","prop3":"test3"}')
 })
 
 test('anyOf required props', (t) => {
@@ -686,9 +684,9 @@ test('anyOf required props', (t) => {
     ]
   }
   const stringify = build(schema)
-  t.equal(stringify({ prop1: 'test1' }), '{"prop1":"test1"}')
-  t.equal(stringify({ prop2: 'test2' }), '{"prop2":"test2"}')
-  t.equal(stringify({ prop1: 'test1', prop2: 'test2' }), '{"prop1":"test1","prop2":"test2"}')
+  t.assert.equal(stringify({ prop1: 'test1' }), '{"prop1":"test1"}')
+  t.assert.equal(stringify({ prop2: 'test2' }), '{"prop2":"test2"}')
+  t.assert.equal(stringify({ prop1: 'test1', prop2: 'test2' }), '{"prop1":"test1","prop2":"test2"}')
 })
 
 test('recursive nested anyOfs', (t) => {
@@ -706,7 +704,7 @@ test('recursive nested anyOfs', (t) => {
 
   const data = { foo: {} }
   const stringify = build(schema)
-  t.equal(stringify(data), JSON.stringify(data))
+  t.assert.equal(stringify(data), JSON.stringify(data))
 })
 
 test('recursive nested anyOfs', (t) => {
@@ -724,7 +722,7 @@ test('recursive nested anyOfs', (t) => {
 
   const data = { foo: {} }
   const stringify = build(schema)
-  t.equal(stringify(data), JSON.stringify(data))
+  t.assert.equal(stringify(data), JSON.stringify(data))
 })
 
 test('external recursive anyOfs', (t) => {
@@ -763,7 +761,7 @@ test('external recursive anyOfs', (t) => {
     }
   }
   const stringify = build(schema, { schema: { externalSchema } })
-  t.equal(stringify(data), '{"a":{"bar":"42","foo":{}},"b":{"bar":"42","foo":{}}}')
+  t.assert.equal(stringify(data), '{"a":{"bar":"42","foo":{}},"b":{"bar":"42","foo":{}}}')
 })
 
 test('should build merged schemas twice', (t) => {
@@ -784,11 +782,11 @@ test('should build merged schemas twice', (t) => {
 
   {
     const stringify = build(schema)
-    t.equal(stringify({ enums: 'FOO' }), '{"enums":"FOO"}')
+    t.assert.equal(stringify({ enums: 'FOO' }), '{"enums":"FOO"}')
   }
 
   {
     const stringify = build(schema)
-    t.equal(stringify({ enums: 'BAR' }), '{"enums":"BAR"}')
+    t.assert.equal(stringify({ enums: 'BAR' }), '{"enums":"BAR"}')
   }
 })

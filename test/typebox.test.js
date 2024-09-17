@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('nested object in pattern properties for typebox', (t) => {
@@ -32,5 +32,5 @@ test('nested object in pattern properties for typebox', (t) => {
       }
     }
   })
-  t.equal(value, '{"key1":{"nestedKey":{"nestedKey1":"value1"}},"key2":{"nestedKey":{"nestedKey1":"value2"}}}')
+  t.assert.equal(value, '{"key1":{"nestedKey":{"nestedKey1":"value1"}},"key2":{"nestedKey":{"nestedKey1":"value2"}}}')
 })

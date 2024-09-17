@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 
 const build = require('..')
 
@@ -113,7 +113,7 @@ Object.keys(testSet).forEach(key => {
 
     const stringifier = build(schema, extraOptions)
     const result = stringifier(data)
-    t.same(JSON.parse(result), expected)
+    t.assert.deepStrictEqual(JSON.parse(result), expected)
   })
 })
 
@@ -129,8 +129,8 @@ test('handle nullable number correctly', (t) => {
   const data = null
   const result = stringify(data)
 
-  t.same(result, JSON.stringify(data))
-  t.same(JSON.parse(result), data)
+  t.assert.equal(result, JSON.stringify(data))
+  t.assert.equal(JSON.parse(result), data)
 })
 
 test('handle nullable integer correctly', (t) => {
@@ -145,8 +145,8 @@ test('handle nullable integer correctly', (t) => {
   const data = null
   const result = stringify(data)
 
-  t.same(result, JSON.stringify(data))
-  t.same(JSON.parse(result), data)
+  t.assert.equal(result, JSON.stringify(data))
+  t.assert.equal(JSON.parse(result), data)
 })
 
 test('handle nullable boolean correctly', (t) => {
@@ -161,8 +161,8 @@ test('handle nullable boolean correctly', (t) => {
   const data = null
   const result = stringify(data)
 
-  t.same(result, JSON.stringify(data))
-  t.same(JSON.parse(result), data)
+  t.assert.equal(result, JSON.stringify(data))
+  t.assert.equal(JSON.parse(result), data)
 })
 
 test('handle nullable string correctly', (t) => {
@@ -177,8 +177,8 @@ test('handle nullable string correctly', (t) => {
   const data = null
   const result = stringify(data)
 
-  t.same(result, JSON.stringify(data))
-  t.same(JSON.parse(result), data)
+  t.assert.equal(result, JSON.stringify(data))
+  t.assert.equal(JSON.parse(result), data)
 })
 
 test('handle nullable date-time correctly', (t) => {
@@ -194,8 +194,8 @@ test('handle nullable date-time correctly', (t) => {
   const data = null
   const result = stringify(data)
 
-  t.same(result, JSON.stringify(data))
-  t.same(JSON.parse(result), data)
+  t.assert.equal(result, JSON.stringify(data))
+  t.assert.equal(JSON.parse(result), data)
 })
 
 test('handle nullable date correctly', (t) => {
@@ -211,8 +211,8 @@ test('handle nullable date correctly', (t) => {
   const data = null
   const result = stringify(data)
 
-  t.same(result, JSON.stringify(data))
-  t.same(JSON.parse(result), data)
+  t.assert.equal(result, JSON.stringify(data))
+  t.assert.equal(JSON.parse(result), data)
 })
 
 test('handle nullable time correctly', (t) => {
@@ -228,8 +228,8 @@ test('handle nullable time correctly', (t) => {
   const data = null
   const result = stringify(data)
 
-  t.same(result, JSON.stringify(data))
-  t.same(JSON.parse(result), data)
+  t.assert.equal(result, JSON.stringify(data))
+  t.assert.equal(JSON.parse(result), data)
 })
 
 test('large array of nullable strings with default mechanism', (t) => {
@@ -258,8 +258,8 @@ test('large array of nullable strings with default mechanism', (t) => {
   const data = { ids: new Array(2e4).fill(null) }
   const result = stringify(data)
 
-  t.same(result, JSON.stringify(data))
-  t.same(JSON.parse(result), data)
+  t.assert.equal(result, JSON.stringify(data))
+  t.assert.deepStrictEqual(JSON.parse(result), data)
 })
 
 test('large array of nullable date-time strings with default mechanism', (t) => {
@@ -289,8 +289,8 @@ test('large array of nullable date-time strings with default mechanism', (t) => 
   const data = { ids: new Array(2e4).fill(null) }
   const result = stringify(data)
 
-  t.same(result, JSON.stringify(data))
-  t.same(JSON.parse(result), data)
+  t.assert.equal(result, JSON.stringify(data))
+  t.assert.deepStrictEqual(JSON.parse(result), data)
 })
 
 test('large array of nullable date-time strings with default mechanism', (t) => {
@@ -320,8 +320,8 @@ test('large array of nullable date-time strings with default mechanism', (t) => 
   const data = { ids: new Array(2e4).fill(null) }
   const result = stringify(data)
 
-  t.same(result, JSON.stringify(data))
-  t.same(JSON.parse(result), data)
+  t.assert.equal(result, JSON.stringify(data))
+  t.assert.deepStrictEqual(JSON.parse(result), data)
 })
 
 test('large array of nullable date-time strings with default mechanism', (t) => {
@@ -351,8 +351,8 @@ test('large array of nullable date-time strings with default mechanism', (t) => 
   const data = { ids: new Array(2e4).fill(null) }
   const result = stringify(data)
 
-  t.same(result, JSON.stringify(data))
-  t.same(JSON.parse(result), data)
+  t.assert.equal(result, JSON.stringify(data))
+  t.assert.deepStrictEqual(JSON.parse(result), data)
 })
 
 test('large array of nullable numbers with default mechanism', (t) => {
@@ -381,8 +381,8 @@ test('large array of nullable numbers with default mechanism', (t) => {
   const data = { ids: new Array(2e4).fill(null) }
   const result = stringify(data)
 
-  t.same(result, JSON.stringify(data))
-  t.same(JSON.parse(result), data)
+  t.assert.equal(result, JSON.stringify(data))
+  t.assert.deepStrictEqual(JSON.parse(result), data)
 })
 
 test('large array of nullable integers with default mechanism', (t) => {
@@ -411,8 +411,8 @@ test('large array of nullable integers with default mechanism', (t) => {
   const data = { ids: new Array(2e4).fill(null) }
   const result = stringify(data)
 
-  t.same(result, JSON.stringify(data))
-  t.same(JSON.parse(result), data)
+  t.assert.equal(result, JSON.stringify(data))
+  t.assert.deepStrictEqual(JSON.parse(result), data)
 })
 
 test('large array of nullable booleans with default mechanism', (t) => {
@@ -441,8 +441,8 @@ test('large array of nullable booleans with default mechanism', (t) => {
   const data = { ids: new Array(2e4).fill(null) }
   const result = stringify(data)
 
-  t.same(result, JSON.stringify(data))
-  t.same(JSON.parse(result), data)
+  t.assert.equal(result, JSON.stringify(data))
+  t.assert.deepStrictEqual(JSON.parse(result), data)
 })
 
 test('nullable type in the schema', (t) => {
@@ -461,8 +461,8 @@ test('nullable type in the schema', (t) => {
 
   const data = { foo: 'bar' }
 
-  t.same(stringify(data), JSON.stringify(data))
-  t.same(stringify(null), JSON.stringify(null))
+  t.assert.equal(stringify(data), JSON.stringify(data))
+  t.assert.equal(stringify(null), JSON.stringify(null))
 })
 
 test('throw an error if the value doesn\'t match the type', (t) => {
@@ -493,10 +493,10 @@ test('throw an error if the value doesn\'t match the type', (t) => {
   const stringify = build(schema)
 
   const validData = { data: [1, 'testing'] }
-  t.equal(stringify(validData), JSON.stringify(validData))
+  t.assert.equal(stringify(validData), JSON.stringify(validData))
 
   const invalidData = { data: [false, 'testing'] }
-  t.throws(() => stringify(invalidData))
+  t.assert.throws(() => stringify(invalidData))
 })
 
 test('nullable value in oneOf', (t) => {
@@ -539,5 +539,5 @@ test('nullable value in oneOf', (t) => {
   const stringify = build(schema)
 
   const data = { data: [{ job: null }] }
-  t.equal(stringify(data), JSON.stringify(data))
+  t.assert.equal(stringify(data), JSON.stringify(data))
 })

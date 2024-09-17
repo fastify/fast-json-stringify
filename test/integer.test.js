@@ -1,7 +1,7 @@
 'use strict'
 
-const t = require('tap')
-const test = t.test
+const { test } = require('node:test')
+
 const validator = require('is-my-json-valid')
 const build = require('..')
 const ROUNDING_TYPES = ['ceil', 'floor', 'round']
@@ -18,8 +18,8 @@ test('render an integer as JSON', (t) => {
   const stringify = build(schema)
   const output = stringify(1615)
 
-  t.equal(output, '1615')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '1615')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('render a float as an integer', (t) => {
@@ -30,8 +30,8 @@ test('render a float as an integer', (t) => {
       type: 'integer'
     }, { rounding: 'foobar' })
   } catch (error) {
-    t.ok(error)
-    t.equal(error.message, 'Unsupported integer rounding method foobar')
+    t.assert.ok(error)
+    t.assert.equal(error.message, 'Unsupported integer rounding method foobar')
   }
 })
 
@@ -44,7 +44,7 @@ test('throws on NaN', (t) => {
   }
 
   const stringify = build(schema)
-  t.throws(() => stringify(NaN), new Error('The value "NaN" cannot be converted to an integer.'))
+  t.assert.throws(() => stringify(NaN), new Error('The value "NaN" cannot be converted to an integer.'))
 })
 
 test('render a float as an integer', (t) => {
@@ -87,8 +87,8 @@ test('render a float as an integer', (t) => {
     const stringify = build(schema, { rounding })
     const str = stringify(input)
 
-    t.equal(str, output)
-    t.ok(validate(JSON.parse(str)), 'valid schema')
+    t.assert.equal(str, output)
+    t.assert.ok(validate(JSON.parse(str)), 'valid schema')
   }
 })
 
@@ -111,8 +111,8 @@ test('render an object with an integer as JSON', (t) => {
     id: 1615
   })
 
-  t.equal(output, '{"id":1615}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"id":1615}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('render an array with an integer as JSON', (t) => {
@@ -130,8 +130,8 @@ test('render an array with an integer as JSON', (t) => {
   const stringify = build(schema)
   const output = stringify([1615])
 
-  t.equal(output, '[1615]')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '[1615]')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('render an object with an additionalProperty of type integer as JSON', (t) => {
@@ -151,8 +151,8 @@ test('render an object with an additionalProperty of type integer as JSON', (t) 
     num: 1615
   })
 
-  t.equal(output, '{"num":1615}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"num":1615}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('should round integer object parameter', t => {
@@ -163,8 +163,8 @@ test('should round integer object parameter', t => {
   const stringify = build(schema, { rounding: 'ceil' })
   const output = stringify({ magic: 4.2 })
 
-  t.equal(output, '{"magic":5}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"magic":5}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('should not stringify a property if it does not exist', t => {
@@ -175,8 +175,8 @@ test('should not stringify a property if it does not exist', t => {
   const stringify = build(schema)
   const output = stringify({})
 
-  t.equal(output, '{}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 ROUNDING_TYPES.forEach((rounding) => {
@@ -188,7 +188,7 @@ ROUNDING_TYPES.forEach((rounding) => {
     const stringify = build(schema, { rounding })
     const output = stringify({})
 
-    t.equal(output, '{}')
-    t.ok(validate(JSON.parse(output)), 'valid schema')
+    t.assert.equal(output, '{}')
+    t.assert.ok(validate(JSON.parse(output)), 'valid schema')
   })
 })

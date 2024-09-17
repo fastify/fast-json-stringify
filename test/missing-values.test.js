@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('missing values', (t) => {
@@ -22,9 +22,9 @@ test('missing values', (t) => {
     }
   })
 
-  t.equal('{"val":"value"}', stringify({ val: 'value' }))
-  t.equal('{"str":"string","val":"value"}', stringify({ str: 'string', val: 'value' }))
-  t.equal('{"str":"string","num":42,"val":"value"}', stringify({ str: 'string', num: 42, val: 'value' }))
+  t.assert.equal('{"val":"value"}', stringify({ val: 'value' }))
+  t.assert.equal('{"str":"string","val":"value"}', stringify({ str: 'string', val: 'value' }))
+  t.assert.equal('{"str":"string","num":42,"val":"value"}', stringify({ str: 'string', num: 42, val: 'value' }))
 })
 
 test('handle null when value should be string', (t) => {
@@ -39,7 +39,7 @@ test('handle null when value should be string', (t) => {
     }
   })
 
-  t.equal('{"str":""}', stringify({ str: null }))
+  t.assert.equal('{"str":""}', stringify({ str: null }))
 })
 
 test('handle null when value should be integer', (t) => {
@@ -54,7 +54,7 @@ test('handle null when value should be integer', (t) => {
     }
   })
 
-  t.equal('{"int":0}', stringify({ int: null }))
+  t.assert.equal('{"int":0}', stringify({ int: null }))
 })
 
 test('handle null when value should be number', (t) => {
@@ -69,7 +69,7 @@ test('handle null when value should be number', (t) => {
     }
   })
 
-  t.equal('{"num":0}', stringify({ num: null }))
+  t.assert.equal('{"num":0}', stringify({ num: null }))
 })
 
 test('handle null when value should be boolean', (t) => {
@@ -84,5 +84,5 @@ test('handle null when value should be boolean', (t) => {
     }
   })
 
-  t.equal('{"bool":false}', stringify({ bool: null }))
+  t.assert.equal('{"bool":false}', stringify({ bool: null }))
 })
