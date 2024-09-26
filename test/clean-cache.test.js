@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('Should clean the cache', (t) => {
@@ -11,9 +11,10 @@ test('Should clean the cache', (t) => {
     type: 'string'
   }
 
-  build(schema)
-  build(schema)
-  t.pass()
+  t.assert.doesNotThrow(() => {
+    build(schema)
+    build(schema)
+  })
 })
 
 test('Should clean the cache with external schemas', (t) => {
@@ -39,7 +40,8 @@ test('Should clean the cache with external schemas', (t) => {
     }
   }
 
-  build(schema)
-  build(schema)
-  t.pass()
+  t.assert.doesNotThrow(() => {
+    build(schema)
+    build(schema)
+  })
 })

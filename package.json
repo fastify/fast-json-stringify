@@ -13,7 +13,7 @@
     "lint": "standard",
     "lint:fix": "standard --fix",
     "test:typescript": "tsd",
-    "test:unit": "tap",
+    "test:unit": "c8 node --test",
     "test": "npm run test:unit && npm run test:typescript"
   },
   "precommit": [
@@ -40,13 +40,13 @@
     "@fastify/pre-commit": "^2.1.0",
     "@sinclair/typebox": "^0.33.4",
     "benchmark": "^2.1.4",
+    "c8": "^10.1.2",
     "cli-select": "^1.1.2",
     "compile-json-stringify": "^0.1.2",
     "fast-json-stringify": ".",
     "is-my-json-valid": "^2.20.6",
     "simple-git": "^3.23.0",
     "standard": "^17.1.0",
-    "tap": "^19.2.5",
     "tsd": "^0.31.0",
     "webpack": "^5.90.3"
   },

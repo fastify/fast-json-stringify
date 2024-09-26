@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('additionalProperties', (t) => {
@@ -19,7 +19,7 @@ test('additionalProperties', (t) => {
   })
 
   const obj = { str: 'test', foo: 42, ofoo: true, foof: 'string', objfoo: { a: true } }
-  t.equal(stringify(obj), '{"str":"test","foo":"42","ofoo":"true","foof":"string","objfoo":"[object Object]"}')
+  t.assert.equal(stringify(obj), '{"str":"test","foo":"42","ofoo":"true","foof":"string","objfoo":"[object Object]"}')
 })
 
 test('additionalProperties should not change properties', (t) => {
@@ -38,7 +38,7 @@ test('additionalProperties should not change properties', (t) => {
   })
 
   const obj = { foo: '42', ofoo: 42 }
-  t.equal(stringify(obj), '{"foo":"42","ofoo":42}')
+  t.assert.equal(stringify(obj), '{"foo":"42","ofoo":42}')
 })
 
 test('additionalProperties should not change properties and patternProperties', (t) => {
@@ -62,7 +62,7 @@ test('additionalProperties should not change properties and patternProperties', 
   })
 
   const obj = { foo: '42', ofoo: 42, test: '42' }
-  t.equal(stringify(obj), '{"foo":"42","ofoo":"42","test":42}')
+  t.assert.equal(stringify(obj), '{"foo":"42","ofoo":"42","test":42}')
 })
 
 test('additionalProperties set to true, use of fast-safe-stringify', (t) => {
@@ -75,7 +75,7 @@ test('additionalProperties set to true, use of fast-safe-stringify', (t) => {
   })
 
   const obj = { foo: true, ofoo: 42, arrfoo: ['array', 'test'], objfoo: { a: 'world' } }
-  t.equal(stringify(obj), '{"foo":true,"ofoo":42,"arrfoo":["array","test"],"objfoo":{"a":"world"}}')
+  t.assert.equal(stringify(obj), '{"foo":true,"ofoo":42,"arrfoo":["array","test"],"objfoo":{"a":"world"}}')
 })
 
 test('additionalProperties - string coerce', (t) => {
@@ -90,7 +90,7 @@ test('additionalProperties - string coerce', (t) => {
   })
 
   const obj = { foo: true, ofoo: 42, arrfoo: ['array', 'test'], objfoo: { a: 'world' } }
-  t.equal(stringify(obj), '{"foo":"true","ofoo":"42","arrfoo":"array,test","objfoo":"[object Object]"}')
+  t.assert.equal(stringify(obj), '{"foo":"true","ofoo":"42","arrfoo":"array,test","objfoo":"[object Object]"}')
 })
 
 test('additionalProperties - number skip', (t) => {
@@ -106,7 +106,7 @@ test('additionalProperties - number skip', (t) => {
 
   // const obj = { foo: true, ofoo: '42', xfoo: 'string', arrfoo: [1, 2], objfoo: { num: 42 } }
   const obj = { foo: true, ofoo: '42' }
-  t.equal(stringify(obj), '{"foo":1,"ofoo":42}')
+  t.assert.equal(stringify(obj), '{"foo":1,"ofoo":42}')
 })
 
 test('additionalProperties - boolean coerce', (t) => {
@@ -121,7 +121,7 @@ test('additionalProperties - boolean coerce', (t) => {
   })
 
   const obj = { foo: 'true', ofoo: 0, arrfoo: [1, 2], objfoo: { a: true } }
-  t.equal(stringify(obj), '{"foo":true,"ofoo":false,"arrfoo":true,"objfoo":true}')
+  t.assert.equal(stringify(obj), '{"foo":true,"ofoo":false,"arrfoo":true,"objfoo":true}')
 })
 
 test('additionalProperties - object coerce', (t) => {
@@ -141,7 +141,7 @@ test('additionalProperties - object coerce', (t) => {
   })
 
   const obj = { objfoo: { answer: 42 } }
-  t.equal(stringify(obj), '{"objfoo":{"answer":42}}')
+  t.assert.equal(stringify(obj), '{"objfoo":{"answer":42}}')
 })
 
 test('additionalProperties - array coerce', (t) => {
@@ -159,10 +159,10 @@ test('additionalProperties - array coerce', (t) => {
   })
 
   const coercibleValues = { arrfoo: [1, 2] }
-  t.equal(stringify(coercibleValues), '{"arrfoo":["1","2"]}')
+  t.assert.equal(stringify(coercibleValues), '{"arrfoo":["1","2"]}')
 
   const incoercibleValues = { foo: 'true', ofoo: 0, objfoo: { tyrion: 'lannister' } }
-  t.throws(() => stringify(incoercibleValues))
+  t.assert.throws(() => stringify(incoercibleValues))
 })
 
 test('additionalProperties with empty schema', (t) => {
@@ -173,7 +173,7 @@ test('additionalProperties with empty schema', (t) => {
   })
 
   const obj = { a: 1, b: true, c: null }
-  t.equal(stringify(obj), '{"a":1,"b":true,"c":null}')
+  t.assert.equal(stringify(obj), '{"a":1,"b":true,"c":null}')
 })
 
 test('additionalProperties with nested empty schema', (t) => {
@@ -187,7 +187,7 @@ test('additionalProperties with nested empty schema', (t) => {
   })
 
   const obj = { data: { a: 1, b: true, c: null } }
-  t.equal(stringify(obj), '{"data":{"a":1,"b":true,"c":null}}')
+  t.assert.equal(stringify(obj), '{"data":{"a":1,"b":true,"c":null}}')
 })
 
 test('nested additionalProperties', (t) => {
@@ -207,7 +207,7 @@ test('nested additionalProperties', (t) => {
   })
 
   const obj = [{ ap: { value: 'string' } }]
-  t.equal(stringify(obj), '[{"ap":{"value":"string"}}]')
+  t.assert.equal(stringify(obj), '[{"ap":{"value":"string"}}]')
 })
 
 test('very nested additionalProperties', (t) => {
@@ -244,7 +244,7 @@ test('very nested additionalProperties', (t) => {
   })
 
   const obj = [{ ap: { nested: { moarNested: { finally: { value: 'str' } } } } }]
-  t.equal(stringify(obj), '[{"ap":{"nested":{"moarNested":{"finally":{"value":"str"}}}}}]')
+  t.assert.equal(stringify(obj), '[{"ap":{"nested":{"moarNested":{"finally":{"value":"str"}}}}}]')
 })
 
 test('nested additionalProperties set to true', (t) => {
@@ -261,7 +261,7 @@ test('nested additionalProperties set to true', (t) => {
   })
 
   const obj = { ap: { value: 'string', someNumber: 42 } }
-  t.equal(stringify(obj), '{"ap":{"value":"string","someNumber":42}}')
+  t.assert.equal(stringify(obj), '{"ap":{"value":"string","someNumber":42}}')
 })
 
 test('field passed to fastSafeStringify as undefined should be removed', (t) => {
@@ -278,7 +278,7 @@ test('field passed to fastSafeStringify as undefined should be removed', (t) => 
   })
 
   const obj = { ap: { value: 'string', someNumber: undefined } }
-  t.equal(stringify(obj), '{"ap":{"value":"string"}}')
+  t.assert.equal(stringify(obj), '{"ap":{"value":"string"}}')
 })
 
 test('property without type but with enum, will acts as additionalProperties', (t) => {
@@ -294,7 +294,7 @@ test('property without type but with enum, will acts as additionalProperties', (
   })
 
   const obj = { ap: { additional: 'field' } }
-  t.equal(stringify(obj), '{"ap":{"additional":"field"}}')
+  t.assert.equal(stringify(obj), '{"ap":{"additional":"field"}}')
 })
 
 test('property without type but with enum, will acts as additionalProperties without overwriting', (t) => {
@@ -311,7 +311,7 @@ test('property without type but with enum, will acts as additionalProperties wit
   })
 
   const obj = { ap: { additional: 'field' } }
-  t.equal(stringify(obj), '{"ap":{}}')
+  t.assert.equal(stringify(obj), '{"ap":{}}')
 })
 
 test('function and symbol references are not serialized as undefined', (t) => {
@@ -328,5 +328,5 @@ test('function and symbol references are not serialized as undefined', (t) => {
   })
 
   const obj = { str: 'x', test: 'test', meth: () => 'x', sym: Symbol('x') }
-  t.equal(stringify(obj), '{"str":"x","test":"test"}')
+  t.assert.equal(stringify(obj), '{"str":"x","test":"test"}')
 })

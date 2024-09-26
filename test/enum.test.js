@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('use enum without type', (t) => {
@@ -17,7 +17,7 @@ test('use enum without type', (t) => {
   })
 
   const obj = { order: 'asc' }
-  t.equal('{"order":"asc"}', stringify(obj))
+  t.assert.equal('{"order":"asc"}', stringify(obj))
 })
 
 test('use enum without type', (t) => {
@@ -33,5 +33,5 @@ test('use enum without type', (t) => {
   })
 
   const obj = { order: 'asc' }
-  t.equal('{"order":"asc"}', stringify(obj))
+  t.assert.equal('{"order":"asc"}', stringify(obj))
 })

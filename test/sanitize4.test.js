@@ -1,14 +1,16 @@
 'use strict'
 
-const t = require('tap')
+const { test } = require('node:test')
 const build = require('..')
 
-const payload = '(throw "pwoned")'
+test('sanitize 4', t => {
+  const payload = '(throw "pwoned")'
 
-const stringify = build({
-  required: [`"];${payload}//`]
+  const stringify = build({
+    required: [`"];${payload}//`]
+  })
+
+  t.assert.throws(() => {
+    stringify({})
+  }, { message: '""];(throw "pwoned")//" is required!' })
 })
-
-t.throws(() => {
-  stringify({})
-}, 'Error: ""];(throw "pwoned")//" is required!')

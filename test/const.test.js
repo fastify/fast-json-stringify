@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const validator = require('is-my-json-valid')
 const build = require('..')
 
@@ -20,8 +20,8 @@ test('schema with const string', (t) => {
     foo: 'bar'
   })
 
-  t.equal(output, '{"foo":"bar"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"foo":"bar"}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('schema with const string and different input', (t) => {
@@ -40,8 +40,8 @@ test('schema with const string and different input', (t) => {
     foo: 'baz'
   })
 
-  t.equal(output, '{"foo":"bar"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"foo":"bar"}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('schema with const string and different type input', (t) => {
@@ -60,8 +60,8 @@ test('schema with const string and different type input', (t) => {
     foo: 1
   })
 
-  t.equal(output, '{"foo":"bar"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"foo":"bar"}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('schema with const string and no input', (t) => {
@@ -78,8 +78,8 @@ test('schema with const string and no input', (t) => {
   const stringify = build(schema)
   const output = stringify({})
 
-  t.equal(output, '{}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('schema with const string that contains \'', (t) => {
@@ -98,8 +98,8 @@ test('schema with const string that contains \'', (t) => {
     foo: "'bar'"
   })
 
-  t.equal(output, '{"foo":"\'bar\'"}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"foo":"\'bar\'"}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('schema with const number', (t) => {
@@ -118,8 +118,8 @@ test('schema with const number', (t) => {
     foo: 1
   })
 
-  t.equal(output, '{"foo":1}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"foo":1}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('schema with const number and different input', (t) => {
@@ -138,8 +138,8 @@ test('schema with const number and different input', (t) => {
     foo: 2
   })
 
-  t.equal(output, '{"foo":1}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"foo":1}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('schema with const bool', (t) => {
@@ -158,8 +158,8 @@ test('schema with const bool', (t) => {
     foo: true
   })
 
-  t.equal(output, '{"foo":true}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"foo":true}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('schema with const number', (t) => {
@@ -178,8 +178,8 @@ test('schema with const number', (t) => {
     foo: 1
   })
 
-  t.equal(output, '{"foo":1}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"foo":1}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('schema with const null', (t) => {
@@ -198,8 +198,8 @@ test('schema with const null', (t) => {
     foo: null
   })
 
-  t.equal(output, '{"foo":null}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"foo":null}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('schema with const array', (t) => {
@@ -218,8 +218,8 @@ test('schema with const array', (t) => {
     foo: [1, 2, 3]
   })
 
-  t.equal(output, '{"foo":[1,2,3]}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"foo":[1,2,3]}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('schema with const object', (t) => {
@@ -238,8 +238,8 @@ test('schema with const object', (t) => {
     foo: { bar: 'baz' }
   })
 
-  t.equal(output, '{"foo":{"bar":"baz"}}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"foo":{"bar":"baz"}}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('schema with const and null as type', (t) => {
@@ -258,12 +258,12 @@ test('schema with const and null as type', (t) => {
     foo: null
   })
 
-  t.equal(output, '{"foo":null}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"foo":null}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 
   const output2 = stringify({ foo: 'baz' })
-  t.equal(output2, '{"foo":"baz"}')
-  t.ok(validate(JSON.parse(output2)), 'valid schema')
+  t.assert.equal(output2, '{"foo":"baz"}')
+  t.assert.ok(validate(JSON.parse(output2)), 'valid schema')
 })
 
 test('schema with const as nullable', (t) => {
@@ -282,14 +282,14 @@ test('schema with const as nullable', (t) => {
     foo: null
   })
 
-  t.equal(output, '{"foo":null}')
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, '{"foo":null}')
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 
   const output2 = stringify({
     foo: 'baz'
   })
-  t.equal(output2, '{"foo":"baz"}')
-  t.ok(validate(JSON.parse(output2)), 'valid schema')
+  t.assert.equal(output2, '{"foo":"baz"}')
+  t.assert.ok(validate(JSON.parse(output2)), 'valid schema')
 })
 
 test('schema with const and invalid object', (t) => {
@@ -309,6 +309,6 @@ test('schema with const and invalid object', (t) => {
     foo: { foo: 'baz' }
   })
 
-  t.equal(result, '{"foo":{"foo":"bar"}}')
-  t.ok(validate(JSON.parse(result)), 'valid schema')
+  t.assert.equal(result, '{"foo":{"foo":"bar"}}')
+  t.assert.ok(validate(JSON.parse(result)), 'valid schema')
 })

@@ -1,16 +1,16 @@
 'use strict'
 
-const t = require('tap')
+const { test } = require('node:test')
 const build = require('..')
 
-const payload = '(throw "pwoned")'
+test('sanitize 5', t => {
+  const payload = '(throw "pwoned")'
 
-const expected = 'Error: Invalid regular expression: /*/: Nothing to repeat. Found at * matching {"type":"*/(throw \\"pwoned\\")){//"}'
-
-t.throws(() => {
-  build({
-    patternProperties: {
-      '*': { type: `*/${payload}){//` }
-    }
-  })
-}, expected)
+  t.assert.throws(() => {
+    build({
+      patternProperties: {
+        '*': { type: `*/${payload}){//` }
+      }
+    })
+  }, { message: 'schema is invalid: data/patternProperties must match format "regex"' })
+})

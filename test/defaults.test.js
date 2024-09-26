@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 function buildTest (schema, toStringify, expected) {
@@ -11,7 +11,7 @@ function buildTest (schema, toStringify, expected) {
 
     const output = stringify(toStringify)
 
-    t.equal(output, JSON.stringify(expected))
+    t.assert.equal(output, JSON.stringify(expected))
   })
 }
 

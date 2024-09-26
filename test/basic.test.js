@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const validator = require('is-my-json-valid')
 const build = require('..')
 
@@ -12,9 +12,9 @@ function buildTest (schema, toStringify) {
     const stringify = build(schema)
     const output = stringify(toStringify)
 
-    t.same(JSON.parse(output), toStringify)
-    t.equal(output, JSON.stringify(toStringify))
-    t.ok(validate(JSON.parse(output)), 'valid schema')
+    t.assert.deepStrictEqual(JSON.parse(output), toStringify)
+    t.assert.equal(output, JSON.stringify(toStringify))
+    t.assert.ok(validate(JSON.parse(output)), 'valid schema')
   })
 }
 
@@ -281,41 +281,34 @@ test('throw an error or coerce numbers and integers that are not numbers', (t) =
     }
   })
 
-  try {
+  t.assert.throws(() => {
     stringify({ age: 'hello  ', distance: 'long' })
-    t.fail('should throw an error')
-  } catch (err) {
-    t.ok(err)
-  }
+  }, { message: 'The value "hello  " cannot be converted to a number.' })
 
   const result = stringify({
     age: '42',
     distance: true
   })
 
-  t.same(JSON.parse(result), { age: 42, distance: 1 })
-  t.end()
+  t.assert.deepStrictEqual(JSON.parse(result), { age: 42, distance: 1 })
 })
 
 test('Should throw on invalid schema', t => {
   t.plan(1)
-  try {
+  t.assert.throws(() => {
     build({
       type: 'Dinosaur',
       properties: {
         claws: { type: 'sharp' }
       }
     })
-    t.fail('should be an invalid schema')
-  } catch (err) {
-    t.ok(err)
-  }
+  }, { message: 'schema is invalid: data/properties/claws/type must be equal to one of the allowed values' })
 })
 
 test('additionalProperties - throw on unknown type', (t) => {
   t.plan(1)
 
-  try {
+  t.assert.throws(() => {
     build({
       title: 'check array coerce',
       type: 'object',
@@ -325,15 +318,13 @@ test('additionalProperties - throw on unknown type', (t) => {
       }
     })
     t.fail('should be an invalid schema')
-  } catch (err) {
-    t.ok(err)
-  }
+  }, { message: 'schema is invalid: data/additionalProperties/type must be equal to one of the allowed values' })
 })
 
 test('patternProperties - throw on unknown type', (t) => {
   t.plan(1)
 
-  try {
+  t.assert.throws(() => {
     build({
       title: 'check array coerce',
       type: 'object',
@@ -344,10 +335,7 @@ test('patternProperties - throw on unknown type', (t) => {
         }
       }
     })
-    t.fail('should be an invalid schema')
-  } catch (err) {
-    t.ok(err)
-  }
+  }, { message: 'schema is invalid: data/patternProperties/foo/type must be equal to one of the allowed values' })
 })
 
 test('render a double quote as JSON /1', (t) => {
@@ -362,8 +350,8 @@ test('render a double quote as JSON /1', (t) => {
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, JSON.stringify(toStringify))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, JSON.stringify(toStringify))
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('render a double quote as JSON /2', (t) => {
@@ -378,8 +366,8 @@ test('render a double quote as JSON /2', (t) => {
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, JSON.stringify(toStringify))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, JSON.stringify(toStringify))
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('render a long string', (t) => {
@@ -394,8 +382,8 @@ test('render a long string', (t) => {
   const stringify = build(schema)
   const output = stringify(toStringify)
 
-  t.equal(output, JSON.stringify(toStringify))
-  t.ok(validate(JSON.parse(output)), 'valid schema')
+  t.assert.equal(output, JSON.stringify(toStringify))
+  t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
 test('returns JSON.stringify if schema type is boolean', t => {
@@ -408,5 +396,5 @@ test('returns JSON.stringify if schema type is boolean', t => {
 
   const array = [1, true, 'test']
   const stringify = build(schema)
-  t.equal(stringify(array), JSON.stringify(array))
+  t.assert.equal(stringify(array), JSON.stringify(array))
 })

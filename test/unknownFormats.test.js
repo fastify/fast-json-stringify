@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('object with custom format field', (t) => {
@@ -19,9 +19,9 @@ test('object with custom format field', (t) => {
 
   const stringify = build(schema)
 
-  stringify({
-    str: 'string'
+  t.assert.doesNotThrow(() => {
+    stringify({
+      str: 'string'
+    })
   })
-
-  t.pass()
 })
