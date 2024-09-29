@@ -564,9 +564,14 @@ function buildArray (context, location) {
 
   if (Array.isArray(itemsSchema)) {
     for (let i = 0; i < itemsSchema.length; i++) {
-      const item = itemsSchema[i]
+      let item = itemsSchema[i]
+      let itemLocation = itemsLocation.getPropertyLocation(i)
+      if (item.$ref) {
+        itemLocation = resolveRef(context, itemLocation)
+        item = itemLocation.schema
+      }
       functionCode += `value = obj[${i}]`
-      const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), 'value')
+      const tmpRes = buildValue(context, itemLocation, 'value')
       functionCode += `
         if (${i} < arrayLength) {
           if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
