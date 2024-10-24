@@ -252,20 +252,16 @@ const numberKeywords = [
  * https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6
  */
 function inferTypeByKeyword (schema) {
-  // eslint-disable-next-line
-  for (var keyword of objectKeywords) {
+  for (let keyword of objectKeywords) {
     if (keyword in schema) return 'object'
   }
-  // eslint-disable-next-line
-  for (var keyword of arrayKeywords) {
+  for (let keyword of arrayKeywords) {
     if (keyword in schema) return 'array'
   }
-  // eslint-disable-next-line
-  for (var keyword of stringKeywords) {
+  for (let keyword of stringKeywords) {
     if (keyword in schema) return 'string'
   }
-  // eslint-disable-next-line
-  for (var keyword of numberKeywords) {
+  for (let keyword of numberKeywords) {
     if (keyword in schema) return 'number'
   }
   return schema.type
