@@ -678,7 +678,7 @@ expose your application to remote attacks.
 
 Users are responsible for sending trusted data. `fast-json-stringify` guarantees that you will get
 a valid output only if your input matches the schema or can be coerced to the schema. If your input
-doesn't match the schema, you will get undefined behavior. 
+doesn't match the schema, you will get undefined behavior.
 
 <a name="debug"></a>
 ### Debug Mode
@@ -699,7 +699,7 @@ const debugCompiled = fastJson({
 
 console.log(debugCompiled) // it is a object contain code, ajv instance
 const rawString = debugCompiled.code // it is the generated code
-console.log(rawString) 
+console.log(rawString)
 
 const stringify = fastJson.restore(debugCompiled) // use the generated string to get back the `stringify` function
 console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"Foo"}'

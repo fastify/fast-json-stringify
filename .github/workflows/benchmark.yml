@@ -77,7 +77,7 @@ jobs:
             ```
             ${{ needs.benchmark.outputs.MASTER-BENCH }}
             ```
-            
+
       - uses: actions-ecosystem/action-remove-labels@v1
         with:
           labels: |
