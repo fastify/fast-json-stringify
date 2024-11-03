@@ -159,7 +159,7 @@ build({
 })(new Date())
 
 /*
-This overload doesn't work yet - 
+This overload doesn't work yet -
 TypeScript chooses the generic for the schema
 before it chooses the overload for the options
 parameter.

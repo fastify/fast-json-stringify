@@ -65,7 +65,7 @@ declare namespace build {
      */
     $ref: string;
   }
-  
+
   export interface AnySchema extends BaseSchema {
   }
 
@@ -158,12 +158,12 @@ declare namespace build {
     ajv?: AjvOptions
     /**
      * Optionally configure how the integer will be rounded
-     * 
+     *
      * @default 'trunc'
      */
     rounding?: 'ceil' | 'floor' | 'round' | 'trunc'
     /**
-     * @deprecated 
+     * @deprecated
      * Enable debug mode. Please use `mode: "debug"` instead
      */
     debugMode?: boolean
@@ -190,7 +190,7 @@ declare namespace build {
   }
 
   export const validLargeArrayMechanisms: string[]
-  export function restore (value: <TDoc extends object = object>(doc: TDoc) => string): ReturnType<Build> 
+  export function restore (value: <TDoc extends object = object>(doc: TDoc) => string): ReturnType<Build>
 
   export const build: Build
   export { build as default }
