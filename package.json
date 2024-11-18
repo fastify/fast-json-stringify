@@ -38,7 +38,7 @@
   "homepage": "https://github.com/fastify/fast-json-stringify#readme",
   "devDependencies": {
     "@fastify/pre-commit": "^2.1.0",
-    "@sinclair/typebox": "^0.33.4",
+    "@sinclair/typebox": "^0.34.3",
     "benchmark": "^2.1.4",
     "c8": "^10.1.2",
     "cli-select": "^1.1.2",
