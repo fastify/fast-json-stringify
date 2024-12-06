@@ -187,6 +187,13 @@ declare namespace build {
      * @default 'default'
      */
     largeArrayMechanism?: 'default' | 'json-stringify'
+
+    /**
+     * Specify if null key-value are removed from serialised JSON output, for a smaller payload
+     *
+     * @default 'false'
+     */
+    stripNull?: boolean
   }
 
   export const validLargeArrayMechanisms: string[]
