@@ -26,7 +26,7 @@ let {
   asTime,
 } = serializer
 
-asNumber = asNumber.bind(serializer)
+asInteger = asInteger.bind(serializer)
 
 `
 
