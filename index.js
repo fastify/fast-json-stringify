@@ -24,6 +24,7 @@ let {
   asDateTime,
   asDate,
   asTime,
+  asUnsafeString
 } = serializer
 
 asInteger = asInteger.bind(serializer)
