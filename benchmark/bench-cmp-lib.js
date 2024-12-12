@@ -134,7 +134,6 @@ const getRandomString = (length) => {
   return result[0].toUpperCase() + result.slice(1)
 }
 
-// eslint-disable-next-line
 for (let i = 0; i < STR_LEN; i++) {
   largeArray[i] = {
     firstName: getRandomString(8),
