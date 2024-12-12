@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Test using this disabled, see https://github.com/fastify/fast-json-stringify/pull/683
 import Ajv from 'ajv'
 import build, { restore, Schema, validLargeArrayMechanisms } from '..'
 import { expectError, expectType } from 'tsd'
