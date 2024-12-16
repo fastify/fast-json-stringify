@@ -45,7 +45,7 @@
     "compile-json-stringify": "^0.1.2",
     "fast-json-stringify": ".",
     "is-my-json-valid": "^2.20.6",
-    "neostandard": "^0.11.9",
+    "neostandard": "^0.12.0",
     "simple-git": "^3.23.0",
     "tsd": "^0.31.0",
     "webpack": "^5.90.3"
