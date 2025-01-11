@@ -70,7 +70,7 @@ compile-json-stringify date format x 1,125,735 ops/sec ±0.19% (98 runs sampled)
 - <a href="#security">`Security Notice`</a>
 - <a href="#debug">`Debug Mode`</a>
 - <a href="#standalone">`Standalone Mode`</a>
-- <a href="#acknowledgements">`Acknowledgements`</a>
+- <a href="#acknowledgments">`Acknowledgments`</a>
 - <a href="#license">`License`</a>
 
 
@@ -111,7 +111,7 @@ console.log(stringify({
 <a name="options"></a>
 ## Options
 
-Optionally, you may provide to `fast-json-stringify` an option object as second parameter:
+Optionally, you may provide to `fast-json-stringify` an option object as the second parameter:
 
 ```js
 const fastJson = require('fast-json-stringify')
@@ -165,7 +165,7 @@ And nested ones, too.
 | `date`      | `2020-04-03`               |
 | `time`      | `09:11:08`                 |
 
-**Note**: In the case of string formatted Date and not Date Object, there will be no manipulation on it. It should be properly formatted.
+**Note**: In the case of a string formatted Date and not Date Object, there will be no manipulation on it. It should be properly formatted.
 
 Example with a Date object:
 
@@ -290,7 +290,7 @@ console.log(stringify(obj)) // '{"matchfoo":"42","otherfoo":"str","matchnum":3,"
 *additionalProperties* must be an object or a boolean, declared in this way: `{ type: 'type' }`.
 *additionalProperties* will work only for the properties that are not explicitly listed in the *properties* and *patternProperties* objects.
 
-If *additionalProperties* is not present or is set to `false`, every property that is not explicitly listed in the *properties* and *patternProperties* objects,will be ignored, as described in <a href="#missingFields">Missing fields</a>.
+If *additionalProperties* is not present or is set to `false`, every property that is not explicitly listed in the *properties* and *patternProperties* objects will be ignored, as described in <a href="#missingFields">Missing fields</a>.
 Missing fields are ignored to avoid having to rewrite objects before serializing. However, other schema rules would throw in similar situations.
 If *additionalProperties* is set to `true`, it will be used by `JSON.stringify` to stringify the additional properties. If you want to achieve maximum performance, we strongly encourage you to use a fixed schema where possible.
 The additional properties will always be serialized at the end of the object.
@@ -543,12 +543,12 @@ const stringify = fastJson(schema, { schema: externalSchema })
 
 <a name="long"></a>
 #### Long integers
-By default the library will handle automatically [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt).
+By default, the library will handle automatically [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt).
 
 <a name="integer"></a>
 #### Integers
 The `type: integer` property will be truncated if a floating point is provided.
-You can customize this behaviour with the `rounding` option that will accept [`round`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/round), [`ceil`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/ceil), [`floor`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/floor) or [`trunc`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/trunc). Default is `trunc`:
+You can customize this behavior with the `rounding` option that will accept [`round`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/round), [`ceil`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/ceil), [`floor`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/floor), or [`trunc`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/trunc). Default is `trunc`:
 
 ```js
 const stringify = fastJson(schema, { rounding: 'ceil' })
@@ -650,8 +650,8 @@ const stringify = fastJson({
 
 ##### Benchmarks
 
-For reference, here goes some benchmarks for comparison over the three
-mechanisms. Benchmarks conducted on an old machine.
+For reference, here are some benchmarks for comparison over the three
+mechanisms. Benchmarks were conducted on an old machine.
 
 - Machine: `ST1000LM024 HN-M 1TB HDD, Intel Core i7-3610QM @ 2.3GHz, 12GB RAM, 4C/8T`.
 - Node.js `v16.13.1`
@@ -728,12 +728,12 @@ const stringify = require('stringify.js')
 console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"Foo"}'
 ```
 
-<a name="acknowledgements"></a>
-## Acknowledgements
+<a name="acknowledgments"></a>
+## Acknowledgments
 
 This project was kindly sponsored by [nearForm](https://nearform.com).
 
 <a name="license"></a>
 ## License
 
-MIT
+Licensed under [MIT](./LICENSE).
