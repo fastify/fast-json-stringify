@@ -2041,6 +2041,6 @@ test('ref internal - throw if schema has definition twice with different shape',
   try {
     build(schema)
   } catch (err) {
-    t.assert.equal(err.message, 'There is already another anchor "#uri" in a schema "test".')
+    t.assert.equal(err.message, 'There is already another anchor "#uri" in schema "test".')
   }
 })
