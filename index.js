@@ -580,16 +580,18 @@ function buildArray (context, location) {
     if (schema.additionalItems) {
       functionCode += `
         for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
-          json += JSON.stringify(obj[i])
+          value = obj[i]
+          json += JSON.stringify(value)
           if (i < arrayEnd) {
             json += JSON_STR_COMMA
           }
         }`
     }
   } else {
-    const code = buildValue(context, itemsLocation, 'obj[i]')
+    const code = buildValue(context, itemsLocation, 'value')
     functionCode += `
       for (let i = 0; i < arrayLength; i++) {
+        value = obj[i]
         ${code}
         if (i < arrayEnd) {
           json += JSON_STR_COMMA
