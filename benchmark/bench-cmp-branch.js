@@ -8,7 +8,7 @@ const simpleGit = require('simple-git')
 const git = simpleGit(process.cwd())
 
 const COMMAND = 'npm run bench'
-const DEFAULT_BRANCH = 'master'
+const DEFAULT_BRANCH = 'main'
 const PERCENT_THRESHOLD = 5
 const greyColor = '\x1b[30m'
 const redColor = '\x1b[31m'
