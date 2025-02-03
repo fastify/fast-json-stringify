@@ -12,7 +12,7 @@ jobs:
       contents: read
     outputs:
       PR-BENCH: ${{ steps.benchmark-pr.outputs.BENCH_RESULT }}
-      MASTER-BENCH: ${{ steps.benchmark-master.outputs.BENCH_RESULT }}
+      MAIN-BENCH: ${{ steps.benchmark-main.outputs.BENCH_RESULT }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,17 +38,17 @@ jobs:
           content="${content//$'\r'/'%0D'}"
           echo "::set-output name=BENCH_RESULT::$content"
 
-      # master benchmark
+      # main benchmark
       - uses: actions/checkout@v4
         with:
-          ref: 'master'
+          ref: 'main'
 
       - name: Install
         run: |
           npm install --ignore-scripts
 
       - name: Run benchmark
-        id: benchmark-master
+        id: benchmark-main
         run: |
           npm run --silent bench > ./bench-result
           content=$(cat ./bench-result)
@@ -73,9 +73,9 @@ jobs:
             ```
             ${{ needs.benchmark.outputs.PR-BENCH }}
             ```
-            **MASTER**:
+            **MAIN**:
             ```
-            ${{ needs.benchmark.outputs.MASTER-BENCH }}
+            ${{ needs.benchmark.outputs.MAIN-BENCH }}
             ```
 
       - uses: actions-ecosystem/action-remove-labels@v1
