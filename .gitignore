@@ -147,3 +147,4 @@ yarn.lock
 # editor files
 .vscode
 .idea
+.cache
