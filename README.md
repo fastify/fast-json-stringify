@@ -641,8 +641,26 @@ const stringify = fastJson({
   type: 'object',
   properties: {
     'code': {
-	    type: 'string',
-	    format 'unsafe'
+      type: 'string',
+      format: 'unsafe'
+    }
+  }
+})
+```
+
+<a name="dirty"></a>
+#### Dirty string
+String known to contain non-printable characters or surrogate pairs.
+
+Example:
+```javascript
+const stringify = fastJson({
+  title: 'Example Schema',
+  type: 'object',
+  properties: {
+    'code': {
+      type: 'string',
+      format: 'dirty'
     }
   }
 })
