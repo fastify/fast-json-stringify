@@ -18,7 +18,6 @@ let largeArrayMechanism = 'default'
 const serializerFns = `
 const {
   asString,
-  asInteger,
   asNumber,
   asBoolean,
   asDateTime,
