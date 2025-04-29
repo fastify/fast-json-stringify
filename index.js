@@ -16,7 +16,7 @@ let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
 
 const serializerFns = `
-let {
+const {
   asString,
   asInteger,
   asNumber,
@@ -27,7 +27,7 @@ let {
   asUnsafeString
 } = serializer
 
-asInteger = asInteger.bind(serializer)
+const asInteger = serializer.asInteger.bind(serializer)
 
 `
 
