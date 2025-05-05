@@ -127,6 +127,7 @@ const stringify = fastJson(mySchema, {
 - `rounding`: setup how the `integer` types will be rounded when not integers. [More details](#integer)
 - `largeArrayMechanism`: set the mechanism that should be used to handle large
 (by default `20000` or more items) arrays. [More details](#largearrays)
+- `stripNull`: removes keys with null values from serialised output. If you have lots of null values, using this will result in smallerpayload and improved performance.
 
 
 <a name="api"></a>
