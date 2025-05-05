@@ -5,7 +5,6 @@
 [![neostandard javascript style](https://img.shields.io/badge/code_style-neostandard-brightgreen?style=flat)](https://github.com/neostandard/neostandard)
 [![NPM downloads](https://img.shields.io/npm/dm/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify)
 
-
 __fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads.
 Its performance advantage shrinks as your payload grows.
 It pairs well with [__flatstr__](https://www.npmjs.com/package/flatstr), which triggers a V8 optimization that improves performance when eventually converting the string to a `Buffer`.
@@ -18,37 +17,43 @@ fast-json-stringify requires a [JSON Schema Draft 7](https://json-schema.org/spe
 ##### Benchmarks
 
 - Machine: `EX41S-SSD, Intel Core i7, 4Ghz, 64GB RAM, 4C/8T, SSD`.
-- Node.js `v18.12.1`
+- Node.js `v22.14.0`
 
 ```
-FJS creation x 4,129 ops/sec ±0.82% (92 runs sampled)
-CJS creation x 184,196 ops/sec ±0.12% (97 runs sampled)
-AJV Serialize creation x 61,130,591 ops/sec ±0.40% (92 runs sampled)
-JSON.stringify array x 5,057 ops/sec ±0.10% (100 runs sampled)
-fast-json-stringify array default x 6,243 ops/sec ±0.14% (98 runs sampled)
-fast-json-stringify array json-stringify x 6,261 ops/sec ±0.30% (99 runs sampled)
-compile-json-stringify array x 6,842 ops/sec ±0.18% (96 runs sampled)
-AJV Serialize array x 6,964 ops/sec ±0.11% (95 runs sampled)
-JSON.stringify large array x 248 ops/sec ±0.07% (90 runs sampled)
-fast-json-stringify large array default x 99.96 ops/sec ±0.22% (74 runs sampled)
-fast-json-stringify large array json-stringify x 248 ops/sec ±0.07% (90 runs sampled)
-compile-json-stringify large array x 317 ops/sec ±0.09% (89 runs sampled)
-AJV Serialize large array x 111 ops/sec ±0.07% (33 runs sampled)
-JSON.stringify long string x 16,002 ops/sec ±0.09% (98 runs sampled)
-fast-json-stringify long string x 15,979 ops/sec ±0.09% (96 runs sampled)
-compile-json-stringify long string x 15,952 ops/sec ±0.31% (97 runs sampled)
-AJV Serialize long string x 21,416 ops/sec ±0.08% (98 runs sampled)
-JSON.stringify short string x 12,944,272 ops/sec ±0.09% (96 runs sampled)
-fast-json-stringify short string x 30,585,790 ops/sec ±0.27% (97 runs sampled)
-compile-json-stringify short string x 30,656,406 ops/sec ±0.12% (96 runs sampled)
-AJV Serialize short string x 30,406,785 ops/sec ±0.37% (96 runs sampled)
-JSON.stringify obj x 3,153,043 ops/sec ±0.33% (99 runs sampled)
-fast-json-stringify obj x 6,866,434 ops/sec ±0.11% (100 runs sampled)
-compile-json-stringify obj x 15,886,723 ops/sec ±0.15% (98 runs sampled)
-AJV Serialize obj x 8,969,043 ops/sec ±0.36% (97 runs sampled)
-JSON stringify date x 1,126,547 ops/sec ±0.09% (97 runs sampled)
-fast-json-stringify date format x 1,836,188 ops/sec ±0.12% (99 runs sampled)
-compile-json-stringify date format x 1,125,735 ops/sec ±0.19% (98 runs sampled)
+FJS creation x 9,696 ops/sec ±0.77% (94 runs sampled)
+CJS creation x 197,267 ops/sec ±0.22% (95 runs sampled)
+AJV Serialize creation x 48,302,927 ops/sec ±2.09% (90 runs sampled)
+json-accelerator creation x 668,430 ops/sec ±0.43% (95 runs sampled)
+JSON.stringify array x 7,924 ops/sec ±0.11% (98 runs sampled)
+fast-json-stringify array default x 7,183 ops/sec ±0.09% (97 runs sampled)
+json-accelerator array x 5,762 ops/sec ±0.27% (99 runs sampled)
+fast-json-stringify array json-stringify x 7,171 ops/sec ±0.17% (97 runs sampled)
+compile-json-stringify array x 6,889 ops/sec ±0.41% (96 runs sampled)
+AJV Serialize array x 6,945 ops/sec ±0.17% (98 runs sampled)
+JSON.stringify large array x 331 ops/sec ±0.17% (93 runs sampled)
+fast-json-stringify large array default x 208 ops/sec ±0.21% (91 runs sampled)
+fast-json-stringify large array json-stringify x 330 ops/sec ±0.17% (93 runs sampled)
+compile-json-stringify large array x 318 ops/sec ±0.11% (90 runs sampled)
+AJV Serialize large array x 114 ops/sec ±0.27% (74 runs sampled)
+JSON.stringify long string x 13,452 ops/sec ±0.15% (99 runs sampled)
+fast-json-stringify long string x 13,454 ops/sec ±0.10% (99 runs sampled)
+json-accelerator long string x 13,439 ops/sec ±0.09% (98 runs sampled)
+compile-json-stringify long string x 13,380 ops/sec ±0.12% (100 runs sampled)
+AJV Serialize long string x 21,932 ops/sec ±0.06% (99 runs sampled)
+JSON.stringify short string x 12,114,052 ops/sec ±0.59% (97 runs sampled)
+fast-json-stringify short string x 29,408,175 ops/sec ±1.12% (91 runs sampled)
+json-accelerator short string x 29,431,694 ops/sec ±1.05% (93 runs sampled)
+compile-json-stringify short string x 24,740,338 ops/sec ±1.02% (91 runs sampled)
+AJV Serialize short string x 17,841,869 ops/sec ±0.90% (91 runs sampled)
+JSON.stringify obj x 4,577,494 ops/sec ±0.25% (94 runs sampled)
+fast-json-stringify obj x 7,291,157 ops/sec ±0.40% (97 runs sampled)
+json-accelerator obj x 6,473,194 ops/sec ±0.31% (99 runs sampled)
+compile-json-stringify obj x 14,724,935 ops/sec ±0.50% (96 runs sampled)
+AJV Serialize obj x 8,782,944 ops/sec ±0.45% (93 runs sampled)
+JSON stringify date x 803,522 ops/sec ±0.47% (98 runs sampled)
+fast-json-stringify date format x 1,117,776 ops/sec ±0.69% (95 runs sampled)
+json-accelerate date format x 1,122,419 ops/sec ±0.20% (97 runs sampled)
+compile-json-stringify date format x 803,214 ops/sec ±0.23% (97 runs sampled)
 ```
 
 #### Table of contents:
