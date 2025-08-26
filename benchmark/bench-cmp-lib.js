@@ -1,4 +1,4 @@
-'use strictcreateAccelerator'
+'use strict'
 
 const benchmark = require('benchmark')
 const suite = new benchmark.Suite()
