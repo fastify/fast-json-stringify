@@ -75,6 +75,7 @@
     "eslint": "^9.17.0",
     "fast-json-stringify": ".",
     "is-my-json-valid": "^2.20.6",
+    "json-accelerator": "^0.0.2",
     "neostandard": "^0.12.0",
     "simple-git": "^3.23.0",
     "tsd": "^0.32.0",
