@@ -16,10 +16,6 @@
     "test:unit": "c8 node --test",
     "test": "npm run test:unit && npm run test:typescript"
   },
-  "precommit": [
-    "lint",
-    "test"
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fastify/fast-json-stringify.git"
@@ -66,7 +62,6 @@
     }
   ],
   "devDependencies": {
-    "@fastify/pre-commit": "^2.1.0",
     "@sinclair/typebox": "^0.34.3",
     "benchmark": "^2.1.4",
     "c8": "^10.1.2",
