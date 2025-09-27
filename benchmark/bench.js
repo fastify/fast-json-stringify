@@ -56,6 +56,14 @@ const benchmarks = [
     input: 'hello world'
   },
   {
+    name: 'extended-unicode short string',
+    schema: {
+      type: 'string',
+      format: 'extended-unicode'
+    },
+    input: 'hello\nworld'
+  },
+  {
     name: 'short string with double quote',
     schema: {
       type: 'string'
@@ -91,6 +99,14 @@ const benchmarks = [
       format: 'unsafe'
     },
     input: longString
+  },
+  {
+    name: 'extended-unicode long string',
+    schema: {
+      type: 'string',
+      format: 'extended-unicode'
+    },
+    input: longString + '\n'
   },
   {
     name: 'number',
