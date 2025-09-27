@@ -581,7 +581,7 @@ function buildArray (context, location) {
       const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), 'value')
       functionCode += `
         if (${i} < arrayLength) {
-          if (${buildArrayTypeCondition(item.type, `[${i}]`)}) {
+          if (${buildArrayTypeCondition(item.type, 'value')}) {
             ${tmpRes}
             if (${i} < arrayEnd) {
               json += JSON_STR_COMMA
