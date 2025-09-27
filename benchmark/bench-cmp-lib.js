@@ -118,6 +118,12 @@ const ajvSerialize = ajv.compileSerializer(schemaAJVJTD)
 const ajvSerializeArray = ajv.compileSerializer(arraySchemaAJVJTD)
 const ajvSerializeString = ajv.compileSerializer({ type: 'string' })
 
+const { createAccelerator } = require('json-accelerator')
+const accelStringify = createAccelerator(schema)
+const accelArray = createAccelerator(arraySchema)
+const accelDate = FJS(dateFormatSchema)
+const accelString = FJS({ type: 'string' })
+
 const getRandomString = (length) => {
   if (!Number.isInteger(length)) {
     throw new Error('Expected integer length')
@@ -170,6 +176,9 @@ suite.add('CJS creation', function () {
 suite.add('AJV Serialize creation', function () {
   ajv.compileSerializer(schemaAJVJTD)
 })
+suite.add('json-accelerator creation', function () {
+  createAccelerator(schema)
+})
 
 suite.add('JSON.stringify array', function () {
   JSON.stringify(multiArray)
@@ -177,6 +186,10 @@ suite.add('JSON.stringify array', function () {
 
 suite.add('fast-json-stringify array default', function () {
   stringifyArrayDefault(multiArray)
+})
+
+suite.add('json-accelerator array', function () {
+  accelArray(multiArray)
 })
 
 suite.add('fast-json-stringify array json-stringify', function () {
@@ -219,6 +232,10 @@ suite.add('fast-json-stringify long string', function () {
   stringifyString(str)
 })
 
+suite.add('json-accelerator long string', function () {
+  stringifyString(str)
+})
+
 suite.add('compile-json-stringify long string', function () {
   CJSStringifyString(str)
 })
@@ -233,6 +250,10 @@ suite.add('JSON.stringify short string', function () {
 
 suite.add('fast-json-stringify short string', function () {
   stringifyString('hello world')
+})
+
+suite.add('json-accelerator short string', function () {
+  accelString('hello world')
 })
 
 suite.add('compile-json-stringify short string', function () {
@@ -251,6 +272,10 @@ suite.add('fast-json-stringify obj', function () {
   stringify(obj)
 })
 
+suite.add('json-accelerator obj', function () {
+  accelStringify(obj)
+})
+
 suite.add('compile-json-stringify obj', function () {
   CJSStringify(obj)
 })
@@ -265,6 +290,10 @@ suite.add('JSON stringify date', function () {
 
 suite.add('fast-json-stringify date format', function () {
   stringifyDate(date)
+})
+
+suite.add('json-accelerate date format', function () {
+  accelDate(date)
 })
 
 suite.add('compile-json-stringify date format', function () {

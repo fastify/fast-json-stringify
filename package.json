@@ -16,10 +16,6 @@
     "test:unit": "c8 node --test",
     "test": "npm run test:unit && npm run test:typescript"
   },
-  "precommit": [
-    "lint",
-    "test"
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fastify/fast-json-stringify.git"
@@ -66,7 +62,6 @@
     }
   ],
   "devDependencies": {
-    "@fastify/pre-commit": "^2.1.0",
     "@sinclair/typebox": "^0.34.3",
     "benchmark": "^2.1.4",
     "c8": "^10.1.2",
@@ -75,9 +70,10 @@
     "eslint": "^9.17.0",
     "fast-json-stringify": ".",
     "is-my-json-valid": "^2.20.6",
+    "json-accelerator": "^0.0.2",
     "neostandard": "^0.12.0",
     "simple-git": "^3.23.0",
-    "tsd": "^0.31.0",
+    "tsd": "^0.32.0",
     "webpack": "^5.90.3"
   },
   "dependencies": {
@@ -85,7 +81,7 @@
     "ajv": "^8.12.0",
     "ajv-formats": "^3.0.1",
     "fast-uri": "^3.0.0",
-    "json-schema-ref-resolver": "^2.0.0",
+    "json-schema-ref-resolver": "^3.0.0",
     "rfdc": "^1.2.0"
   },
   "runkitExampleFilename": "./examples/example.js"
