@@ -34,6 +34,21 @@ test('serialize short string', (t) => {
   t.assert.equal(JSON.parse(output), input)
 })
 
+test('serialize medium string', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string'
+  }
+
+  const input = new Array(2e4).fill('\x00').join('')
+  const stringify = build(schema)
+  const output = stringify(input)
+
+  t.assert.equal(output, `"${new Array(150).fill('\\u0000').join('')}"`)
+  t.assert.equal(JSON.parse(output), input)
+})
+
 test('serialize long string', (t) => {
   t.plan(2)
 
