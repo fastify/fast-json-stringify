@@ -56,10 +56,10 @@ const benchmarks = [
     input: 'hello world'
   },
   {
-    name: 'dirty short string',
+    name: 'extended-unicode short string',
     schema: {
       type: 'string',
-      format: 'dirty'
+      format: 'extended-unicode'
     },
     input: 'hello\nworld'
   },
@@ -101,10 +101,10 @@ const benchmarks = [
     input: longString
   },
   {
-    name: 'dirty long string',
+    name: 'extended-unicode long string',
     schema: {
       type: 'string',
-      format: 'dirty'
+      format: 'extended-unicode'
     },
     input: longString + '\n'
   },

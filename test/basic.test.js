@@ -27,7 +27,7 @@ buildTest({
 buildTest({
   title: 'string',
   type: 'string',
-  format: 'dirty'
+  format: 'extended-unicode'
 }, 'hello\nworld')
 
 buildTest({

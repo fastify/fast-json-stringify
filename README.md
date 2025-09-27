@@ -653,8 +653,8 @@ const stringify = fastJson({
 })
 ```
 
-<a name="dirty"></a>
-#### Dirty string
+<a name="extended-unicode"></a>
+#### Extended unicode string
 String known to contain non-printable characters or surrogate pairs.
 
 Example:
@@ -665,7 +665,7 @@ const stringify = fastJson({
   properties: {
     'code': {
       type: 'string',
-      format: 'dirty'
+      format: 'extended-unicode'
     }
   }
 })
