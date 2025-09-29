@@ -7,7 +7,6 @@
 
 __fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads.
 Its performance advantage shrinks as your payload grows.
-It pairs well with [__flatstr__](https://www.npmjs.com/package/flatstr), which triggers a V8 optimization that improves performance when eventually converting the string to a `Buffer`.
 
 
 ### How it works
