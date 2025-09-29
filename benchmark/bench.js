@@ -41,6 +41,13 @@ for (let i = 0; i < SHORT_ARRAY_SIZE; i++) {
 
 const benchmarks = [
   {
+    name: 'empty string',
+    schema: {
+      type: 'string'
+    },
+    input: ''
+  },
+  {
     name: 'short string',
     schema: {
       type: 'string'
