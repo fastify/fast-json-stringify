@@ -374,6 +374,7 @@ function buildInnerObject (context, location) {
     addComma = '!addComma && (addComma = true) || (json += JSON_STR_COMMA)'
   }
 
+  let counterValue = 0
   for (const key of propertiesKeys) {
     let propertyLocation = propertiesLocation.getPropertyLocation(key)
     if (propertyLocation.schema.$ref) {
@@ -381,7 +382,7 @@ function buildInnerObject (context, location) {
     }
 
     const sanitizedKey = JSON.stringify(key)
-    const value = 'value_' + key.replace(/[^a-zA-Z0-9]/g, '_')
+    const value = 'value_' + key.replace(/[^a-zA-Z0-9]/g, '_') + '_' + (counterValue++)
     const defaultValue = propertyLocation.schema.default
     const isRequired = requiredProperties.includes(key)
 
