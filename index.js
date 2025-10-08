@@ -386,7 +386,7 @@ function buildInnerObject (context, location) {
     const isRequired = requiredProperties.includes(key)
 
     code += `
-      let ${value} = obj[${sanitizedKey}]
+      const ${value} = obj[${sanitizedKey}]
       if (${value} !== undefined) {
         ${addComma}
         json += ${JSON.stringify(sanitizedKey + ':')}
