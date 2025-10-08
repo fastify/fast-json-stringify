@@ -375,7 +375,8 @@ function buildInnerObject (context, location) {
     addComma = '!addComma && (addComma = true) || (json += JSON_STR_COMMA)'
   }
 
-  for (const key of propertiesKeys) {
+  for (let i = 0; i < propertiesKeys.length; i++) {
+    const key = propertiesKeys[i]
     let propertyLocation = propertiesLocation.getPropertyLocation(key)
     if (propertyLocation.schema.$ref) {
       propertyLocation = resolveRef(context, propertyLocation)
