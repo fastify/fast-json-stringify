@@ -369,7 +369,8 @@ function buildInnerObject (context, location) {
   code += 'let json = JSON_STR_BEGIN_OBJECT\n'
 
   let addComma = ''
-  if (!hasRequiredProperties && (propertiesKeys.length > 1 || (schema.patternProperties || schema.additionalProperties))) {
+  const hasComma = !hasRequiredProperties && (propertiesKeys.length > 1 || (schema.patternProperties || schema.additionalProperties))
+  if (hasComma) {
     code += 'let addComma = false\n'
     addComma = '!addComma && (addComma = true) || (json += JSON_STR_COMMA)'
   }
@@ -387,14 +388,14 @@ function buildInnerObject (context, location) {
     code += `
       value = obj[${sanitizedKey}]
       if (value !== undefined) {
-        ${addComma}
+        ${i > 0 ? addComma : (hasComma ? 'addComma = true' : '')}
         json += ${JSON.stringify(sanitizedKey + ':')}
         ${buildValue(context, propertyLocation, 'value')}
       }`
 
     if (defaultValue !== undefined) {
       code += ` else {
-        ${addComma}
+        ${i > 0 ? addComma : (hasComma ? 'addComma = true' : '')}
         json += ${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))}
       }
       `
