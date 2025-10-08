@@ -369,7 +369,7 @@ function buildInnerObject (context, location) {
   code += 'let json = JSON_STR_BEGIN_OBJECT\n'
 
   let addComma = ''
-  const hasComma = !hasRequiredProperties && (propertiesKeys.length > 1 || (schema.patternProperties || schema.additionalProperties))
+  const hasComma = !hasRequiredProperties && (propertiesKeys.length > 1 || (schema.patternProperties || schema.additionalProperties !== false))
   if (hasComma) {
     code += 'let addComma = false\n'
     addComma = '!addComma && (addComma = true) || (json += JSON_STR_COMMA)'
