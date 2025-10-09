@@ -63,7 +63,6 @@
   ],
   "devDependencies": {
     "@sinclair/typebox": "^0.34.3",
-    "benchmark": "^2.1.4",
     "c8": "^10.1.2",
     "cli-select": "^1.1.2",
     "compile-json-stringify": "^0.1.2",
@@ -73,6 +72,7 @@
     "json-accelerator": "^0.0.2",
     "neostandard": "^0.12.0",
     "simple-git": "^3.23.0",
+    "tinybench": "^5.0.1",
     "tsd": "^0.32.0",
     "webpack": "^5.90.3"
   },
