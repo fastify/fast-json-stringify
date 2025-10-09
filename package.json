@@ -6,7 +6,7 @@
   "type": "commonjs",
   "types": "types/index.d.ts",
   "scripts": {
-    "bench": "node ./benchmark/bench.js",
+    "bench": "node --expose-gc ./benchmark/bench.js",
     "bench:cmp": "node ./benchmark/bench-cmp-branch.js",
     "bench:cmp:ci": "node ./benchmark/bench-cmp-branch.js --ci",
     "benchmark": "node ./benchmark/bench-cmp-lib.js",
