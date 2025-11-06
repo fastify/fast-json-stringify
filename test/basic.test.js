@@ -25,6 +25,12 @@ buildTest({
 }, 'hello world')
 
 buildTest({
+  title: 'string',
+  type: 'string',
+  format: 'extended-unicode'
+}, 'hello\nworld')
+
+buildTest({
   title: 'basic',
   type: 'object',
   properties: {
