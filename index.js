@@ -30,17 +30,17 @@ const asInteger = serializer.asInteger.bind(serializer)
 
 `
 
-const validRoundingMethods = [
+const validRoundingMethods = new Set([
   'floor',
   'ceil',
   'round',
   'trunc'
-]
+])
 
-const validLargeArrayMechanisms = [
+const validLargeArrayMechanisms = new Set([
   'default',
   'json-stringify'
-]
+])
 
 let schemaIdCounter = 0
 
@@ -127,13 +127,13 @@ function build (schema, options) {
   }
 
   if (options.rounding) {
-    if (!validRoundingMethods.includes(options.rounding)) {
+    if (!validRoundingMethods.has(options.rounding)) {
       throw new Error(`Unsupported integer rounding method ${options.rounding}`)
     }
   }
 
   if (options.largeArrayMechanism) {
-    if (validLargeArrayMechanisms.includes(options.largeArrayMechanism)) {
+    if (validLargeArrayMechanisms.has(options.largeArrayMechanism)) {
       largeArrayMechanism = options.largeArrayMechanism
     } else {
       throw new Error(`Unsupported large array mechanism ${options.largeArrayMechanism}`)
@@ -141,11 +141,15 @@ function build (schema, options) {
   }
 
   if (options.largeArraySize) {
-    if (typeof options.largeArraySize === 'string' && Number.isFinite(Number.parseInt(options.largeArraySize, 10))) {
-      largeArraySize = Number.parseInt(options.largeArraySize, 10)
-    } else if (typeof options.largeArraySize === 'number' && Number.isInteger(options.largeArraySize)) {
+    const largeArraySizeType = typeof options.largeArraySize
+    if (largeArraySizeType === 'string') {
+      const newLargeArraySize = Number.parseInt(options.largeArraySize, 10)
+      if (Number.isFinite(newLargeArraySize)) {
+        largeArraySize = newLargeArraySize
+      }
+    } else if (largeArraySizeType === 'number' && Number.isInteger(options.largeArraySize)) {
       largeArraySize = options.largeArraySize
-    } else if (typeof options.largeArraySize === 'bigint') {
+    } else if (largeArraySizeType === 'bigint') {
       largeArraySize = Number(options.largeArraySize)
     } else {
       throw new Error(`Unsupported large array size. Expected integer-like, got ${typeof options.largeArraySize} with value ${options.largeArraySize}`)
@@ -423,7 +427,7 @@ function buildInnerObject (context, location) {
 }
 
 function mergeLocations (context, mergedSchemaId, mergedLocations) {
-  for (let i = 0; i < mergedLocations.length; i++) {
+  for (let i = 0, mergedLocationsLength = mergedLocations.length; i < mergedLocationsLength; i++) {
     const location = mergedLocations[i]
     const schema = location.schema
     if (schema.$ref) {
@@ -575,7 +579,7 @@ function buildArray (context, location) {
   `
 
   if (Array.isArray(itemsSchema)) {
-    for (let i = 0; i < itemsSchema.length; i++) {
+    for (let i = 0, itemsSchemaLength = itemsSchema.length; i < itemsSchemaLength; i++) {
       const item = itemsSchema[i]
       functionCode += `value = obj[${i}]`
       const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), 'value')
@@ -842,7 +846,7 @@ function buildAllOf (context, location, input) {
   ]
 
   const allOfsLocation = location.getPropertyLocation('allOf')
-  for (let i = 0; i < allOf.length; i++) {
+  for (let i = 0, allOfsLength = allOfsLocation.length; i < allOfsLength; i++) {
     locations.push(allOfsLocation.getPropertyLocation(i))
   }
 
@@ -867,7 +871,7 @@ function buildOneOf (context, location, input) {
 
   let code = ''
 
-  for (let index = 0; index < oneOfs.length; index++) {
+  for (let index = 0, oneOfsLength = oneOfs.length; index < oneOfsLength; index++) {
     const optionLocation = oneOfsLocation.getPropertyLocation(index)
     const optionSchema = optionLocation.schema
 
