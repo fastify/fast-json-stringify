@@ -352,19 +352,19 @@ function buildInnerObject (context, location) {
   const requiredProperties = schema.required || []
 
   // Should serialize required properties first
-  const propertiesKeys = Object.keys(schema.properties || {}).sort(
+  const propertiesKeys = new Set(Object.keys(schema.properties || {}).sort(
     (key1, key2) => {
       const required1 = requiredProperties.includes(key1)
       const required2 = requiredProperties.includes(key2)
       return required1 === required2 ? 0 : required1 ? -1 : 1
     }
-  )
+  ))
   const hasRequiredProperties = requiredProperties.includes(propertiesKeys[0])
 
   let code = 'let value\n'
 
   for (const key of requiredProperties) {
-    if (!propertiesKeys.includes(key)) {
+    if (!propertiesKeys.has(key)) {
       const sanitizedKey = JSON.stringify(key)
       code += `if (obj[${sanitizedKey}] === undefined) throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')\n`
     }
@@ -846,7 +846,7 @@ function buildAllOf (context, location, input) {
   ]
 
   const allOfsLocation = location.getPropertyLocation('allOf')
-  for (let i = 0, allOfsLength = allOfsLocation.length; i < allOfsLength; i++) {
+  for (let i = 0, allOfLength = allOf.length; i < allOfLength; i++) {
     locations.push(allOfsLocation.getPropertyLocation(i))
   }
 
