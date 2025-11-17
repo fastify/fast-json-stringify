@@ -142,9 +142,10 @@ function build (schema, options) {
 
   if (options.largeArraySize) {
     const largeArraySizeType = typeof options.largeArraySize
+    let parsedNumber
 
-    if (largeArraySizeType === 'string' && Number.isFinite(Number.parseInt(options.largeArraySize, 10))) {
-      largeArraySize = Number.parseInt(options.largeArraySize, 10)
+    if (largeArraySizeType === 'string' && Number.isFinite((parsedNumber = Number.parseInt(options.largeArraySize, 10)))) {
+      largeArraySize = parsedNumber
     } else if (largeArraySizeType === 'number' && Number.isInteger(options.largeArraySize)) {
       largeArraySize = options.largeArraySize
     } else if (largeArraySizeType === 'bigint') {
