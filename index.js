@@ -360,7 +360,7 @@ function buildInnerObject (context, location) {
   ))
   const hasRequiredProperties = requiredProperties.includes(propertiesKeys[0])
 
-  let code = 'let value\n'
+  let code = ''
 
   for (const key of requiredProperties) {
     if (!propertiesKeys.has(key)) {
@@ -377,6 +377,7 @@ function buildInnerObject (context, location) {
     addComma = '!addComma && (addComma = true) || (json += JSON_STR_COMMA)'
   }
 
+  let counterValue = 0
   for (const key of propertiesKeys) {
     let propertyLocation = propertiesLocation.getPropertyLocation(key)
     if (propertyLocation.schema.$ref) {
@@ -384,15 +385,16 @@ function buildInnerObject (context, location) {
     }
 
     const sanitizedKey = JSON.stringify(key)
+    const value = 'value_' + key.replace(/[^a-zA-Z0-9]/g, '_') + '_' + (counterValue++)
     const defaultValue = propertyLocation.schema.default
     const isRequired = requiredProperties.includes(key)
 
     code += `
-      value = obj[${sanitizedKey}]
-      if (value !== undefined) {
+      const ${value} = obj[${sanitizedKey}]
+      if (${value} !== undefined) {
         ${addComma}
         json += ${JSON.stringify(sanitizedKey + ':')}
-        ${buildValue(context, propertyLocation, 'value')}
+        ${buildValue(context, propertyLocation, `${value}`)}
       }`
 
     if (defaultValue !== undefined) {
@@ -573,18 +575,18 @@ function buildArray (context, location) {
 
   functionCode += `
     const arrayEnd = arrayLength - 1
-    let value
     let json = ''
   `
 
   if (Array.isArray(itemsSchema)) {
     for (let i = 0, itemsSchemaLength = itemsSchema.length; i < itemsSchemaLength; i++) {
       const item = itemsSchema[i]
-      functionCode += `value = obj[${i}]`
-      const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), 'value')
+      const value = `value_${i}`
+      functionCode += `const ${value} = obj[${i}]`
+      const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), value)
       functionCode += `
         if (${i} < arrayLength) {
-          if (${buildArrayTypeCondition(item.type, 'value')}) {
+          if (${buildArrayTypeCondition(item.type, value)}) {
             ${tmpRes}
             if (${i} < arrayEnd) {
               json += JSON_STR_COMMA
@@ -599,8 +601,7 @@ function buildArray (context, location) {
     if (schema.additionalItems) {
       functionCode += `
         for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
-          value = obj[i]
-          json += JSON.stringify(value)
+          json += JSON.stringify(obj[i])
           if (i < arrayEnd) {
             json += JSON_STR_COMMA
           }
@@ -610,7 +611,7 @@ function buildArray (context, location) {
     const code = buildValue(context, itemsLocation, 'value')
     functionCode += `
       for (let i = 0; i < arrayLength; i++) {
-        value = obj[i]
+        const value = obj[i]
         ${code}
         if (i < arrayEnd) {
           json += JSON_STR_COMMA
@@ -630,33 +631,33 @@ function buildArrayTypeCondition (type, accessor) {
   let condition
   switch (type) {
     case 'null':
-      condition = 'value === null'
+      condition = `${accessor} === null`
       break
     case 'string':
-      condition = `typeof value === 'string' ||
-      value === null ||
-      value instanceof Date ||
-      value instanceof RegExp ||
+      condition = `typeof ${accessor} === 'string' ||
+      ${accessor} === null ||
+      ${accessor} instanceof Date ||
+      ${accessor} instanceof RegExp ||
       (
-        typeof value === "object" &&
-        typeof value.toString === "function" &&
-        value.toString !== Object.prototype.toString
+        typeof ${accessor} === "object" &&
+        typeof ${accessor}.toString === "function" &&
+        ${accessor}.toString !== Object.prototype.toString
       )`
       break
     case 'integer':
-      condition = 'Number.isInteger(value)'
+      condition = `Number.isInteger(${accessor})`
       break
     case 'number':
-      condition = 'Number.isFinite(value)'
+      condition = `Number.isFinite(${accessor})`
       break
     case 'boolean':
-      condition = 'typeof value === \'boolean\''
+      condition = `typeof ${accessor} === 'boolean'`
       break
     case 'object':
-      condition = 'value && typeof value === \'object\' && value.constructor === Object'
+      condition = `${accessor} && typeof ${accessor} === 'object' && ${accessor}.constructor === Object`
       break
     case 'array':
-      condition = 'Array.isArray(value)'
+      condition = `Array.isArray(${accessor})`
       break
     default:
       if (Array.isArray(type)) {
