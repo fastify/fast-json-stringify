@@ -9,7 +9,7 @@
     "bench": "node --expose-gc ./benchmark/bench.js",
     "bench:cmp": "node ./benchmark/bench-cmp-branch.js",
     "bench:cmp:ci": "node ./benchmark/bench-cmp-branch.js --ci",
-    "benchmark": "node ./benchmark/bench-cmp-lib.js",
+    "benchmark": "node --expose-gc ./benchmark/bench-cmp-lib.js",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test:typescript": "tsd",
