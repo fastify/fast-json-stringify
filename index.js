@@ -23,7 +23,8 @@ const {
   asDateTime,
   asDate,
   asTime,
-  asUnsafeString
+  asUnsafeString,
+  asExtendedUnicode
 } = serializer
 
 const asInteger = serializer.asInteger.bind(serializer)
@@ -758,6 +759,8 @@ function buildSingleTypeSerializer (context, location, input) {
         return `json += asTime(${input})`
       } else if (schema.format === 'unsafe') {
         return `json += asUnsafeString(${input})`
+      } else if (schema.format === 'extended-unicode') {
+        return `json += asExtendedUnicode(${input})`
       } else {
         return `
         if (typeof ${input} !== 'string') {
