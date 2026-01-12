@@ -3,7 +3,6 @@
 const { Bench } = require('tinybench')
 const suite = new Bench({
   name: 'Library Comparison Benchmarks',
-  time: 100,
   setup: (_task, mode) => {
     // Run the garbage collector before warmup at each cycle
     if (mode === 'warmup' && typeof globalThis.gc === 'function') {
