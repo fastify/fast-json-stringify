@@ -6,7 +6,6 @@ const { Bench } = require('tinybench')
 
 const bench = new Bench({
   name: benchmark.name,
-  time: 100,
   setup: (_task, mode) => {
     // Run the garbage collector before warmup at each cycle
     if (mode === 'warmup' && typeof globalThis.gc === 'function') {
