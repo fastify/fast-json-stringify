@@ -1,7 +1,16 @@
 'use strict'
 
-const benchmark = require('benchmark')
-const suite = new benchmark.Suite()
+const { Bench } = require('tinybench')
+const suite = new Bench({
+  name: 'Library Comparison Benchmarks',
+  time: 100,
+  setup: (_task, mode) => {
+    // Run the garbage collector before warmup at each cycle
+    if (mode === 'warmup' && typeof globalThis.gc === 'function') {
+      globalThis.gc()
+    }
+  }
+})
 
 const STR_LEN = 1e4
 const LARGE_ARRAY_SIZE = 2e4
@@ -300,10 +309,16 @@ suite.add('compile-json-stringify date format', function () {
   CJSStringifyDate(date)
 })
 
-suite.on('cycle', cycle)
+suite.run().then(() => {
+  for (const task of suite.tasks) {
+    const hz = task.result.hz // ops/sec
+    const rme = task.result.rme // relative margin of error (%)
+    const samples = task.result.samples.length
 
-suite.run()
+    const formattedHz = hz.toLocaleString('en-US', { maximumFractionDigits: 0 })
+    const formattedRme = rme.toFixed(2)
 
-function cycle (e) {
-  console.log(e.target.toString())
-}
+    const output = `${task.name} x ${formattedHz} ops/sec ±${formattedRme}% (${samples} runs sampled)`
+    console.log(output)
+  }
+}).catch(err => console.error(`Error: ${err.message}`))

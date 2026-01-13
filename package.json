@@ -6,10 +6,10 @@
   "type": "commonjs",
   "types": "types/index.d.ts",
   "scripts": {
-    "bench": "node ./benchmark/bench.js",
+    "bench": "node --expose-gc ./benchmark/bench.js",
     "bench:cmp": "node ./benchmark/bench-cmp-branch.js",
     "bench:cmp:ci": "node ./benchmark/bench-cmp-branch.js --ci",
-    "benchmark": "node ./benchmark/bench-cmp-lib.js",
+    "benchmark": "node --expose-gc ./benchmark/bench-cmp-lib.js",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test:typescript": "tsd",
@@ -63,7 +63,6 @@
   ],
   "devDependencies": {
     "@sinclair/typebox": "^0.34.3",
-    "benchmark": "^2.1.4",
     "c8": "^10.1.2",
     "cli-select": "^1.1.2",
     "compile-json-stringify": "^0.1.2",
@@ -73,6 +72,7 @@
     "json-accelerator": "^0.0.2",
     "neostandard": "^0.12.0",
     "simple-git": "^3.23.0",
+    "tinybench": "^5.0.1",
     "tsd": "^0.32.0",
     "webpack": "^5.90.3"
   },

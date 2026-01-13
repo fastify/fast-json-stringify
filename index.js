@@ -30,17 +30,17 @@ const asInteger = serializer.asInteger.bind(serializer)
 
 `
 
-const validRoundingMethods = [
+const validRoundingMethods = new Set([
   'floor',
   'ceil',
   'round',
   'trunc'
-]
+])
 
-const validLargeArrayMechanisms = [
+const validLargeArrayMechanisms = new Set([
   'default',
   'json-stringify'
-]
+])
 
 let schemaIdCounter = 0
 
@@ -127,13 +127,13 @@ function build (schema, options) {
   }
 
   if (options.rounding) {
-    if (!validRoundingMethods.includes(options.rounding)) {
+    if (!validRoundingMethods.has(options.rounding)) {
       throw new Error(`Unsupported integer rounding method ${options.rounding}`)
     }
   }
 
   if (options.largeArrayMechanism) {
-    if (validLargeArrayMechanisms.includes(options.largeArrayMechanism)) {
+    if (validLargeArrayMechanisms.has(options.largeArrayMechanism)) {
       largeArrayMechanism = options.largeArrayMechanism
     } else {
       throw new Error(`Unsupported large array mechanism ${options.largeArrayMechanism}`)
@@ -141,11 +141,14 @@ function build (schema, options) {
   }
 
   if (options.largeArraySize) {
-    if (typeof options.largeArraySize === 'string' && Number.isFinite(Number.parseInt(options.largeArraySize, 10))) {
-      largeArraySize = Number.parseInt(options.largeArraySize, 10)
-    } else if (typeof options.largeArraySize === 'number' && Number.isInteger(options.largeArraySize)) {
+    const largeArraySizeType = typeof options.largeArraySize
+    let parsedNumber
+
+    if (largeArraySizeType === 'string' && Number.isFinite((parsedNumber = Number.parseInt(options.largeArraySize, 10)))) {
+      largeArraySize = parsedNumber
+    } else if (largeArraySizeType === 'number' && Number.isInteger(options.largeArraySize)) {
       largeArraySize = options.largeArraySize
-    } else if (typeof options.largeArraySize === 'bigint') {
+    } else if (largeArraySizeType === 'bigint') {
       largeArraySize = Number(options.largeArraySize)
     } else {
       throw new Error(`Unsupported large array size. Expected integer-like, got ${typeof options.largeArraySize} with value ${options.largeArraySize}`)
@@ -348,19 +351,19 @@ function buildInnerObject (context, location) {
   const requiredProperties = schema.required || []
 
   // Should serialize required properties first
-  const propertiesKeys = Object.keys(schema.properties || {}).sort(
+  const propertiesKeys = new Set(Object.keys(schema.properties || {}).sort(
     (key1, key2) => {
       const required1 = requiredProperties.includes(key1)
       const required2 = requiredProperties.includes(key2)
       return required1 === required2 ? 0 : required1 ? -1 : 1
     }
-  )
+  ))
   const hasRequiredProperties = requiredProperties.includes(propertiesKeys[0])
 
-  let code = 'let value\n'
+  let code = ''
 
   for (const key of requiredProperties) {
-    if (!propertiesKeys.includes(key)) {
+    if (!propertiesKeys.has(key)) {
       const sanitizedKey = JSON.stringify(key)
       code += `if (obj[${sanitizedKey}] === undefined) throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')\n`
     }
@@ -375,23 +378,24 @@ function buildInnerObject (context, location) {
     addComma = '!addComma && (addComma = true) || (json += JSON_STR_COMMA)'
   }
 
-  for (let i = 0; i < propertiesKeys.length; i++) {
-    const key = propertiesKeys[i]
+  let counterValue = 0
+  for (const key of propertiesKeys) {
     let propertyLocation = propertiesLocation.getPropertyLocation(key)
     if (propertyLocation.schema.$ref) {
       propertyLocation = resolveRef(context, propertyLocation)
     }
 
     const sanitizedKey = JSON.stringify(key)
+    const value = 'value_' + key.replace(/[^a-zA-Z0-9]/g, '_') + '_' + (counterValue++)
     const defaultValue = propertyLocation.schema.default
     const isRequired = requiredProperties.includes(key)
 
     code += `
-      value = obj[${sanitizedKey}]
-      if (value !== undefined) {
-        ${i > 0 ? addComma : (hasComma ? 'addComma = true' : '')}
+      const ${value} = obj[${sanitizedKey}]
+      if (${value} !== undefined) {
+        ${addComma}
         json += ${JSON.stringify(sanitizedKey + ':')}
-        ${buildValue(context, propertyLocation, 'value')}
+        ${buildValue(context, propertyLocation, `${value}`)}
       }`
 
     if (defaultValue !== undefined) {
@@ -425,7 +429,7 @@ function buildInnerObject (context, location) {
 }
 
 function mergeLocations (context, mergedSchemaId, mergedLocations) {
-  for (let i = 0; i < mergedLocations.length; i++) {
+  for (let i = 0, mergedLocationsLength = mergedLocations.length; i < mergedLocationsLength; i++) {
     const location = mergedLocations[i]
     const schema = location.schema
     if (schema.$ref) {
@@ -572,18 +576,18 @@ function buildArray (context, location) {
 
   functionCode += `
     const arrayEnd = arrayLength - 1
-    let value
     let json = ''
   `
 
   if (Array.isArray(itemsSchema)) {
-    for (let i = 0; i < itemsSchema.length; i++) {
+    for (let i = 0, itemsSchemaLength = itemsSchema.length; i < itemsSchemaLength; i++) {
       const item = itemsSchema[i]
-      functionCode += `value = obj[${i}]`
-      const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), 'value')
+      const value = `value_${i}`
+      functionCode += `const ${value} = obj[${i}]`
+      const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), value)
       functionCode += `
         if (${i} < arrayLength) {
-          if (${buildArrayTypeCondition(item.type, 'value')}) {
+          if (${buildArrayTypeCondition(item.type, value)}) {
             ${tmpRes}
             if (${i} < arrayEnd) {
               json += JSON_STR_COMMA
@@ -598,8 +602,7 @@ function buildArray (context, location) {
     if (schema.additionalItems) {
       functionCode += `
         for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
-          value = obj[i]
-          json += JSON.stringify(value)
+          json += JSON.stringify(obj[i])
           if (i < arrayEnd) {
             json += JSON_STR_COMMA
           }
@@ -609,7 +612,7 @@ function buildArray (context, location) {
     const code = buildValue(context, itemsLocation, 'value')
     functionCode += `
       for (let i = 0; i < arrayLength; i++) {
-        value = obj[i]
+        const value = obj[i]
         ${code}
         if (i < arrayEnd) {
           json += JSON_STR_COMMA
@@ -629,33 +632,33 @@ function buildArrayTypeCondition (type, accessor) {
   let condition
   switch (type) {
     case 'null':
-      condition = 'value === null'
+      condition = `${accessor} === null`
       break
     case 'string':
-      condition = `typeof value === 'string' ||
-      value === null ||
-      value instanceof Date ||
-      value instanceof RegExp ||
+      condition = `typeof ${accessor} === 'string' ||
+      ${accessor} === null ||
+      ${accessor} instanceof Date ||
+      ${accessor} instanceof RegExp ||
       (
-        typeof value === "object" &&
-        typeof value.toString === "function" &&
-        value.toString !== Object.prototype.toString
+        typeof ${accessor} === "object" &&
+        typeof ${accessor}.toString === "function" &&
+        ${accessor}.toString !== Object.prototype.toString
       )`
       break
     case 'integer':
-      condition = 'Number.isInteger(value)'
+      condition = `Number.isInteger(${accessor})`
       break
     case 'number':
-      condition = 'Number.isFinite(value)'
+      condition = `Number.isFinite(${accessor})`
       break
     case 'boolean':
-      condition = 'typeof value === \'boolean\''
+      condition = `typeof ${accessor} === 'boolean'`
       break
     case 'object':
-      condition = 'value && typeof value === \'object\' && value.constructor === Object'
+      condition = `${accessor} && typeof ${accessor} === 'object' && ${accessor}.constructor === Object`
       break
     case 'array':
-      condition = 'Array.isArray(value)'
+      condition = `Array.isArray(${accessor})`
       break
     default:
       if (Array.isArray(type)) {
@@ -844,7 +847,7 @@ function buildAllOf (context, location, input) {
   ]
 
   const allOfsLocation = location.getPropertyLocation('allOf')
-  for (let i = 0; i < allOf.length; i++) {
+  for (let i = 0, allOfLength = allOf.length; i < allOfLength; i++) {
     locations.push(allOfsLocation.getPropertyLocation(i))
   }
 
@@ -869,7 +872,7 @@ function buildOneOf (context, location, input) {
 
   let code = ''
 
-  for (let index = 0; index < oneOfs.length; index++) {
+  for (let index = 0, oneOfsLength = oneOfs.length; index < oneOfsLength; index++) {
     const optionLocation = oneOfsLocation.getPropertyLocation(index)
     const optionSchema = optionLocation.schema
 
