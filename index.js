@@ -587,10 +587,10 @@ function buildArray (context, location) {
       functionCode += `
         if (${i} < arrayLength) {
           if (${buildArrayTypeCondition(item.type, value)}) {
-            ${tmpRes}
-            if (${i} < arrayEnd) {
+            if (${i}) {
               json += JSON_STR_COMMA
             }
+            ${tmpRes}
           } else {
             throw new Error(\`Item at ${i} does not match schema definition.\`)
           }
@@ -601,21 +601,21 @@ function buildArray (context, location) {
     if (schema.additionalItems) {
       functionCode += `
         for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
-          json += JSON.stringify(obj[i])
-          if (i < arrayEnd) {
+          if (i) {
             json += JSON_STR_COMMA
           }
+          json += JSON.stringify(obj[i])
         }`
     }
   } else {
     const code = buildValue(context, itemsLocation, 'value')
     functionCode += `
       for (let i = 0; i < arrayLength; i++) {
-        const value = obj[i]
-        ${code}
-        if (i < arrayEnd) {
+        if (i) {
           json += JSON_STR_COMMA
         }
+        const value = obj[i]
+        ${code}
       }`
   }
 
