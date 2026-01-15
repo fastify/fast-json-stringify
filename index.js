@@ -4,7 +4,6 @@
 
 const { RefResolver } = require('json-schema-ref-resolver')
 
-const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
 const Location = require('./lib/location')
 const validate = require('./lib/schema-validator')
@@ -15,20 +14,168 @@ const SINGLE_TICK = /'/g
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
 
-const serializerFns = `
-const {
-  asString,
-  asNumber,
-  asBoolean,
-  asDateTime,
-  asDate,
-  asTime,
-  asUnsafeString
-} = serializer
+function inlineAsInteger(options, input) {
+  let roundingFn = 'Math.trunc'
+  if (options && options.rounding) {
+    switch (options.rounding) {
+      case 'floor':
+        roundingFn = 'Math.floor'
+        break
+      case 'ceil':
+        roundingFn = 'Math.ceil'
+        break
+      case 'round':
+        roundingFn = 'Math.round'
+        break
+    }
+  }
 
-const asInteger = serializer.asInteger.bind(serializer)
+  return `
+    // #region inlineAsInteger
+    if (Number.isInteger(${input})) {
+      json += ${input}
+    } else if (typeof ${input} === 'bigint') {
+      json += ${input}.toString()
+    } else {
+      const integer = ${roundingFn}(${input})
+      if (integer === Infinity || integer === -Infinity || integer !== integer) {
+        throw new Error('The value "' + ${input} + '" cannot be converted to an integer.')
+      }
+      json += integer
+    }
+    // #endregion inlineAsInteger
+  `
+}
 
-`
+function inlineAsNumber(input) {
+  return `
+    // #region inlineAsNumber
+    const num = Number(${input})
+    if (num !== num) {
+      throw new Error('The value "' + ${input} + '" cannot be converted to a number.')
+    } else if (num === Infinity || num === -Infinity) {
+      json += JSON_STR_NULL
+    } else {
+      json += num
+    }
+    // #endregion inlineAsNumber
+  `
+}
+
+function inlineAsBoolean(input) {
+  return `// #region inlineAsBoolean
+  json += ${input} ? 'true' : 'false'
+  // #endregion inlineAsBoolean`
+}
+
+function inlineAsDateTime(input) {
+  return `
+    // #region inlineAsDateTime
+    if (${input} === null) {
+      json += JSON_STR_EMPTY_STRING
+    } else if (${input} instanceof Date) {
+      json += JSON_STR_QUOTE + ${input}.toISOString() + JSON_STR_QUOTE
+    } else if (typeof ${input} === 'string') {
+      json += JSON_STR_QUOTE + ${input} + JSON_STR_QUOTE
+    } else {
+      throw new Error('The value "' + ${input} + '" cannot be converted to a date-time.')
+    }
+    // #endregion inlineAsDateTime
+  `
+}
+
+function inlineAsDate(input) {
+  return `
+    // #region inlineAsDate
+    if (${input} === null) {
+      json += JSON_STR_EMPTY_STRING
+    } else if (${input} instanceof Date) {
+      json += JSON_STR_QUOTE + new Date(${input}.getTime() - (${input}.getTimezoneOffset() * 60000)).toISOString().slice(0, 10) + JSON_STR_QUOTE
+    } else if (typeof ${input} === 'string') {
+      json += JSON_STR_QUOTE + ${input} + JSON_STR_QUOTE
+    } else {
+      throw new Error('The value "' + ${input} + '" cannot be converted to a date.')
+    }
+    // #endregion inlineAsDate
+  `
+}
+
+function inlineAsTime(input) {
+  return `
+    // #region inlineAsTime
+    if (${input} === null) {
+      json += JSON_STR_EMPTY_STRING
+    } else if (${input} instanceof Date) {
+      json += JSON_STR_QUOTE + new Date(${input}.getTime() - (${input}.getTimezoneOffset() * 60000)).toISOString().slice(11, 19) + JSON_STR_QUOTE
+    } else if (typeof ${input} === 'string') {
+      json += JSON_STR_QUOTE + ${input} + JSON_STR_QUOTE
+    } else {
+      throw new Error('The value "' + ${input} + '" cannot be converted to a time.')
+    }
+    // #endregion inlineAsTime
+  `
+}
+
+function inlineAsString(input) {
+  return `
+    // #region inlineAsString
+    if (typeof ${input} !== 'string') {
+      if (${input} === null) {
+        json += JSON_STR_EMPTY_STRING
+      } else if (${input} instanceof Date) {
+        json += JSON_STR_QUOTE + ${input}.toISOString() + JSON_STR_QUOTE
+      } else if (${input} instanceof RegExp) {
+        const _str = ${input}.source
+        ${inlineAsStringInternal('_str')}
+      } else {
+        const _str = String(${input})
+        ${inlineAsStringInternal('_str')}
+      }
+    } else {
+      ${inlineAsStringInternal(input)}
+    }
+    // #endregion inlineAsString
+  `
+}
+
+function inlineAsStringInternal(input) {
+  return `
+    // #region inlineAsStringInternal
+    if (${input}.length === 0) {
+      json += JSON_STR_EMPTY_STRING
+    } else if (${input}.length < 42) {
+      let result = ''
+      let last = -1
+      let point = 255
+      for (let i = 0; i < ${input}.length; i++) {
+        point = ${input}.charCodeAt(i)
+        if (point === 0x22 || point === 0x5c) {
+          last === -1 && (last = 0)
+          result += ${input}.slice(last, i) + '\\\\'
+          last = i
+        } else if (point < 32 || (point >= 0xD800 && point <= 0xDFFF)) {
+          json += JSON.stringify(${input})
+          result = null
+          break
+        }
+      }
+      if (result !== null) {
+        json += JSON_STR_QUOTE + (last === -1 ? ${input} : (result + ${input}.slice(last))) + JSON_STR_QUOTE
+      }
+    } else if (${input}.length < 5000 && STR_ESCAPE.test(${input}) === false) {
+      json += JSON_STR_QUOTE + ${input} + JSON_STR_QUOTE
+    } else {
+      json += JSON.stringify(${input})
+    }
+    // #endregion inlineAsStringInternal
+  `
+}
+
+function inlineAsUnsafeString(input) {
+  return `// #region inlineAsUnsafeString
+json += JSON_STR_QUOTE + ${input} + JSON_STR_QUOTE 
+// #endregion inlineAsUnsafeString`
+}
 
 const validRoundingMethods = new Set([
   'floor',
@@ -44,7 +191,7 @@ const validLargeArrayMechanisms = new Set([
 
 let schemaIdCounter = 0
 
-function isValidSchema (schema, name) {
+function isValidSchema(schema, name) {
   if (!validate(schema)) {
     if (name) {
       name = `"${name}" `
@@ -58,7 +205,7 @@ function isValidSchema (schema, name) {
   }
 }
 
-function resolveRef (context, location) {
+function resolveRef(context, location) {
   const ref = location.schema.$ref
 
   let hashIndex = ref.indexOf('#')
@@ -82,19 +229,19 @@ function resolveRef (context, location) {
   return newLocation
 }
 
-function getMergedLocation (context, mergedSchemaId) {
+function getMergedLocation(context, mergedSchemaId) {
   const mergedSchema = context.refResolver.getSchema(mergedSchemaId, '#')
   return new Location(mergedSchema, mergedSchemaId, '#')
 }
 
-function getSchemaId (schema, rootSchemaId) {
+function getSchemaId(schema, rootSchemaId) {
   if (schema.$id && schema.$id.charAt(0) !== '#') {
     return schema.$id
   }
   return rootSchemaId
 }
 
-function getSafeSchemaRef (context, location) {
+function getSafeSchemaRef(context, location) {
   let schemaRef = location.getSchemaRef() || ''
   if (schemaRef.startsWith(context.rootSchemaId)) {
     schemaRef = schemaRef.replace(context.rootSchemaId, '') || '#'
@@ -102,7 +249,7 @@ function getSafeSchemaRef (context, location) {
   return schemaRef
 }
 
-function build (schema, options) {
+function build(schema, options) {
   isValidSchema(schema)
 
   options = options || {}
@@ -172,7 +319,7 @@ function build (schema, options) {
   const code = buildValue(context, location, 'input')
 
   let contextFunctionCode = `
-    ${serializerFns}
+    const STR_ESCAPE = /[\\u0000-\\u001f\\u0022\\u005c\\ud800-\\udfff]/
     const JSON_STR_BEGIN_OBJECT = '{'
     const JSON_STR_END_OBJECT = '}'
     const JSON_STR_BEGIN_ARRAY = '['
@@ -209,7 +356,6 @@ function build (schema, options) {
     `
   }
 
-  const serializer = new Serializer(options)
   const validator = new Validator(options.ajv)
 
   for (const schemaId of context.validatorSchemasIds) {
@@ -229,7 +375,7 @@ function build (schema, options) {
   if (options.mode === 'debug') {
     return {
       validator,
-      serializer,
+      serializer: { getState: () => options },
       code: `validator\nserializer\n${contextFunctionCode}`,
       ajv: validator.ajv
     }
@@ -240,10 +386,10 @@ function build (schema, options) {
 
   if (options.mode === 'standalone') {
     const buildStandaloneCode = require('./lib/standalone')
-    return buildStandaloneCode(contextFunc, context, serializer, validator)
+    return buildStandaloneCode(contextFunc, context, { getState: () => options }, validator)
   }
 
-  return contextFunc(validator, serializer)
+  return contextFunc(validator, null)
 }
 
 const objectKeywords = [
@@ -283,7 +429,7 @@ const numberKeywords = [
  * Infer type based on keyword in order to generate optimized code
  * https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6
  */
-function inferTypeByKeyword (schema) {
+function inferTypeByKeyword(schema) {
   for (const keyword of objectKeywords) {
     if (keyword in schema) return 'object'
   }
@@ -299,7 +445,7 @@ function inferTypeByKeyword (schema) {
   return schema.type
 }
 
-function buildExtraObjectPropertiesSerializer (context, location, addComma, objVar) {
+function buildExtraObjectPropertiesSerializer(context, location, addComma, objVar) {
   const schema = location.schema
   const propertiesKeys = Object.keys(schema.properties || {})
 
@@ -324,7 +470,8 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
       code += `
         if (/${propertyKey.replace(/\\*\//g, '\\/')}/.test(key)) {
           ${addComma}
-          json += asString(key) + JSON_STR_COLONS
+          ${inlineAsString('key')}
+          json += JSON_STR_COLONS
           ${buildValue(context, propertyLocation, 'value')}
           continue
         }
@@ -339,13 +486,15 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
     if (additionalPropertiesSchema === true) {
       code += `
         ${addComma}
-        json += asString(key) + JSON_STR_COLONS + JSON.stringify(value)
+        ${inlineAsString('key')}
+        json += JSON_STR_COLONS + JSON.stringify(value)
       `
     } else {
       const propertyLocation = location.getPropertyLocation('additionalProperties')
       code += `
         ${addComma}
-        json += asString(key) + JSON_STR_COLONS
+        ${inlineAsString('key')}
+        json += JSON_STR_COLONS
         ${buildValue(context, propertyLocation, 'value')}
       `
     }
@@ -357,7 +506,7 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
   return code
 }
 
-function buildInnerObject (context, location, objVar) {
+function buildInnerObject(context, location, objVar) {
   const schema = location.schema
 
   const propertiesLocation = location.getPropertyLocation('properties')
@@ -428,7 +577,9 @@ function buildInnerObject (context, location, objVar) {
   }
 
   if (schema.patternProperties || schema.additionalProperties) {
+    code += '// #region extraObjectProperties\n'
     code += buildExtraObjectPropertiesSerializer(context, location, addComma, objVar)
+    code += '// #endregion extraObjectProperties\n'
   }
 
   code += `
@@ -437,7 +588,7 @@ function buildInnerObject (context, location, objVar) {
   return code
 }
 
-function mergeLocations (context, mergedSchemaId, mergedLocations) {
+function mergeLocations(context, mergedSchemaId, mergedLocations) {
   for (let i = 0, mergedLocationsLength = mergedLocations.length; i < mergedLocationsLength; i++) {
     const location = mergedLocations[i]
     const schema = location.schema
@@ -461,7 +612,7 @@ function mergeLocations (context, mergedSchemaId, mergedLocations) {
   return mergedLocation
 }
 
-function cloneOriginSchema (context, schema, schemaId) {
+function cloneOriginSchema(context, schema, schemaId) {
   const clonedSchema = Array.isArray(schema) ? [] : {}
 
   if (
@@ -493,14 +644,14 @@ function cloneOriginSchema (context, schema, schemaId) {
   return clonedSchema
 }
 
-function toJSON (variableName) {
+function toJSON(variableName) {
   return `(${variableName} && typeof ${variableName}.toJSON === 'function')
     ? ${variableName}.toJSON()
     : ${variableName}
   `
 }
 
-function buildObject (context, location, input) {
+function buildObject(context, location, input) {
   const schema = location.schema
 
   if (context.functionsNamesBySchema.has(schema)) {
@@ -526,8 +677,9 @@ function buildObject (context, location, input) {
         const obj = ${toJSON('input')}
         if (obj === null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_OBJECT'}
         let json = ''
-
+        // #region buildInnerObject
         ${buildInnerObject(context, location, 'obj')}
+        // #endregion buildInnerObject
         return json
       }
     `
@@ -543,14 +695,16 @@ function buildObject (context, location, input) {
     if (${objVar} === null) {
       json += ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_OBJECT'}
     } else {
+      // #region buildInnerObject
       ${buildInnerObject(context, location, objVar)}
+      // #endregion buildInnerObject
     }
   `
   context.buildingSet.delete(schema)
   return code
 }
 
-function buildArray (context, location, input) {
+function buildArray(context, location, input) {
   const schema = location.schema
 
   let itemsLocation = location.getPropertyLocation('items')
@@ -739,7 +893,7 @@ function buildArray (context, location, input) {
   return inlinedCode
 }
 
-function buildArrayTypeCondition (type, accessor) {
+function buildArrayTypeCondition(type, accessor) {
   let condition
   switch (type) {
     case 'null':
@@ -782,11 +936,11 @@ function buildArrayTypeCondition (type, accessor) {
   return condition
 }
 
-function generateFuncName (context) {
+function generateFuncName(context) {
   return 'anonymous' + context.functionsCounter++
 }
 
-function buildMultiTypeSerializer (context, location, input) {
+function buildMultiTypeSerializer(context, location, input) {
   const schema = location.schema
   const types = schema.type.sort(t1 => t1 === 'null' ? -1 : 1)
 
@@ -856,7 +1010,7 @@ function buildMultiTypeSerializer (context, location, input) {
   return code
 }
 
-function buildSingleTypeSerializer (context, location, input) {
+function buildSingleTypeSerializer(context, location, input) {
   const schema = location.schema
 
   switch (schema.type) {
@@ -864,37 +1018,23 @@ function buildSingleTypeSerializer (context, location, input) {
       return 'json += JSON_STR_NULL'
     case 'string': {
       if (schema.format === 'date-time') {
-        return `json += asDateTime(${input})`
+        return inlineAsDateTime(input)
       } else if (schema.format === 'date') {
-        return `json += asDate(${input})`
+        return inlineAsDate(input)
       } else if (schema.format === 'time') {
-        return `json += asTime(${input})`
+        return inlineAsTime(input)
       } else if (schema.format === 'unsafe') {
-        return `json += asUnsafeString(${input})`
+        return inlineAsUnsafeString(input)
       } else {
-        return `
-        if (typeof ${input} !== 'string') {
-          if (${input} === null) {
-            json += JSON_STR_EMPTY_STRING
-          } else if (${input} instanceof Date) {
-            json += JSON_STR_QUOTE + ${input}.toISOString() + JSON_STR_QUOTE
-          } else if (${input} instanceof RegExp) {
-            json += asString(${input}.source)
-          } else {
-            json += asString(${input}.toString())
-          }
-        } else {
-          json += asString(${input})
-        }
-        `
+        return inlineAsString(input)
       }
     }
     case 'integer':
-      return `json += asInteger(${input})`
+      return inlineAsInteger(context.options, input)
     case 'number':
-      return `json += asNumber(${input})`
+      return inlineAsNumber(input)
     case 'boolean':
-      return `json += asBoolean(${input})`
+      return inlineAsBoolean(input)
     case 'object': {
       return buildObject(context, location, input)
     }
@@ -908,9 +1048,9 @@ function buildSingleTypeSerializer (context, location, input) {
   }
 }
 
-function detectRecursiveSchemas (context, location) {
+function detectRecursiveSchemas(context, location) {
   const pathStack = new Set()
-  function traverse (location) {
+  function traverse(location) {
     const schema = location.schema
     if (typeof schema !== 'object' || schema === null) return
 
@@ -994,7 +1134,7 @@ function detectRecursiveSchemas (context, location) {
   traverse(location)
 }
 
-function buildConstSerializer (location, input) {
+function buildConstSerializer(location, input) {
   const schema = location.schema
   const type = schema.type
 
@@ -1021,7 +1161,7 @@ function buildConstSerializer (location, input) {
   return code
 }
 
-function buildAllOf (context, location, input) {
+function buildAllOf(context, location, input) {
   const schema = location.schema
 
   let mergedSchemaId = context.mergedSchemasIds.get(schema)
@@ -1051,7 +1191,7 @@ function buildAllOf (context, location, input) {
   return buildValue(context, mergedLocation, input)
 }
 
-function buildOneOf (context, location, input) {
+function buildOneOf(context, location, input) {
   context.validatorSchemasIds.add(location.schemaId)
 
   const schema = location.schema
@@ -1103,7 +1243,7 @@ function buildOneOf (context, location, input) {
   return code
 }
 
-function buildIfThenElse (context, location, input) {
+function buildIfThenElse(context, location, input) {
   context.validatorSchemasIds.add(location.schemaId)
 
   const {
@@ -1171,7 +1311,7 @@ function buildIfThenElse (context, location, input) {
   `
 }
 
-function buildValue (context, location, input) {
+function buildValue(context, location, input) {
   let schema = location.schema
 
   if (typeof schema === 'boolean') {
@@ -1215,11 +1355,17 @@ function buildValue (context, location, input) {
   }
 
   if (schema.const !== undefined) {
+    code += '// #region buildConstSerializer\n'
     code += buildConstSerializer(location, input)
+    code += '// #endregion buildConstSerializer\n'
   } else if (Array.isArray(type)) {
+    code += '// #region buildMultiTypeSerializer\n'
     code += buildMultiTypeSerializer(context, location, input)
+    code += '// #endregion buildMultiTypeSerializer\n'
   } else {
+    code += '// #region buildSingleTypeSerializer\n'
     code += buildSingleTypeSerializer(context, location, input)
+    code += '// #endregion buildSingleTypeSerializer\n'
   }
 
   if (nullable) {
