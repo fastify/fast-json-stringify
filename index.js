@@ -14,7 +14,7 @@ const SINGLE_TICK = /'/g
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
 
-function inlineAsInteger(options, input) {
+function inlineAsInteger (options, input) {
   let roundingFn = 'Math.trunc'
   if (options && options.rounding) {
     switch (options.rounding) {
@@ -47,7 +47,7 @@ function inlineAsInteger(options, input) {
   `
 }
 
-function inlineAsNumber(input) {
+function inlineAsNumber (input) {
   return `
     // #region inlineAsNumber
     const num = Number(${input})
@@ -62,13 +62,13 @@ function inlineAsNumber(input) {
   `
 }
 
-function inlineAsBoolean(input) {
+function inlineAsBoolean (input) {
   return `// #region inlineAsBoolean
   json += ${input} ? 'true' : 'false'
   // #endregion inlineAsBoolean`
 }
 
-function inlineAsDateTime(input) {
+function inlineAsDateTime (input) {
   return `
     // #region inlineAsDateTime
     if (${input} === null) {
@@ -84,7 +84,7 @@ function inlineAsDateTime(input) {
   `
 }
 
-function inlineAsDate(input) {
+function inlineAsDate (input) {
   return `
     // #region inlineAsDate
     if (${input} === null) {
@@ -100,7 +100,7 @@ function inlineAsDate(input) {
   `
 }
 
-function inlineAsTime(input) {
+function inlineAsTime (input) {
   return `
     // #region inlineAsTime
     if (${input} === null) {
@@ -116,7 +116,7 @@ function inlineAsTime(input) {
   `
 }
 
-function inlineAsString(input) {
+function inlineAsString (input) {
   return `
     // #region inlineAsString
     if (typeof ${input} !== 'string') {
@@ -138,7 +138,7 @@ function inlineAsString(input) {
   `
 }
 
-function inlineAsStringInternal(input) {
+function inlineAsStringInternal (input) {
   return `
     // #region inlineAsStringInternal
     if (${input}.length === 0) {
@@ -171,7 +171,7 @@ function inlineAsStringInternal(input) {
   `
 }
 
-function inlineAsUnsafeString(input) {
+function inlineAsUnsafeString (input) {
   return `// #region inlineAsUnsafeString
 json += JSON_STR_QUOTE + ${input} + JSON_STR_QUOTE 
 // #endregion inlineAsUnsafeString`
@@ -191,7 +191,7 @@ const validLargeArrayMechanisms = new Set([
 
 let schemaIdCounter = 0
 
-function isValidSchema(schema, name) {
+function isValidSchema (schema, name) {
   if (!validate(schema)) {
     if (name) {
       name = `"${name}" `
@@ -205,7 +205,7 @@ function isValidSchema(schema, name) {
   }
 }
 
-function resolveRef(context, location) {
+function resolveRef (context, location) {
   const ref = location.schema.$ref
 
   let hashIndex = ref.indexOf('#')
@@ -229,19 +229,19 @@ function resolveRef(context, location) {
   return newLocation
 }
 
-function getMergedLocation(context, mergedSchemaId) {
+function getMergedLocation (context, mergedSchemaId) {
   const mergedSchema = context.refResolver.getSchema(mergedSchemaId, '#')
   return new Location(mergedSchema, mergedSchemaId, '#')
 }
 
-function getSchemaId(schema, rootSchemaId) {
+function getSchemaId (schema, rootSchemaId) {
   if (schema.$id && schema.$id.charAt(0) !== '#') {
     return schema.$id
   }
   return rootSchemaId
 }
 
-function getSafeSchemaRef(context, location) {
+function getSafeSchemaRef (context, location) {
   let schemaRef = location.getSchemaRef() || ''
   if (schemaRef.startsWith(context.rootSchemaId)) {
     schemaRef = schemaRef.replace(context.rootSchemaId, '') || '#'
@@ -249,7 +249,7 @@ function getSafeSchemaRef(context, location) {
   return schemaRef
 }
 
-function build(schema, options) {
+function build (schema, options) {
   isValidSchema(schema)
 
   options = options || {}
@@ -429,7 +429,7 @@ const numberKeywords = [
  * Infer type based on keyword in order to generate optimized code
  * https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6
  */
-function inferTypeByKeyword(schema) {
+function inferTypeByKeyword (schema) {
   for (const keyword of objectKeywords) {
     if (keyword in schema) return 'object'
   }
@@ -445,7 +445,7 @@ function inferTypeByKeyword(schema) {
   return schema.type
 }
 
-function buildExtraObjectPropertiesSerializer(context, location, addComma, objVar) {
+function buildExtraObjectPropertiesSerializer (context, location, addComma, objVar) {
   const schema = location.schema
   const propertiesKeys = Object.keys(schema.properties || {})
 
@@ -506,7 +506,7 @@ function buildExtraObjectPropertiesSerializer(context, location, addComma, objVa
   return code
 }
 
-function buildInnerObject(context, location, objVar) {
+function buildInnerObject (context, location, objVar) {
   const schema = location.schema
 
   const propertiesLocation = location.getPropertyLocation('properties')
@@ -588,7 +588,7 @@ function buildInnerObject(context, location, objVar) {
   return code
 }
 
-function mergeLocations(context, mergedSchemaId, mergedLocations) {
+function mergeLocations (context, mergedSchemaId, mergedLocations) {
   for (let i = 0, mergedLocationsLength = mergedLocations.length; i < mergedLocationsLength; i++) {
     const location = mergedLocations[i]
     const schema = location.schema
@@ -612,7 +612,7 @@ function mergeLocations(context, mergedSchemaId, mergedLocations) {
   return mergedLocation
 }
 
-function cloneOriginSchema(context, schema, schemaId) {
+function cloneOriginSchema (context, schema, schemaId) {
   const clonedSchema = Array.isArray(schema) ? [] : {}
 
   if (
@@ -651,7 +651,7 @@ function toJSON(variableName) {
   `
 }
 
-function buildObject(context, location, input) {
+function buildObject (context, location, input) {
   const schema = location.schema
 
   if (context.functionsNamesBySchema.has(schema)) {
@@ -704,7 +704,7 @@ function buildObject(context, location, input) {
   return code
 }
 
-function buildArray(context, location, input) {
+function buildArray (context, location, input) {
   const schema = location.schema
 
   let itemsLocation = location.getPropertyLocation('items')
@@ -893,7 +893,7 @@ function buildArray(context, location, input) {
   return inlinedCode
 }
 
-function buildArrayTypeCondition(type, accessor) {
+function buildArrayTypeCondition (type, accessor) {
   let condition
   switch (type) {
     case 'null':
@@ -936,11 +936,11 @@ function buildArrayTypeCondition(type, accessor) {
   return condition
 }
 
-function generateFuncName(context) {
+function generateFuncName (context) {
   return 'anonymous' + context.functionsCounter++
 }
 
-function buildMultiTypeSerializer(context, location, input) {
+function buildMultiTypeSerializer (context, location, input) {
   const schema = location.schema
   const types = schema.type.sort(t1 => t1 === 'null' ? -1 : 1)
 
@@ -1010,7 +1010,7 @@ function buildMultiTypeSerializer(context, location, input) {
   return code
 }
 
-function buildSingleTypeSerializer(context, location, input) {
+function buildSingleTypeSerializer (context, location, input) {
   const schema = location.schema
 
   switch (schema.type) {
@@ -1048,7 +1048,7 @@ function buildSingleTypeSerializer(context, location, input) {
   }
 }
 
-function detectRecursiveSchemas(context, location) {
+function detectRecursiveSchemas (context, location) {
   const pathStack = new Set()
   function traverse(location) {
     const schema = location.schema
@@ -1134,7 +1134,7 @@ function detectRecursiveSchemas(context, location) {
   traverse(location)
 }
 
-function buildConstSerializer(location, input) {
+function buildConstSerializer (location, input) {
   const schema = location.schema
   const type = schema.type
 
@@ -1161,7 +1161,7 @@ function buildConstSerializer(location, input) {
   return code
 }
 
-function buildAllOf(context, location, input) {
+function buildAllOf (context, location, input) {
   const schema = location.schema
 
   let mergedSchemaId = context.mergedSchemasIds.get(schema)
@@ -1191,7 +1191,7 @@ function buildAllOf(context, location, input) {
   return buildValue(context, mergedLocation, input)
 }
 
-function buildOneOf(context, location, input) {
+function buildOneOf (context, location, input) {
   context.validatorSchemasIds.add(location.schemaId)
 
   const schema = location.schema
@@ -1243,7 +1243,7 @@ function buildOneOf(context, location, input) {
   return code
 }
 
-function buildIfThenElse(context, location, input) {
+function buildIfThenElse (context, location, input) {
   context.validatorSchemasIds.add(location.schemaId)
 
   const {
@@ -1311,7 +1311,7 @@ function buildIfThenElse(context, location, input) {
   `
 }
 
-function buildValue(context, location, input) {
+function buildValue (context, location, input) {
   let schema = location.schema
 
   if (typeof schema === 'boolean') {
