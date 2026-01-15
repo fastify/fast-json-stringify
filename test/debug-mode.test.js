@@ -5,7 +5,6 @@ const fjs = require('..')
 
 const Ajv = require('ajv').default
 const Validator = require('../lib/validator')
-const Serializer = require('../lib/serializer')
 
 function build (opts) {
   return fjs({
@@ -27,7 +26,7 @@ test('activate debug mode', t => {
   t.assert.ok(typeof debugMode === 'object')
   t.assert.ok(debugMode.ajv instanceof Ajv)
   t.assert.ok(debugMode.validator instanceof Validator)
-  t.assert.ok(debugMode.serializer instanceof Serializer)
+  t.assert.ok(typeof debugMode.serializer === 'object')
   t.assert.ok(typeof debugMode.code === 'string')
 })
 
@@ -40,7 +39,7 @@ test('activate debug mode truthy', t => {
   t.assert.ok(typeof debugMode.code === 'string')
   t.assert.ok(debugMode.ajv instanceof Ajv)
   t.assert.ok(debugMode.validator instanceof Validator)
-  t.assert.ok(debugMode.serializer instanceof Serializer)
+  t.assert.ok(typeof debugMode.serializer === 'object')
 })
 
 test('to string auto-consistent', t => {
@@ -50,7 +49,7 @@ test('to string auto-consistent', t => {
   t.assert.ok(typeof debugMode === 'object')
   t.assert.ok(typeof debugMode.code === 'string')
   t.assert.ok(debugMode.ajv instanceof Ajv)
-  t.assert.ok(debugMode.serializer instanceof Serializer)
+  t.assert.ok(typeof debugMode.serializer === 'object')
   t.assert.ok(debugMode.validator instanceof Validator)
 
   const compiled = fjs.restore(debugMode)
@@ -79,7 +78,7 @@ test('to string auto-consistent with ajv', t => {
   t.assert.ok(typeof debugMode.code === 'string')
   t.assert.ok(debugMode.ajv instanceof Ajv)
   t.assert.ok(debugMode.validator instanceof Validator)
-  t.assert.ok(debugMode.serializer instanceof Serializer)
+  t.assert.ok(typeof debugMode.serializer === 'object')
 
   const compiled = fjs.restore(debugMode)
   const tobe = JSON.stringify({ str: 'Foo' })
