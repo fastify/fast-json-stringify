@@ -644,7 +644,7 @@ function cloneOriginSchema (context, schema, schemaId) {
   return clonedSchema
 }
 
-function toJSON(variableName) {
+function toJSON (variableName) {
   return `(${variableName} && typeof ${variableName}.toJSON === 'function')
     ? ${variableName}.toJSON()
     : ${variableName}
@@ -1050,7 +1050,7 @@ function buildSingleTypeSerializer (context, location, input) {
 
 function detectRecursiveSchemas (context, location) {
   const pathStack = new Set()
-  function traverse(location) {
+  function traverse (location) {
     const schema = location.schema
     if (typeof schema !== 'object' || schema === null) return
 
