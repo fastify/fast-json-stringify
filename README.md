@@ -79,7 +79,6 @@ compile-json-stringify date format x 803,214 ops/sec ±0.23% (97 runs sampled)
 
 
 <a name="example"></a>
-Try it out on RunKit: <a href="https://runkit.com/npm/fast-json-stringify">https://runkit.com/npm/fast-json-stringify</a>
 ## Example
 
 ```js
