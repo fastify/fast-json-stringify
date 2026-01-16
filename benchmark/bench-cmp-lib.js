@@ -321,9 +321,9 @@ suite.run().then(() => {
     let scenario = 'Other'
     let library = result.name
 
-    if (result.name.startsWith('creation:')) {
+    if (result.name.startsWith('creation')) {
       scenario = 'Schema Creation'
-      library = result.name.replace('creation: ', '')
+      library = result.name.replace(' creation', '')
     } else if (result.name.includes('large array')) {
       scenario = 'Large Array'
       library = result.name.replace(' large array', '').replace('JSON.stringify', 'Native JSON')
