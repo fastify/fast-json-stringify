@@ -175,10 +175,10 @@ for (let i = 0; i < MULTI_ARRAY_LENGTH; i++) {
   multiArray[i] = obj
 }
 
-suite.add('FJS creation', function () {
+suite.add('fast-json-stringify creation', function () {
   FJS(schema)
 })
-suite.add('CJS creation', function () {
+suite.add('compile-json-stringify creation', function () {
   CJS(schemaCJS)
 })
 suite.add('AJV Serialize creation', function () {
@@ -309,15 +309,58 @@ suite.add('compile-json-stringify date format', function () {
 })
 
 suite.run().then(() => {
-  for (const task of suite.tasks) {
-    const hz = task.result.hz // ops/sec
-    const rme = task.result.rme // relative margin of error (%)
-    const samples = task.result.samples.length
+  const results = suite.tasks.map(task => ({
+    name: task.name,
+    hz: task.result.hz,
+    rme: task.result.rme,
+    samples: task.result.samples.length
+  }))
 
-    const formattedHz = hz.toLocaleString('en-US', { maximumFractionDigits: 0 })
-    const formattedRme = rme.toFixed(2)
+  const scenarios = {}
+  for (const result of results) {
+    let scenario = 'Other'
+    let library = result.name
 
-    const output = `${task.name} x ${formattedHz} ops/sec ±${formattedRme}% (${samples} runs sampled)`
-    console.log(output)
+    if (result.name.startsWith('creation:')) {
+      scenario = 'Schema Creation'
+      library = result.name.replace('creation: ', '')
+    } else if (result.name.includes('large array')) {
+      scenario = 'Large Array'
+      library = result.name.replace(' large array', '').replace('JSON.stringify', 'Native JSON')
+    } else if (result.name.includes('array')) {
+      scenario = 'Small Array'
+      library = result.name.replace(' array', '').replace('JSON.stringify', 'Native JSON')
+    } else if (result.name.includes('long string')) {
+      scenario = 'Long String'
+      library = result.name.replace(' long string', '').replace('JSON.stringify', 'Native JSON')
+    } else if (result.name.includes('short string')) {
+      scenario = 'Short String'
+      library = result.name.replace(' short string', '').replace('JSON.stringify', 'Native JSON')
+    } else if (result.name.includes('obj')) {
+      scenario = 'Object'
+      library = result.name.replace(' obj', '').replace('JSON.stringify', 'Native JSON')
+    } else if (result.name.includes('date')) {
+      scenario = 'Date'
+      library = result.name.replace(' date format', '').replace('JSON stringify date', 'Native JSON')
+    }
+
+    if (!scenarios[scenario]) scenarios[scenario] = []
+    scenarios[scenario].push({ ...result, library })
+  }
+
+  for (const [scenario, tasks] of Object.entries(scenarios)) {
+    console.log(`\n--- ${scenario} ---`)
+    const sorted = tasks.sort((a, b) => b.hz - a.hz)
+    const winner = sorted[0]
+
+    for (const task of sorted) {
+      const formattedHz = task.hz.toLocaleString('en-US', { maximumFractionDigits: 0 })
+      const formattedRme = task.rme.toFixed(2)
+      const isWinner = task === winner
+      const prefix = isWinner ? '🏆 ' : '   '
+      const suffix = isWinner ? ' (WINNER)' : ''
+
+      console.log(`${prefix}${task.library.padEnd(40)} x ${formattedHz.padStart(15)} ops/sec ±${formattedRme}% (${task.samples} runs sampled)${suffix}`)
+    }
   }
 }).catch(err => console.error(`Error: ${err.message}`))
