@@ -141,31 +141,34 @@ function inlineAsString (input) {
 function inlineAsStringInternal (input) {
   return `
     // #region inlineAsStringInternal
-    if (${input}.length === 0) {
-      json += JSON_STR_EMPTY_STRING
-    } else if (${input}.length < 42) {
-      let result = ''
-      let last = -1
-      let point = 255
-      for (let i = 0; i < ${input}.length; i++) {
-        point = ${input}.charCodeAt(i)
-        if (point === 0x22 || point === 0x5c) {
-          last === -1 && (last = 0)
-          result += ${input}.slice(last, i) + '\\\\'
-          last = i
-        } else if (point < 32 || (point >= 0xD800 && point <= 0xDFFF)) {
-          json += JSON.stringify(${input})
-          result = null
-          break
+    {
+      const len = ${input}.length
+      if (len === 0) {
+        json += JSON_STR_EMPTY_STRING
+      } else if (len < 42) {
+        let result = ''
+        let last = -1
+        let point = 255
+        for (let i = 0; i < len; i++) {
+          point = ${input}.charCodeAt(i)
+          if (point === 0x22 || point === 0x5c) {
+            last === -1 && (last = 0)
+            result += ${input}.slice(last, i) + '\\\\'
+            last = i
+          } else if (point < 32 || (point >= 0xD800 && point <= 0xDFFF)) {
+            json += JSON.stringify(${input})
+            result = null
+            break
+          }
         }
+        if (result !== null) {
+          json += JSON_STR_QUOTE + (last === -1 ? ${input} : (result + ${input}.slice(last))) + JSON_STR_QUOTE
+        }
+      } else if (len < 5000 && STR_ESCAPE.test(${input}) === false) {
+        json += JSON_STR_QUOTE + ${input} + JSON_STR_QUOTE
+      } else {
+        json += JSON.stringify(${input})
       }
-      if (result !== null) {
-        json += JSON_STR_QUOTE + (last === -1 ? ${input} : (result + ${input}.slice(last))) + JSON_STR_QUOTE
-      }
-    } else if (${input}.length < 5000 && STR_ESCAPE.test(${input}) === false) {
-      json += JSON_STR_QUOTE + ${input} + JSON_STR_QUOTE
-    } else {
-      json += JSON.stringify(${input})
     }
     // #endregion inlineAsStringInternal
   `
