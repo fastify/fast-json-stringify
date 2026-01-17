@@ -695,12 +695,14 @@ function buildArray (context, location, input) {
     } else {
       const code = buildValue(context, itemsLocation, 'value')
       functionCode += `
-      for (let i = 0; i < arrayLength; i++) {
-        if (i) {
-          json += JSON_STR_COMMA
-        }
-        const value = obj[i]
+      if (arrayLength > 0) {
+        const value = obj[0]
         ${code}
+        for (let i = 1; i < arrayLength; i++) {
+          json += JSON_STR_COMMA
+          const value = obj[i]
+          ${code}
+        }
       }`
     }
 
@@ -771,12 +773,14 @@ function buildArray (context, location, input) {
   } else {
     const code = buildValue(context, itemsLocation, 'value')
     inlinedCode += `
-      for (let i = 0; i < arrayLength_${objVar}; i++) {
-        if (i) {
-          json += JSON_STR_COMMA
-        }
-        const value = ${objVar}[i]
+      if (arrayLength_${objVar} > 0) {
+        const value = ${objVar}[0]
         ${code}
+        for (let i = 1; i < arrayLength_${objVar}; i++) {
+          json += JSON_STR_COMMA
+          const value = ${objVar}[i]
+          ${code}
+        }
       }`
   }
 
