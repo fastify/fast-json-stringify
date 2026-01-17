@@ -385,45 +385,99 @@ function buildInnerObject (context, location, objVar) {
 
   const localUid = context.uid++
   let addComma = ''
-  const needsRuntimeComma = propertiesKeys.length > 1 || schema.patternProperties || (schema.additionalProperties !== undefined && schema.additionalProperties !== false)
 
-  if (needsRuntimeComma) {
-    code += `let addComma_${localUid} = false\n`
-    addComma = `!addComma_${localUid} && (addComma_${localUid} = true) || (json += JSON_STR_COMMA)`
-  }
+  if (requiredProperties.length > 0) {
+    // If we have required properties, we know that at least one property will be serialized.
+    // We can avoid the runtime check for the comma.
 
-  for (const key of propertiesKeys) {
-    let propertyLocation = propertiesLocation.getPropertyLocation(key)
-    if (propertyLocation.schema.$ref) {
-      propertyLocation = resolveRef(context, propertyLocation)
-    }
+    // The first property is required, so we don't need a comma.
+    // For the subsequent properties, we can blindly add a comma.
 
-    const sanitizedKey = JSON.stringify(key)
-    const value = `value_${key.replace(/[^a-zA-Z0-9]/g, '_')}_${context.uid++}`
-    const defaultValue = propertyLocation.schema.default
-    const isRequired = requiredProperties.includes(key)
+    for (let i = 0; i < propertiesKeys.length; i++) {
+      const key = propertiesKeys[i]
+      const propertyLocation = propertiesLocation.getPropertyLocation(key)
 
-    code += `
+      let resolvedLocation = propertyLocation
+      if (propertyLocation.schema.$ref) {
+        resolvedLocation = resolveRef(context, propertyLocation)
+      }
+
+      const sanitizedKey = JSON.stringify(key)
+      const value = `value_${key.replace(/[^a-zA-Z0-9]/g, '_')}_${context.uid++}`
+      const defaultValue = resolvedLocation.schema.default
+      const isRequired = requiredProperties.includes(key)
+
+      // i === 0 means it's the first property, and it IS required (due to sort). No comma.
+      // i > 0 means it follows a required property (or a sequence starting with one). Unconditional comma.
+      const currentAddComma = i === 0 ? '' : 'json += JSON_STR_COMMA'
+
+      code += `
       const ${value} = ${objVar}[${sanitizedKey}]
       if (${value} !== undefined) {
-        ${addComma}
+        ${currentAddComma}
         json += ${JSON.stringify(sanitizedKey + ':')}
-        ${buildValue(context, propertyLocation, `${value}`)}
+        ${buildValue(context, resolvedLocation, `${value}`)}
       }`
 
-    if (defaultValue !== undefined) {
-      code += ` else {
-        ${addComma}
+      if (defaultValue !== undefined) {
+        code += ` else {
+        ${currentAddComma}
         json += ${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))}
       }
       `
-    } else if (isRequired) {
-      code += ` else {
+      } else if (isRequired) {
+        code += ` else {
         throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')
       }
       `
-    } else {
-      code += '\n'
+      } else {
+        code += '\n'
+      }
+    }
+
+    addComma = 'json += JSON_STR_COMMA'
+  } else {
+    const needsRuntimeComma = propertiesKeys.length > 1 || schema.patternProperties || (schema.additionalProperties !== undefined && schema.additionalProperties !== false)
+
+    if (needsRuntimeComma) {
+      code += `let addComma_${localUid} = false\n`
+      addComma = `!addComma_${localUid} && (addComma_${localUid} = true) || (json += JSON_STR_COMMA)`
+    }
+
+    for (const key of propertiesKeys) {
+      let propertyLocation = propertiesLocation.getPropertyLocation(key)
+      if (propertyLocation.schema.$ref) {
+        propertyLocation = resolveRef(context, propertyLocation)
+      }
+
+      const sanitizedKey = JSON.stringify(key)
+      const value = `value_${key.replace(/[^a-zA-Z0-9]/g, '_')}_${context.uid++}`
+      const defaultValue = propertyLocation.schema.default
+      const isRequired = requiredProperties.includes(key) // Should be false here but good to keep
+
+      code += `
+          const ${value} = ${objVar}[${sanitizedKey}]
+          if (${value} !== undefined) {
+            ${addComma}
+            json += ${JSON.stringify(sanitizedKey + ':')}
+            ${buildValue(context, propertyLocation, `${value}`)}
+          }`
+
+      if (defaultValue !== undefined) {
+        code += ` else {
+            ${addComma}
+            json += ${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))}
+          }
+          `
+      } else if (isRequired) {
+        // Should not happen if requiredProperties.length === 0 but safety
+        code += ` else {
+            throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')
+          }
+          `
+      } else {
+        code += '\n'
+      }
     }
   }
 
