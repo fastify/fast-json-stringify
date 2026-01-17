@@ -304,14 +304,14 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
   const propertiesKeys = Object.keys(schema.properties || {})
 
   let code = `
-    const propertiesKeys = ${JSON.stringify(propertiesKeys)}
-    for (const [key, value] of Object.entries(${objVar})) {
+    for (const key of Object.keys(${objVar})) {
       if (
-        propertiesKeys.includes(key) ||
-        value === undefined ||
-        typeof value === 'function' ||
-        typeof value === 'symbol'
+        ${propertiesKeys.length > 0 ? propertiesKeys.map(k => `key === ${JSON.stringify(k)}`).join(' || ') + ' ||' : ''}
+        ${objVar}[key] === undefined ||
+        typeof ${objVar}[key] === 'function' ||
+        typeof ${objVar}[key] === 'symbol'
       ) continue
+      const value = ${objVar}[key]
   `
 
   const patternPropertiesLocation = location.getPropertyLocation('patternProperties')
