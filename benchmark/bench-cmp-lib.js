@@ -84,13 +84,13 @@ const arraySchemaAJVJTD = {
 const dateFormatSchema = {
   description: 'Date of birth',
   type: 'string',
-  format: 'date'
+  format: 'datetime'
 }
 
 const dateFormatSchemaCJS = {
   description: 'Date of birth',
   type: 'string',
-  format: 'date'
+  format: 'datetime'
 }
 
 const obj = {
