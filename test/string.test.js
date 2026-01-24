@@ -84,7 +84,7 @@ test('unsafe unescaped string', (t) => {
 })
 
 test('multiple sequential escape', (t) => {
-  t.plan(2)
+  t.plan(1)
 
   const schema = {
     type: 'string'
