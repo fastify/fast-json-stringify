@@ -466,3 +466,75 @@ test('external recursive if/then/else', (t) => {
   const stringify = build(schema, { schema: { externalSchema } })
   t.assert.equal(stringify(data), '{"a":{"base":"a","bar":"42"},"b":{"base":"b","baz":"43"}}')
 })
+
+test('invalid if-then-else schema', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    if: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['foobar'] }
+      }
+    },
+    then: {
+      type: 'object',
+      properties: {
+        foo: { type: 'string' }
+      }
+    },
+    else: {
+      type: 'object',
+      properties: 'invalid'  // properties must be object
+    }
+  }
+
+  try {
+    build(schema)
+    t.assert.fail('Should throw')
+  } catch (err) {
+    t.assert.ok(err.message.includes('schema is invalid'))
+  }
+})
+
+test('if-then-else with allOf', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    allOf: [
+      {
+        type: 'object',
+        properties: {
+          base: { type: 'string' }
+        }
+      }
+    ],
+    if: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['foobar'] }
+      }
+    },
+    then: {
+      type: 'object',
+      properties: {
+        foo: { type: 'string' }
+      }
+    },
+    else: {
+      type: 'object',
+      properties: {
+        bar: { type: 'string' }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const data = { base: 'test', kind: 'foobar', foo: 'value' }
+  const output = stringify(data)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"base":"test","foo":"value"}')
+})
