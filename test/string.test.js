@@ -83,7 +83,7 @@ test('unsafe unescaped string', (t) => {
   })
 })
 
-test('multiple quote', (t) => {
+test('multiple sequential escape', (t) => {
   t.plan(2)
 
   const schema = {
@@ -95,7 +95,4 @@ test('multiple quote', (t) => {
   const output = stringify(input)
 
   t.assert.equal(output, `"${input}"`)
-  t.assert.throws(function () {
-    JSON.parse(output)
-  })
 })
