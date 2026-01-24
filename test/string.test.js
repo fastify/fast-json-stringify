@@ -84,7 +84,7 @@ test('unsafe unescaped string', (t) => {
 })
 
 test('multiple sequential escape', (t) => {
-  t.plan(1)
+  t.plan(2)
 
   const schema = {
     type: 'string'
@@ -95,4 +95,5 @@ test('multiple sequential escape', (t) => {
   const output = stringify(input)
 
   t.assert.equal(output, `"${input}"`)
+  t.assert.equal(JSON.parse(output), input)
 })
