@@ -82,3 +82,20 @@ test('unsafe unescaped string', (t) => {
     JSON.parse(output)
   })
 })
+
+test('multiple quote', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'string'
+  }
+
+  const input = '"ab\\cd"ef'
+  const stringify = build(schema)
+  const output = stringify(input)
+
+  t.assert.equal(output, `"${input}"`)
+  t.assert.throws(function () {
+    JSON.parse(output)
+  })
+})
