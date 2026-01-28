@@ -790,3 +790,23 @@ test('should build merged schemas twice', (t) => {
     t.assert.equal(stringify({ enums: 'BAR' }), '{"enums":"BAR"}')
   }
 })
+
+test('invalid anyOf schema', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      prop: {
+        anyOf: 'not array'  // invalid, anyOf must be array
+      }
+    }
+  }
+
+  try {
+    build(schema)
+    t.assert.fail('Should throw')
+  } catch (err) {
+    t.assert.ok(err.message.includes('schema is invalid'))
+  }
+})

@@ -119,3 +119,24 @@ test('debug should restore the same serializer instance', t => {
   const compiled = fjs.restore(debugMode)
   t.assert.equal(compiled(3.95), 4)
 })
+
+test('Serializer restoreFromState', t => {
+  t.plan(1)
+
+  const Serializer = require('../lib/serializer')
+  const serializer = new Serializer()
+  const state = serializer.getState()
+  const restored = Serializer.restoreFromState(state)
+  t.assert.ok(restored instanceof Serializer)
+})
+
+test('Validator restoreFromState', t => {
+  t.plan(1)
+
+  const Validator = require('../lib/validator')
+  const validator = new Validator()
+  validator.addSchema({ type: 'string' }, 'test')
+  const state = validator.getState()
+  const restored = Validator.restoreFromState(state)
+  t.assert.ok(restored instanceof Validator)
+})
