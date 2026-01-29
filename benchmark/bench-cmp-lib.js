@@ -310,9 +310,9 @@ suite.add('compile-json-stringify date format', function () {
 
 suite.run().then(() => {
   for (const task of suite.tasks) {
-    const hz = task.result.hz // ops/sec
-    const rme = task.result.rme // relative margin of error (%)
-    const samples = task.result.samples.length
+    const hz = task.result.throughput.mean // ops/sec
+    const rme = task.result.latency.rme // relative margin of error (%)
+    const samples = task.result.latency.df + 1 // degrees of freedom + 1 = sample count
 
     const formattedHz = hz.toLocaleString('en-US', { maximumFractionDigits: 0 })
     const formattedRme = rme.toFixed(2)

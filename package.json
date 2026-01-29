@@ -62,19 +62,20 @@
     }
   ],
   "devDependencies": {
-    "@sinclair/typebox": "^0.34.3",
-    "c8": "^10.1.2",
+    "@sinclair/typebox": "^0.34.48",
+    "c8": "^10.1.3",
     "cli-select": "^1.1.2",
     "compile-json-stringify": "^0.1.2",
-    "eslint": "^9.17.0",
+    "eslint": "^9.39.2",
     "fast-json-stringify": ".",
     "is-my-json-valid": "^2.20.6",
-    "json-accelerator": "^0.0.2",
-    "neostandard": "^0.12.0",
-    "simple-git": "^3.23.0",
-    "tinybench": "^5.0.1",
-    "tsd": "^0.32.0",
-    "webpack": "^5.90.3"
+    "json-accelerator": "^0.1.7",
+    "neostandard": "^0.12.2",
+    "simple-git": "^3.30.0",
+    "tinybench": "^6.0.0",
+    "tsd": "^0.33.0",
+    "typescript": "^5.9.3",
+    "webpack": "^5.104.1"
   },
   "dependencies": {
     "@fastify/merge-json-schemas": "^0.2.0",
