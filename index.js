@@ -665,10 +665,15 @@ function buildArray (context, location, input) {
 
     if (Array.isArray(itemsSchema)) {
       for (let i = 0, itemsSchemaLength = itemsSchema.length; i < itemsSchemaLength; i++) {
-        const item = itemsSchema[i]
+        let item = itemsSchema[i];
+        let itemLocation = itemsLocation.getPropertyLocation(i)
+        if (itemLocation.schema.$ref) {
+          itemLocation = resolveRef(context, itemLocation)
+          item = itemLocation.schema;
+        }
         const value = `value_${i}`
         functionCode += `const ${value} = obj[${i}]`
-        const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), value)
+        const tmpRes = buildValue(context, itemLocation, value)
         functionCode += `
         if (${i} < arrayLength) {
           if (${buildArrayTypeCondition(item.type, value)}) {
@@ -747,10 +752,15 @@ function buildArray (context, location, input) {
     const localUid = context.uid++
     inlinedCode += `let addComma_${localUid} = false\n`
     for (let i = 0, itemsSchemaLength = itemsSchema.length; i < itemsSchemaLength; i++) {
-      const item = itemsSchema[i]
+      let item = itemsSchema[i]
+      let itemLocation = itemsLocation.getPropertyLocation(i)
+      if (itemLocation.schema.$ref) {
+        itemLocation = resolveRef(context, itemLocation)
+        item = itemLocation.schema;
+      }
       const value = `value_${i}_${context.uid++}`
       inlinedCode += `const ${value} = ${objVar}[${i}]`
-      const tmpRes = buildValue(context, itemsLocation.getPropertyLocation(i), value)
+      const tmpRes = buildValue(context, itemLocation, value)
       inlinedCode += `
         if (${i} < arrayLength_${objVar}) {
           if (${buildArrayTypeCondition(item.type, value)}) {
