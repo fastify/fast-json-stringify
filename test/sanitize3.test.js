@@ -1,15 +1,17 @@
 'use strict'
 
-const t = require('tap')
+const { test } = require('node:test')
 const build = require('..')
 
-t.throws(() => {
-  build({
-    $defs: {
-      type: 'foooo"bar'
-    },
-    patternProperties: {
-      x: { $ref: '#/$defs' }
-    }
-  })
-}, 'foooo"bar unsupported')
+test('sanitize 3', t => {
+  t.assert.throws(() => {
+    build({
+      $defs: {
+        type: 'foooo"bar'
+      },
+      patternProperties: {
+        x: { $ref: '#/$defs' }
+      }
+    })
+  }, { message: 'foooo"bar unsupported' })
+})

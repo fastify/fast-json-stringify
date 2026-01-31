@@ -1,7 +1,7 @@
 'use strict'
 
-const t = require('tap')
-const test = t.test
+const { test } = require('node:test')
+
 const build = require('..')
 
 test('serialize short string', (t) => {
@@ -15,8 +15,8 @@ test('serialize short string', (t) => {
   const stringify = build(schema)
   const output = stringify(input)
 
-  t.equal(output, '"abcd"')
-  t.equal(JSON.parse(output), input)
+  t.assert.equal(output, '"abcd"')
+  t.assert.equal(JSON.parse(output), input)
 })
 
 test('serialize short string', (t) => {
@@ -30,8 +30,8 @@ test('serialize short string', (t) => {
   const stringify = build(schema)
   const output = stringify(input)
 
-  t.equal(output, '"\\u0000"')
-  t.equal(JSON.parse(output), input)
+  t.assert.equal(output, '"\\u0000"')
+  t.assert.equal(JSON.parse(output), input)
 })
 
 test('serialize long string', (t) => {
@@ -45,8 +45,8 @@ test('serialize long string', (t) => {
   const stringify = build(schema)
   const output = stringify(input)
 
-  t.equal(output, `"${new Array(2e4).fill('\\u0000').join('')}"`)
-  t.equal(JSON.parse(output), input)
+  t.assert.equal(output, `"${new Array(2e4).fill('\\u0000').join('')}"`)
+  t.assert.equal(JSON.parse(output), input)
 })
 
 test('unsafe string', (t) => {
@@ -61,8 +61,8 @@ test('unsafe string', (t) => {
   const stringify = build(schema)
   const output = stringify(input)
 
-  t.equal(output, `"${input}"`)
-  t.equal(JSON.parse(output), input)
+  t.assert.equal(output, `"${input}"`)
+  t.assert.equal(JSON.parse(output), input)
 })
 
 test('unsafe unescaped string', (t) => {
@@ -77,8 +77,8 @@ test('unsafe unescaped string', (t) => {
   const stringify = build(schema)
   const output = stringify(input)
 
-  t.equal(output, `"${input}"`)
-  t.throws(function () {
+  t.assert.equal(output, `"${input}"`)
+  t.assert.throws(function () {
     JSON.parse(output)
   })
 })

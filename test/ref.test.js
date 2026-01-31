@@ -2,7 +2,7 @@
 
 const clone = require('rfdc')({ proto: true })
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('ref internal - properties', (t) => {
@@ -37,10 +37,8 @@ test('ref internal - properties', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"obj":{"str":"test"}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test"}}')
 })
 
 test('ref internal - items', (t) => {
@@ -69,10 +67,8 @@ test('ref internal - items', (t) => {
   const stringify = build(schema)
   const output = stringify(array)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '[{"str":"test"}]')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '[{"str":"test"}]')
 })
 
 test('ref external - properties', (t) => {
@@ -130,10 +126,8 @@ test('ref external - properties', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"obj":{"str":"test"},"num":{"int":42},"strPlain":"test","strHash":"test"}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test"},"num":{"int":42},"strPlain":"test","strHash":"test"}')
 })
 
 test('ref internal - patternProperties', (t) => {
@@ -169,10 +163,8 @@ test('ref internal - patternProperties', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"obj":{"str":"test"}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test"}}')
 })
 
 test('ref internal - additionalProperties', (t) => {
@@ -206,10 +198,8 @@ test('ref internal - additionalProperties', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"obj":{"str":"test"}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test"}}')
 })
 
 test('ref internal - pattern-additional Properties', (t) => {
@@ -251,10 +241,8 @@ test('ref internal - pattern-additional Properties', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"reg":{"str":"test"},"obj":{"str":"test"}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"reg":{"str":"test"},"obj":{"str":"test"}}')
 })
 
 test('ref external - pattern-additional Properties', (t) => {
@@ -302,10 +290,8 @@ test('ref external - pattern-additional Properties', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"reg":{"str":"test"},"obj":{"int":42}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"reg":{"str":"test"},"obj":{"int":42}}')
 })
 
 test('ref internal - deepObject schema', (t) => {
@@ -354,10 +340,8 @@ test('ref internal - deepObject schema', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"winter":{"is":{"coming":{"where":"to town"}}}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"winter":{"is":{"coming":{"where":"to town"}}}}')
 })
 
 test('ref internal - plain name fragment', (t) => {
@@ -394,10 +378,8 @@ test('ref internal - plain name fragment', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"obj":{"str":"test"}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test"}}')
 })
 
 test('ref external - plain name fragment', (t) => {
@@ -453,10 +435,8 @@ test('ref external - plain name fragment', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"first":{"str":"test"},"second":{"int":42}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"first":{"str":"test"},"second":{"int":42}}')
 })
 
 test('external reference to $id', (t) => {
@@ -488,10 +468,8 @@ test('external reference to $id', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"first":{"str":"test"}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"first":{"str":"test"}}')
 })
 
 test('external reference to key#id', (t) => {
@@ -523,10 +501,8 @@ test('external reference to key#id', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"first":{"str":"test"}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"first":{"str":"test"}}')
 })
 
 test('external and inner reference', (t) => {
@@ -564,10 +540,8 @@ test('external and inner reference', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"first":{"str":"test"}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"first":{"str":"test"}}')
 })
 
 test('external reference to key', (t) => {
@@ -599,10 +573,8 @@ test('external reference to key', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"first":{"str":"test"}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"first":{"str":"test"}}')
 })
 
 test('ref external - plain name fragment', (t) => {
@@ -658,10 +630,8 @@ test('ref external - plain name fragment', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"first":{"str":"test"},"second":{"int":42}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"first":{"str":"test"},"second":{"int":42}}')
 })
 
 test('ref external - duplicate plain name fragment', (t) => {
@@ -730,10 +700,8 @@ test('ref external - duplicate plain name fragment', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"local":{"prop":"test"},"external":{"prop":true},"other":{"prop":42}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"local":{"prop":"test"},"external":{"prop":true},"other":{"prop":42}}')
 })
 
 test('ref external - explicit external plain name fragment must not fallback to other external schemas', (t) => {
@@ -787,14 +755,13 @@ test('ref external - explicit external plain name fragment must not fallback to 
     }
   }
 
-  try {
+  t.assert.throws(() => {
     const stringify = build(schema, { schema: externalSchema })
     const output = stringify(object)
     JSON.parse(output)
-    t.fail()
-  } catch (e) {
-    t.pass()
-  }
+  }, {
+    message: 'Cannot find reference "first#wrong"'
+  })
 })
 
 test('ref internal - multiple $ref format', (t) => {
@@ -838,10 +805,8 @@ test('ref internal - multiple $ref format', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"zero":"test","a":"test","b":"test","c":"test","d":"test","e":"test"}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"zero":"test","a":"test","b":"test","c":"test","d":"test","e":"test"}')
 })
 
 test('ref external - external schema with internal ref (object property)', (t) => {
@@ -880,10 +845,8 @@ test('ref external - external schema with internal ref (object property)', (t) =
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"obj":{"prop":"test"}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"prop":"test"}}')
 })
 
 test('ref external - external schema with internal ref (array items)', (t) => {
@@ -925,10 +888,8 @@ test('ref external - external schema with internal ref (array items)', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"arr":[{"prop":"test"}]}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"arr":[{"prop":"test"}]}')
 })
 
 test('ref external - external schema with internal ref (root)', (t) => {
@@ -960,10 +921,8 @@ test('ref external - external schema with internal ref (root)', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"prop":"test"}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"prop":"test"}')
 })
 
 test('ref external - external schema with internal ref (pattern properties)', (t) => {
@@ -1002,10 +961,8 @@ test('ref external - external schema with internal ref (pattern properties)', (t
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"obj":{"prop":"test"}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"prop":"test"}}')
 })
 
 test('ref in root internal', (t) => {
@@ -1033,10 +990,8 @@ test('ref in root internal', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"int":42}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"int":42}')
 })
 
 test('ref in root external', (t) => {
@@ -1068,10 +1023,8 @@ test('ref in root external', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"int":42}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"int":42}')
 })
 
 test('ref in root external multiple times', (t) => {
@@ -1107,10 +1060,8 @@ test('ref in root external multiple times', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"int":42}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"int":42}')
 })
 
 test('ref external to relative definition', (t) => {
@@ -1141,10 +1092,8 @@ test('ref external to relative definition', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"fooParent":{"foo":"bar"}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"fooParent":{"foo":"bar"}}')
 })
 
 test('ref to nested ref definition', (t) => {
@@ -1179,14 +1128,12 @@ test('ref to nested ref definition', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"foo":"foo"}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"foo":"foo"}')
 })
 
-test('Bad key', t => {
-  t.test('Find match', t => {
+test('Bad key', async t => {
+  await t.test('Find match', t => {
     t.plan(1)
     try {
       build({
@@ -1207,13 +1154,14 @@ test('Bad key', t => {
       })
       t.fail('Should throw')
     } catch (err) {
-      t.equal(err.message, 'Cannot find reference "#/definitions/porjectId"')
+      t.assert.equal(err.message, 'Cannot find reference "#/definitions/porjectId"')
     }
   })
 
-  t.test('No match', t => {
+  await t.test('No match', t => {
     t.plan(1)
-    try {
+
+    t.assert.throws(() => {
       build({
         definitions: {
           projectId: {
@@ -1230,15 +1178,12 @@ test('Bad key', t => {
           }
         }
       })
-      t.fail('Should throw')
-    } catch (err) {
-      t.equal(err.message, 'Cannot find reference "#/definitions/foobar"')
-    }
+    }, { message: 'Cannot find reference "#/definitions/foobar"' })
   })
 
-  t.test('Find match (external schema)', t => {
+  await t.test('Find match (external schema)', t => {
     t.plan(1)
-    try {
+    t.assert.throws(() => {
       build({
         type: 'object',
         properties: {
@@ -1261,14 +1206,12 @@ test('Bad key', t => {
         }
       })
       t.fail('Should throw')
-    } catch (err) {
-      t.equal(err.message, 'Cannot find reference "external#/definitions/porjectId"')
-    }
+    }, { message: 'Cannot find reference "external#/definitions/porjectId"' })
   })
 
-  t.test('No match (external schema)', t => {
+  await t.test('No match (external schema)', t => {
     t.plan(1)
-    try {
+    t.assert.throws(() => {
       build({
         type: 'object',
         properties: {
@@ -1290,15 +1233,12 @@ test('Bad key', t => {
           }
         }
       })
-      t.fail('Should throw')
-    } catch (err) {
-      t.equal(err.message, 'Cannot find reference "external#/definitions/foobar"')
-    }
+    }, { message: 'Cannot find reference "external#/definitions/foobar"' })
   })
 
-  t.test('Find match (external definitions typo)', t => {
+  await t.test('Find match (external definitions typo)', t => {
     t.plan(1)
-    try {
+    t.assert.throws(() => {
       build({
         type: 'object',
         properties: {
@@ -1320,15 +1260,12 @@ test('Bad key', t => {
           }
         }
       })
-      t.fail('Should throw')
-    } catch (err) {
-      t.equal(err.message, 'Cannot find reference "external#/deifnitions/projectId"')
-    }
+    }, { message: 'Cannot find reference "external#/deifnitions/projectId"' })
   })
 
-  t.test('Find match (definitions typo)', t => {
+  await t.test('Find match (definitions typo)', t => {
     t.plan(1)
-    try {
+    t.assert.throws(() => {
       build({
         definitions: {
           projectId: {
@@ -1345,15 +1282,12 @@ test('Bad key', t => {
           }
         }
       })
-      t.fail('Should throw')
-    } catch (err) {
-      t.equal(err.message, 'Cannot find reference "#/deifnitions/projectId"')
-    }
+    }, { message: 'Cannot find reference "#/deifnitions/projectId"' })
   })
 
-  t.test('Find match (external schema typo)', t => {
+  await t.test('Find match (external schema typo)', t => {
     t.plan(1)
-    try {
+    t.assert.throws(() => {
       build({
         type: 'object',
         properties: {
@@ -1375,16 +1309,8 @@ test('Bad key', t => {
           }
         }
       })
-      t.fail('Should throw')
-    } catch (err) {
-      t.equal(
-        err.message,
-        'Cannot resolve ref "extrenal#/definitions/projectId". Schema with id "extrenal" is not found.'
-      )
-    }
+    }, { message: 'Cannot resolve ref "extrenal#/definitions/projectId". Schema with id "extrenal" is not found.' })
   })
-
-  t.end()
 })
 
 test('Regression 2.5.2', t => {
@@ -1431,7 +1357,7 @@ test('Regression 2.5.2', t => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify([{ field: 'parent', sub: { field: 'joined' } }])
 
-  t.equal(output, '[{"field":"parent","sub":{"field":"joined"}}]')
+  t.assert.equal(output, '[{"field":"parent","sub":{"field":"joined"}}]')
 })
 
 test('Reference through multiple definitions', (t) => {
@@ -1466,10 +1392,8 @@ test('Reference through multiple definitions', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, JSON.stringify(object))
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, JSON.stringify(object))
 })
 
 test('issue #350', (t) => {
@@ -1509,10 +1433,8 @@ test('issue #350', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, JSON.stringify(object))
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, JSON.stringify(object))
 })
 
 test('deep union type', (t) => {
@@ -1759,10 +1681,10 @@ test('deep union type', (t) => {
       ]
     }
   ]
-  t.equal(JSON.stringify(obj), stringify(obj))
+  t.assert.equal(JSON.stringify(obj), stringify(obj))
 })
 
-test('ref with same id in properties', (t) => {
+test('ref with same id in properties', async (t) => {
   t.plan(2)
 
   const externalSchema = {
@@ -1781,7 +1703,7 @@ test('ref with same id in properties', (t) => {
     }
   }
 
-  t.test('anyOf', (t) => {
+  await t.test('anyOf', (t) => {
     t.plan(1)
 
     const schema = {
@@ -1801,10 +1723,10 @@ test('ref with same id in properties', (t) => {
     const stringify = build(schema, { schema: externalSchema })
     const output = stringify({ _id: 'foo', image: { _id: 'bar', name: 'hello', owner: 'baz' } })
 
-    t.equal(output, '{"_id":"foo","image":{"_id":"bar","name":"hello","owner":"baz"}}')
+    t.assert.equal(output, '{"_id":"foo","image":{"_id":"bar","name":"hello","owner":"baz"}}')
   })
 
-  t.test('oneOf', (t) => {
+  await t.test('oneOf', (t) => {
     t.plan(1)
 
     const schema = {
@@ -1824,7 +1746,7 @@ test('ref with same id in properties', (t) => {
     const stringify = build(schema, { schema: externalSchema })
     const output = stringify({ _id: 'foo', image: { _id: 'bar', name: 'hello', owner: 'baz' } })
 
-    t.equal(output, '{"_id":"foo","image":{"_id":"bar","name":"hello","owner":"baz"}}')
+    t.assert.equal(output, '{"_id":"foo","image":{"_id":"bar","name":"hello","owner":"baz"}}')
   })
 })
 
@@ -1855,8 +1777,8 @@ test('Should not modify external schemas', (t) => {
   const data = { id: 'a4e4c954-9f5f-443a-aa65-74d95732249a' }
   const output = stringify(data)
 
-  t.equal(output, JSON.stringify(data))
-  t.same(options, optionsClone)
+  t.assert.equal(output, JSON.stringify(data))
+  t.assert.deepStrictEqual(options, optionsClone)
 })
 
 test('input schema is not mutated', (t) => {
@@ -1884,15 +1806,9 @@ test('input schema is not mutated', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  try {
-    JSON.parse(output)
-    t.pass()
-  } catch (e) {
-    t.fail()
-  }
-
-  t.equal(output, '{"obj":"test"}')
-  t.same(schema, clonedSchema)
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":"test"}')
+  t.assert.deepStrictEqual(schema, clonedSchema)
 })
 
 test('anyOf inside allOf', (t) => {
@@ -1927,7 +1843,7 @@ test('anyOf inside allOf', (t) => {
   const stringify = build(schema)
   const output = stringify(object)
 
-  t.equal(output, JSON.stringify(object))
+  t.assert.equal(output, JSON.stringify(object))
 })
 
 test('should resolve absolute $refs', (t) => {
@@ -1954,7 +1870,7 @@ test('should resolve absolute $refs', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  t.equal(output, JSON.stringify(object))
+  t.assert.equal(output, JSON.stringify(object))
 })
 
 test('nested schema should overwrite anchor scope', (t) => {
@@ -1981,8 +1897,8 @@ test('nested schema should overwrite anchor scope', (t) => {
   const stringify = build({ $ref: 'subschema#anchor' }, { schema: externalSchema })
   const output = stringify(data)
 
-  t.equal(output, JSON.stringify(data))
-  t.throws(() => build({ $ref: 'root#anchor' }, { schema: externalSchema }))
+  t.assert.equal(output, JSON.stringify(data))
+  t.assert.throws(() => build({ $ref: 'root#anchor' }, { schema: externalSchema }))
 })
 
 test('object property reference with default value', (t) => {
@@ -2006,7 +1922,7 @@ test('object property reference with default value', (t) => {
   const stringify = build(schema)
   const output = stringify({})
 
-  t.equal(output, '{"prop":"foo"}')
+  t.assert.equal(output, '{"prop":"foo"}')
 })
 
 test('should throw an Error if two non-identical schemas with same id are provided', (t) => {
@@ -2082,7 +1998,7 @@ test('should throw an Error if two non-identical schemas with same id are provid
   try {
     build(schema)
   } catch (err) {
-    t.equal(err.message, 'There is already another schema with id "inner_schema".')
+    t.assert.equal(err.message, 'There is already another schema with id "inner_schema".')
   }
 })
 
@@ -2125,6 +2041,6 @@ test('ref internal - throw if schema has definition twice with different shape',
   try {
     build(schema)
   } catch (err) {
-    t.equal(err.message, 'There is already another anchor "#uri" in a schema "test".')
+    t.assert.equal(err.message, 'There is already another anchor "#uri" in schema "test".')
   }
 })

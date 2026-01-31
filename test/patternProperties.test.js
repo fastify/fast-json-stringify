@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('patternProperties', (t) => {
@@ -21,7 +21,7 @@ test('patternProperties', (t) => {
   })
 
   const obj = { str: 'test', foo: 42, ofoo: true, foof: 'string', objfoo: { a: true }, notMe: false }
-  t.equal(stringify(obj), '{"str":"test","foo":"42","ofoo":"true","foof":"string","objfoo":"[object Object]"}')
+  t.assert.equal(stringify(obj), '{"str":"test","foo":"42","ofoo":"true","foof":"string","objfoo":"[object Object]"}')
 })
 
 test('patternProperties should not change properties', (t) => {
@@ -42,7 +42,7 @@ test('patternProperties should not change properties', (t) => {
   })
 
   const obj = { foo: '42', ofoo: 42 }
-  t.equal(stringify(obj), '{"foo":"42","ofoo":42}')
+  t.assert.equal(stringify(obj), '{"foo":"42","ofoo":42}')
 })
 
 test('patternProperties - string coerce', (t) => {
@@ -59,7 +59,7 @@ test('patternProperties - string coerce', (t) => {
   })
 
   const obj = { foo: true, ofoo: 42, arrfoo: ['array', 'test'], objfoo: { a: 'world' } }
-  t.equal(stringify(obj), '{"foo":"true","ofoo":"42","arrfoo":"array,test","objfoo":"[object Object]"}')
+  t.assert.equal(stringify(obj), '{"foo":"true","ofoo":"42","arrfoo":"array,test","objfoo":"[object Object]"}')
 })
 
 test('patternProperties - number coerce', (t) => {
@@ -76,14 +76,14 @@ test('patternProperties - number coerce', (t) => {
   })
 
   const coercibleValues = { foo: true, ofoo: '42' }
-  t.equal(stringify(coercibleValues), '{"foo":1,"ofoo":42}')
+  t.assert.equal(stringify(coercibleValues), '{"foo":1,"ofoo":42}')
 
   const incoercibleValues = { xfoo: 'string', arrfoo: [1, 2], objfoo: { num: 42 } }
   try {
     stringify(incoercibleValues)
     t.fail('should throw an error')
   } catch (err) {
-    t.ok(err)
+    t.assert.ok(err)
   }
 })
 
@@ -101,7 +101,7 @@ test('patternProperties - boolean coerce', (t) => {
   })
 
   const obj = { foo: 'true', ofoo: 0, arrfoo: [1, 2], objfoo: { a: true } }
-  t.equal(stringify(obj), '{"foo":true,"ofoo":false,"arrfoo":true,"objfoo":true}')
+  t.assert.equal(stringify(obj), '{"foo":true,"ofoo":false,"arrfoo":true,"objfoo":true}')
 })
 
 test('patternProperties - object coerce', (t) => {
@@ -123,7 +123,7 @@ test('patternProperties - object coerce', (t) => {
   })
 
   const obj = { objfoo: { answer: 42 } }
-  t.equal(stringify(obj), '{"objfoo":{"answer":42}}')
+  t.assert.equal(stringify(obj), '{"objfoo":{"answer":42}}')
 })
 
 test('patternProperties - array coerce', (t) => {
@@ -143,16 +143,16 @@ test('patternProperties - array coerce', (t) => {
   })
 
   const coercibleValues = { arrfoo: [1, 2] }
-  t.equal(stringify(coercibleValues), '{"arrfoo":["1","2"]}')
+  t.assert.equal(stringify(coercibleValues), '{"arrfoo":["1","2"]}')
 
   const incoercibleValues = { foo: 'true', ofoo: 0, objfoo: { tyrion: 'lannister' } }
-  t.throws(() => stringify(incoercibleValues))
+  t.assert.throws(() => stringify(incoercibleValues))
 })
 
 test('patternProperties - fail on invalid regex, handled by ajv', (t) => {
   t.plan(1)
 
-  t.throws(() => build({
+  t.assert.throws(() => build({
     title: 'check array coerce',
     type: 'object',
     properties: {},

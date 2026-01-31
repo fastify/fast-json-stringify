@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const build = require('..')
 
 test('object with multiple types field', (t) => {
@@ -21,8 +21,8 @@ test('object with multiple types field', (t) => {
   }
   const stringify = build(schema)
 
-  t.equal(stringify({ str: 'string' }), '{"str":"string"}')
-  t.equal(stringify({ str: true }), '{"str":true}')
+  t.assert.equal(stringify({ str: 'string' }), '{"str":"string"}')
+  t.assert.equal(stringify({ str: true }), '{"str":true}')
 })
 
 test('object with field of type object or null', (t) => {
@@ -48,9 +48,9 @@ test('object with field of type object or null', (t) => {
   }
   const stringify = build(schema)
 
-  t.equal(stringify({ prop: null }), '{"prop":null}')
+  t.assert.equal(stringify({ prop: null }), '{"prop":null}')
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     prop: {
       str: 'string', remove: 'this'
     }
@@ -80,11 +80,11 @@ test('object with field of type object or array', (t) => {
   }
   const stringify = build(schema)
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     prop: { str: 'string' }
   }), '{"prop":{"str":"string"}}')
 
-  t.equal(stringify({
+  t.assert.equal(stringify({
     prop: ['string']
   }), '{"prop":["string"]}')
 })
@@ -104,7 +104,7 @@ test('object with field of type string and coercion disable ', (t) => {
     }
   }
   const stringify = build(schema)
-  t.throws(() => stringify({ str: 1 }))
+  t.assert.throws(() => stringify({ str: 1 }))
 })
 
 test('object with field of type string and coercion enable ', (t) => {
@@ -132,7 +132,7 @@ test('object with field of type string and coercion enable ', (t) => {
   const value = stringify({
     str: 1
   })
-  t.equal(value, '{"str":"1"}')
+  t.assert.equal(value, '{"str":"1"}')
 })
 
 test('object with field with type union of multiple objects', (t) => {
@@ -166,9 +166,9 @@ test('object with field with type union of multiple objects', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify({ oneOfSchema: { baz: 5 } }), '{"oneOfSchema":{"baz":5}}')
+  t.assert.equal(stringify({ oneOfSchema: { baz: 5 } }), '{"oneOfSchema":{"baz":5}}')
 
-  t.equal(stringify({ oneOfSchema: { bar: 'foo' } }), '{"oneOfSchema":{"bar":"foo"}}')
+  t.assert.equal(stringify({ oneOfSchema: { bar: 'foo' } }), '{"oneOfSchema":{"bar":"foo"}}')
 })
 
 test('null value in schema', (t) => {
@@ -210,9 +210,9 @@ test('oneOf and $ref together', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify({ cs: 'franco' }), '{"cs":"franco"}')
+  t.assert.equal(stringify({ cs: 'franco' }), '{"cs":"franco"}')
 
-  t.equal(stringify({ cs: true }), '{"cs":true}')
+  t.assert.equal(stringify({ cs: true }), '{"cs":true}')
 })
 
 test('oneOf and $ref: 2 levels are fine', (t) => {
@@ -250,7 +250,7 @@ test('oneOf and $ref: 2 levels are fine', (t) => {
   const value = stringify({
     cs: 3
   })
-  t.equal(value, '{"cs":3}')
+  t.assert.equal(value, '{"cs":3}')
 })
 
 test('oneOf and $ref: multiple levels should throw at build.', (t) => {
@@ -289,9 +289,9 @@ test('oneOf and $ref: multiple levels should throw at build.', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify({ cs: 3 }), '{"cs":3}')
-  t.equal(stringify({ cs: true }), '{"cs":true}')
-  t.equal(stringify({ cs: 'pippo' }), '{"cs":"pippo"}')
+  t.assert.equal(stringify({ cs: 3 }), '{"cs":3}')
+  t.assert.equal(stringify({ cs: true }), '{"cs":true}')
+  t.assert.equal(stringify({ cs: 'pippo' }), '{"cs":"pippo"}')
 })
 
 test('oneOf and $ref - multiple external $ref', (t) => {
@@ -344,10 +344,8 @@ test('oneOf and $ref - multiple external $ref', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   const output = stringify(object)
 
-  JSON.parse(output)
-  t.pass()
-
-  t.equal(output, '{"obj":{"prop":{"prop2":"test"}}}')
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"prop":{"prop2":"test"}}}')
 })
 
 test('oneOf with enum with more than 100 entries', (t) => {
@@ -369,7 +367,7 @@ test('oneOf with enum with more than 100 entries', (t) => {
   const stringify = build(schema)
 
   const value = stringify(['EUR', 'USD', null])
-  t.equal(value, '["EUR","USD",null]')
+  t.assert.equal(value, '["EUR","USD",null]')
 })
 
 test('oneOf object with field of type string with format or null', (t) => {
@@ -393,7 +391,7 @@ test('oneOf object with field of type string with format or null', (t) => {
 
   const withOneOfStringify = build(withOneOfSchema)
 
-  t.equal(withOneOfStringify({
+  t.assert.equal(withOneOfStringify({
     prop: toStringify
   }), `{"prop":"${toStringify.toISOString()}"}`)
 })
@@ -425,9 +423,9 @@ test('one array item match oneOf types', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify({ data: ['foo'] }), '{"data":["foo"]}')
-  t.equal(stringify({ data: [1] }), '{"data":[1]}')
-  t.throws(() => stringify({ data: [false, 'foo'] }))
+  t.assert.equal(stringify({ data: ['foo'] }), '{"data":["foo"]}')
+  t.assert.equal(stringify({ data: [1] }), '{"data":[1]}')
+  t.assert.throws(() => stringify({ data: [false, 'foo'] }))
 })
 
 test('some array items match oneOf types', (t) => {
@@ -457,8 +455,8 @@ test('some array items match oneOf types', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify({ data: ['foo', 5] }), '{"data":["foo",5]}')
-  t.throws(() => stringify({ data: [false, 'foo', true, 5] }))
+  t.assert.equal(stringify({ data: ['foo', 5] }), '{"data":["foo",5]}')
+  t.assert.throws(() => stringify({ data: [false, 'foo', true, 5] }))
 })
 
 test('all array items does not match oneOf types', (t) => {
@@ -488,5 +486,5 @@ test('all array items does not match oneOf types', (t) => {
 
   const stringify = build(schema)
 
-  t.throws(() => stringify({ data: [null, false, true, undefined, [], {}] }))
+  t.assert.throws(() => stringify({ data: [null, false, true, undefined, [], {}] }))
 })

@@ -2,20 +2,32 @@
 
 const { workerData: benchmark, parentPort } = require('worker_threads')
 
-const Benchmark = require('benchmark')
-Benchmark.options.minSamples = 100
+const { Bench } = require('tinybench')
 
-const suite = Benchmark.Suite()
+const bench = new Bench({
+  name: benchmark.name,
+  setup: (_task, mode) => {
+    // Run the garbage collector before warmup at each cycle
+    if (mode === 'warmup' && typeof globalThis.gc === 'function') {
+      globalThis.gc()
+    }
+  }
+})
 
 const FJS = require('..')
 const stringify = FJS(benchmark.schema)
 
-suite
-  .add(benchmark.name, () => {
-    stringify(benchmark.input)
-  })
-  .on('cycle', (event) => {
-    parentPort.postMessage(String(event.target))
-  })
-  .on('complete', () => {})
-  .run()
+bench.add(benchmark.name, () => {
+  stringify(benchmark.input)
+}).run().then(() => {
+  const task = bench.tasks[0]
+  const hz = task.result.hz // ops/sec
+  const rme = task.result.rme // relative margin of error (%)
+  const samples = task.result.samples.length
+
+  const formattedHz = hz.toLocaleString('en-US', { maximumFractionDigits: 0 })
+  const formattedRme = rme.toFixed(2)
+
+  const output = `${task.name} x ${formattedHz} ops/sec ±${formattedRme}% (${samples} runs sampled)`
+  parentPort.postMessage(output)
+}).catch(err => parentPort.postMessage(`Error: ${err.message}`))

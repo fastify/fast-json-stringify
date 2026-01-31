@@ -1,32 +1,33 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Test using this disabled, see https://github.com/fastify/fast-json-stringify/pull/683
 import Ajv from 'ajv'
 import build, { restore, Schema, validLargeArrayMechanisms } from '..'
 import { expectError, expectType } from 'tsd'
 
 // Number schemas
 build({
-    type: 'number'
+  type: 'number'
 })(25)
 build({
-    type: 'integer'
+  type: 'integer'
 })(-5)
 build({
-    type: 'integer'
+  type: 'integer'
 })(5n)
 
 build({
-    type: 'number'
+  type: 'number'
 }, { rounding: 'ceil' })
 build({
-    type: 'number'
+  type: 'number'
 }, { rounding: 'floor' })
 build({
-    type: 'number'
+  type: 'number'
 }, { rounding: 'round' })
 build({
-    type: 'number'
+  type: 'number'
 }, { rounding: 'trunc' })
 expectError(build({
-    type: 'number'
+  type: 'number'
 }, { rounding: 'invalid' }))
 
 // String schema
@@ -36,55 +37,55 @@ build({
 
 // Boolean schema
 build({
-    type: 'boolean'
+  type: 'boolean'
 })(true)
 
 // Null schema
 build({
-    type: 'null'
+  type: 'null'
 })(null)
 
 // Array schemas
 build({
-    type: 'array',
-    items: { type: 'number' }
+  type: 'array',
+  items: { type: 'number' }
 })([25])
 build({
-    type: 'array',
-    items: [{ type: 'string'}, {type: 'integer'}]
+  type: 'array',
+  items: [{ type: 'string' }, { type: 'integer' }]
 })(['hello', 42])
 
 // Object schemas
 build({
-    type: 'object'
+  type: 'object'
 })({})
 build({
-    type: 'object',
-    properties: {
-        foo: { type: 'string' },
-        bar: { type: 'integer' }
-    },
-    required: ['foo'],
-    patternProperties: {
-      'baz*': { type: 'null' }
-    },
-    additionalProperties: {
-      type: 'boolean'
-    }
+  type: 'object',
+  properties: {
+    foo: { type: 'string' },
+    bar: { type: 'integer' }
+  },
+  required: ['foo'],
+  patternProperties: {
+    'baz*': { type: 'null' }
+  },
+  additionalProperties: {
+    type: 'boolean'
+  }
 })({ foo: 'bar' })
 build({
-    type: 'object',
-    properties: {
-        foo: { type: 'string' },
-        bar: { type: 'integer' }
-    },
-    required: ['foo'],
-    patternProperties: {
-      'baz*': { type: 'null' }
-    },
-    additionalProperties: {
-      type: 'boolean'
-    }
+  type: 'object',
+  properties: {
+    foo: { type: 'string' },
+    bar: { type: 'integer' }
+  },
+  required: ['foo'],
+  patternProperties: {
+    'baz*': { type: 'null' }
+  },
+  additionalProperties: {
+    type: 'boolean'
+  }
 }, { rounding: 'floor' })({ foo: 'bar' })
 
 // Reference schemas
@@ -113,7 +114,7 @@ build({
     }
   },
   patternProperties: {
-    'num': {
+    num: {
       $ref: '#/definitions/num'
     }
   },
@@ -159,7 +160,7 @@ build({
 })(new Date())
 
 /*
-This overload doesn't work yet - 
+This overload doesn't work yet -
 TypeScript chooses the generic for the schema
 before it chooses the overload for the options
 parameter.
@@ -207,52 +208,52 @@ interface InferenceSchema {
 }
 
 const stringify3 = build({
-  type: "object",
-  properties: { a: { type: "string" } },
-});
-stringify3<InferenceSchema>({ id: "123" });
-stringify3<InferenceSchema>({ a: 123, id: "123" });
-expectError(stringify3<InferenceSchema>({ anotherOne: "bar" }));
-expectError(stringify3<Schema>({ a: "bar" }));
+  type: 'object',
+  properties: { a: { type: 'string' } },
+})
+stringify3<InferenceSchema>({ id: '123' })
+stringify3<InferenceSchema>({ a: 123, id: '123' })
+expectError(stringify3<InferenceSchema>({ anotherOne: 'bar' }))
+expectError(stringify3<Schema>({ a: 'bar' }))
 
 // Without inference
 const stringify4 = build({
-  type: "object",
-  properties: { a: { type: "string" } },
-});
-stringify4({ id: "123" });
-stringify4({ a: 123, id: "123" });
-stringify4({ anotherOne: "bar" });
-stringify4({ a: "bar" });
+  type: 'object',
+  properties: { a: { type: 'string' } },
+})
+stringify4({ id: '123' })
+stringify4({ a: 123, id: '123' })
+stringify4({ anotherOne: 'bar' })
+stringify4({ a: 'bar' })
 
 // Without inference - string type
 const stringify5 = build({
-  type: "string",
-});
-stringify5("foo");
-expectError(stringify5({ id: "123" }));
+  type: 'string',
+})
+stringify5('foo')
+expectError(stringify5({ id: '123' }))
 
 // Without inference - null type
 const stringify6 = build({
-  type: "null",
-});
-stringify6(null);
-expectError(stringify6("a string"));
+  type: 'null',
+})
+stringify6(null)
+expectError(stringify6('a string'))
 
 // Without inference - boolean type
 const stringify7 = build({
-  type: "boolean",
-});
-stringify7(true);
-expectError(stringify7("a string"));
+  type: 'boolean',
+})
+stringify7(true)
+expectError(stringify7('a string'))
 
 // largeArrayMechanism
 
-build({}, { largeArrayMechanism: 'json-stringify'} )
-build({}, { largeArrayMechanism: 'default'} )
-expectError(build({} as Schema, { largeArrayMechanism: 'invalid'} ))
+build({}, { largeArrayMechanism: 'json-stringify' })
+build({}, { largeArrayMechanism: 'default' })
+expectError(build({} as Schema, { largeArrayMechanism: 'invalid' }))
 
-build({}, { largeArraySize: 2000 } )
-build({}, { largeArraySize: '2e4' } )
-build({}, { largeArraySize: 2n } )
-expectError(build({} as Schema, { largeArraySize: ['asdf']} ))
+build({}, { largeArraySize: 2000 })
+build({}, { largeArraySize: '2e4' })
+build({}, { largeArraySize: 2n })
+expectError(build({} as Schema, { largeArraySize: ['asdf'] }))

@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 
 test('asNumber should convert BigInt', (t) => {
   t.plan(1)
@@ -9,5 +9,5 @@ test('asNumber should convert BigInt', (t) => {
 
   const number = serializer.asNumber(11753021440n)
 
-  t.equal(number, '11753021440')
+  t.assert.equal(number, '11753021440')
 })

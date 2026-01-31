@@ -1,10 +1,10 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('object with required field', (t) => {
-  t.plan(3)
+  t.plan(2)
 
   const schema = {
     title: 'object with required field',
@@ -21,24 +21,21 @@ test('object with required field', (t) => {
   }
   const stringify = build(schema)
 
-  stringify({
-    str: 'string'
+  t.assert.doesNotThrow(() => {
+    stringify({
+      str: 'string'
+    })
   })
-  t.pass()
 
-  try {
+  t.assert.throws(() => {
     stringify({
       num: 42
     })
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"str" is required!')
-    t.pass()
-  }
+  }, { message: '"str" is required!' })
 })
 
 test('object with required field not in properties schema', (t) => {
-  t.plan(4)
+  t.plan(2)
 
   const schema = {
     title: 'object with required field',
@@ -52,27 +49,19 @@ test('object with required field not in properties schema', (t) => {
   }
   const stringify = build(schema)
 
-  try {
+  t.assert.throws(() => {
     stringify({})
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"str" is required!')
-    t.pass()
-  }
+  }, { message: '"str" is required!' })
 
-  try {
+  t.assert.throws(() => {
     stringify({
       num: 42
     })
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"str" is required!')
-    t.pass()
-  }
+  }, { message: '"str" is required!' })
 })
 
 test('object with required field not in properties schema with additional properties true', (t) => {
-  t.plan(4)
+  t.plan(2)
 
   const schema = {
     title: 'object with required field',
@@ -87,27 +76,19 @@ test('object with required field not in properties schema with additional proper
   }
   const stringify = build(schema)
 
-  try {
+  t.assert.throws(() => {
     stringify({})
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"str" is required!')
-    t.pass()
-  }
+  }, { message: '"str" is required!' })
 
-  try {
+  t.assert.throws(() => {
     stringify({
       num: 42
     })
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"str" is required!')
-    t.pass()
-  }
+  }, { message: '"str" is required!' })
 })
 
 test('object with multiple required field not in properties schema', (t) => {
-  t.plan(6)
+  t.plan(3)
 
   const schema = {
     title: 'object with required field',
@@ -122,35 +103,23 @@ test('object with multiple required field not in properties schema', (t) => {
   }
   const stringify = build(schema)
 
-  try {
+  t.assert.throws(() => {
     stringify({})
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"key1" is required!')
-    t.pass()
-  }
+  }, { message: '"key1" is required!' })
 
-  try {
+  t.assert.throws(() => {
     stringify({
       key1: 42,
       key2: 42
     })
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"num" is required!')
-    t.pass()
-  }
+  }, { message: '"num" is required!' })
 
-  try {
+  t.assert.throws(() => {
     stringify({
       num: 42,
       key1: 'some'
     })
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"key2" is required!')
-    t.pass()
-  }
+  }, { message: '"key2" is required!' })
 })
 
 test('object with required bool', (t) => {
@@ -169,16 +138,14 @@ test('object with required bool', (t) => {
   }
   const stringify = build(schema)
 
-  try {
+  t.assert.throws(() => {
     stringify({})
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, '"bool" is required!')
-    t.pass()
-  }
+  }, { message: '"bool" is required!' })
 
-  stringify({
-    bool: false
+  t.assert.doesNotThrow(() => {
+    stringify({
+      bool: false
+    })
   })
 })
 
@@ -198,14 +165,15 @@ test('required nullable', (t) => {
   }
   const stringify = build(schema)
 
-  stringify({
-    null: null
+  t.assert.doesNotThrow(() => {
+    stringify({
+      null: null
+    })
   })
-  t.pass()
 })
 
 test('required numbers', (t) => {
-  t.plan(3)
+  t.plan(2)
 
   const schema = {
     title: 'object with required field',
@@ -222,18 +190,15 @@ test('required numbers', (t) => {
   }
   const stringify = build(schema)
 
-  stringify({
-    num: 42
+  t.assert.doesNotThrow(() => {
+    stringify({
+      num: 42
+    })
   })
-  t.pass()
 
-  try {
+  t.assert.throws(() => {
     stringify({
       num: 'aaa'
     })
-    t.fail()
-  } catch (e) {
-    t.equal(e.message, 'The value "aaa" cannot be converted to an integer.')
-    t.pass()
-  }
+  }, { message: 'The value "aaa" cannot be converted to an integer.' })
 })

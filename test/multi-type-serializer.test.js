@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 test('should throw a TypeError with the path to the key of the invalid value', (t) => {
@@ -15,5 +15,5 @@ test('should throw a TypeError with the path to the key of the invalid value', (
   }
 
   const stringify = build(schema)
-  t.throws(() => stringify({ num: { bla: 123 } }), new TypeError('The value of \'#/properties/num\' does not match schema definition.'))
+  t.assert.throws(() => stringify({ num: { bla: 123 } }), new TypeError('The value of \'#/properties/num\' does not match schema definition.'))
 })

@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const clone = require('rfdc/default')
 const build = require('..')
 
@@ -32,8 +32,8 @@ test('oneOf with $ref should not change the input schema', t => {
   })
 
   const value = stringify({ people: { name: 'hello', foo: 'bar' } })
-  t.equal(value, '{"people":{"name":"hello"}}')
-  t.same(schema, clonedSchema)
+  t.assert.equal(value, '{"people":{"name":"hello"}}')
+  t.assert.deepStrictEqual(schema, clonedSchema)
 })
 
 test('oneOf and anyOf with $ref should not change the input schema', t => {
@@ -75,9 +75,9 @@ test('oneOf and anyOf with $ref should not change the input schema', t => {
   const valueAny1 = stringify({ people: { name: 'hello', foo: 'bar' }, love: 'music' })
   const valueAny2 = stringify({ people: { name: 'hello', foo: 'bar' }, love: true })
 
-  t.equal(valueAny1, '{"people":{"name":"hello"},"love":"music"}')
-  t.equal(valueAny2, '{"people":{"name":"hello"},"love":true}')
-  t.same(schema, clonedSchema)
+  t.assert.equal(valueAny1, '{"people":{"name":"hello"},"love":"music"}')
+  t.assert.equal(valueAny2, '{"people":{"name":"hello"},"love":true}')
+  t.assert.deepStrictEqual(schema, clonedSchema)
 })
 
 test('multiple $ref tree', t => {
@@ -118,8 +118,8 @@ test('multiple $ref tree', t => {
   })
 
   const value = stringify({ people: { name: 'hello', foo: 'bar', age: 42 } })
-  t.equal(value, '{"people":{"name":"hello","age":42}}')
-  t.same(schema, clonedSchema)
+  t.assert.equal(value, '{"people":{"name":"hello","age":42}}')
+  t.assert.deepStrictEqual(schema, clonedSchema)
 })
 
 test('must not mutate items $ref', t => {
@@ -152,8 +152,8 @@ test('must not mutate items $ref', t => {
   })
 
   const value = stringify([{ name: 'foo' }])
-  t.equal(value, '[{"name":"foo"}]')
-  t.same(schema, clonedSchema)
+  t.assert.equal(value, '[{"name":"foo"}]')
+  t.assert.deepStrictEqual(schema, clonedSchema)
 })
 
 test('must not mutate items referred by $ref', t => {
@@ -191,6 +191,6 @@ test('must not mutate items referred by $ref', t => {
   })
 
   const value = stringify({ name: { name: 'foo' } })
-  t.equal(value, '{"name":{"name":"foo"}}')
-  t.same(firstSchema, clonedSchema)
+  t.assert.equal(value, '{"name":{"name":"foo"}}')
+  t.assert.deepStrictEqual(firstSchema, clonedSchema)
 })

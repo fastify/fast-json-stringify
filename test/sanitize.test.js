@@ -1,6 +1,6 @@
 'use strict'
 
-const t = require('tap')
+const { test } = require('node:test')
 const build = require('..')
 
 const stringify = build({
@@ -91,52 +91,51 @@ const obj = {
   notmatchnum: 42
 }
 
-// pass if it does not crash
-const json = stringify(obj)
-JSON.parse(json)
+test('sanitize', t => {
+  const json = stringify(obj)
+  t.assert.doesNotThrow(() => JSON.parse(json))
 
-const stringify2 = build({
-  title: 'Example Schema',
-  type: 'object',
-  patternProperties: {
-    '"\'w00t.*////': {
-      type: 'number'
+  const stringify2 = build({
+    title: 'Example Schema',
+    type: 'object',
+    patternProperties: {
+      '"\'w00t.*////': {
+        type: 'number'
+      }
     }
-  }
-})
+  })
 
-t.same(JSON.parse(stringify2({
-  '"\'phra////': 42,
-  asd: 42
-})), {
-})
+  t.assert.deepStrictEqual(JSON.parse(stringify2({
+    '"\'phra////': 42,
+    asd: 42
+  })), {
+  })
 
-const stringify3 = build({
-  title: 'Example Schema',
-  type: 'object',
-  properties: {
-    "\"phra\\'&&(console.log(42))//||'phra": {}
-  }
-})
-
-// this verifies the escaping
-JSON.parse(stringify3({
-  '"phra\'&&(console.log(42))//||\'phra': 42
-}))
-
-const stringify4 = build({
-  title: 'Example Schema',
-  type: 'object',
-  properties: {
-    '"\\\\\\\\\'w00t': {
-      type: 'string',
-      default: '"\'w00t'
+  const stringify3 = build({
+    title: 'Example Schema',
+    type: 'object',
+    properties: {
+      "\"phra\\'&&(console.log(42))//||'phra": {}
     }
-  }
-})
+  })
 
-t.same(JSON.parse(stringify4({})), {
-  '"\\\\\\\\\'w00t': '"\'w00t'
-})
+  // this verifies the escaping
+  JSON.parse(stringify3({
+    '"phra\'&&(console.log(42))//||\'phra': 42
+  }))
 
-t.pass('no crashes')
+  const stringify4 = build({
+    title: 'Example Schema',
+    type: 'object',
+    properties: {
+      '"\\\\\\\\\'w00t': {
+        type: 'string',
+        default: '"\'w00t'
+      }
+    }
+  })
+
+  t.assert.deepStrictEqual(JSON.parse(stringify4({})), {
+    '"\\\\\\\\\'w00t': '"\'w00t'
+  })
+})

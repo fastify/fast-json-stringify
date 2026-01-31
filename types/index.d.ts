@@ -1,4 +1,4 @@
-import Ajv, { Options as AjvOptions } from "ajv"
+import Ajv, { Options as AjvOptions } from 'ajv'
 
 type Build = typeof build
 
@@ -65,33 +65,33 @@ declare namespace build {
      */
     $ref: string;
   }
-  
+
   export interface AnySchema extends BaseSchema {
   }
 
   export interface StringSchema extends BaseSchema {
-    type: "string";
+    type: 'string';
     format?: string;
   }
 
   export interface IntegerSchema extends BaseSchema {
-    type: "integer";
+    type: 'integer';
   }
 
   export interface NumberSchema extends BaseSchema {
-    type: "number";
+    type: 'number';
   }
 
   export interface NullSchema extends BaseSchema {
-    type: "null";
+    type: 'null';
   }
 
   export interface BooleanSchema extends BaseSchema {
-    type: "boolean";
+    type: 'boolean';
   }
 
   export interface ArraySchema extends BaseSchema {
-    type: "array";
+    type: 'array';
     /**
      * The schema for the items in the array
      */
@@ -99,7 +99,7 @@ declare namespace build {
   }
 
   export interface TupleSchema extends BaseSchema {
-    type: "array";
+    type: 'array';
     /**
      * The schemas for the items in the tuple
      */
@@ -115,7 +115,7 @@ declare namespace build {
   }
 
   export interface ObjectSchema extends BaseSchema {
-    type: "object";
+    type: 'object';
     /**
      * Describe the properties of the object
      */
@@ -145,7 +145,7 @@ declare namespace build {
     | BooleanSchema
     | ArraySchema
     | TupleSchema
-    | ObjectSchema;
+    | ObjectSchema
 
   export interface Options {
     /**
@@ -158,12 +158,12 @@ declare namespace build {
     ajv?: AjvOptions
     /**
      * Optionally configure how the integer will be rounded
-     * 
+     *
      * @default 'trunc'
      */
     rounding?: 'ceil' | 'floor' | 'round' | 'trunc'
     /**
-     * @deprecated 
+     * @deprecated
      * Enable debug mode. Please use `mode: "debug"` instead
      */
     debugMode?: boolean
@@ -190,7 +190,7 @@ declare namespace build {
   }
 
   export const validLargeArrayMechanisms: string[]
-  export function restore (value: <TDoc extends object = object>(doc: TDoc) => string): ReturnType<Build> 
+  export function restore (value: <TDoc extends object = object>(doc: TDoc) => string): ReturnType<Build>
 
   export const build: Build
   export { build as default }
@@ -208,24 +208,24 @@ interface StandaloneOption extends build.Options {
   mode: 'standalone'
 }
 
-type StringCoercible = string | Date | RegExp;
-type IntegerCoercible = number | BigInt;
+type StringCoercible = string | Date | RegExp
+type IntegerCoercible = number | BigInt
 
 /**
  * Build a stringify function using a schema of the documents that should be stringified
  * @param schema The schema used to stringify values
  * @param options The options to use (optional)
  */
-declare function build(schema: build.AnySchema, options: DebugOption): { code: string, ajv: Ajv };
-declare function build(schema: build.AnySchema, options: DeprecateDebugOption): { code: string, ajv: Ajv };
-declare function build(schema: build.AnySchema, options: StandaloneOption): string;
-declare function build(schema: build.AnySchema, options?: build.Options): <TDoc = any>(doc: TDoc) => any;
-declare function build(schema: build.StringSchema, options?: build.Options): <TDoc extends StringCoercible = StringCoercible>(doc: TDoc) => string;
-declare function build(schema: build.IntegerSchema | build.NumberSchema, options?: build.Options): <TDoc extends IntegerCoercible = IntegerCoercible>(doc: TDoc) => string;
-declare function build(schema: build.NullSchema, options?: build.Options): <TDoc extends null = null>(doc: TDoc) => "null";
-declare function build(schema: build.BooleanSchema, options?: build.Options): <TDoc extends boolean = boolean>(doc: TDoc) => string;
-declare function build(schema: build.ArraySchema | build.TupleSchema, options?: build.Options): <TDoc extends any[]= any[]>(doc: TDoc) => string;
-declare function build(schema: build.ObjectSchema, options?: build.Options): <TDoc extends object = object>(doc: TDoc) => string;
-declare function build(schema: build.Schema, options?: build.Options): <TDoc = object | any[] | string | number | boolean | null> (doc: TDoc) => string;
+declare function build (schema: build.AnySchema, options: DebugOption): { code: string, ajv: Ajv }
+declare function build (schema: build.AnySchema, options: DeprecateDebugOption): { code: string, ajv: Ajv }
+declare function build (schema: build.AnySchema, options: StandaloneOption): string
+declare function build (schema: build.AnySchema, options?: build.Options): <TDoc = any>(doc: TDoc) => any
+declare function build (schema: build.StringSchema, options?: build.Options): <TDoc extends StringCoercible = StringCoercible>(doc: TDoc) => string
+declare function build (schema: build.IntegerSchema | build.NumberSchema, options?: build.Options): <TDoc extends IntegerCoercible = IntegerCoercible>(doc: TDoc) => string
+declare function build (schema: build.NullSchema, options?: build.Options): <TDoc extends null = null>(doc: TDoc) => 'null'
+declare function build (schema: build.BooleanSchema, options?: build.Options): <TDoc extends boolean = boolean>(doc: TDoc) => string
+declare function build (schema: build.ArraySchema | build.TupleSchema, options?: build.Options): <TDoc extends any[]= any[]>(doc: TDoc) => string
+declare function build (schema: build.ObjectSchema, options?: build.Options): <TDoc extends object = object>(doc: TDoc) => string
+declare function build (schema: build.Schema, options?: build.Options): <TDoc = object | any[] | string | number | boolean | null> (doc: TDoc) => string
 
-export = build;
+export = build

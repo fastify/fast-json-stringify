@@ -1,7 +1,15 @@
 'use strict'
 
-const benchmark = require('benchmark')
-const suite = new benchmark.Suite()
+const { Bench } = require('tinybench')
+const suite = new Bench({
+  name: 'Library Comparison Benchmarks',
+  setup: (_task, mode) => {
+    // Run the garbage collector before warmup at each cycle
+    if (mode === 'warmup' && typeof globalThis.gc === 'function') {
+      globalThis.gc()
+    }
+  }
+})
 
 const STR_LEN = 1e4
 const LARGE_ARRAY_SIZE = 2e4
@@ -76,13 +84,13 @@ const arraySchemaAJVJTD = {
 const dateFormatSchema = {
   description: 'Date of birth',
   type: 'string',
-  format: 'date'
+  format: 'datetime'
 }
 
 const dateFormatSchemaCJS = {
   description: 'Date of birth',
   type: 'string',
-  format: 'date'
+  format: 'datetime'
 }
 
 const obj = {
@@ -118,6 +126,12 @@ const ajvSerialize = ajv.compileSerializer(schemaAJVJTD)
 const ajvSerializeArray = ajv.compileSerializer(arraySchemaAJVJTD)
 const ajvSerializeString = ajv.compileSerializer({ type: 'string' })
 
+const { createAccelerator } = require('json-accelerator')
+const accelStringify = createAccelerator(schema)
+const accelArray = createAccelerator(arraySchema)
+const accelDate = FJS(dateFormatSchema)
+const accelString = FJS({ type: 'string' })
+
 const getRandomString = (length) => {
   if (!Number.isInteger(length)) {
     throw new Error('Expected integer length')
@@ -134,7 +148,6 @@ const getRandomString = (length) => {
   return result[0].toUpperCase() + result.slice(1)
 }
 
-// eslint-disable-next-line
 for (let i = 0; i < STR_LEN; i++) {
   largeArray[i] = {
     firstName: getRandomString(8),
@@ -171,6 +184,9 @@ suite.add('CJS creation', function () {
 suite.add('AJV Serialize creation', function () {
   ajv.compileSerializer(schemaAJVJTD)
 })
+suite.add('json-accelerator creation', function () {
+  createAccelerator(schema)
+})
 
 suite.add('JSON.stringify array', function () {
   JSON.stringify(multiArray)
@@ -178,6 +194,10 @@ suite.add('JSON.stringify array', function () {
 
 suite.add('fast-json-stringify array default', function () {
   stringifyArrayDefault(multiArray)
+})
+
+suite.add('json-accelerator array', function () {
+  accelArray(multiArray)
 })
 
 suite.add('fast-json-stringify array json-stringify', function () {
@@ -220,6 +240,10 @@ suite.add('fast-json-stringify long string', function () {
   stringifyString(str)
 })
 
+suite.add('json-accelerator long string', function () {
+  stringifyString(str)
+})
+
 suite.add('compile-json-stringify long string', function () {
   CJSStringifyString(str)
 })
@@ -234,6 +258,10 @@ suite.add('JSON.stringify short string', function () {
 
 suite.add('fast-json-stringify short string', function () {
   stringifyString('hello world')
+})
+
+suite.add('json-accelerator short string', function () {
+  accelString('hello world')
 })
 
 suite.add('compile-json-stringify short string', function () {
@@ -252,6 +280,10 @@ suite.add('fast-json-stringify obj', function () {
   stringify(obj)
 })
 
+suite.add('json-accelerator obj', function () {
+  accelStringify(obj)
+})
+
 suite.add('compile-json-stringify obj', function () {
   CJSStringify(obj)
 })
@@ -268,14 +300,24 @@ suite.add('fast-json-stringify date format', function () {
   stringifyDate(date)
 })
 
+suite.add('json-accelerate date format', function () {
+  accelDate(date)
+})
+
 suite.add('compile-json-stringify date format', function () {
   CJSStringifyDate(date)
 })
 
-suite.on('cycle', cycle)
+suite.run().then(() => {
+  for (const task of suite.tasks) {
+    const hz = task.result.hz // ops/sec
+    const rme = task.result.rme // relative margin of error (%)
+    const samples = task.result.samples.length
 
-suite.run()
+    const formattedHz = hz.toLocaleString('en-US', { maximumFractionDigits: 0 })
+    const formattedRme = rme.toFixed(2)
 
-function cycle (e) {
-  console.log(e.target.toString())
-}
+    const output = `${task.name} x ${formattedHz} ops/sec ±${formattedRme}% (${samples} runs sampled)`
+    console.log(output)
+  }
+}).catch(err => console.error(`Error: ${err.message}`))

@@ -1,6 +1,6 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const validator = require('is-my-json-valid')
 const build = require('..')
 
@@ -12,9 +12,9 @@ function buildTest (schema, toStringify) {
     const stringify = build(schema)
     const output = stringify(toStringify)
 
-    t.same(JSON.parse(output), toStringify)
-    t.equal(output, JSON.stringify(toStringify))
-    t.ok(validate(JSON.parse(output)), 'valid schema')
+    t.assert.deepStrictEqual(JSON.parse(output), toStringify)
+    t.assert.equal(output, JSON.stringify(toStringify))
+    t.assert.ok(validate(JSON.parse(output)), 'valid schema')
   })
 }
 

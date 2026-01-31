@@ -1,14 +1,12 @@
 # fast-json-stringify
 
-![CI](https://github.com/fastify/fast-json-stringify/workflows/CI/badge.svg)
+[![CI](https://github.com/fastify/fast-json-stringify/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fastify/fast-json-stringify/actions/workflows/ci.yml)
 [![NPM version](https://img.shields.io/npm/v/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify)
-[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](https://standardjs.com/)
+[![neostandard javascript style](https://img.shields.io/badge/code_style-neostandard-brightgreen?style=flat)](https://github.com/neostandard/neostandard)
 [![NPM downloads](https://img.shields.io/npm/dm/fast-json-stringify.svg?style=flat)](https://www.npmjs.com/package/fast-json-stringify)
-
 
 __fast-json-stringify__ is significantly faster than `JSON.stringify()` for small payloads.
 Its performance advantage shrinks as your payload grows.
-It pairs well with [__flatstr__](https://www.npmjs.com/package/flatstr), which triggers a V8 optimization that improves performance when eventually converting the string to a `Buffer`.
 
 
 ### How it works
@@ -18,37 +16,43 @@ fast-json-stringify requires a [JSON Schema Draft 7](https://json-schema.org/spe
 ##### Benchmarks
 
 - Machine: `EX41S-SSD, Intel Core i7, 4Ghz, 64GB RAM, 4C/8T, SSD`.
-- Node.js `v18.12.1`
+- Node.js `v22.14.0`
 
 ```
-FJS creation x 4,129 ops/sec ±0.82% (92 runs sampled)
-CJS creation x 184,196 ops/sec ±0.12% (97 runs sampled)
-AJV Serialize creation x 61,130,591 ops/sec ±0.40% (92 runs sampled)
-JSON.stringify array x 5,057 ops/sec ±0.10% (100 runs sampled)
-fast-json-stringify array default x 6,243 ops/sec ±0.14% (98 runs sampled)
-fast-json-stringify array json-stringify x 6,261 ops/sec ±0.30% (99 runs sampled)
-compile-json-stringify array x 6,842 ops/sec ±0.18% (96 runs sampled)
-AJV Serialize array x 6,964 ops/sec ±0.11% (95 runs sampled)
-JSON.stringify large array x 248 ops/sec ±0.07% (90 runs sampled)
-fast-json-stringify large array default x 99.96 ops/sec ±0.22% (74 runs sampled)
-fast-json-stringify large array json-stringify x 248 ops/sec ±0.07% (90 runs sampled)
-compile-json-stringify large array x 317 ops/sec ±0.09% (89 runs sampled)
-AJV Serialize large array x 111 ops/sec ±0.07% (33 runs sampled)
-JSON.stringify long string x 16,002 ops/sec ±0.09% (98 runs sampled)
-fast-json-stringify long string x 15,979 ops/sec ±0.09% (96 runs sampled)
-compile-json-stringify long string x 15,952 ops/sec ±0.31% (97 runs sampled)
-AJV Serialize long string x 21,416 ops/sec ±0.08% (98 runs sampled)
-JSON.stringify short string x 12,944,272 ops/sec ±0.09% (96 runs sampled)
-fast-json-stringify short string x 30,585,790 ops/sec ±0.27% (97 runs sampled)
-compile-json-stringify short string x 30,656,406 ops/sec ±0.12% (96 runs sampled)
-AJV Serialize short string x 30,406,785 ops/sec ±0.37% (96 runs sampled)
-JSON.stringify obj x 3,153,043 ops/sec ±0.33% (99 runs sampled)
-fast-json-stringify obj x 6,866,434 ops/sec ±0.11% (100 runs sampled)
-compile-json-stringify obj x 15,886,723 ops/sec ±0.15% (98 runs sampled)
-AJV Serialize obj x 8,969,043 ops/sec ±0.36% (97 runs sampled)
-JSON stringify date x 1,126,547 ops/sec ±0.09% (97 runs sampled)
-fast-json-stringify date format x 1,836,188 ops/sec ±0.12% (99 runs sampled)
-compile-json-stringify date format x 1,125,735 ops/sec ±0.19% (98 runs sampled)
+FJS creation x 9,696 ops/sec ±0.77% (94 runs sampled)
+CJS creation x 197,267 ops/sec ±0.22% (95 runs sampled)
+AJV Serialize creation x 48,302,927 ops/sec ±2.09% (90 runs sampled)
+json-accelerator creation x 668,430 ops/sec ±0.43% (95 runs sampled)
+JSON.stringify array x 7,924 ops/sec ±0.11% (98 runs sampled)
+fast-json-stringify array default x 7,183 ops/sec ±0.09% (97 runs sampled)
+json-accelerator array x 5,762 ops/sec ±0.27% (99 runs sampled)
+fast-json-stringify array json-stringify x 7,171 ops/sec ±0.17% (97 runs sampled)
+compile-json-stringify array x 6,889 ops/sec ±0.41% (96 runs sampled)
+AJV Serialize array x 6,945 ops/sec ±0.17% (98 runs sampled)
+JSON.stringify large array x 331 ops/sec ±0.17% (93 runs sampled)
+fast-json-stringify large array default x 208 ops/sec ±0.21% (91 runs sampled)
+fast-json-stringify large array json-stringify x 330 ops/sec ±0.17% (93 runs sampled)
+compile-json-stringify large array x 318 ops/sec ±0.11% (90 runs sampled)
+AJV Serialize large array x 114 ops/sec ±0.27% (74 runs sampled)
+JSON.stringify long string x 13,452 ops/sec ±0.15% (99 runs sampled)
+fast-json-stringify long string x 13,454 ops/sec ±0.10% (99 runs sampled)
+json-accelerator long string x 13,439 ops/sec ±0.09% (98 runs sampled)
+compile-json-stringify long string x 13,380 ops/sec ±0.12% (100 runs sampled)
+AJV Serialize long string x 21,932 ops/sec ±0.06% (99 runs sampled)
+JSON.stringify short string x 12,114,052 ops/sec ±0.59% (97 runs sampled)
+fast-json-stringify short string x 29,408,175 ops/sec ±1.12% (91 runs sampled)
+json-accelerator short string x 29,431,694 ops/sec ±1.05% (93 runs sampled)
+compile-json-stringify short string x 24,740,338 ops/sec ±1.02% (91 runs sampled)
+AJV Serialize short string x 17,841,869 ops/sec ±0.90% (91 runs sampled)
+JSON.stringify obj x 4,577,494 ops/sec ±0.25% (94 runs sampled)
+fast-json-stringify obj x 7,291,157 ops/sec ±0.40% (97 runs sampled)
+json-accelerator obj x 6,473,194 ops/sec ±0.31% (99 runs sampled)
+compile-json-stringify obj x 14,724,935 ops/sec ±0.50% (96 runs sampled)
+AJV Serialize obj x 8,782,944 ops/sec ±0.45% (93 runs sampled)
+JSON stringify date x 803,522 ops/sec ±0.47% (98 runs sampled)
+fast-json-stringify date format x 1,117,776 ops/sec ±0.69% (95 runs sampled)
+json-accelerate date format x 1,122,419 ops/sec ±0.20% (97 runs sampled)
+compile-json-stringify date format x 803,214 ops/sec ±0.23% (97 runs sampled)
 ```
 
 #### Table of contents:
@@ -70,12 +74,11 @@ compile-json-stringify date format x 1,125,735 ops/sec ±0.19% (98 runs sampled)
 - <a href="#security">`Security Notice`</a>
 - <a href="#debug">`Debug Mode`</a>
 - <a href="#standalone">`Standalone Mode`</a>
-- <a href="#acknowledgements">`Acknowledgements`</a>
+- <a href="#acknowledgments">`Acknowledgments`</a>
 - <a href="#license">`License`</a>
 
 
 <a name="example"></a>
-Try it out on RunKit: <a href="https://runkit.com/npm/fast-json-stringify">https://runkit.com/npm/fast-json-stringify</a>
 ## Example
 
 ```js
@@ -111,7 +114,7 @@ console.log(stringify({
 <a name="options"></a>
 ## Options
 
-Optionally, you may provide to `fast-json-stringify` an option object as second parameter:
+Optionally, you may provide to `fast-json-stringify` an option object as the second parameter:
 
 ```js
 const fastJson = require('fast-json-stringify')
@@ -165,7 +168,7 @@ And nested ones, too.
 | `date`      | `2020-04-03`               |
 | `time`      | `09:11:08`                 |
 
-**Note**: In the case of string formatted Date and not Date Object, there will be no manipulation on it. It should be properly formatted.
+**Note**: In the case of a string formatted Date and not Date Object, there will be no manipulation on it. It should be properly formatted.
 
 Example with a Date object:
 
@@ -290,7 +293,7 @@ console.log(stringify(obj)) // '{"matchfoo":"42","otherfoo":"str","matchnum":3,"
 *additionalProperties* must be an object or a boolean, declared in this way: `{ type: 'type' }`.
 *additionalProperties* will work only for the properties that are not explicitly listed in the *properties* and *patternProperties* objects.
 
-If *additionalProperties* is not present or is set to `false`, every property that is not explicitly listed in the *properties* and *patternProperties* objects,will be ignored, as described in <a href="#missingFields">Missing fields</a>.
+If *additionalProperties* is not present or is set to `false`, every property that is not explicitly listed in the *properties* and *patternProperties* objects will be ignored, as described in <a href="#missingFields">Missing fields</a>.
 Missing fields are ignored to avoid having to rewrite objects before serializing. However, other schema rules would throw in similar situations.
 If *additionalProperties* is set to `true`, it will be used by `JSON.stringify` to stringify the additional properties. If you want to achieve maximum performance, we strongly encourage you to use a fixed schema where possible.
 The additional properties will always be serialized at the end of the object.
@@ -343,9 +346,9 @@ const stringify = fastJson({
   properties: {
     'undecidedType': {
       'anyOf': [{
-	type: 'string'
+        type: 'string'
       }, {
-	type: 'boolean'
+        type: 'boolean'
       }]
     }
   }
@@ -543,12 +546,12 @@ const stringify = fastJson(schema, { schema: externalSchema })
 
 <a name="long"></a>
 #### Long integers
-By default the library will handle automatically [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt).
+By default, the library will handle automatically [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt).
 
 <a name="integer"></a>
 #### Integers
 The `type: integer` property will be truncated if a floating point is provided.
-You can customize this behaviour with the `rounding` option that will accept [`round`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/round), [`ceil`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/ceil), [`floor`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/floor) or [`trunc`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/trunc). Default is `trunc`:
+You can customize this behavior with the `rounding` option that will accept [`round`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/round), [`ceil`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/ceil), [`floor`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/floor), or [`trunc`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/trunc). Default is `trunc`:
 
 ```js
 const stringify = fastJson(schema, { rounding: 'ceil' })
@@ -641,8 +644,8 @@ const stringify = fastJson({
   type: 'object',
   properties: {
     'code': {
-	    type: 'string',
-	    format 'unsafe'
+      type: 'string',
+      format: 'unsafe'
     }
   }
 })
@@ -650,8 +653,8 @@ const stringify = fastJson({
 
 ##### Benchmarks
 
-For reference, here goes some benchmarks for comparison over the three
-mechanisms. Benchmarks conducted on an old machine.
+For reference, here are some benchmarks for comparison over the three
+mechanisms. Benchmarks were conducted on an old machine.
 
 - Machine: `ST1000LM024 HN-M 1TB HDD, Intel Core i7-3610QM @ 2.3GHz, 12GB RAM, 4C/8T`.
 - Node.js `v16.13.1`
@@ -678,7 +681,7 @@ expose your application to remote attacks.
 
 Users are responsible for sending trusted data. `fast-json-stringify` guarantees that you will get
 a valid output only if your input matches the schema or can be coerced to the schema. If your input
-doesn't match the schema, you will get undefined behavior. 
+doesn't match the schema, you will get undefined behavior.
 
 <a name="debug"></a>
 ### Debug Mode
@@ -699,7 +702,7 @@ const debugCompiled = fastJson({
 
 console.log(debugCompiled) // it is a object contain code, ajv instance
 const rawString = debugCompiled.code // it is the generated code
-console.log(rawString) 
+console.log(rawString)
 
 const stringify = fastJson.restore(debugCompiled) // use the generated string to get back the `stringify` function
 console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"Foo"}'
@@ -728,12 +731,12 @@ const stringify = require('stringify.js')
 console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"Foo"}'
 ```
 
-<a name="acknowledgements"></a>
-## Acknowledgements
+<a name="acknowledgments"></a>
+## Acknowledgments
 
 This project was kindly sponsored by [nearForm](https://nearform.com).
 
 <a name="license"></a>
 ## License
 
-MIT
+Licensed under [MIT](./LICENSE).

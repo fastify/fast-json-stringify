@@ -1,12 +1,12 @@
 'use strict'
 
-const test = require('tap').test
+const { test } = require('node:test')
 const build = require('..')
 
 // Covers issue #139
 test('Should throw on invalid schema', t => {
-  t.plan(2)
-  try {
+  t.plan(1)
+  t.assert.throws(() => {
     build({}, {
       schema: {
         invalid: {
@@ -14,9 +14,5 @@ test('Should throw on invalid schema', t => {
         }
       }
     })
-    t.fail('should be an invalid schema')
-  } catch (err) {
-    t.match(err.message, /^"invalid" schema is invalid:.*/, 'Schema contains invalid key')
-    t.ok(err)
-  }
+  }, { message: /^"invalid" schema is invalid:.*/ })
 })

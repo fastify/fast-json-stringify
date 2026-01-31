@@ -1,6 +1,6 @@
 'use strict'
 
-const t = require('tap')
+const { test } = require('node:test')
 const build = require('..')
 
 process.env.TZ = 'UTC'
@@ -251,7 +251,7 @@ const deepFoobarOutput = JSON.stringify({
 })
 const noElseGreetingOutput = JSON.stringify({})
 
-t.test('if-then-else', t => {
+test('if-then-else', async t => {
   const tests = [
     {
       name: 'foobar',
@@ -315,20 +315,18 @@ t.test('if-then-else', t => {
     }
   ]
 
-  tests.forEach(test => {
-    t.test(test.name + ' - normal', t => {
+  for (const { name, schema, input, expected } of tests) {
+    await t.test(name + ' - normal', async t => {
       t.plan(1)
 
-      const stringify = build(JSON.parse(JSON.stringify(test.schema)), { ajv: { strictTypes: false } })
-      const serialized = stringify(test.input)
-      t.equal(serialized, test.expected)
+      const stringify = build(JSON.parse(JSON.stringify(schema)), { ajv: { strictTypes: false } })
+      const serialized = stringify(input)
+      t.assert.equal(serialized, expected)
     })
-  })
-
-  t.end()
+  }
 })
 
-t.test('nested if/then', t => {
+test('nested if/then', t => {
   t.plan(2)
 
   const schema = {
@@ -352,18 +350,18 @@ t.test('nested if/then', t => {
 
   const stringify = build(schema)
 
-  t.equal(
+  t.assert.equal(
     stringify({ a: 'A', foo: 'foo', bar: 'bar' }),
     JSON.stringify({ a: 'A', bar: 'bar' })
   )
 
-  t.equal(
+  t.assert.equal(
     stringify({ a: 'A', foo: 'foo', bar: 'bar', foo1: 'foo1', bar1: 'bar1' }),
     JSON.stringify({ a: 'A', bar: 'bar', bar1: 'bar1' })
   )
 })
 
-t.test('if/else with string format', (t) => {
+test('if/else with string format', (t) => {
   t.plan(2)
 
   const schema = {
@@ -376,11 +374,11 @@ t.test('if/else with string format', (t) => {
 
   const date = new Date(1674263005800)
 
-  t.equal(stringify(date), '"2023-01-21"')
-  t.equal(stringify('Invalid'), '"Invalid"')
+  t.assert.equal(stringify(date), '"2023-01-21"')
+  t.assert.equal(stringify('Invalid'), '"Invalid"')
 })
 
-t.test('if/else with const integers', (t) => {
+test('if/else with const integers', (t) => {
   t.plan(2)
 
   const schema = {
@@ -392,11 +390,11 @@ t.test('if/else with const integers', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify(100.32), '66')
-  t.equal(stringify(10.12), '33')
+  t.assert.equal(stringify(100.32), '66')
+  t.assert.equal(stringify(10.12), '33')
 })
 
-t.test('if/else with array', (t) => {
+test('if/else with array', (t) => {
   t.plan(2)
 
   const schema = {
@@ -408,11 +406,11 @@ t.test('if/else with array', (t) => {
 
   const stringify = build(schema)
 
-  t.equal(stringify(['1']), JSON.stringify(['1']))
-  t.equal(stringify(['1', '2']), JSON.stringify([1, 2]))
+  t.assert.equal(stringify(['1']), JSON.stringify(['1']))
+  t.assert.equal(stringify(['1', '2']), JSON.stringify([1, 2]))
 })
 
-t.test('external recursive if/then/else', (t) => {
+test('external recursive if/then/else', (t) => {
   t.plan(1)
 
   const externalSchema = {
@@ -466,5 +464,5 @@ t.test('external recursive if/then/else', (t) => {
     }
   }
   const stringify = build(schema, { schema: { externalSchema } })
-  t.equal(stringify(data), '{"a":{"base":"a","bar":"42"},"b":{"base":"b","baz":"43"}}')
+  t.assert.equal(stringify(data), '{"a":{"base":"a","bar":"42"},"b":{"base":"b","baz":"43"}}')
 })
