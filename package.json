@@ -72,7 +72,7 @@
     "json-accelerator": "^0.0.2",
     "neostandard": "^0.12.0",
     "simple-git": "^3.23.0",
-    "tinybench": "^5.0.1",
+    "tinybench": "^6.0.0",
     "tsd": "^0.32.0",
     "webpack": "^5.90.3"
   },
