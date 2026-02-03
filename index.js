@@ -665,11 +665,11 @@ function buildArray (context, location, input) {
 
     if (Array.isArray(itemsSchema)) {
       for (let i = 0, itemsSchemaLength = itemsSchema.length; i < itemsSchemaLength; i++) {
-        let item = itemsSchema[i];
+        let item = itemsSchema[i]
         let itemLocation = itemsLocation.getPropertyLocation(i)
         if (itemLocation.schema.$ref) {
           itemLocation = resolveRef(context, itemLocation)
-          item = itemLocation.schema;
+          item = itemLocation.schema
         }
         const value = `value_${i}`
         functionCode += `const ${value} = obj[${i}]`
@@ -756,7 +756,7 @@ function buildArray (context, location, input) {
       let itemLocation = itemsLocation.getPropertyLocation(i)
       if (itemLocation.schema.$ref) {
         itemLocation = resolveRef(context, itemLocation)
-        item = itemLocation.schema;
+        item = itemLocation.schema
       }
       const value = `value_${i}_${context.uid++}`
       inlinedCode += `const ${value} = ${objVar}[${i}]`
