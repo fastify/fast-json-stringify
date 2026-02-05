@@ -21,9 +21,9 @@ bench.add(benchmark.name, () => {
   stringify(benchmark.input)
 }).run().then(() => {
   const task = bench.tasks[0]
-  const hz = task.result.hz // ops/sec
-  const rme = task.result.rme // relative margin of error (%)
-  const samples = task.result.samples.length
+  const hz = task.result.throughput.mean // ops/sec
+  const rme = task.result.latency.rme // relative margin of error (%)
+  const samples = task.result.latency.df + 1 // degrees of freedom + 1 = sample count
 
   const formattedHz = hz.toLocaleString('en-US', { maximumFractionDigits: 0 })
   const formattedRme = rme.toFixed(2)
