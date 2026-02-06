@@ -488,3 +488,23 @@ test('all array items does not match oneOf types', (t) => {
 
   t.assert.throws(() => stringify({ data: [null, false, true, undefined, [], {}] }))
 })
+
+test('invalid oneOf schema', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      prop: {
+        oneOf: 'not array'  // invalid, oneOf must be array
+      }
+    }
+  }
+
+  try {
+    build(schema)
+    t.assert.fail('Should throw')
+  } catch (err) {
+    t.assert.ok(err.message.includes('schema is invalid'))
+  }
+})
