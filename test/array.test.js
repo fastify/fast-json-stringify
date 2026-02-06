@@ -62,6 +62,34 @@ buildTest({
 })
 
 buildTest({
+  title: 'dates tuple $ref',
+  definitions: {
+    dateTime: {
+      type: 'string',
+      format: 'date-time'
+    }
+  },
+  type: 'object',
+  properties: {
+    dates: {
+      type: 'array',
+      minItems: 2,
+      maxItems: 2,
+      items: [
+        {
+          $ref: '#/definitions/dateTime'
+        },
+        {
+          $ref: '#/definitions/dateTime'
+        }
+      ]
+    }
+  }
+}, {
+  dates: [new Date(1), new Date(2)]
+})
+
+buildTest({
   title: 'string array',
   type: 'object',
   properties: {
@@ -356,6 +384,28 @@ test('array items is a schema and additionalItems is false', (t) => {
   const validate = ajv.compile(schema)
   t.assert.equal(stringify({ foo: ['foo', 'bar'] }), '{"foo":["foo","bar"]}')
   t.assert.equal(validate({ foo: ['foo', 'bar'] }), true)
+})
+
+test('array items is a list of schema and additionalItems is a schema', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        type: 'array',
+        items: [
+          { type: 'string' }
+        ],
+        additionalItems: { type: 'number' }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const result = stringify({ foo: ['foo', 42] })
+
+  t.assert.equal(result, '{"foo":["foo",42]}')
 })
 
 // https://github.com/fastify/fast-json-stringify/issues/279

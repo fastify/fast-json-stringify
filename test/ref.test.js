@@ -2044,3 +2044,34 @@ test('ref internal - throw if schema has definition twice with different shape',
     t.assert.equal(err.message, 'There is already another anchor "#uri" in schema "test".')
   }
 })
+
+test('ref nested', (t) => {
+  t.plan(2)
+
+  const schema = {
+    definitions: {
+      def1: {
+        $ref: '#/definitions/def2'
+      },
+      def2: {
+        type: 'string'
+      }
+    },
+    type: 'object',
+    properties: {
+      str: {
+        $ref: '#/definitions/def1'
+      }
+    }
+  }
+
+  const object = {
+    str: 'test'
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"str":"test"}')
+})

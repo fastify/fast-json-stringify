@@ -84,13 +84,13 @@ const arraySchemaAJVJTD = {
 const dateFormatSchema = {
   description: 'Date of birth',
   type: 'string',
-  format: 'date'
+  format: 'datetime'
 }
 
 const dateFormatSchemaCJS = {
   description: 'Date of birth',
   type: 'string',
-  format: 'date'
+  format: 'datetime'
 }
 
 const obj = {
@@ -309,9 +309,9 @@ suite.add('compile-json-stringify: date', function () {
 suite.run().then(() => {
   const results = suite.tasks.map(task => ({
     name: task.name,
-    hz: task.result.hz,
-    rme: task.result.rme,
-    samples: task.result.samples.length
+    hz: task.result.throughput.mean,
+    rme: task.result.latency.rme,
+    samples: task.result.latency.df + 1
   }))
 
   const scenarios = {}

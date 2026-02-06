@@ -346,9 +346,9 @@ const stringify = fastJson({
   properties: {
     'undecidedType': {
       'anyOf': [{
-	type: 'string'
+        type: 'string'
       }, {
-	type: 'boolean'
+        type: 'boolean'
       }]
     }
   }
@@ -644,8 +644,8 @@ const stringify = fastJson({
   type: 'object',
   properties: {
     'code': {
-	    type: 'string',
-	    format 'unsafe'
+      type: 'string',
+      format: 'unsafe'
     }
   }
 })
