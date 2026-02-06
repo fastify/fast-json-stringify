@@ -4,7 +4,7 @@ const { test } = require('node:test')
 const build = require('..')
 
 test('nested object in pattern properties for typebox', (t) => {
-  const { Type } = require('@sinclair/typebox')
+  const { Type } = require('typebox')
 
   t.plan(1)
 
