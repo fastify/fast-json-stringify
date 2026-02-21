@@ -169,155 +169,171 @@ for (let i = STR_LEN; i < LARGE_ARRAY_SIZE; ++i) {
   }
 }
 
-Number(str)
-
 for (let i = 0; i < MULTI_ARRAY_LENGTH; i++) {
   multiArray[i] = obj
 }
 
-suite.add('FJS creation', function () {
+suite.add('fast-json-stringify: creation', function () {
   FJS(schema)
 })
-suite.add('CJS creation', function () {
+suite.add('compile-json-stringify: creation', function () {
   CJS(schemaCJS)
 })
-suite.add('AJV Serialize creation', function () {
+suite.add('AJV: creation', function () {
   ajv.compileSerializer(schemaAJVJTD)
 })
-suite.add('json-accelerator creation', function () {
+suite.add('json-accelerator: creation', function () {
   createAccelerator(schema)
 })
 
-suite.add('JSON.stringify array', function () {
+suite.add('JSON.stringify: array', function () {
   JSON.stringify(multiArray)
 })
 
-suite.add('fast-json-stringify array default', function () {
+suite.add('fast-json-stringify [default]: array', function () {
   stringifyArrayDefault(multiArray)
 })
 
-suite.add('json-accelerator array', function () {
+suite.add('json-accelerator: array', function () {
   accelArray(multiArray)
 })
 
-suite.add('fast-json-stringify array json-stringify', function () {
+suite.add('fast-json-stringify [json-stringify]: array', function () {
   stringifyArrayJSONStringify(multiArray)
 })
 
-suite.add('compile-json-stringify array', function () {
+suite.add('compile-json-stringify: array', function () {
   CJSStringifyArray(multiArray)
 })
 
-suite.add('AJV Serialize array', function () {
+suite.add('AJV: array', function () {
   ajvSerializeArray(multiArray)
 })
 
-suite.add('JSON.stringify large array', function () {
+suite.add('JSON.stringify: large array', function () {
   JSON.stringify(largeArray)
 })
 
-suite.add('fast-json-stringify large array default', function () {
+suite.add('fast-json-stringify [default]: large array', function () {
   stringifyArrayDefault(largeArray)
 })
 
-suite.add('fast-json-stringify large array json-stringify', function () {
+suite.add('fast-json-stringify [json-stringify]: large array', function () {
   stringifyArrayJSONStringify(largeArray)
 })
 
-suite.add('compile-json-stringify large array', function () {
+suite.add('compile-json-stringify: large array', function () {
   CJSStringifyArray(largeArray)
 })
 
-suite.add('AJV Serialize large array', function () {
+suite.add('AJV: large array', function () {
   ajvSerializeArray(largeArray)
 })
 
-suite.add('JSON.stringify long string', function () {
+suite.add('JSON.stringify: long string', function () {
   JSON.stringify(str)
 })
 
-suite.add('fast-json-stringify long string', function () {
+suite.add('fast-json-stringify: long string', function () {
   stringifyString(str)
 })
 
-suite.add('json-accelerator long string', function () {
+suite.add('json-accelerator: long string', function () {
   stringifyString(str)
 })
 
-suite.add('compile-json-stringify long string', function () {
+suite.add('compile-json-stringify: long string', function () {
   CJSStringifyString(str)
 })
 
-suite.add('AJV Serialize long string', function () {
+suite.add('AJV: long string', function () {
   ajvSerializeString(str)
 })
 
-suite.add('JSON.stringify short string', function () {
+suite.add('JSON.stringify: short string', function () {
   JSON.stringify('hello world')
 })
 
-suite.add('fast-json-stringify short string', function () {
+suite.add('fast-json-stringify: short string', function () {
   stringifyString('hello world')
 })
 
-suite.add('json-accelerator short string', function () {
+suite.add('json-accelerator: short string', function () {
   accelString('hello world')
 })
 
-suite.add('compile-json-stringify short string', function () {
+suite.add('compile-json-stringify: short string', function () {
   CJSStringifyString('hello world')
 })
 
-suite.add('AJV Serialize short string', function () {
+suite.add('AJV: short string', function () {
   ajvSerializeString('hello world')
 })
 
-suite.add('JSON.stringify obj', function () {
+suite.add('JSON.stringify: obj', function () {
   JSON.stringify(obj)
 })
 
-suite.add('fast-json-stringify obj', function () {
+suite.add('fast-json-stringify: obj', function () {
   stringify(obj)
 })
 
-suite.add('json-accelerator obj', function () {
+suite.add('json-accelerator: obj', function () {
   accelStringify(obj)
 })
 
-suite.add('compile-json-stringify obj', function () {
+suite.add('compile-json-stringify: obj', function () {
   CJSStringify(obj)
 })
 
-suite.add('AJV Serialize obj', function () {
+suite.add('AJV: obj', function () {
   ajvSerialize(obj)
 })
 
-suite.add('JSON stringify date', function () {
+suite.add('JSON.stringify: date', function () {
   JSON.stringify(date)
 })
 
-suite.add('fast-json-stringify date format', function () {
+suite.add('fast-json-stringify: date', function () {
   stringifyDate(date)
 })
 
-suite.add('json-accelerate date format', function () {
+suite.add('json-accelerate: date', function () {
   accelDate(date)
 })
 
-suite.add('compile-json-stringify date format', function () {
+suite.add('compile-json-stringify: date', function () {
   CJSStringifyDate(date)
 })
 
 suite.run().then(() => {
-  for (const task of suite.tasks) {
-    const hz = task.result.throughput.mean // ops/sec
-    const rme = task.result.latency.rme // relative margin of error (%)
-    const samples = task.result.latency.df + 1 // degrees of freedom + 1 = sample count
+  const results = suite.tasks.map(task => ({
+    name: task.name,
+    hz: task.result.throughput.mean,
+    rme: task.result.latency.rme,
+    samples: task.result.latency.df + 1
+  }))
 
-    const formattedHz = hz.toLocaleString('en-US', { maximumFractionDigits: 0 })
-    const formattedRme = rme.toFixed(2)
+  const scenarios = {}
+  for (const result of results) {
+    const [library, scenario] = result.name.split(':').map(s => s.trim())
 
-    const output = `${task.name} x ${formattedHz} ops/sec ±${formattedRme}% (${samples} runs sampled)`
-    console.log(output)
+    if (!scenarios[scenario]) scenarios[scenario] = []
+    scenarios[scenario].push({ ...result, library })
+  }
+
+  for (const [scenario, tasks] of Object.entries(scenarios)) {
+    console.log(`\n--- ${scenario} ---`)
+    const sorted = tasks.sort((a, b) => b.hz - a.hz)
+    const winner = sorted[0]
+
+    for (const task of sorted) {
+      const formattedHz = task.hz.toLocaleString('en-US', { maximumFractionDigits: 0 })
+      const formattedRme = task.rme.toFixed(2)
+      const isWinner = task === winner
+      const prefix = isWinner ? '🏆 ' : '   '
+
+      console.log(`${prefix}${task.library.padEnd(40)} x ${formattedHz.padStart(15)} ops/sec ±${formattedRme}% (${task.samples} runs sampled)`)
+    }
   }
 }).catch(err => console.error(`Error: ${err.message}`))
