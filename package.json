@@ -74,7 +74,7 @@
     "tinybench": "^6.0.0",
     "tsd": "^0.33.0",
     "typebox": "^1.0.81",
-    "typescript": "^5.9.3",
+    "typescript": "~6.0.2",
     "webpack": "^5.104.1"
   },
   "dependencies": {
