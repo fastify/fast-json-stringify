@@ -1,7 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Test using this disabled, see https://github.com/fastify/fast-json-stringify/pull/683
 import Ajv from 'ajv'
 import build, { restore, Schema, validLargeArrayMechanisms } from '..'
-import { expectError, expectType } from 'tsd'
+import { expect } from 'tstyche'
 
 // Number schemas
 build({
@@ -26,9 +26,10 @@ build({
 build({
   type: 'number'
 }, { rounding: 'trunc' })
-expectError(build({
+
+expect(build).type.not.toBeCallableWith({
   type: 'number'
-}, { rounding: 'invalid' }))
+}, { rounding: 'invalid' })
 
 // String schema
 build({
@@ -153,7 +154,6 @@ build({
 })({ something: 'a string', somethingElse: 42 })
 
 // String schema with format
-
 build({
   type: 'string',
   format: 'date-time'
@@ -181,7 +181,6 @@ str = build({
     type: 'number'
 }, { mode: 'standalone' })
 */
-
 const debugCompiled = build({
   title: 'default string',
   type: 'object',
@@ -191,11 +190,12 @@ const debugCompiled = build({
     }
   }
 }, { mode: 'debug' })
-expectType<ReturnType<typeof build>>(build.restore(debugCompiled))
-expectType<ReturnType<typeof build>>(restore(debugCompiled))
 
-expectType<string[]>(build.validLargeArrayMechanisms)
-expectType<string[]>(validLargeArrayMechanisms)
+expect(build.restore(debugCompiled)).type.toBe<ReturnType<typeof build>>()
+expect(restore(debugCompiled)).type.toBe<ReturnType<typeof build>>()
+
+expect(build.validLargeArrayMechanisms).type.toBe<string[]>()
+expect(validLargeArrayMechanisms).type.toBe<string[]>()
 
 /**
  * Schema inference
@@ -211,10 +211,11 @@ const stringify3 = build({
   type: 'object',
   properties: { a: { type: 'string' } },
 })
+
 stringify3<InferenceSchema>({ id: '123' })
 stringify3<InferenceSchema>({ a: 123, id: '123' })
-expectError(stringify3<InferenceSchema>({ anotherOne: 'bar' }))
-expectError(stringify3<Schema>({ a: 'bar' }))
+expect(stringify3<InferenceSchema>).type.not.toBeCallableWith({ anotherOne: 'bar' })
+expect(stringify3<Schema>).type.not.toBeCallableWith({ a: 'bar' })
 
 // Without inference
 const stringify4 = build({
@@ -231,29 +232,28 @@ const stringify5 = build({
   type: 'string',
 })
 stringify5('foo')
-expectError(stringify5({ id: '123' }))
+expect(stringify5).type.not.toBeCallableWith({ id: '123' })
 
 // Without inference - null type
 const stringify6 = build({
   type: 'null',
 })
 stringify6(null)
-expectError(stringify6('a string'))
+expect(stringify6).type.not.toBeCallableWith('a string')
 
 // Without inference - boolean type
 const stringify7 = build({
   type: 'boolean',
 })
 stringify7(true)
-expectError(stringify7('a string'))
+expect(stringify7).type.not.toBeCallableWith('a string')
 
 // largeArrayMechanism
-
 build({}, { largeArrayMechanism: 'json-stringify' })
 build({}, { largeArrayMechanism: 'default' })
-expectError(build({} as Schema, { largeArrayMechanism: 'invalid' }))
+expect(build).type.not.toBeCallableWith({} as Schema, { largeArrayMechanism: 'invalid' })
 
 build({}, { largeArraySize: 2000 })
 build({}, { largeArraySize: '2e4' })
 build({}, { largeArraySize: 2n })
-expectError(build({} as Schema, { largeArraySize: ['asdf'] }))
+expect(build).type.not.toBeCallableWith({} as Schema, { largeArraySize: ['asdf'] })
