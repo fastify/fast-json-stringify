@@ -191,8 +191,8 @@ const debugCompiled = build({
   }
 }, { mode: 'debug' })
 
-expect(build.restore(debugCompiled)).type.toBe<ReturnType<typeof build>>()
-expect(restore(debugCompiled)).type.toBe<ReturnType<typeof build>>()
+expect(build.restore(debugCompiled)).type.toBe(build({} as Schema))
+expect(restore(debugCompiled)).type.toBe(build({} as Schema))
 
 expect(build.validLargeArrayMechanisms).type.toBe<string[]>()
 expect(validLargeArrayMechanisms).type.toBe<string[]>()
