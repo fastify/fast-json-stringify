@@ -85,10 +85,5 @@
     "json-schema-ref-resolver": "^3.0.0",
     "rfdc": "^1.2.0"
   },
-  "tstyche": {
-    "testFileMatch": [
-      "types/*.tst.ts"
-    ]
-  },
   "runkitExampleFilename": "./examples/example.js"
 }
