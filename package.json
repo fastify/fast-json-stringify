@@ -65,7 +65,7 @@
     "c8": "^11.0.0",
     "cli-select": "^1.1.2",
     "compile-json-stringify": "^0.1.2",
-    "eslint": "^9.39.2",
+    "eslint": "^10.3.0",
     "fast-json-stringify": ".",
     "is-my-json-valid": "^2.20.6",
     "json-accelerator": "^0.1.7",
