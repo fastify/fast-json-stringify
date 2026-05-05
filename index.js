@@ -568,7 +568,7 @@ function buildObject (context, location, input) {
   const jsonPointer = location.jsonPointer || ''
   const fullPath = `${schemaId}#${jsonPointer}`
 
-  if (context.recursivePaths.has(fullPath) || context.buildingSet.has(schema)) {
+  if (context.recursivePaths.has(fullPath) || context.buildingSet.has(schema) || schemaId !== '') {
     const functionName = generateFuncName(context)
     context.functionsNamesBySchema.set(schema, functionName)
 
@@ -627,7 +627,7 @@ function buildArray (context, location, input) {
   const jsonPointer = location.jsonPointer || ''
   const fullPath = `${schemaId}#${jsonPointer}`
 
-  if (context.recursivePaths.has(fullPath) || context.buildingSet.has(schema)) {
+  if (context.recursivePaths.has(fullPath) || context.buildingSet.has(schema) || schemaId !== '') {
     const functionName = generateFuncName(context)
     context.functionsNamesBySchema.set(schema, functionName)
 
