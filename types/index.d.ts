@@ -163,15 +163,9 @@ declare namespace build {
      */
     rounding?: 'ceil' | 'floor' | 'round' | 'trunc'
     /**
-     * @deprecated
-     * Enable debug mode. Please use `mode: "debug"` instead
-     */
-    debugMode?: boolean
-    /**
      * Running mode of fast-json-stringify
      */
     mode?: 'debug' | 'standalone'
-
     /**
      * Large arrays are defined as arrays containing, by default, `20000`
      * elements or more. That value can be adjusted via the option parameter
@@ -180,7 +174,6 @@ declare namespace build {
      * @default 20000
      */
     largeArraySize?: number | string | BigInt
-
     /**
      * Specify the function on how large Arrays should be stringified.
      *
