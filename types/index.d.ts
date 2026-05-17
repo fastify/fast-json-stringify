@@ -193,10 +193,6 @@ interface DebugOption extends build.Options {
   mode: 'debug'
 }
 
-interface DeprecateDebugOption extends build.Options {
-  debugMode: true
-}
-
 interface StandaloneOption extends build.Options {
   mode: 'standalone'
 }
@@ -210,7 +206,6 @@ type IntegerCoercible = number | BigInt
  * @param options The options to use (optional)
  */
 declare function build (schema: build.AnySchema, options: DebugOption): { code: string, ajv: Ajv }
-declare function build (schema: build.AnySchema, options: DeprecateDebugOption): { code: string, ajv: Ajv }
 declare function build (schema: build.AnySchema, options: StandaloneOption): string
 declare function build (schema: build.AnySchema, options?: build.Options): <TDoc = any>(doc: TDoc) => any
 declare function build (schema: build.StringSchema, options?: build.Options): <TDoc extends StringCoercible = StringCoercible>(doc: TDoc) => string

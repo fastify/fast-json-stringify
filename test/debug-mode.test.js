@@ -22,30 +22,18 @@ function build (opts) {
 
 test('activate debug mode', t => {
   t.plan(5)
-  const debugMode = build({ debugMode: true })
+  const debugMode = build({ mode: 'debug' })
 
   t.assert.ok(typeof debugMode === 'object')
   t.assert.ok(debugMode.ajv instanceof Ajv)
   t.assert.ok(debugMode.validator instanceof Validator)
   t.assert.ok(debugMode.serializer instanceof Serializer)
   t.assert.ok(typeof debugMode.code === 'string')
-})
-
-test('activate debug mode truthy', t => {
-  t.plan(5)
-
-  const debugMode = build({ debugMode: 'yes' })
-
-  t.assert.ok(typeof debugMode === 'object')
-  t.assert.ok(typeof debugMode.code === 'string')
-  t.assert.ok(debugMode.ajv instanceof Ajv)
-  t.assert.ok(debugMode.validator instanceof Validator)
-  t.assert.ok(debugMode.serializer instanceof Serializer)
 })
 
 test('to string auto-consistent', t => {
   t.plan(6)
-  const debugMode = build({ debugMode: 1 })
+  const debugMode = build({ mode: 'debug' })
 
   t.assert.ok(typeof debugMode === 'object')
   t.assert.ok(typeof debugMode.code === 'string')
@@ -73,7 +61,7 @@ test('to string auto-consistent with ajv', t => {
         }]
       }
     }
-  }, { debugMode: 1 })
+  }, { mode: 'debug' })
 
   t.assert.ok(typeof debugMode === 'object')
   t.assert.ok(typeof debugMode.code === 'string')
@@ -102,7 +90,7 @@ test('to string auto-consistent with ajv-formats', t => {
         }]
       }
     }
-  }, { debugMode: 1 })
+  }, { mode: 'debug' })
 
   t.assert.ok(typeof debugMode === 'object')
 
@@ -115,7 +103,7 @@ test('to string auto-consistent with ajv-formats', t => {
 test('debug should restore the same serializer instance', t => {
   t.plan(1)
 
-  const debugMode = fjs({ type: 'integer' }, { debugMode: 1, rounding: 'ceil' })
+  const debugMode = fjs({ type: 'integer' }, { mode: 'debug', rounding: 'ceil' })
   const compiled = fjs.restore(debugMode)
   t.assert.equal(compiled(3.95), 4)
 })
