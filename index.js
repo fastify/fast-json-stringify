@@ -386,16 +386,22 @@ function buildInnerObject (context, location, objVar) {
   const localUid = context.uid++
   let addComma = ''
 
-  if (requiredProperties.length > 0 && propertiesKeys.length > 0) {
-    // If we have required properties AND declared properties, we know that
-    // at least one declared property will be serialized first, so we can
-    // avoid the runtime check for the comma.
-    //
-    // When `required` is set but `properties` is empty (e.g. a record-style
-    // schema with `additionalProperties` only), we fall through to the
-    // generic branch below which uses a runtime `addComma` flag — otherwise
-    // the additionalProperties serializer would write a separator with no
-    // preceding property, producing `{ ,"k":v,... }`.
+  // The skip-leading-comma optimization is only safe when at least one
+  // declared property is also required: that guarantees the first emitted
+  // entry has no preceding separator. `propertiesKeys` is sorted with
+  // required keys first, so `requiredProperties.includes(propertiesKeys[0])`
+  // is the cheapest way to express the condition.
+  //
+  // Falls through to the generic runtime-`addComma` branch when:
+  //   * `requiredProperties` is empty (no anchor needed), or
+  //   * `propertiesKeys` is empty (record-style schema with only
+  //     `additionalProperties`), or
+  //   * `required` only names keys that are not in `properties` (so no
+  //     declared property is guaranteed to emit first).
+  // Otherwise the additionalProperties / patternProperties serializer
+  // would write a separator with no preceding property, producing
+  // `{ ,"k":v,... }`.
+  if (propertiesKeys.length > 0 && requiredProperties.includes(propertiesKeys[0])) {
 
     // The first property is required, so we don't need a comma.
     // For the subsequent properties, we can blindly add a comma.
