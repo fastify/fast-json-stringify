@@ -163,15 +163,9 @@ declare namespace build {
      */
     rounding?: 'ceil' | 'floor' | 'round' | 'trunc'
     /**
-     * @deprecated
-     * Enable debug mode. Please use `mode: "debug"` instead
-     */
-    debugMode?: boolean
-    /**
      * Running mode of fast-json-stringify
      */
     mode?: 'debug' | 'standalone'
-
     /**
      * Large arrays are defined as arrays containing, by default, `20000`
      * elements or more. That value can be adjusted via the option parameter
@@ -180,7 +174,6 @@ declare namespace build {
      * @default 20000
      */
     largeArraySize?: number | string | BigInt
-
     /**
      * Specify the function on how large Arrays should be stringified.
      *
@@ -200,10 +193,6 @@ interface DebugOption extends build.Options {
   mode: 'debug'
 }
 
-interface DeprecateDebugOption extends build.Options {
-  debugMode: true
-}
-
 interface StandaloneOption extends build.Options {
   mode: 'standalone'
 }
@@ -217,7 +206,6 @@ type IntegerCoercible = number | BigInt
  * @param options The options to use (optional)
  */
 declare function build (schema: build.AnySchema, options: DebugOption): { code: string, ajv: Ajv }
-declare function build (schema: build.AnySchema, options: DeprecateDebugOption): { code: string, ajv: Ajv }
 declare function build (schema: build.AnySchema, options: StandaloneOption): string
 declare function build (schema: build.AnySchema, options?: build.Options): <TDoc = any>(doc: TDoc) => any
 declare function build (schema: build.StringSchema, options?: build.Options): <TDoc extends StringCoercible = StringCoercible>(doc: TDoc) => string

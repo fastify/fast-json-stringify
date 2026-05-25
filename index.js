@@ -222,10 +222,6 @@ function build (schema, options) {
     }
   }
 
-  if (options.debugMode) {
-    options.mode = 'debug'
-  }
-
   if (options.mode === 'debug') {
     return {
       validator,
