@@ -330,3 +330,50 @@ test('function and symbol references are not serialized as undefined', (t) => {
   const obj = { str: 'x', test: 'test', meth: () => 'x', sym: Symbol('x') }
   t.assert.equal(stringify(obj), '{"str":"x","test":"test"}')
 })
+
+test('required + additionalProperties without declared properties produces valid JSON', (t) => {
+  // Regression: when `required` is non-empty but `properties` is absent
+  // (e.g. a record-style schema with only `additionalProperties`), the
+  // serializer used to emit a stray leading comma:
+  //   {"obj":{,"a":1,"b":2}}
+  // because the "skip first comma" optimization assumed a declared
+  // property would anchor it. With no `properties`, the additionalProperties
+  // branch would write the separator before its first entry.
+  t.plan(2)
+  const stringify = build({
+    type: 'object',
+    properties: {
+      obj: {
+        type: 'object',
+        propertyNames: { type: 'string', enum: ['a', 'b'] },
+        additionalProperties: { type: 'number' },
+        required: ['a', 'b']
+      }
+    }
+  })
+
+  const out = stringify({ obj: { a: 1, b: 2 } })
+  t.assert.equal(out, '{"obj":{"a":1,"b":2}}')
+  t.assert.deepStrictEqual(JSON.parse(out), { obj: { a: 1, b: 2 } })
+})
+
+test('required key not in properties + additionalProperties produces valid JSON', (t) => {
+  // Regression: declared `properties` is non-empty but `required` only lists
+  // keys that are not in `properties`. After sorting, propertiesKeys[0] is
+  // not required, so the "first declared property anchors the comma" premise
+  // does not hold. The serializer used to emit '{,"str":"x"}' for input
+  // missing the (non-required) declared `num`.
+  t.plan(2)
+  const stringify = build({
+    type: 'object',
+    properties: {
+      num: { type: 'number' }
+    },
+    additionalProperties: true,
+    required: ['str']
+  })
+
+  const out = stringify({ str: 'x' })
+  t.assert.equal(out, '{"str":"x"}')
+  t.assert.deepStrictEqual(JSON.parse(out), { str: 'x' })
+})
