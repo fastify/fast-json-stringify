@@ -1,11 +1,10 @@
 'use strict'
 
-const { test, after } = require('node:test')
+const { test } = require('node:test')
 const fs = require('fs')
+const os = require('os')
 const path = require('path')
 const build = require('..')
-
-process.env.TZ = 'UTC'
 
 // https://github.com/fastify/fast-json-stringify/issues/740
 // Schema keys containing percent-encoded sequences (e.g. '%3C') are resolved
@@ -109,11 +108,17 @@ test('ref to a percent-encoded definition key with oneOf in standalone mode', as
 
   const code = build(buildIssueSchema(oneOfComposition), { mode: 'standalone' })
 
-  const destination = path.resolve('test/fixtures', 'standalone-issue-740.js')
+  // The standalone output does `require('fast-json-stringify/lib/...')`, so the
+  // generated file must live where that package resolves. Use a per-run temp
+  // dir and link node_modules into it so nothing is written into the repo tree.
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'fjs-issue-740-'))
 
-  after(async () => {
-    await fs.promises.rm(destination, { force: true })
+  t.after(async () => {
+    await fs.promises.rm(dir, { recursive: true, force: true })
   })
+
+  await fs.promises.symlink(path.resolve(__dirname, '..', 'node_modules'), path.join(dir, 'node_modules'), 'junction')
+  const destination = path.join(dir, 'standalone-issue-740.js')
 
   await fs.promises.writeFile(destination, code)
   const standalone = require(destination)

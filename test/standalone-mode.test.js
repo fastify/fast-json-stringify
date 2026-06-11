@@ -237,7 +237,7 @@ test('standalone serializer validates toJSON objects like the inline serializer'
 
   const destination = path.resolve(tmpDir, 'standalone-tojson-oneof.js')
 
-  after(async () => {
+  t.after(async () => {
     await fs.promises.rm(destination, { force: true })
   })
 
