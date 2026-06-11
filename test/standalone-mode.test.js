@@ -217,3 +217,33 @@ test('no need to keep external schemas once compiled - with oneOf validator', as
   t.assert.equal(stringify({ oneOfSchema: { baz: 5 } }), '{"oneOfSchema":{"baz":5}}')
   t.assert.equal(stringify({ oneOfSchema: { bar: 'foo' } }), '{"oneOfSchema":{"bar":"foo"}}')
 })
+
+test('standalone serializer validates toJSON objects like the inline serializer', async (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      val: {
+        oneOf: [
+          { type: 'string', format: 'date-time' },
+          { type: 'number' }
+        ]
+      }
+    }
+  }
+
+  const code = fjs(schema, { mode: 'standalone' })
+
+  const destination = path.resolve(tmpDir, 'standalone-tojson-oneof.js')
+
+  after(async () => {
+    await fs.promises.rm(destination, { force: true })
+  })
+
+  await fs.promises.writeFile(destination, code)
+  const stringify = require(destination)
+
+  const date = new Date(1749556800000)
+  t.assert.equal(stringify({ val: date }), fjs(schema)({ val: date }))
+})

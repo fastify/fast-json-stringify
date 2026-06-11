@@ -1151,7 +1151,7 @@ function buildOneOf (context, location, input) {
     }
 
     const nestedResult = buildValue(context, mergedLocation, input)
-    const schemaRef = optionLocation.getSchemaRef()
+    const schemaRef = Validator.encodeRefFragment(optionLocation.getSchemaRef())
 
     code += `
       ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input})) {
@@ -1184,7 +1184,7 @@ function buildIfThenElse (context, location, input) {
   )
 
   const ifLocation = location.getPropertyLocation('if')
-  const ifSchemaRef = ifLocation.getSchemaRef()
+  const ifSchemaRef = Validator.encodeRefFragment(ifLocation.getSchemaRef())
 
   const thenLocation = location.getPropertyLocation('then')
   let thenMergedSchemaId = context.mergedSchemasIds.get(thenSchema)
