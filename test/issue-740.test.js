@@ -1,11 +1,9 @@
 'use strict'
 
-const { test, after } = require('node:test')
+const { test } = require('node:test')
 const fs = require('fs')
 const path = require('path')
 const build = require('..')
-
-process.env.TZ = 'UTC'
 
 // https://github.com/fastify/fast-json-stringify/issues/740
 // Schema keys containing percent-encoded sequences (e.g. '%3C') are resolved
@@ -111,7 +109,7 @@ test('ref to a percent-encoded definition key with oneOf in standalone mode', as
 
   const destination = path.resolve('test/fixtures', 'standalone-issue-740.js')
 
-  after(async () => {
+  t.after(async () => {
     await fs.promises.rm(destination, { force: true })
   })
 
