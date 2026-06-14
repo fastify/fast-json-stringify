@@ -2075,3 +2075,45 @@ test('ref nested', (t) => {
   t.assert.doesNotThrow(() => JSON.parse(output))
   t.assert.equal(output, '{"str":"test"}')
 })
+
+test('ref internal - percent-encoded definition key with oneOf', (t) => {
+  t.plan(2)
+
+  // See https://github.com/fastify/fast-json-stringify/issues/740
+  // A definition key that is itself percent-encoded (e.g. `Some%3Cloremipsum%3E`)
+  // must still resolve when the referenced schema contains oneOf/anyOf/allOf.
+  const schema = {
+    title: 'object with $ref',
+    definitions: {
+      'Some%3Cloremipsum%3E': {
+        type: 'object',
+        additionalProperties: {
+          oneOf: [
+            { type: 'string' },
+            { type: 'number' },
+            { type: 'object' },
+            { type: 'null' }
+          ]
+        }
+      }
+    },
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: '#/definitions/Some%3Cloremipsum%3E'
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      str: 'test'
+    }
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test"}}')
+})
