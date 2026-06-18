@@ -10,8 +10,6 @@ const Location = require('./lib/location')
 const validate = require('./lib/schema-validator')
 const mergeSchemas = require('./lib/merge-schemas')
 
-const SINGLE_TICK = /'/g
-
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
 
@@ -1074,7 +1072,7 @@ function buildConstSerializer (location, input) {
     `
   }
 
-  code += `json += '${JSON.stringify(schema.const).replace(SINGLE_TICK, "\\'")}'`
+  code += `json += ${JSON.stringify(JSON.stringify(schema.const))}`
 
   if (hasNullType) {
     code += `
