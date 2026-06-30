@@ -166,3 +166,27 @@ test('patternProperties - fail on invalid regex, handled by ajv', (t) => {
     }
   }), new Error('schema is invalid: data/patternProperties must match format "regex"'))
 })
+
+test('required key not in properties + patternProperties produces valid JSON', (t) => {
+  // Regression: symmetric case to the additionalProperties variant. `required`
+  // names a key not in `properties`, so after sorting propertiesKeys[0] is not
+  // required and the "first declared property anchors the comma" premise does
+  // not hold. The patternProperties branch shares the same code path, so the
+  // same stray-leading-comma bug would surface here without the tightened
+  // guard in `index.js`.
+  t.plan(2)
+  const stringify = build({
+    type: 'object',
+    properties: {
+      num: { type: 'number' }
+    },
+    patternProperties: {
+      '^s_': { type: 'string' }
+    },
+    required: ['s_x']
+  })
+
+  const out = stringify({ s_x: 'x' })
+  t.assert.equal(out, '{"s_x":"x"}')
+  t.assert.deepStrictEqual(JSON.parse(out), { s_x: 'x' })
+})
