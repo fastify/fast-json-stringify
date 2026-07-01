@@ -901,6 +901,17 @@ function buildMultiTypeSerializer (context, location, input) {
         `
         break
       }
+      case 'object': {
+        // An array is `typeof === 'object'`, so it would otherwise be captured
+        // by this branch and serialized as an object (dropping its items). Exclude
+        // arrays here so a sibling `array` type in the same `type` list can match.
+        code += `
+          ${statement}((typeof ${input} === "object" && !Array.isArray(${input})) || ${input} === null) {
+            ${nestedResult}
+          }
+        `
+        break
+      }
       default: {
         code += `
           ${statement}(typeof ${input} === "${type}" || ${input} === null) {

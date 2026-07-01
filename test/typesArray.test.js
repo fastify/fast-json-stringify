@@ -548,3 +548,62 @@ test('throw an error if none of types matches', (t) => {
   const stringify = build(schema)
   t.assert.throws(() => stringify({ data: 'string' }), 'The value "string" does not match schema definition.')
 })
+
+test('multi-type object listed before array serializes array input as an array', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: ['object', 'array'],
+    properties: {
+      a: { type: 'integer' }
+    },
+    items: { type: 'integer' }
+  }
+
+  const stringify = build(schema, { ajv: { allowUnionTypes: true } })
+
+  // Array input must match the `array` member, not be captured by `object`.
+  t.assert.equal(stringify([1, 2, 3]), '[1,2,3]')
+
+  // Object input for the same schema still serializes as an object.
+  t.assert.equal(stringify({ a: 4 }), '{"a":4}')
+})
+
+test('multi-type [object, array] round-trips an array of objects (JSON:API data)', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      data: {
+        type: ['object', 'array'],
+        properties: {
+          id: { type: 'string' },
+          type: { type: 'string' }
+        },
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            type: { type: 'string' }
+          }
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema, { ajv: { allowUnionTypes: true } })
+
+  const arrayInput = {
+    data: [
+      { id: '1', type: 'article' },
+      { id: '2', type: 'article' }
+    ]
+  }
+  t.assert.deepEqual(JSON.parse(stringify(arrayInput)), arrayInput)
+
+  const objectInput = {
+    data: { id: '1', type: 'article' }
+  }
+  t.assert.deepEqual(JSON.parse(stringify(objectInput)), objectInput)
+})
