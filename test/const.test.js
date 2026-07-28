@@ -24,6 +24,26 @@ test('schema with const string', (t) => {
   t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
+test('schema with const string containing characters that need escaping', (t) => {
+  const values = ['back\\slash', 'tab\there', 'quote"here', 'new\nline', "tick's"]
+  t.plan(values.length * 2)
+
+  for (const value of values) {
+    const schema = {
+      type: 'object',
+      properties: {
+        foo: { const: value }
+      }
+    }
+
+    const stringify = build(schema)
+    const output = stringify({ foo: value })
+
+    t.assert.equal(output, JSON.stringify({ foo: value }))
+    t.assert.deepStrictEqual(JSON.parse(output), { foo: value })
+  }
+})
+
 test('schema with const string and different input', (t) => {
   t.plan(2)
 

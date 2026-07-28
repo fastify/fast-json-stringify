@@ -1,6 +1,6 @@
 {
   "name": "fast-json-stringify",
-  "version": "7.0.0",
+  "version": "7.0.1",
   "description": "Stringify your JSON at max speed",
   "main": "index.js",
   "type": "commonjs",
@@ -30,7 +30,7 @@
   "contributors": [
     {
       "name": "Tomas Della Vedova",
-      "url": "http://delved.org"
+      "url": "https://delvedor.dev"
     },
     {
       "name": "Aras Abbasi",
@@ -62,7 +62,7 @@
     }
   ],
   "devDependencies": {
-    "c8": "^11.0.0",
+    "c8": "^12.0.0",
     "cli-select": "^1.1.2",
     "compile-json-stringify": "^0.1.2",
     "eslint": "^9.39.2",
@@ -81,7 +81,7 @@
     "@fastify/merge-json-schemas": "^0.2.0",
     "ajv": "^8.12.0",
     "ajv-formats": "^3.0.1",
-    "fast-uri": "^3.0.0",
+    "fast-uri": "^4.0.0",
     "json-schema-ref-resolver": "^3.0.0",
     "rfdc": "^1.2.0"
   },

@@ -10,8 +10,6 @@ const Location = require('./lib/location')
 const validate = require('./lib/schema-validator')
 const mergeSchemas = require('./lib/merge-schemas')
 
-const SINGLE_TICK = /'/g
-
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
 
@@ -382,10 +380,9 @@ function buildInnerObject (context, location, objVar) {
   const localUid = context.uid++
   let addComma = ''
 
-  if (requiredProperties.length > 0) {
-    // If we have required properties, we know that at least one property will be serialized.
-    // We can avoid the runtime check for the comma.
-
+  // propertiesKeys is sorted required-first; the guard checks [0] is required because
+  // otherwise additionalProperties/patternProperties would emit a stray `{ ,"k":v }`.
+  if (propertiesKeys.length > 0 && requiredProperties.includes(propertiesKeys[0])) {
     // The first property is required, so we don't need a comma.
     // For the subsequent properties, we can blindly add a comma.
 
@@ -1074,7 +1071,7 @@ function buildConstSerializer (location, input) {
     `
   }
 
-  code += `json += '${JSON.stringify(schema.const).replace(SINGLE_TICK, "\\'")}'`
+  code += `json += ${JSON.stringify(JSON.stringify(schema.const))}`
 
   if (hasNullType) {
     code += `

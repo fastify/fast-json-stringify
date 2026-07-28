@@ -11,7 +11,7 @@ Its performance advantage shrinks as your payload grows.
 
 ### How it works
 
-fast-json-stringify requires a [JSON Schema Draft 7](https://json-schema.org/specification-links.html#draft-7) input to generate a fast `stringify` function.
+fast-json-stringify requires a [JSON Schema Draft 7](https://json-schema.org/specification-links#draft-7) input to generate a fast `stringify` function.
 
 ##### Benchmarks
 
@@ -137,7 +137,7 @@ const stringify = fastJson(mySchema, {
 <a name="fastJsonStringify"></a>
 ### fastJsonStringify(schema)
 
-Build a `stringify()` function based on [jsonschema draft 7 spec](https://json-schema.org/specification-links.html#draft-7).
+Build a `stringify()` function based on [jsonschema draft 7 spec](https://json-schema.org/specification-links#draft-7).
 
 Supported types:
 
@@ -160,7 +160,7 @@ And nested ones, too.
 | `RegExp` | `string`                     |
 | `BigInt` | `integer` via `toString`     |
 
-[JSON Schema built-in formats](https://json-schema.org/understanding-json-schema/reference/string.html#built-in-formats) for dates are supported and will be serialized as:
+[JSON Schema built-in formats](https://json-schema.org/draft/2020-12/draft-bhutton-json-schema-validation-00#rfc.section.7.3.1) for dates are supported and will be serialized as:
 
 | Format      | Serialized format example  |
 | ----------- | -------------------------- |
@@ -436,7 +436,7 @@ console.log(stringify({
 <a name="ref"></a>
 #### Reuse - $ref
 If you want to reuse a definition of a value, you can use the property `$ref`.
-The value of `$ref` must be a string in [JSON Pointer](https://tools.ietf.org/html/rfc6901) format.
+The value of `$ref` must be a string in [JSON Pointer](https://datatracker.ietf.org/doc/html/rfc6901) format.
 Example:
 ```javascript
 const schema = {
@@ -561,7 +561,7 @@ const stringify = fastJson(schema, { rounding: 'ceil' })
 <a name="nullable"></a>
 #### Nullable
 
-According to the [Open API 3.0 specification](https://swagger.io/docs/specification/data-models/data-types/#null), a value that can be null must be declared `nullable`.
+According to the [Open API 3.0 specification](https://swagger.io/docs/specification/v3_0/data-models/data-types/#null), a value that can be null must be declared `nullable`.
 
 ##### Nullable object
 ```javascript
