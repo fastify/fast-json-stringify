@@ -637,3 +637,30 @@ test('should serialize also an invalid string value, even if it is not a valid t
   t.assert.equal(output, JSON.stringify(toStringify))
   t.assert.equal(validate(JSON.parse(output)), false, 'valid schema')
 })
+
+test('should escape strings that are not valid dates', (t) => {
+  const formats = ['date-time', 'date', 'time']
+  const values = [
+    '2026-01-01T00:00:00Z","admin":true,"x":"',
+    'back\\slash',
+    'new\nline',
+    'lone \ud800 surrogate'
+  ]
+
+  t.plan(formats.length * values.length * 2)
+
+  for (const format of formats) {
+    const stringify = build({
+      type: 'object',
+      properties: {
+        ts: { type: 'string', format }
+      }
+    })
+
+    for (const value of values) {
+      const output = stringify({ ts: value })
+      t.assert.equal(output, `{"ts":${JSON.stringify(value)}}`)
+      t.assert.deepStrictEqual(JSON.parse(output), { ts: value })
+    }
+  }
+})
