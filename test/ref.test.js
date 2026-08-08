@@ -2075,3 +2075,106 @@ test('ref nested', (t) => {
   t.assert.doesNotThrow(() => JSON.parse(output))
   t.assert.equal(output, '{"str":"test"}')
 })
+
+test('ref internal - sibling keywords', (t) => {
+  t.plan(3)
+
+  const schema = {
+    definitions: {
+      def: {
+        type: 'object',
+        properties: {
+          str: {
+            type: 'string'
+          },
+          num: {
+            type: 'integer'
+          }
+        },
+        required: ['str']
+      }
+    },
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: '#/definitions/def',
+        required: ['num']
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      str: 'test',
+      num: 42
+    }
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test","num":42}}')
+
+  t.assert.throws(() => {
+    stringify({
+      obj: {
+        str: 'test'
+      }
+    })
+  }, { message: '"num" is required!' })
+})
+
+test('ref external - sibling keywords', (t) => {
+  t.plan(3)
+
+  const externalSchema = {
+    external: {
+      definitions: {
+        def: {
+          type: 'object',
+          properties: {
+            str: {
+              type: 'string'
+            },
+            num: {
+              type: 'integer'
+            }
+          },
+          required: ['str']
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: 'external#/definitions/def',
+        required: ['num']
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      str: 'test',
+      num: 42
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test","num":42}}')
+
+  t.assert.throws(() => {
+    stringify({
+      obj: {
+        str: 'test'
+      }
+    })
+  }, { message: '"num" is required!' })
+})
