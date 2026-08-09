@@ -26,7 +26,23 @@ const {
   asUnsafeString
 } = serializer
 
-const asInteger = serializer.asInteger.bind(serializer)
+const parseInteger = serializer.parseInteger
+
+// Inlined here instead of calling the serializer method: a plain function
+// call is measurably faster than a bound method call in hot paths.
+function asInteger (i) {
+  if (Number.isInteger(i)) {
+    return '' + i
+  } else if (typeof i === 'bigint') {
+    return i.toString()
+  }
+  const integer = parseInteger(i)
+  // check if number is Infinity or NaN
+  if (integer === Infinity || integer === -Infinity || integer !== integer) {
+    throw new Error('The value "' + i + '" cannot be converted to an integer.')
+  }
+  return '' + integer
+}
 
 `
 
@@ -164,6 +180,7 @@ function build (schema, options) {
     recursiveSchemas: new Set(),
     recursivePaths: new Set(),
     buildingSet: new Set(),
+    inlinedSchemas: new Set(),
     uid: 0
   }
 
@@ -398,7 +415,7 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
   return code
 }
 
-function buildInnerObject (context, location, objVar) {
+function buildInnerObject (context, location, objVar, isReturnForm) {
   const schema = location.schema
 
   const propertiesLocation = location.getPropertyLocation('properties')
@@ -422,16 +439,16 @@ function buildInnerObject (context, location, objVar) {
     }
   }
 
-  code += 'json += JSON_STR_BEGIN_OBJECT\n'
-
   const localUid = context.uid++
   let addComma = ''
+  let emptyObjectGuard = null
 
   // propertiesKeys is sorted required-first; the guard checks [0] is required because
   // otherwise additionalProperties/patternProperties would emit a stray `{ ,"k":v }`.
   if (propertiesKeys.length > 0 && requiredProperties.includes(propertiesKeys[0])) {
-    // The first property is required, so we don't need a comma.
-    // For the subsequent properties, we can blindly add a comma.
+    // The first property is required, so it always emits (or throws): the
+    // object-open brace is merged into its key prefix. Subsequent properties
+    // blindly prepend a comma, also merged into their key prefixes.
 
     for (let i = 0; i < propertiesKeys.length; i++) {
       const key = propertiesKeys[i]
@@ -447,22 +464,17 @@ function buildInnerObject (context, location, objVar) {
       const defaultValue = resolvedLocation.schema.default
       const isRequired = requiredProperties.includes(key)
 
-      // i === 0 means it's the first property, and it IS required (due to sort). No comma.
-      // i > 0 means it follows a required property (or a sequence starting with one). Unconditional comma.
-      const currentAddComma = i === 0 ? '' : 'json += JSON_STR_COMMA'
+      const keyPrefix = (i === 0 ? '{' : ',') + sanitizedKey + ':'
 
       code += `
       const ${value} = ${objVar}[${sanitizedKey}]
       if (${value} !== undefined) {
-        ${currentAddComma}
-        json += ${JSON.stringify(sanitizedKey + ':')}
-        ${buildValue(context, resolvedLocation, `${value}`)}
+        ${buildValueWithPrefix(context, resolvedLocation, `${value}`, JSON.stringify(keyPrefix), propertyLocation.schema.$ref === undefined)}
       }`
 
       if (defaultValue !== undefined) {
         code += ` else {
-        ${currentAddComma}
-        json += ${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))}
+        json += ${JSON.stringify(keyPrefix + JSON.stringify(defaultValue))}
       }
       `
       } else if (isRequired) {
@@ -477,16 +489,23 @@ function buildInnerObject (context, location, objVar) {
 
     addComma = 'json += JSON_STR_COMMA'
   } else {
+    // No property is guaranteed to be emitted, so the object-open brace is
+    // merged into whichever property emits first (via the comma flag when
+    // more than one might emit) and only added standalone when none does.
     const needsRuntimeComma = propertiesKeys.length > 1 || schema.patternProperties || (schema.additionalProperties !== undefined && schema.additionalProperties !== false)
 
     if (needsRuntimeComma) {
       code += `let addComma_${localUid} = false\n`
-      addComma = `!addComma_${localUid} && (addComma_${localUid} = true) || (json += JSON_STR_COMMA)`
+      addComma = `json += addComma_${localUid} ? JSON_STR_COMMA : ((addComma_${localUid} = true), JSON_STR_BEGIN_OBJECT)`
+      emptyObjectGuard = `if (!addComma_${localUid}) json += JSON_STR_BEGIN_OBJECT\n`
+    } else if (propertiesKeys.length === 0) {
+      code += 'json += JSON_STR_BEGIN_OBJECT\n'
     }
 
     for (const key of propertiesKeys) {
       let propertyLocation = propertiesLocation.getPropertyLocation(key)
-      if (propertyLocation.schema.$ref) {
+      const hadRef = propertyLocation.schema.$ref !== undefined
+      if (hadRef) {
         propertyLocation = resolveRef(context, propertyLocation)
       }
 
@@ -495,24 +514,35 @@ function buildInnerObject (context, location, objVar) {
       const defaultValue = propertyLocation.schema.default
       const isRequired = requiredProperties.includes(key) // Should be false here but good to keep
 
+      const keyColon = sanitizedKey + ':'
+      const prefixExpr = needsRuntimeComma
+        ? `(addComma_${localUid} ? ${JSON.stringify(',' + keyColon)} : (addComma_${localUid} = true, ${JSON.stringify('{' + keyColon)}))`
+        : JSON.stringify('{' + keyColon)
+
       code += `
           const ${value} = ${objVar}[${sanitizedKey}]
           if (${value} !== undefined) {
-            ${addComma}
-            json += ${JSON.stringify(sanitizedKey + ':')}
-            ${buildValue(context, propertyLocation, `${value}`)}
+            ${buildValueWithPrefix(context, propertyLocation, `${value}`, prefixExpr, !hadRef)}
           }`
 
       if (defaultValue !== undefined) {
+        const defaultLiteral = JSON.stringify(JSON.stringify(defaultValue))
+        const folded = foldStringConstants(prefixExpr, defaultLiteral)
         code += ` else {
-            ${addComma}
-            json += ${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))}
+            json += ${folded !== null ? folded : `${prefixExpr}\n            json += ${defaultLiteral}`}
           }
           `
       } else if (isRequired) {
         // Should not happen if requiredProperties.length === 0 but safety
         code += ` else {
             throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')
+          }
+          `
+      } else if (!needsRuntimeComma) {
+        // Single optional property: the object-open brace is merged into its
+        // key, so it must still be emitted when the property is absent.
+        code += ` else {
+            json += JSON_STR_BEGIN_OBJECT
           }
           `
       } else {
@@ -525,9 +555,13 @@ function buildInnerObject (context, location, objVar) {
     code += buildExtraObjectPropertiesSerializer(context, location, addComma, objVar)
   }
 
-  code += `
-    json += JSON_STR_END_OBJECT
-  `
+  if (emptyObjectGuard !== null) {
+    code += emptyObjectGuard
+  }
+
+  code += isReturnForm
+    ? '\nreturn json + JSON_STR_END_OBJECT\n'
+    : '\njson += JSON_STR_END_OBJECT\n'
   return code
 }
 
@@ -594,6 +628,140 @@ function toJSON (variableName) {
   `
 }
 
+const SINGLE_EXPRESSION_STATEMENT = /^json \+= (.*)$/
+const JS_STRING_LITERAL = /^"(?:[^"\\]|\\.)*"$/
+
+// Values of the JSON_STR_* constants defined in the generated code preamble,
+// so single-expression statements using them can be folded into literals.
+const JSON_STR_CONSTANTS = {
+  JSON_STR_NULL: 'null',
+  JSON_STR_EMPTY_STRING: '""',
+  JSON_STR_EMPTY_OBJECT: '{}',
+  JSON_STR_EMPTY_ARRAY: '[]',
+  JSON_STR_QUOTE: '"'
+}
+
+// If the generated code is a single `json += <expression>` statement,
+// return the expression so it can be merged with a prefix into a single
+// string concatenation. Otherwise return null.
+function extractSingleExpression (code) {
+  const trimmed = code.trim()
+  if (trimmed.indexOf('\n') !== -1) return null
+  const match = trimmed.match(SINGLE_EXPRESSION_STATEMENT)
+  return match === null ? null : match[1]
+}
+
+// Folds two compile-time string constants into a single literal, or returns
+// null if either side is not a constant. Runtime concatenation of a literal
+// with a non-constant expression is intentionally never generated here: a
+// separate `json += <literal>` statement takes V8's string-append fast path,
+// while `json += lit + call()` measures ~20% slower in hot loops.
+function foldStringConstants (prefixExpr, valueExpr) {
+  if (JSON_STR_CONSTANTS[valueExpr] !== undefined) {
+    valueExpr = JSON.stringify(JSON_STR_CONSTANTS[valueExpr])
+  }
+  if (JS_STRING_LITERAL.test(prefixExpr) && JS_STRING_LITERAL.test(valueExpr)) {
+    return JSON.stringify(JSON.parse(prefixExpr) + JSON.parse(valueExpr))
+  }
+  return null
+}
+
+function emitPrefixed (prefixExpr, code) {
+  const expr = extractSingleExpression(code)
+  if (expr !== null) {
+    const folded = foldStringConstants(prefixExpr, expr)
+    if (folded !== null) {
+      return `json += ${folded}`
+    }
+  }
+  return `json += ${prefixExpr}\n${code}`
+}
+
+function buildSingleTypeWithPrefix (context, location, input, prefixExpr) {
+  return emitPrefixed(prefixExpr, buildSingleTypeSerializer(context, location, input))
+}
+
+// A non-recursive plain object schema that is not shared through a $ref can
+// be serialized inline into the parent's json accumulator, avoiding a
+// function call and an intermediate string per object. Each schema is
+// inlined at most once so shared schema objects cannot blow up code size.
+function isInlinableObjectSchema (context, location) {
+  const schema = location.schema
+  return typeof schema === 'object' &&
+    schema !== null &&
+    schema.type === 'object' &&
+    schema.const === undefined &&
+    schema.allOf === undefined &&
+    schema.anyOf === undefined &&
+    schema.oneOf === undefined &&
+    !(schema.if && schema.then) &&
+    !context.recursivePaths.has(`${location.schemaId || ''}#${location.jsonPointer || ''}`) &&
+    !context.buildingSet.has(schema) &&
+    !context.functionsNamesBySchema.has(schema) &&
+    !context.inlinedSchemas.has(schema)
+}
+
+function buildInlineObjectValue (context, location, input) {
+  const schema = location.schema
+  const nullable = schema.nullable === true
+
+  context.inlinedSchemas.add(schema)
+  context.buildingSet.add(schema)
+  const objVar = `obj_${context.uid++}`
+  const code = `
+    const ${objVar} = ${toJSON(input)}
+    if (${objVar} === null) {
+      json += ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_OBJECT'}
+    } else {
+      ${buildInnerObject(context, location, objVar)}
+    }
+  `
+  context.buildingSet.delete(schema)
+  return code
+}
+
+// Like buildValue, but emits a constant prefix (object key, optionally with
+// leading `{` or `,`) as a single pre-folded literal statement, folding it
+// into the value too when the value is itself a compile-time constant.
+// allowInline permits serializing a plain nested object schema inline; it
+// must only be set when the schema was not reached through a $ref.
+function buildValueWithPrefix (context, location, input, prefixExpr, allowInline) {
+  let schema = location.schema
+
+  if (typeof schema === 'object' && schema !== null) {
+    if (schema.$ref !== undefined) {
+      location = resolveRef(context, location)
+      schema = location.schema
+      allowInline = false
+    }
+
+    if (schema.type === undefined) {
+      const inferredType = inferTypeByKeyword(schema)
+      if (inferredType) {
+        schema.type = inferredType
+      }
+    }
+
+    if (
+      Array.isArray(schema.type) &&
+      schema.const === undefined &&
+      schema.nullable !== true &&
+      schema.allOf === undefined &&
+      schema.anyOf === undefined &&
+      schema.oneOf === undefined &&
+      !(schema.if && schema.then)
+    ) {
+      return buildMultiTypeSerializer(context, location, input, prefixExpr)
+    }
+
+    if (allowInline && isInlinableObjectSchema(context, location)) {
+      return `json += ${prefixExpr}\n${buildInlineObjectValue(context, location, input)}`
+    }
+  }
+
+  return emitPrefixed(prefixExpr, buildValue(context, location, input))
+}
+
 function buildObject (context, location, input) {
   const schema = location.schema
 
@@ -621,8 +789,7 @@ function buildObject (context, location, input) {
         if (obj === null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_OBJECT'}
         let json = ''
 
-        ${buildInnerObject(context, location, 'obj')}
-        return json
+        ${buildInnerObject(context, location, 'obj', true)}
       }
     `
 
@@ -650,7 +817,8 @@ function buildArray (context, location, input) {
   let itemsLocation = location.getPropertyLocation('items')
   itemsLocation.schema = itemsLocation.schema || {}
 
-  if (itemsLocation.schema.$ref) {
+  const itemsHadRef = itemsLocation.schema.$ref !== undefined
+  if (itemsHadRef) {
     itemsLocation = resolveRef(context, itemsLocation)
   }
 
@@ -738,7 +906,9 @@ function buildArray (context, location, input) {
         }`
       }
     } else {
-      const code = buildValue(context, itemsLocation, 'value')
+      const code = (!itemsHadRef && isInlinableObjectSchema(context, itemsLocation))
+        ? buildInlineObjectValue(context, itemsLocation, 'value')
+        : buildValue(context, itemsLocation, 'value')
       functionCode += `
       if (arrayLength > 0) {
         const value = obj[0]
@@ -894,7 +1064,7 @@ function generateFuncName (context) {
   return 'anonymous' + context.functionsCounter++
 }
 
-function buildMultiTypeSerializer (context, location, input) {
+function buildMultiTypeSerializer (context, location, input, prefixExpr) {
   const schema = location.schema
   const types = schema.type.sort(t1 => t1 === 'null' ? -1 : 1)
 
@@ -902,7 +1072,9 @@ function buildMultiTypeSerializer (context, location, input) {
 
   types.forEach((type, index) => {
     location.schema = { ...location.schema, type }
-    const nestedResult = buildSingleTypeSerializer(context, location, input)
+    const nestedResult = prefixExpr === undefined
+      ? buildSingleTypeSerializer(context, location, input)
+      : buildSingleTypeWithPrefix(context, location, input, prefixExpr)
 
     const statement = index === 0 ? 'if' : 'else if'
     switch (type) {
@@ -1013,7 +1185,7 @@ function buildSingleTypeSerializer (context, location, input) {
     case 'number':
       return `json += asNumber(${input})`
     case 'boolean':
-      return `json += asBoolean(${input})`
+      return `json += (${input} ? 'true' : 'false')`
     case 'object': {
       return buildObject(context, location, input)
     }
