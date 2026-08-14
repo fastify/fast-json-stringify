@@ -2075,3 +2075,62 @@ test('ref nested', (t) => {
   t.assert.doesNotThrow(() => JSON.parse(output))
   t.assert.equal(output, '{"str":"test"}')
 })
+
+test('ref external with sibling required keyword keeps both constraints', (t) => {
+  t.plan(3)
+
+  const externalSchema = {
+    $id: 'Foo',
+    type: 'object',
+    properties: {
+      value: { type: 'number' }
+    },
+    required: ['value']
+  }
+
+  const stringify = build({
+    type: 'object',
+    properties: {
+      x: {
+        $ref: 'Foo',
+        required: ['extra']
+      }
+    }
+  }, { schema: { Foo: externalSchema } })
+
+  const output = stringify({ x: { value: 1, extra: 'x' } })
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"x":{"value":1}}')
+
+  // sibling `required` must not be discarded: missing `extra` throws
+  t.assert.throws(() => stringify({ x: { value: 1 } }), /"extra" is required!/)
+})
+
+test('ref external with sibling required keyword keeps ref constraints', (t) => {
+  t.plan(2)
+
+  const externalSchema = {
+    $id: 'Foo',
+    type: 'object',
+    properties: {
+      value: { type: 'number' }
+    },
+    required: ['value']
+  }
+
+  const stringify = build({
+    type: 'object',
+    properties: {
+      x: {
+        $ref: 'Foo',
+        required: ['extra']
+      }
+    }
+  }, { schema: { Foo: externalSchema } })
+
+  // the ref target `required` must not be discarded either: missing `value` throws
+  t.assert.throws(() => stringify({ x: { extra: 'x' } }), /"value" is required!/)
+
+  const output = stringify({ x: { value: 1, extra: 'x' } })
+  t.assert.equal(output, '{"x":{"value":1}}')
+})

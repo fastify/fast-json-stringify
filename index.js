@@ -87,6 +87,31 @@ function getMergedLocation (context, mergedSchemaId) {
   return new Location(mergedSchema, mergedSchemaId, '#')
 }
 
+// Resolves `location.schema.$ref`, applying sibling keywords on top of the
+// resolved schema instead of discarding them (#866). Schemas containing
+// `$ref` alone keep the direct-dereference fast path.
+function resolveRefLocation (context, location) {
+  const schema = location.schema
+  if (schema.$ref === undefined || Object.keys(schema).length === 1) {
+    return resolveRef(context, location)
+  }
+
+  let mergedSchemaId = context.mergedSchemasIds.get(schema)
+  if (mergedSchemaId) {
+    return getMergedLocation(context, mergedSchemaId)
+  }
+
+  mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
+  context.mergedSchemasIds.set(schema, mergedSchemaId)
+
+  const { $ref, ...schemaWithoutRef } = schema
+  const locations = [
+    new Location(schemaWithoutRef, location.schemaId, location.jsonPointer),
+    new Location({ $ref }, location.schemaId, location.jsonPointer)
+  ]
+  return mergeLocations(context, mergedSchemaId, locations)
+}
+
 function getSchemaId (schema, rootSchemaId) {
   if (schema.$id && schema.$id.charAt(0) !== '#') {
     return schema.$id
@@ -439,7 +464,7 @@ function buildInnerObject (context, location, objVar) {
 
       let resolvedLocation = propertyLocation
       if (propertyLocation.schema.$ref) {
-        resolvedLocation = resolveRef(context, propertyLocation)
+        resolvedLocation = resolveRefLocation(context, propertyLocation)
       }
 
       const sanitizedKey = JSON.stringify(key)
@@ -487,7 +512,7 @@ function buildInnerObject (context, location, objVar) {
     for (const key of propertiesKeys) {
       let propertyLocation = propertiesLocation.getPropertyLocation(key)
       if (propertyLocation.schema.$ref) {
-        propertyLocation = resolveRef(context, propertyLocation)
+        propertyLocation = resolveRefLocation(context, propertyLocation)
       }
 
       const sanitizedKey = JSON.stringify(key)
@@ -651,7 +676,7 @@ function buildArray (context, location, input) {
   itemsLocation.schema = itemsLocation.schema || {}
 
   if (itemsLocation.schema.$ref) {
-    itemsLocation = resolveRef(context, itemsLocation)
+    itemsLocation = resolveRefLocation(context, itemsLocation)
   }
 
   const itemsSchema = itemsLocation.schema
@@ -708,7 +733,7 @@ function buildArray (context, location, input) {
         let item = itemsSchema[i]
         let itemLocation = itemsLocation.getPropertyLocation(i)
         if (itemLocation.schema.$ref) {
-          itemLocation = resolveRef(context, itemLocation)
+          itemLocation = resolveRefLocation(context, itemLocation)
           item = itemLocation.schema
         }
         const value = `value_${i}`
@@ -795,7 +820,7 @@ function buildArray (context, location, input) {
       let item = itemsSchema[i]
       let itemLocation = itemsLocation.getPropertyLocation(i)
       if (itemLocation.schema.$ref) {
-        itemLocation = resolveRef(context, itemLocation)
+        itemLocation = resolveRefLocation(context, itemLocation)
         item = itemLocation.schema
       }
       const value = `value_${i}_${context.uid++}`
@@ -1291,15 +1316,14 @@ function buildIfThenElse (context, location, input) {
 }
 
 function buildValue (context, location, input) {
-  let schema = location.schema
+  const schema = location.schema
 
   if (typeof schema === 'boolean') {
     return `json += JSON.stringify(${input})`
   }
 
   if (schema.$ref) {
-    location = resolveRef(context, location)
-    schema = location.schema
+    return buildValue(context, resolveRefLocation(context, location), input)
   }
 
   if (schema.allOf) {
