@@ -386,6 +386,80 @@ test('array items is a schema and additionalItems is false', (t) => {
   t.assert.equal(validate({ foo: ['foo', 'bar'] }), true)
 })
 
+test('tuple items without a type keyword accept any value', (t) => {
+  t.plan(12)
+
+  const itemSchemas = {
+    'empty schema': [{}, 42],
+    'boolean schema': [true, { a: 1 }],
+    const: [{ const: 'foo' }, 'foo'],
+    enum: [{ enum: ['a', 'b'] }, 'b'],
+    anyOf: [{ anyOf: [{ type: 'string' }, { type: 'number' }] }, 'foo'],
+    oneOf: [{ oneOf: [{ type: 'string' }, { type: 'number' }] }, 42]
+  }
+
+  const ajv = new Ajv({ allErrors: true, strict: false })
+
+  for (const [name, [itemSchema, value]] of Object.entries(itemSchemas)) {
+    const schema = {
+      type: 'array',
+      items: [itemSchema]
+    }
+
+    const stringify = build(schema)
+    const output = stringify([value])
+
+    t.assert.equal(output, JSON.stringify([value]), name)
+    t.assert.equal(ajv.validate(schema, JSON.parse(output)), true, name)
+  }
+})
+
+test('mixed tuple without a type keyword, with $id and nested in an object', (t) => {
+  t.plan(2)
+
+  const schema = {
+    $id: 'tuple-without-type',
+    type: 'array',
+    items: [
+      { anyOf: [{ type: 'string' }, { type: 'number' }] },
+      {}
+    ]
+  }
+
+  const stringify = build(schema)
+
+  t.assert.equal(stringify(['foo', { bar: 42 }]), '["foo",{"bar":42}]')
+
+  const nestedStringify = build({
+    type: 'object',
+    properties: {
+      tuple: {
+        type: 'array',
+        items: [{ anyOf: [{ type: 'string' }, { type: 'number' }] }]
+      }
+    }
+  })
+
+  t.assert.equal(nestedStringify({ tuple: [42] }), '{"tuple":[42]}')
+})
+
+test('tuple items with a type keyword still reject mismatching values', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'array',
+    items: [
+      { type: 'string' },
+      { anyOf: [{ type: 'string' }, { type: 'number' }] }
+    ]
+  }
+
+  const stringify = build(schema)
+
+  t.assert.equal(stringify(['foo', 42]), '["foo",42]')
+  t.assert.throws(() => stringify([1, 42]), new Error('Item at 0 does not match schema definition.'))
+})
+
 test('array items is a list of schema and additionalItems is a schema', (t) => {
   t.plan(1)
 
