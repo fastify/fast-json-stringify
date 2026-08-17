@@ -735,6 +735,26 @@ const stringify = require('stringify.js')
 console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"Foo"}'
 ```
 
+By default the generated code uses CommonJS (`require`/`module.exports`). To emit ES modules
+(`import`/`export default`) instead, enable the Ajv `code.esm` option, mirroring
+[Ajv's standalone ESM output](https://ajv.js.org/standalone.html):
+
+```js
+const code = fastJson({
+  title: 'default string',
+  type: 'object',
+  properties: {
+    firstName: {
+      type: 'string'
+    }
+  }
+}, { mode: 'standalone', ajv: { code: { esm: true } } })
+
+fs.writeFileSync('stringify.mjs', code)
+const { default: stringify } = await import('./stringify.mjs')
+console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"Foo"}'
+```
+
 <a name="acknowledgments"></a>
 ## Acknowledgments
 
