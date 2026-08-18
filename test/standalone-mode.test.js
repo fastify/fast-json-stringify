@@ -4,6 +4,7 @@ const { test, after } = require('node:test')
 const fjs = require('..')
 const fs = require('fs')
 const path = require('path')
+const url = require('node:url')
 
 function build (opts, schema) {
   return fjs(schema || {
@@ -120,6 +121,61 @@ test('test ajv schema', async (t) => {
       value: 'foo'
     }]
   }))
+})
+
+test('standalone mode emits ESM syntax when ajv.code.esm is enabled', async (t) => {
+  t.plan(6)
+
+  after(async () => {
+    await fs.promises.rm(destination, { force: true })
+  })
+
+  const code = build({ mode: 'standalone', ajv: { code: { esm: true } } })
+  t.assert.ok(typeof code === 'string')
+  t.assert.ok(code.includes("import Serializer from 'fast-json-stringify/lib/serializer.js'"))
+  t.assert.ok(code.includes('export default'))
+  t.assert.equal(code.includes('require('), false, 'no CJS require')
+  t.assert.equal(code.includes('module.exports'), false, 'no CJS module.exports')
+
+  const destination = path.resolve(tmpDir, 'standalone-esm.mjs')
+  await fs.promises.writeFile(destination, code)
+  const { default: stringify } = await import(url.pathToFileURL(destination).href)
+  t.assert.equal(stringify({ firstName: 'Foo', surname: 'bar' }),
+    JSON.stringify({ firstName: 'Foo' }), 'surname evicted')
+})
+
+test('standalone ESM output imports the ajv validator', async (t) => {
+  t.plan(4)
+
+  after(async () => {
+    await fs.promises.rm(destination, { force: true })
+  })
+
+  const code = build({ mode: 'standalone', ajv: { code: { esm: true } } }, {
+    type: 'object',
+    if: {
+      type: 'object',
+      properties: { kind: { type: 'string', const: 'foo' } }
+    },
+    then: {
+      type: 'object',
+      properties: { kind: { type: 'string' }, foo: { type: 'string' } }
+    },
+    else: {
+      type: 'object',
+      properties: { kind: { type: 'string' }, bar: { type: 'string' } }
+    }
+  })
+  t.assert.ok(code.includes("import Validator from 'fast-json-stringify/lib/validator.js'"))
+  t.assert.equal(code.includes('require('), false, 'no CJS require even with a validator')
+
+  const destination = path.resolve(tmpDir, 'standalone-esm-ajv.mjs')
+  await fs.promises.writeFile(destination, code)
+  const { default: stringify } = await import(url.pathToFileURL(destination).href)
+  t.assert.equal(stringify({ kind: 'foo', foo: 'FOO', bar: 'BAR' }),
+    JSON.stringify({ kind: 'foo', foo: 'FOO' }), 'then branch serialized')
+  t.assert.equal(stringify({ kind: 'other', foo: 'FOO', bar: 'BAR' }),
+    JSON.stringify({ kind: 'other', bar: 'BAR' }), 'else branch serialized')
 })
 
 test('no need to keep external schemas once compiled', async (t) => {
