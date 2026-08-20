@@ -163,6 +163,12 @@ declare namespace build {
      */
     rounding?: 'ceil' | 'floor' | 'round' | 'trunc'
     /**
+     * Maximum number of nested schema levels allowed during compilation (0–100)
+     *
+     * @default 100
+     */
+    maxDepth?: number
+    /**
      * Running mode of fast-json-stringify
      */
     mode?: 'debug' | 'standalone'

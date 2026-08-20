@@ -13,7 +13,31 @@ const mergeSchemas = require('./lib/merge-schemas')
 let largeArraySize = 2e4
 let largeArrayMechanism = 'default'
 
+const DEFAULT_MAX_DEPTH = 100
 const NAMED_FRAGMENT_REF = /^#[a-z_][-\w._]*$/i
+
+const singleSchemaKeywords = [
+  'additionalItems',
+  'additionalProperties',
+  'contains',
+  'else',
+  'if',
+  'not',
+  'propertyNames',
+  'then'
+]
+
+const arraySchemaKeywords = [
+  'allOf',
+  'anyOf',
+  'oneOf'
+]
+
+const objectSchemaKeywords = [
+  'definitions',
+  'patternProperties',
+  'properties'
+]
 
 const serializerFns = `
 const {
@@ -44,6 +68,113 @@ const validLargeArrayMechanisms = new Set([
 
 let schemaIdCounter = 0
 
+function getMaxDepth (options) {
+  const maxDepth = options.maxDepth === undefined ? DEFAULT_MAX_DEPTH : options.maxDepth
+  if (!Number.isInteger(maxDepth) || maxDepth < 0 || maxDepth > DEFAULT_MAX_DEPTH) {
+    throw new Error(`Unsupported max schema depth ${maxDepth}. Expected an integer between 0 and ${DEFAULT_MAX_DEPTH}.`)
+  }
+  return maxDepth
+}
+
+function schemaDepthError (maxDepth, name) {
+  const prefix = name ? `"${name}" ` : ''
+  return new Error(`${prefix}schema exceeds maximum depth of ${maxDepth}`)
+}
+
+function assertObjectDepth (schema, maxDepth, name) {
+  const stack = [{ value: schema, depth: 0, exit: false }]
+  const path = new WeakSet()
+
+  while (stack.length > 0) {
+    const entry = stack.pop()
+    const value = entry.value
+
+    if (typeof value !== 'object' || value === null) continue
+
+    // Schema maps and arrays add at most one container between schema nodes.
+    // Keep dependency traversals within the same stack-safety envelope while
+    // still allowing maxDepth schema nodes nested through `properties`.
+    if (entry.depth > maxDepth * 2) {
+      throw schemaDepthError(maxDepth, name)
+    }
+
+    if (entry.exit) {
+      path.delete(value)
+      continue
+    }
+
+    if (path.has(value)) {
+      throw new Error('schema contains a circular object reference; use $ref instead')
+    }
+    path.add(value)
+    stack.push({ value, depth: entry.depth, exit: true })
+
+    for (const key in value) {
+      stack.push({ value: value[key], depth: entry.depth + 1, exit: false })
+    }
+  }
+}
+
+function assertSchemaDepth (schema, maxDepth, name) {
+  const stack = [{ schema, depth: 0 }]
+
+  while (stack.length > 0) {
+    const entry = stack.pop()
+    const currentSchema = entry.schema
+
+    if (entry.depth > maxDepth) {
+      throw schemaDepthError(maxDepth, name)
+    }
+
+    if (typeof currentSchema !== 'object' || currentSchema === null) continue
+
+    const nestedDepth = entry.depth + 1
+
+    for (const keyword of singleSchemaKeywords) {
+      if (typeof currentSchema[keyword] === 'object' && currentSchema[keyword] !== null) {
+        stack.push({ schema: currentSchema[keyword], depth: nestedDepth })
+      }
+    }
+
+    for (const keyword of arraySchemaKeywords) {
+      const schemas = currentSchema[keyword]
+      if (Array.isArray(schemas)) {
+        for (const nestedSchema of schemas) {
+          stack.push({ schema: nestedSchema, depth: nestedDepth })
+        }
+      }
+    }
+
+    const items = currentSchema.items
+    if (Array.isArray(items)) {
+      for (const nestedSchema of items) {
+        stack.push({ schema: nestedSchema, depth: nestedDepth })
+      }
+    } else if (typeof items === 'object' && items !== null) {
+      stack.push({ schema: items, depth: nestedDepth })
+    }
+
+    for (const keyword of objectSchemaKeywords) {
+      const schemas = currentSchema[keyword]
+      if (typeof schemas === 'object' && schemas !== null) {
+        for (const key of Object.keys(schemas)) {
+          stack.push({ schema: schemas[key], depth: nestedDepth })
+        }
+      }
+    }
+
+    const dependencies = currentSchema.dependencies
+    if (typeof dependencies === 'object' && dependencies !== null) {
+      for (const key of Object.keys(dependencies)) {
+        const dependency = dependencies[key]
+        if (!Array.isArray(dependency)) {
+          stack.push({ schema: dependency, depth: nestedDepth })
+        }
+      }
+    }
+  }
+}
+
 function isValidSchema (schema, name) {
   if (!validate(schema)) {
     if (name) {
@@ -59,27 +190,64 @@ function isValidSchema (schema, name) {
 }
 
 function resolveRef (context, location) {
-  const ref = location.schema.$ref
+  const seen = new Set()
+  let depth = 0
 
-  let hashIndex = ref.indexOf('#')
-  if (hashIndex === -1) {
-    hashIndex = ref.length
+  while (location.schema.$ref !== undefined) {
+    const ref = location.schema.$ref
+    const locationRef = location.getSchemaRef()
+
+    if (seen.has(locationRef)) {
+      throw new Error(`Cannot resolve circular reference "${ref}"`)
+    }
+    seen.add(locationRef)
+
+    if (depth++ > context.maxDepth) {
+      throw schemaDepthError(context.maxDepth)
+    }
+
+    let hashIndex = ref.indexOf('#')
+    if (hashIndex === -1) {
+      hashIndex = ref.length
+    }
+
+    const schemaId = ref.slice(0, hashIndex) || location.schemaId
+    const jsonPointer = ref.slice(hashIndex) || '#'
+
+    const schema = context.refResolver.getSchema(schemaId, jsonPointer)
+    if (schema === null) {
+      throw new Error(`Cannot find reference "${ref}"`)
+    }
+
+    location = new Location(schema, schemaId, jsonPointer)
   }
 
-  const schemaId = ref.slice(0, hashIndex) || location.schemaId
-  const jsonPointer = ref.slice(hashIndex) || '#'
+  return location
+}
 
-  const schema = context.refResolver.getSchema(schemaId, jsonPointer)
-  if (schema === null) {
-    throw new Error(`Cannot find reference "${ref}"`)
+function getSchemaDependencies (refResolver, schemaId) {
+  const dependencies = {}
+  const processed = new Set()
+  const pending = [schemaId]
+
+  while (pending.length > 0) {
+    const currentSchemaId = pending.pop()
+    if (processed.has(currentSchemaId)) continue
+    processed.add(currentSchemaId)
+
+    for (const ref of refResolver.getSchemaRefs(currentSchemaId)) {
+      const dependencySchemaId = ref.schemaId
+      if (
+        dependencySchemaId === currentSchemaId ||
+        dependencies[dependencySchemaId] !== undefined
+      ) continue
+
+      dependencies[dependencySchemaId] = refResolver.getSchema(dependencySchemaId)
+      pending.push(dependencySchemaId)
+    }
   }
 
-  const newLocation = new Location(schema, schemaId, jsonPointer)
-  if (schema.$ref !== undefined) {
-    return resolveRef(context, newLocation)
-  }
-
-  return newLocation
+  return dependencies
 }
 
 function getMergedLocation (context, mergedSchemaId) {
@@ -148,9 +316,12 @@ function getValidatorSchemaRef (context, location) {
 }
 
 function build (schema, options) {
-  isValidSchema(schema)
-
   options = options || {}
+
+  const maxDepth = getMaxDepth(options)
+  assertObjectDepth(schema, maxDepth)
+  assertSchemaDepth(schema, maxDepth)
+  isValidSchema(schema)
 
   const context = {
     functions: [],
@@ -162,6 +333,7 @@ function build (schema, options) {
     validatorSchemasIds: new Set(),
     validatorSchemaRefs: new Set(),
     mergedSchemasIds: new Map(),
+    maxDepth,
     recursiveSchemas: new Set(),
     recursivePaths: new Set(),
     buildingSet: new Set(),
@@ -178,6 +350,8 @@ function build (schema, options) {
       const schema = options.schema[key]
       const schemaId = getSchemaId(schema, key)
       if (!context.refResolver.hasSchema(schemaId)) {
+        assertObjectDepth(schema, maxDepth, key)
+        assertSchemaDepth(schema, maxDepth, key)
         isValidSchema(schema, key)
         context.refResolver.addSchema(schema, key)
       }
@@ -262,7 +436,7 @@ function build (schema, options) {
     const schema = context.refResolver.getSchema(schemaId)
     validator.addSchema(schema, schemaId)
 
-    const dependencies = context.refResolver.getSchemaDependencies(schemaId)
+    const dependencies = getSchemaDependencies(context.refResolver, schemaId)
     for (const [schemaId, schema] of Object.entries(dependencies)) {
       validator.addSchema(schema, schemaId)
     }
@@ -1034,9 +1208,13 @@ function buildSingleTypeSerializer (context, location, input) {
 
 function detectRecursiveSchemas (context, location) {
   const pathStack = new Set()
-  function traverse (location) {
+  function traverse (location, depth) {
     const schema = location.schema
-    if (typeof schema !== 'object' || schema === null) return
+    if (!schema || typeof schema !== 'object') return
+
+    if (depth > context.maxDepth) {
+      throw schemaDepthError(context.maxDepth)
+    }
 
     const schemaId = location.schemaId || ''
     const jsonPointer = location.jsonPointer || ''
@@ -1057,65 +1235,64 @@ function detectRecursiveSchemas (context, location) {
     if (schema.$ref) {
       try {
         const res = resolveRef(context, location)
-        traverse(res)
+        traverse(res, depth)
       } catch (err) {
+        if (!err.message.startsWith('Cannot find reference')) throw err
         // Validation will handle missing refs later
       }
     }
 
-    if (schema.properties) {
-      const propertiesLocation = location.getPropertyLocation('properties')
-      for (const key in schema.properties) {
-        traverse(propertiesLocation.getPropertyLocation(key))
+    const nestedDepth = depth + 1
+
+    for (const keyword of singleSchemaKeywords) {
+      if (typeof schema[keyword] === 'object' && schema[keyword] !== null) {
+        traverse(location.getPropertyLocation(keyword), nestedDepth)
       }
-    }
-    if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
-      traverse(location.getPropertyLocation('additionalProperties'))
-    }
-    if (schema.patternProperties) {
-      const patternPropertiesLocation = location.getPropertyLocation('patternProperties')
-      for (const key in schema.patternProperties) {
-        traverse(patternPropertiesLocation.getPropertyLocation(key))
-      }
-    }
-    if (schema.items) {
-      const itemsLocation = location.getPropertyLocation('items')
-      if (Array.isArray(schema.items)) {
-        for (let i = 0; i < schema.items.length; i++) {
-          traverse(itemsLocation.getPropertyLocation(i))
-        }
-      } else {
-        traverse(itemsLocation)
-      }
-    }
-    if (schema.additionalItems && typeof schema.additionalItems === 'object') {
-      traverse(location.getPropertyLocation('additionalItems'))
     }
 
-    if (schema.oneOf) {
-      const oneOfLocation = location.getPropertyLocation('oneOf')
-      for (let i = 0; i < schema.oneOf.length; i++) {
-        traverse(oneOfLocation.getPropertyLocation(i))
+    for (const keyword of arraySchemaKeywords) {
+      const schemas = schema[keyword]
+      if (Array.isArray(schemas)) {
+        const schemasLocation = location.getPropertyLocation(keyword)
+        for (let i = 0; i < schemas.length; i++) {
+          traverse(schemasLocation.getPropertyLocation(i), nestedDepth)
+        }
       }
     }
-    if (schema.anyOf) {
-      const anyOfLocation = location.getPropertyLocation('anyOf')
-      for (let i = 0; i < schema.anyOf.length; i++) {
-        traverse(anyOfLocation.getPropertyLocation(i))
+
+    const items = schema.items
+    if (Array.isArray(items)) {
+      const itemsLocation = location.getPropertyLocation('items')
+      for (let i = 0; i < items.length; i++) {
+        traverse(itemsLocation.getPropertyLocation(i), nestedDepth)
+      }
+    } else if (typeof items === 'object' && items !== null) {
+      traverse(location.getPropertyLocation('items'), nestedDepth)
+    }
+
+    for (const keyword of objectSchemaKeywords) {
+      const schemas = schema[keyword]
+      if (typeof schemas === 'object' && schemas !== null) {
+        const schemasLocation = location.getPropertyLocation(keyword)
+        for (const key in schemas) {
+          traverse(schemasLocation.getPropertyLocation(key), nestedDepth)
+        }
       }
     }
-    if (schema.allOf) {
-      const allOfLocation = location.getPropertyLocation('allOf')
-      for (let i = 0; i < schema.allOf.length; i++) {
-        traverse(allOfLocation.getPropertyLocation(i))
+
+    const dependencies = schema.dependencies
+    if (typeof dependencies === 'object' && dependencies !== null) {
+      const dependenciesLocation = location.getPropertyLocation('dependencies')
+      for (const key in dependencies) {
+        if (!Array.isArray(dependencies[key])) {
+          traverse(dependenciesLocation.getPropertyLocation(key), nestedDepth)
+        }
       }
     }
-    if (schema.then) traverse(location.getPropertyLocation('then'))
-    if (schema.else) traverse(location.getPropertyLocation('else'))
 
     pathStack.delete(fullPath)
   }
-  traverse(location)
+  traverse(location, 0)
 }
 
 function buildConstSerializer (location, input) {
