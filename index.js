@@ -919,6 +919,10 @@ function buildMultiTypeSerializer (context, location, input) {
           `
         break
       case 'string': {
+        // An array has its own `toString`, so it would otherwise be captured by
+        // the duck-typing check below and serialized as a comma-joined string
+        // (dropping the JSON structure). Exclude arrays here so a sibling
+        // `array` type in the same `type` list can match.
         code += `
           ${statement}(
             typeof ${input} === "string" ||
@@ -927,6 +931,7 @@ function buildMultiTypeSerializer (context, location, input) {
             ${input} instanceof RegExp ||
             (
               typeof ${input} === "object" &&
+              !Array.isArray(${input}) &&
               typeof ${input}.toString === "function" &&
               ${input}.toString !== Object.prototype.toString
             )
