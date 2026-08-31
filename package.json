@@ -13,7 +13,7 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test:typescript": "tstyche",
-    "test:unit": "c8 node --test",
+    "test:unit": "c8 --100 --all --include=index.js --include=lib/**/*.js --exclude=lib/schema-validator.js node --test",
     "test": "npm run test:unit && npm run test:typescript"
   },
   "repository": {

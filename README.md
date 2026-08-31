@@ -130,6 +130,10 @@ const stringify = fastJson(mySchema, {
 - `rounding`: setup how the `integer` types will be rounded when not integers. [More details](#integer)
 - `largeArrayMechanism`: set the mechanism that should be used to handle large
 (by default `20000` or more items) arrays. [More details](#largearrays)
+- `compileValidators`: when `true`, the `ajv` validators used by `anyOf`, `oneOf` and
+`if/then/else` are compiled during `build()` instead of lazily, on the first serialization
+that reaches them. This makes `build()` slower but removes a potentially large one-off cost
+from the first `stringify()` call. Defaults to `false`.
 
 
 <a name="api"></a>

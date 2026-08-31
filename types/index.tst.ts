@@ -257,3 +257,8 @@ build({}, { largeArraySize: 2000 })
 build({}, { largeArraySize: '2e4' })
 build({}, { largeArraySize: 2n })
 expect(build).type.not.toBeCallableWith({} as Schema, { largeArraySize: ['asdf'] })
+
+// compileValidators
+build({}, { compileValidators: true })
+build({}, { compileValidators: false })
+expect(build).type.not.toBeCallableWith({} as Schema, { compileValidators: 'yes' })

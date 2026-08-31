@@ -180,6 +180,14 @@ declare namespace build {
      * @default 'default'
      */
     largeArrayMechanism?: 'default' | 'json-stringify'
+    /**
+     * Eagerly compile the Ajv validators used by `anyOf`, `oneOf` and
+     * `if/then/else` at build time instead of on the first serialization
+     * that reaches them.
+     *
+     * @default false
+     */
+    compileValidators?: boolean
   }
 
   export const validLargeArrayMechanisms: string[]

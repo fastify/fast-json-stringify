@@ -128,3 +128,11 @@ test('Validator restoreFromState', t => {
   const restored = Validator.restoreFromState(state)
   t.assert.ok(restored instanceof Validator)
 })
+
+test('Validator ignores null schemas while converting nested values', t => {
+  t.plan(1)
+
+  const validator = new Validator()
+
+  t.assert.doesNotThrow(() => validator.convertSchemaToAjvFormat(null))
+})

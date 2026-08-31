@@ -176,6 +176,7 @@ function build (schema, options) {
     refResolver: new RefResolver(),
     rootSchemaId: schema.$id || `__fjs_root_${schemaIdCounter++}`,
     validatorSchemasIds: new Set(),
+    validatorSchemaRefs: new Set(),
     mergedSchemasIds: new Map(),
     recursiveSchemas: new Set(),
     recursivePaths: new Set(),
@@ -282,6 +283,10 @@ function build (schema, options) {
     for (const [schemaId, schema] of Object.entries(dependencies)) {
       validator.addSchema(schema, schemaId)
     }
+  }
+
+  if (options.compileValidators) {
+    validator.compileSchemas(context.validatorSchemaRefs)
   }
 
   if (options.mode === 'debug') {
@@ -1379,6 +1384,7 @@ function buildOneOf (context, location, input) {
 
     const nestedResult = buildValue(context, mergedLocation, input)
     const schemaRef = getValidatorSchemaRef(context, optionLocation)
+    context.validatorSchemaRefs.add(schemaRef)
 
     code += `
       ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input})) {
@@ -1412,6 +1418,7 @@ function buildIfThenElse (context, location, input) {
 
   const ifLocation = location.getPropertyLocation('if')
   const ifSchemaRef = getValidatorSchemaRef(context, ifLocation)
+  context.validatorSchemaRefs.add(ifSchemaRef)
 
   const thenLocation = location.getPropertyLocation('then')
   let thenMergedSchemaId = context.mergedSchemasIds.get(thenSchema)
