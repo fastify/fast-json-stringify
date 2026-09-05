@@ -15,6 +15,26 @@ let largeArrayMechanism = 'default'
 
 const NAMED_FRAGMENT_REF = /^#[a-z_][-\w._]*$/i
 
+const schemaArrayKeywords = ['allOf', 'anyOf', 'oneOf']
+
+const schemaMapKeywords = [
+  '$defs',
+  'definitions',
+  'patternProperties',
+  'properties'
+]
+
+const schemaValueKeywords = [
+  'additionalItems',
+  'additionalProperties',
+  'contains',
+  'else',
+  'if',
+  'not',
+  'propertyNames',
+  'then'
+]
+
 const serializerFns = `
 const {
   asString,
@@ -92,6 +112,54 @@ function getSchemaId (schema, rootSchemaId) {
     return schema.$id
   }
   return rootSchemaId
+}
+
+function validateSchemaIdsForAjvCodeGeneration (schema, schemaId, seen) {
+  if (typeof schema !== 'object' || schema === null || seen.has(schema)) return
+
+  seen.add(schema)
+  // Ajv emits the active schema ID inside a block-comment sourceURL.
+  const id = schema[schemaId]
+  if (typeof id === 'string' && id.includes('*/')) {
+    throw new Error(`Schema ${schemaId} must not contain "*/" when Ajv source code generation is enabled`)
+  }
+
+  for (const keyword of schemaMapKeywords) {
+    const schemas = schema[keyword]
+    if (typeof schemas === 'object' && schemas !== null && !Array.isArray(schemas)) {
+      for (const nestedSchema of Object.values(schemas)) {
+        validateSchemaIdsForAjvCodeGeneration(nestedSchema, schemaId, seen)
+      }
+    }
+  }
+
+  for (const keyword of schemaValueKeywords) {
+    validateSchemaIdsForAjvCodeGeneration(schema[keyword], schemaId, seen)
+  }
+
+  if (Array.isArray(schema.items)) {
+    for (const item of schema.items) {
+      validateSchemaIdsForAjvCodeGeneration(item, schemaId, seen)
+    }
+  } else {
+    validateSchemaIdsForAjvCodeGeneration(schema.items, schemaId, seen)
+  }
+
+  for (const keyword of schemaArrayKeywords) {
+    if (Array.isArray(schema[keyword])) {
+      for (const nestedSchema of schema[keyword]) {
+        validateSchemaIdsForAjvCodeGeneration(nestedSchema, schemaId, seen)
+      }
+    }
+  }
+
+  if (typeof schema.dependencies === 'object' && schema.dependencies !== null) {
+    for (const dependency of Object.values(schema.dependencies)) {
+      if (!Array.isArray(dependency)) {
+        validateSchemaIdsForAjvCodeGeneration(dependency, schemaId, seen)
+      }
+    }
+  }
 }
 
 function getSafeSchemaRef (context, location) {
@@ -260,13 +328,26 @@ function build (schema, options) {
     options.ajv,
     options.mode === 'standalone' && options.inlineValidators
   )
+  const ajvCodeOptions = options.ajv && options.ajv.code
+  const validateAjvSchemaIds = (
+    (options.mode === 'standalone' && options.inlineValidators) ||
+    (ajvCodeOptions && (ajvCodeOptions.source || ajvCodeOptions.process))
+  )
+  const ajvSchemaId = options.ajv?.schemaId ?? '$id'
+  const seenAjvSchemas = new WeakSet()
 
   for (const schemaId of context.validatorSchemasIds) {
     const schema = context.refResolver.getSchema(schemaId)
+    if (validateAjvSchemaIds) {
+      validateSchemaIdsForAjvCodeGeneration(schema, ajvSchemaId, seenAjvSchemas)
+    }
     validator.addSchema(schema, schemaId)
 
     const dependencies = context.refResolver.getSchemaDependencies(schemaId)
     for (const [schemaId, schema] of Object.entries(dependencies)) {
+      if (validateAjvSchemaIds) {
+        validateSchemaIdsForAjvCodeGeneration(schema, ajvSchemaId, seenAjvSchemas)
+      }
       validator.addSchema(schema, schemaId)
     }
   }
@@ -426,7 +507,8 @@ function buildInnerObject (context, location, objVar) {
   for (const key of requiredProperties) {
     if (!propertiesKeys.includes(key)) {
       const sanitizedKey = JSON.stringify(key)
-      code += `if (${objVar}[${sanitizedKey}] === undefined) throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')\n`
+      const requiredError = JSON.stringify(`"${key}" is required!`)
+      code += `if (${objVar}[${sanitizedKey}] === undefined) throw new Error(${requiredError})\n`
     }
   }
 
@@ -474,8 +556,9 @@ function buildInnerObject (context, location, objVar) {
       }
       `
       } else if (isRequired) {
+        const requiredError = JSON.stringify(`"${key}" is required!`)
         code += ` else {
-        throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')
+        throw new Error(${requiredError})
       }
       `
       } else {
@@ -519,8 +602,9 @@ function buildInnerObject (context, location, objVar) {
           `
       } else if (isRequired) {
         // Should not happen if requiredProperties.length === 0 but safety
+        const requiredError = JSON.stringify(`"${key}" is required!`)
         code += ` else {
-            throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')
+            throw new Error(${requiredError})
           }
           `
       } else {
