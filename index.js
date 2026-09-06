@@ -384,7 +384,12 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
   const additionalPropertiesLocation = location.getPropertyLocation('additionalProperties')
   const additionalPropertiesSchema = additionalPropertiesLocation.schema
 
-  if (additionalPropertiesSchema !== undefined) {
+  // `additionalProperties: false` means every property that is not declared in
+  // `properties` nor matched by `patternProperties` is dropped, so no branch is
+  // emitted for it. Without this guard the `false` schema reaches buildValue,
+  // which serializes any boolean schema with `JSON.stringify(value)` and lets
+  // the property through.
+  if (additionalPropertiesSchema !== undefined && additionalPropertiesSchema !== false) {
     if (additionalPropertiesSchema === true) {
       code += `
         ${addComma}

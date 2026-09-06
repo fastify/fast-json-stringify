@@ -377,3 +377,43 @@ test('required key not in properties + additionalProperties produces valid JSON'
   t.assert.equal(out, '{"str":"x"}')
   t.assert.deepStrictEqual(JSON.parse(out), { str: 'x' })
 })
+
+test('additionalProperties set to false ignores properties not matched by patternProperties', (t) => {
+  // Regression: `additionalProperties: false` is documented to drop every
+  // property that is not listed in `properties` or matched by
+  // `patternProperties`. Combined with `patternProperties`, the generated
+  // code used to fall through to the additionalProperties branch with a
+  // boolean `false` schema, which serialized unmatched properties with
+  // `JSON.stringify(value)` and leaked them into the output:
+  //   {"nickname":"nick","matchnum":3,"leaked":"secret"}
+  t.plan(2)
+  const stringify = build({
+    type: 'object',
+    properties: {
+      nickname: { type: 'string' }
+    },
+    patternProperties: {
+      num: { type: 'number' }
+    },
+    additionalProperties: false
+  })
+
+  const out = stringify({ nickname: 'nick', matchnum: 3, leaked: 'secret' })
+  t.assert.equal(out, '{"nickname":"nick","matchnum":3}')
+  t.assert.deepStrictEqual(JSON.parse(out), { nickname: 'nick', matchnum: 3 })
+})
+
+test('additionalProperties set to false without declared properties ignores unmatched properties', (t) => {
+  t.plan(2)
+  const stringify = build({
+    type: 'object',
+    patternProperties: {
+      '^str': { type: 'string' }
+    },
+    additionalProperties: false
+  })
+
+  const out = stringify({ str1: 'a', leaked: 'secret' })
+  t.assert.equal(out, '{"str1":"a"}')
+  t.assert.deepStrictEqual(JSON.parse(out), { str1: 'a' })
+})
