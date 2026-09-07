@@ -502,12 +502,17 @@ function buildInnerObject (context, location, objVar) {
       const value = `value_${key.replace(/[^a-zA-Z0-9]/g, '_')}_${context.uid++}`
       const defaultValue = propertyLocation.schema.default
       const isRequired = requiredProperties.includes(key) // Should be false here but good to keep
+      // Select a complete prefix so the comma does not need a separate concatenation.
+      const propertyPrefix = sanitizedKey + ':'
+      const addProperty = needsRuntimeComma
+        ? `json += addComma_${localUid} ? ${JSON.stringify(',' + propertyPrefix)} : ${JSON.stringify(propertyPrefix)}
+           addComma_${localUid} = true`
+        : `json += ${JSON.stringify(propertyPrefix)}`
 
       code += `
           const ${value} = ${objVar}[${sanitizedKey}]
           if (${value} !== undefined) {
-            ${addComma}
-            json += ${JSON.stringify(sanitizedKey + ':')}
+            ${addProperty}
             ${buildValue(context, propertyLocation, `${value}`)}
           }`
 
