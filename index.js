@@ -15,6 +15,26 @@ let largeArrayMechanism = 'default'
 
 const NAMED_FRAGMENT_REF = /^#[a-z_][-\w._]*$/i
 
+const schemaArrayKeywords = ['allOf', 'anyOf', 'oneOf']
+
+const schemaMapKeywords = [
+  '$defs',
+  'definitions',
+  'patternProperties',
+  'properties'
+]
+
+const schemaValueKeywords = [
+  'additionalItems',
+  'additionalProperties',
+  'contains',
+  'else',
+  'if',
+  'not',
+  'propertyNames',
+  'then'
+]
+
 const serializerFns = `
 const {
   asString,
@@ -92,6 +112,54 @@ function getSchemaId (schema, rootSchemaId) {
     return schema.$id
   }
   return rootSchemaId
+}
+
+function validateSchemaIdsForAjvCodeGeneration (schema, schemaId, seen) {
+  if (typeof schema !== 'object' || schema === null || seen.has(schema)) return
+
+  seen.add(schema)
+  // Ajv emits the active schema ID inside a block-comment sourceURL.
+  const id = schema[schemaId]
+  if (typeof id === 'string' && id.includes('*/')) {
+    throw new Error(`Schema ${schemaId} must not contain "*/" when Ajv source code generation is enabled`)
+  }
+
+  for (const keyword of schemaMapKeywords) {
+    const schemas = schema[keyword]
+    if (typeof schemas === 'object' && schemas !== null && !Array.isArray(schemas)) {
+      for (const nestedSchema of Object.values(schemas)) {
+        validateSchemaIdsForAjvCodeGeneration(nestedSchema, schemaId, seen)
+      }
+    }
+  }
+
+  for (const keyword of schemaValueKeywords) {
+    validateSchemaIdsForAjvCodeGeneration(schema[keyword], schemaId, seen)
+  }
+
+  if (Array.isArray(schema.items)) {
+    for (const item of schema.items) {
+      validateSchemaIdsForAjvCodeGeneration(item, schemaId, seen)
+    }
+  } else {
+    validateSchemaIdsForAjvCodeGeneration(schema.items, schemaId, seen)
+  }
+
+  for (const keyword of schemaArrayKeywords) {
+    if (Array.isArray(schema[keyword])) {
+      for (const nestedSchema of schema[keyword]) {
+        validateSchemaIdsForAjvCodeGeneration(nestedSchema, schemaId, seen)
+      }
+    }
+  }
+
+  if (typeof schema.dependencies === 'object' && schema.dependencies !== null) {
+    for (const dependency of Object.values(schema.dependencies)) {
+      if (!Array.isArray(dependency)) {
+        validateSchemaIdsForAjvCodeGeneration(dependency, schemaId, seen)
+      }
+    }
+  }
 }
 
 function getSafeSchemaRef (context, location) {
@@ -260,13 +328,26 @@ function build (schema, options) {
     options.ajv,
     options.mode === 'standalone' && options.inlineValidators
   )
+  const ajvCodeOptions = options.ajv && options.ajv.code
+  const validateAjvSchemaIds = (
+    (options.mode === 'standalone' && options.inlineValidators) ||
+    (ajvCodeOptions && (ajvCodeOptions.source || ajvCodeOptions.process))
+  )
+  const ajvSchemaId = options.ajv?.schemaId ?? '$id'
+  const seenAjvSchemas = new WeakSet()
 
   for (const schemaId of context.validatorSchemasIds) {
     const schema = context.refResolver.getSchema(schemaId)
+    if (validateAjvSchemaIds) {
+      validateSchemaIdsForAjvCodeGeneration(schema, ajvSchemaId, seenAjvSchemas)
+    }
     validator.addSchema(schema, schemaId)
 
     const dependencies = context.refResolver.getSchemaDependencies(schemaId)
     for (const [schemaId, schema] of Object.entries(dependencies)) {
+      if (validateAjvSchemaIds) {
+        validateSchemaIdsForAjvCodeGeneration(schema, ajvSchemaId, seenAjvSchemas)
+      }
       validator.addSchema(schema, schemaId)
     }
   }
@@ -371,7 +452,7 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
       const propertyLocation = patternPropertiesLocation.getPropertyLocation(propertyKey)
 
       code += `
-        if (/${propertyKey.replace(/\\*\//g, '\\/')}/.test(key)) {
+        if (new RegExp(${JSON.stringify(propertyKey)}).test(key)) {
           ${addComma}
           json += asString(key) + JSON_STR_COLONS
           ${buildValue(context, propertyLocation, 'value')}
@@ -431,7 +512,8 @@ function buildInnerObject (context, location, objVar) {
   for (const key of requiredProperties) {
     if (!propertiesKeys.includes(key)) {
       const sanitizedKey = JSON.stringify(key)
-      code += `if (${objVar}[${sanitizedKey}] === undefined) throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')\n`
+      const requiredError = JSON.stringify(`"${key}" is required!`)
+      code += `if (${objVar}[${sanitizedKey}] === undefined) throw new Error(${requiredError})\n`
     }
   }
 
@@ -479,8 +561,9 @@ function buildInnerObject (context, location, objVar) {
       }
       `
       } else if (isRequired) {
+        const requiredError = JSON.stringify(`"${key}" is required!`)
         code += ` else {
-        throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')
+        throw new Error(${requiredError})
       }
       `
       } else {
@@ -529,8 +612,9 @@ function buildInnerObject (context, location, objVar) {
           `
       } else if (isRequired) {
         // Should not happen if requiredProperties.length === 0 but safety
+        const requiredError = JSON.stringify(`"${key}" is required!`)
         code += ` else {
-            throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')
+            throw new Error(${requiredError})
           }
           `
       } else {
@@ -630,10 +714,7 @@ function buildObject (context, location, input) {
     const functionName = generateFuncName(context)
     context.functionsNamesBySchema.set(schema, functionName)
 
-    const schemaRef = getSafeSchemaRef(context, location)
-
     const functionCode = `
-      // ${schemaRef}
       function ${functionName} (input) {
         const obj = ${toJSON('input')}
         if (obj === null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_OBJECT'}
@@ -690,17 +771,17 @@ function buildArray (context, location, input) {
     context.functionsNamesBySchema.set(schema, functionName)
 
     const schemaRef = getSafeSchemaRef(context, location)
+    const schemaRefError = JSON.stringify(`The value of '${schemaRef}' does not match schema definition.`)
 
     let functionCode = `
     function ${functionName} (obj) {
-      // ${schemaRef}
       let json = ''
   `
 
     functionCode += `
     if (obj === null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_ARRAY'}
     if (!Array.isArray(obj)) {
-      throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
+      throw new TypeError(${schemaRefError})
     }
     const arrayLength = obj.length
   `
@@ -778,14 +859,15 @@ function buildArray (context, location, input) {
   }
 
   context.buildingSet.add(schema)
-  const safeSchemaRef = getSafeSchemaRef(context, location)
+  const schemaRef = getSafeSchemaRef(context, location)
+  const schemaRefError = JSON.stringify(`The value of '${schemaRef}' does not match schema definition.`)
   const objVar = `obj_${context.uid++}`
   let inlinedCode = `
     const ${objVar} = ${input}
     if (${objVar} === null) {
       json += ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_ARRAY'}
     } else if (!Array.isArray(${objVar})) {
-      throw new TypeError(\`The value of '${safeSchemaRef}' does not match schema definition.\`)
+      throw new TypeError(${schemaRefError})
     } else {
       const arrayLength_${objVar} = ${objVar}.length
   `
@@ -986,8 +1068,9 @@ function buildMultiTypeSerializer (context, location, input) {
       }
     }
   })
+  const schemaRef = getSafeSchemaRef(context, location)
   code += `
-    else throw new TypeError(\`The value of '${getSafeSchemaRef(context, location)}' does not match schema definition.\`)
+    else throw new TypeError(${JSON.stringify(`The value of '${schemaRef}' does not match schema definition.`)})
   `
 
   return code
@@ -1228,14 +1311,15 @@ function buildOneOf (context, location, input) {
     context.validatorSchemaRefs.add(schemaRef)
 
     code += `
-      ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input})) {
+      ${index === 0 ? 'if' : 'else if'}(validator.validate(${JSON.stringify(schemaRef)}, ${input})) {
         ${nestedResult}
       }
     `
   }
 
+  const schemaRef = getSafeSchemaRef(context, location)
   code += `
-    else throw new TypeError(\`The value of '${getSafeSchemaRef(context, location)}' does not match schema definition.\`)
+    else throw new TypeError(${JSON.stringify(`The value of '${schemaRef}' does not match schema definition.`)})
   `
 
   return code
@@ -1278,7 +1362,7 @@ function buildIfThenElse (context, location, input) {
 
   if (!elseSchema) {
     return `
-      if (validator.validate("${ifSchemaRef}", ${input})) {
+      if (validator.validate(${JSON.stringify(ifSchemaRef)}, ${input})) {
         ${buildValue(context, thenMergedLocation, input)}
       } else {
         ${buildValue(context, rootLocation, input)}
@@ -1302,7 +1386,7 @@ function buildIfThenElse (context, location, input) {
   }
 
   return `
-    if (validator.validate("${ifSchemaRef}", ${input})) {
+    if (validator.validate(${JSON.stringify(ifSchemaRef)}, ${input})) {
       ${buildValue(context, thenMergedLocation, input)}
     } else {
       ${buildValue(context, elseMergedLocation, input)}
