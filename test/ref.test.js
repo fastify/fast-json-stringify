@@ -2178,3 +2178,57 @@ test('ref external - sibling keywords', (t) => {
     })
   }, { message: '"num" is required!' })
 })
+
+test('ref external - recursive sibling keywords', (t) => {
+  t.plan(3)
+
+  const externalSchema = {
+    node: {
+      $id: 'node',
+      type: 'object',
+      properties: {
+        str: {
+          type: 'string'
+        },
+        next: {
+          $ref: 'node#',
+          required: ['str']
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      root: {
+        $ref: 'node#',
+        required: ['str']
+      }
+    }
+  }
+
+  const object = {
+    root: {
+      str: 'test',
+      next: {
+        str: 'nested'
+      }
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"root":{"str":"test","next":{"str":"nested"}}}')
+
+  t.assert.throws(() => {
+    stringify({
+      root: {
+        str: 'test',
+        next: {}
+      }
+    })
+  }, { message: '"str" is required!' })
+})
