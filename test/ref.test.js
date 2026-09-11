@@ -2232,3 +2232,73 @@ test('ref external - recursive sibling keywords', (t) => {
     })
   }, { message: '"str" is required!' })
 })
+
+test('ref internal - conflicting sibling keywords', (t) => {
+  t.plan(2)
+
+  const schema = {
+    definitions: {
+      def: {
+        type: 'string'
+      }
+    },
+    type: 'object',
+    properties: {
+      value: {
+        $ref: '#/definitions/def',
+        type: 'integer'
+      }
+    }
+  }
+
+  const object = {
+    value: 42
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"value":"42"}')
+})
+
+test('ref external - sibling keywords with a duplicated anchor', (t) => {
+  t.plan(1)
+
+  const externalSchema = {
+    external: {
+      $id: 'external',
+      definitions: {
+        def: {
+          type: 'object',
+          properties: {
+            str: {
+              $id: '#anchor',
+              type: 'string'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: 'external#/definitions/def',
+        properties: {
+          num: {
+            $id: '#anchor',
+            type: 'integer'
+          }
+        }
+      }
+    }
+  }
+
+  t.assert.throws(
+    () => build(schema, { schema: externalSchema }),
+    { message: /There is already another anchor "#anchor"/ }
+  )
+})
