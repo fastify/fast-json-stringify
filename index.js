@@ -959,7 +959,7 @@ function buildMultiTypeSerializer (context, location, input) {
       }
       case 'integer': {
         code += `
-          ${statement}(Number.isInteger(${input}) || ${input} === null) {
+          ${statement}(Number.isInteger(${input}) || typeof ${input} === 'bigint' || ${input} === null) {
             ${nestedResult}
           }
         `
@@ -1227,8 +1227,17 @@ function buildOneOf (context, location, input) {
     const schemaRef = getValidatorSchemaRef(context, optionLocation)
     context.validatorSchemaRefs.add(schemaRef)
 
+    // AJV does not recognise BigInt as type "integer".
+    // Pre-route BigInt to the first integer-typed schema so it reaches
+    // asInteger() (which correctly handles bigint) instead of falling
+    // through to the TypeError branch.
+    const isIntegerSchema = optionSchema.type === 'integer'
+    const condition = isIntegerSchema
+      ? `typeof ${input} === 'bigint' || validator.validate("${schemaRef}", ${input})`
+      : `validator.validate("${schemaRef}", ${input})`
+
     code += `
-      ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input})) {
+      ${index === 0 ? 'if' : 'else if'}(${condition}) {
         ${nestedResult}
       }
     `

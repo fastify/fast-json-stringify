@@ -66,6 +66,25 @@ test('possibly nullable integer primitive alternative with null value', (t) => {
   t.assert.equal(value, '{"data":0}')
 })
 
+
+test('bigint serialized as integer in type array [integer, null]', (t) => {
+  t.plan(3)
+  const schema = { type: 'object', properties: { data: { type: ['integer', 'null'] } } }
+  const stringify = build(schema)
+  t.assert.equal(stringify({ data: 12n }), '{"data":12}')
+  t.assert.equal(stringify({ data: -5n }), '{"data":-5}')
+  t.assert.equal(stringify({ data: null }), '{"data":null}')
+})
+
+test('bigint serialized as integer in anyOf union', (t) => {
+  t.plan(3)
+  const schema = { type: 'object', properties: { data: { anyOf: [{ type: 'integer' }, { type: 'null' }] } } }
+  const stringify = build(schema)
+  t.assert.equal(stringify({ data: 12n }), '{"data":12}')
+  t.assert.equal(stringify({ data: -5n }), '{"data":-5}')
+  t.assert.equal(stringify({ data: null }), '{"data":null}')
+})
+
 test('possibly nullable number primitive alternative with null value', (t) => {
   t.plan(1)
 
