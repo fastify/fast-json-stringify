@@ -3,6 +3,7 @@
 /* eslint no-prototype-builtins: 0 */
 
 const { RefResolver } = require('json-schema-ref-resolver')
+const { MergeError } = require('@fastify/merge-json-schemas')
 
 const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
@@ -265,7 +266,8 @@ function resolveRef (context, location) {
     mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
     try {
       mergeLocations(context, mergedSchemaId, [location, ...siblingLocations])
-    } catch {
+    } catch (err) {
+      if (!(err instanceof MergeError)) throw err
       return location
     }
     context.mergedRefsIds.set(mergedSchemaKey, mergedSchemaId)
