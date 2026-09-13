@@ -92,7 +92,7 @@ function drawSchema (rng, depth = 0) {
         properties[name] = drawSchema(rng, depth + 1)
         if (chance(rng, 0.4)) required.push(name)
         if (chance(rng, 0.2) && !('$ref' in properties[name]) && properties[name].type !== 'null' && !('const' in properties[name])) {
-          properties[name].default = drawValue(rng, properties[name], 0)
+          properties[name].default = withoutRefKeys(drawValue(rng, properties[name], 0))
         }
       }
       schema = { type: 'object', properties }
@@ -107,6 +107,16 @@ function drawSchema (rng, depth = 0) {
   }
   if (chance(rng, 0.15) && schema.type && schema.type !== 'null') schema.nullable = true
   return schema
+}
+
+// json-schema-ref-resolver reads a $ref or an $id inside a default as a reference, until
+// fastify/json-schema-ref-resolver#54 lands: a default carries neither
+function withoutRefKeys (value) {
+  if (Array.isArray(value)) return value.map(withoutRefKeys)
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    return Object.fromEntries(Object.entries(value).filter(([k]) => k !== '$ref' && k !== '$id').map(([k, v]) => [k, withoutRefKeys(v)]))
+  }
+  return value
 }
 
 const resolve = (schema, root) => ('$ref' in schema ? root.definitions[schema.$ref.split('/').pop()] : schema)

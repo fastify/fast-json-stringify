@@ -37,7 +37,7 @@ jobs:
   # with what the README promises. The seed changes every time, so the ground covered grows
   # across pushes. A divergence turns this job red and prints the seed that reproduces it, with
   # the case shrunk to the lines worth pasting into a test: replay it with
-  # `node fuzz/stringify.js --seed N --rounds 1`. What the first runs found: #881 and #882.
+  # `node fuzz/stringify.js --seed N --rounds 1`. What the first runs found: #881, #882 and fastify/json-schema-ref-resolver#54.
   fuzz:
     runs-on: ubuntu-latest
     timeout-minutes: 10
