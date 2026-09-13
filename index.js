@@ -700,7 +700,7 @@ function buildArray (context, location, input) {
     functionCode += `
     if (obj === null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_ARRAY'}
     if (!Array.isArray(obj)) {
-      throw new TypeError(\`The value of '${schemaRef}' does not match schema definition.\`)
+      throw new TypeError(${JSON.stringify(`The value of '${schemaRef}' does not match schema definition.`)})
     }
     const arrayLength = obj.length
   `
@@ -785,7 +785,7 @@ function buildArray (context, location, input) {
     if (${objVar} === null) {
       json += ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_ARRAY'}
     } else if (!Array.isArray(${objVar})) {
-      throw new TypeError(\`The value of '${safeSchemaRef}' does not match schema definition.\`)
+      throw new TypeError(${JSON.stringify(`The value of '${safeSchemaRef}' does not match schema definition.`)})
     } else {
       const arrayLength_${objVar} = ${objVar}.length
   `
@@ -987,7 +987,7 @@ function buildMultiTypeSerializer (context, location, input) {
     }
   })
   code += `
-    else throw new TypeError(\`The value of '${getSafeSchemaRef(context, location)}' does not match schema definition.\`)
+    else throw new TypeError(${JSON.stringify(`The value of '${getSafeSchemaRef(context, location)}' does not match schema definition.`)})
   `
 
   return code
@@ -1228,14 +1228,14 @@ function buildOneOf (context, location, input) {
     context.validatorSchemaRefs.add(schemaRef)
 
     code += `
-      ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input})) {
+      ${index === 0 ? 'if' : 'else if'}(validator.validate(${JSON.stringify(schemaRef)}, ${input})) {
         ${nestedResult}
       }
     `
   }
 
   code += `
-    else throw new TypeError(\`The value of '${getSafeSchemaRef(context, location)}' does not match schema definition.\`)
+    else throw new TypeError(${JSON.stringify(`The value of '${getSafeSchemaRef(context, location)}' does not match schema definition.`)})
   `
 
   return code
@@ -1278,7 +1278,7 @@ function buildIfThenElse (context, location, input) {
 
   if (!elseSchema) {
     return `
-      if (validator.validate("${ifSchemaRef}", ${input})) {
+      if (validator.validate(${JSON.stringify(ifSchemaRef)}, ${input})) {
         ${buildValue(context, thenMergedLocation, input)}
       } else {
         ${buildValue(context, rootLocation, input)}
@@ -1302,7 +1302,7 @@ function buildIfThenElse (context, location, input) {
   }
 
   return `
-    if (validator.validate("${ifSchemaRef}", ${input})) {
+    if (validator.validate(${JSON.stringify(ifSchemaRef)}, ${input})) {
       ${buildValue(context, thenMergedLocation, input)}
     } else {
       ${buildValue(context, elseMergedLocation, input)}
