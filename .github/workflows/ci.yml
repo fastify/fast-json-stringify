@@ -31,3 +31,22 @@ jobs:
     with:
       license-check: true
       lint: true
+
+  # A few hundred fuzz rounds on a seed nobody chose, every push and every pull request: random
+  # schemas, values that conform to them, and the serializer's output compared byte for byte
+  # with what the README promises. The seed changes every time, so the ground covered grows
+  # across pushes. A divergence turns this job red and prints the seed that reproduces it, with
+  # the case shrunk to the lines worth pasting into a test: replay it with
+  # `node fuzz/stringify.js --seed N --rounds 1`. What the first runs found: #881 and #882.
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: lts/*
+      - run: npm install --ignore-scripts
+      - run: npm run fuzz -- --rounds 1000
