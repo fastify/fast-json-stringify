@@ -94,6 +94,14 @@ function getSchemaId (schema, rootSchemaId) {
   return rootSchemaId
 }
 
+// a schema ref on a comment line of the generated code: a line terminator in a property name
+// would end the comment and turn the rest of the name into code. JSON.stringify covers \n and
+// \r, the two separators JS also treats as line terminators are escaped by hand
+const LINE_SEPARATORS = /[\u2028\u2029]/g
+function asComment (schemaRef) {
+  return JSON.stringify(schemaRef).replace(LINE_SEPARATORS, (c) => '\\u' + c.charCodeAt(0).toString(16))
+}
+
 function getSafeSchemaRef (context, location) {
   let schemaRef = location.getSchemaRef() || ''
   if (schemaRef.startsWith(context.rootSchemaId)) {
@@ -633,7 +641,7 @@ function buildObject (context, location, input) {
     const schemaRef = getSafeSchemaRef(context, location)
 
     const functionCode = `
-      // ${schemaRef}
+      // ${asComment(schemaRef)}
       function ${functionName} (input) {
         const obj = ${toJSON('input')}
         if (obj === null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_OBJECT'}
@@ -693,7 +701,7 @@ function buildArray (context, location, input) {
 
     let functionCode = `
     function ${functionName} (obj) {
-      // ${schemaRef}
+      // ${asComment(schemaRef)}
       let json = ''
   `
 

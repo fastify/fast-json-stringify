@@ -23,3 +23,19 @@ for (const name of names) {
     })
   }
 }
+
+// the ref also goes on a comment line of the generated code, above the function of a nested
+// object or array, where a line terminator in the name ends the comment early
+for (const name of ['new' + String.fromCharCode(10) + 'line', 'line' + String.fromCharCode(0x2028) + 'sep', 'para' + String.fromCharCode(0x2029) + 'graph']) {
+  test(`a property named ${JSON.stringify(name)} with a nested object and array`, (t) => {
+    t.plan(1)
+
+    const stringify = build({
+      type: 'object',
+      properties: {
+        [name]: { type: 'object', properties: { list: { type: 'array', items: { type: 'integer' } } }, nullable: true }
+      }
+    })
+    t.assert.equal(stringify({ [name]: { list: [1] } }), JSON.stringify({ [name]: { list: [1] } }))
+  })
+}
