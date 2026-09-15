@@ -10,8 +10,7 @@ const Location = require('./lib/location')
 const validate = require('./lib/schema-validator')
 const mergeSchemas = require('./lib/merge-schemas')
 
-let largeArraySize = 2e4
-let largeArrayMechanism = 'default'
+const DEFAULT_LARGE_ARRAY_SIZE = 2e4
 
 const NAMED_FRAGMENT_REF = /^#[a-z_][-\w._]*$/i
 
@@ -190,9 +189,14 @@ function build (schema, options) {
     }
   }
 
+  // on the context, not the module: a build without these options must not inherit them
+  // from the build before it
+  context.largeArrayMechanism = 'default'
+  context.largeArraySize = DEFAULT_LARGE_ARRAY_SIZE
+
   if (options.largeArrayMechanism) {
     if (validLargeArrayMechanisms.has(options.largeArrayMechanism)) {
-      largeArrayMechanism = options.largeArrayMechanism
+      context.largeArrayMechanism = options.largeArrayMechanism
     } else {
       throw new Error(`Unsupported large array mechanism ${options.largeArrayMechanism}`)
     }
@@ -203,11 +207,11 @@ function build (schema, options) {
     let parsedNumber
 
     if (largeArraySizeType === 'string' && Number.isFinite((parsedNumber = Number.parseInt(options.largeArraySize, 10)))) {
-      largeArraySize = parsedNumber
+      context.largeArraySize = parsedNumber
     } else if (largeArraySizeType === 'number' && Number.isInteger(options.largeArraySize)) {
-      largeArraySize = options.largeArraySize
+      context.largeArraySize = options.largeArraySize
     } else if (largeArraySizeType === 'bigint') {
-      largeArraySize = Number(options.largeArraySize)
+      context.largeArraySize = Number(options.largeArraySize)
     } else {
       throw new Error(`Unsupported large array size. Expected integer-like, got ${typeof options.largeArraySize} with value ${options.largeArraySize}`)
     }
@@ -713,8 +717,8 @@ function buildArray (context, location, input) {
     `
     }
 
-    if (largeArrayMechanism === 'json-stringify') {
-      functionCode += `if (arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
+    if (context.largeArrayMechanism === 'json-stringify') {
+      functionCode += `if (arrayLength >= ${context.largeArraySize}) return JSON.stringify(obj)\n`
     }
 
     functionCode += `
@@ -798,8 +802,8 @@ function buildArray (context, location, input) {
     `
   }
 
-  if (largeArrayMechanism === 'json-stringify') {
-    inlinedCode += `if (arrayLength_${objVar} >= ${largeArraySize}) json += JSON.stringify(${objVar})\n else {`
+  if (context.largeArrayMechanism === 'json-stringify') {
+    inlinedCode += `if (arrayLength_${objVar} >= ${context.largeArraySize}) json += JSON.stringify(${objVar})\n else {`
   }
 
   inlinedCode += `
@@ -856,7 +860,7 @@ function buildArray (context, location, input) {
     json += JSON_STR_END_ARRAY
   `
 
-  if (largeArrayMechanism === 'json-stringify') {
+  if (context.largeArrayMechanism === 'json-stringify') {
     inlinedCode += '}'
   }
 
