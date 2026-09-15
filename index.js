@@ -1261,19 +1261,23 @@ function buildIfThenElse (context, location, input) {
   const ifSchemaRef = getValidatorSchemaRef(context, ifLocation)
   context.validatorSchemaRefs.add(ifSchemaRef)
 
-  const thenLocation = location.getPropertyLocation('then')
-  let thenMergedSchemaId = context.mergedSchemasIds.get(thenSchema)
-  let thenMergedLocation = null
-  if (thenMergedSchemaId) {
-    thenMergedLocation = getMergedLocation(context, thenMergedSchemaId)
-  } else {
-    thenMergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
-    context.mergedSchemasIds.set(thenSchema, thenMergedSchemaId)
+  // `then` is optional: a schema may pair `if` with `else` alone. In that case
+  // the true branch adds no keywords, so it serializes with the root schema.
+  let thenMergedLocation = rootLocation
+  if (thenSchema !== undefined) {
+    const thenLocation = location.getPropertyLocation('then')
+    let thenMergedSchemaId = context.mergedSchemasIds.get(thenSchema)
+    if (thenMergedSchemaId) {
+      thenMergedLocation = getMergedLocation(context, thenMergedSchemaId)
+    } else {
+      thenMergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
+      context.mergedSchemasIds.set(thenSchema, thenMergedSchemaId)
 
-    thenMergedLocation = mergeLocations(context, thenMergedSchemaId, [
-      rootLocation,
-      thenLocation
-    ])
+      thenMergedLocation = mergeLocations(context, thenMergedSchemaId, [
+        rootLocation,
+        thenLocation
+      ])
+    }
   }
 
   if (!elseSchema) {
@@ -1330,7 +1334,7 @@ function buildValue (context, location, input) {
     return buildOneOf(context, location, input)
   }
 
-  if (schema.if && schema.then) {
+  if (schema.if && (schema.then || schema.else)) {
     return buildIfThenElse(context, location, input)
   }
 
