@@ -31,6 +31,10 @@ expect(build).type.not.toBeCallableWith({
   type: 'number'
 }, { rounding: 'invalid' })
 
+build({} as Schema, { inlineValidators: true })
+build({} as Schema, { inlineValidators: false })
+expect(build).type.not.toBeCallableWith({} as Schema, { inlineValidators: 'true' })
+
 // String schema
 build({
   type: 'string'

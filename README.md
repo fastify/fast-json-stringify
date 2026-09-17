@@ -132,6 +132,7 @@ const stringify = fastJson(mySchema, {
 - `maxDepth`: maximum number of nested schema levels allowed during compilation.
 Defaults to `100` and may be set from `0` to `100`. Schemas that exceed this limit
 are rejected before compilation.
+- `inlineValidators`: when using standalone mode, embed Ajv-generated validator functions in the output instead of compiling schemas at runtime. [More details](#standalone)
 - `largeArrayMechanism`: set the mechanism that should be used to handle large
 (by default `20000` or more items) arrays. [More details](#largearrays)
 - `compileValidators`: when `true`, the `ajv` validators used by `anyOf`, `oneOf` and
@@ -732,12 +733,20 @@ const code = fastJson({
       type: 'string'
     }
   }
-}, { mode: 'standalone' })
+}, { mode: 'standalone', inlineValidators: true })
 
 fs.writeFileSync('stringify.js', code)
 const stringify = require('stringify.js')
 console.log(stringify({ firstName: 'Foo', surname: 'bar' })) // '{"firstName":"Foo"}'
 ```
+
+Set `inlineValidators` to `true` to include the Ajv-generated functions used by
+`anyOf`, `oneOf`, and `if/then/else` in the same output file. This avoids
+rebuilding an Ajv instance and compiling their schemas at runtime. The
+generated module still requires `fast-json-stringify` for its serializer and
+may require Ajv runtime helpers used by the generated validation code. Custom
+Ajv formats used by these schemas must support Ajv's standalone code
+generation.
 
 <a name="acknowledgments"></a>
 ## Acknowledgments

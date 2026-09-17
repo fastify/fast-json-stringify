@@ -430,7 +430,10 @@ function build (schema, options) {
   }
 
   const serializer = new Serializer(options)
-  const validator = new Validator(options.ajv)
+  const validator = new Validator(
+    options.ajv,
+    options.mode === 'standalone' && options.inlineValidators
+  )
 
   for (const schemaId of context.validatorSchemasIds) {
     const schema = context.refResolver.getSchema(schemaId)
@@ -555,7 +558,12 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
   const additionalPropertiesLocation = location.getPropertyLocation('additionalProperties')
   const additionalPropertiesSchema = additionalPropertiesLocation.schema
 
-  if (additionalPropertiesSchema !== undefined) {
+  // `additionalProperties: false` means every property that is not declared in
+  // `properties` nor matched by `patternProperties` is dropped, so no branch is
+  // emitted for it. Without this guard the `false` schema reaches buildValue,
+  // which serializes any boolean schema with `JSON.stringify(value)` and lets
+  // the property through.
+  if (additionalPropertiesSchema !== undefined && additionalPropertiesSchema !== false) {
     if (additionalPropertiesSchema === true) {
       code += `
         ${addComma}
@@ -673,12 +681,17 @@ function buildInnerObject (context, location, objVar) {
       const value = `value_${key.replace(/[^a-zA-Z0-9]/g, '_')}_${context.uid++}`
       const defaultValue = propertyLocation.schema.default
       const isRequired = requiredProperties.includes(key) // Should be false here but good to keep
+      // Select a complete prefix so the comma does not need a separate concatenation.
+      const propertyPrefix = sanitizedKey + ':'
+      const addProperty = needsRuntimeComma
+        ? `json += addComma_${localUid} ? ${JSON.stringify(',' + propertyPrefix)} : ${JSON.stringify(propertyPrefix)}
+           addComma_${localUid} = true`
+        : `json += ${JSON.stringify(propertyPrefix)}`
 
       code += `
           const ${value} = ${objVar}[${sanitizedKey}]
           if (${value} !== undefined) {
-            ${addComma}
-            json += ${JSON.stringify(sanitizedKey + ':')}
+            ${addProperty}
             ${buildValue(context, propertyLocation, `${value}`)}
           }`
 
@@ -1254,7 +1267,8 @@ function detectRecursiveSchemas (context, location) {
       const schemas = schema[keyword]
       if (Array.isArray(schemas)) {
         const schemasLocation = location.getPropertyLocation(keyword)
-        for (let i = 0; i < schemas.length; i++) {
+        const schemasLength = schemas.length
+        for (let i = 0; i < schemasLength; i++) {
           traverse(schemasLocation.getPropertyLocation(i), nestedDepth)
         }
       }
@@ -1263,7 +1277,8 @@ function detectRecursiveSchemas (context, location) {
     const items = schema.items
     if (Array.isArray(items)) {
       const itemsLocation = location.getPropertyLocation('items')
-      for (let i = 0; i < items.length; i++) {
+      const itemsLength = items.length
+      for (let i = 0; i < itemsLength; i++) {
         traverse(itemsLocation.getPropertyLocation(i), nestedDepth)
       }
     } else if (typeof items === 'object' && items !== null) {
@@ -1425,19 +1440,23 @@ function buildIfThenElse (context, location, input) {
   const ifSchemaRef = getValidatorSchemaRef(context, ifLocation)
   context.validatorSchemaRefs.add(ifSchemaRef)
 
-  const thenLocation = location.getPropertyLocation('then')
-  let thenMergedSchemaId = context.mergedSchemasIds.get(thenSchema)
-  let thenMergedLocation = null
-  if (thenMergedSchemaId) {
-    thenMergedLocation = getMergedLocation(context, thenMergedSchemaId)
-  } else {
-    thenMergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
-    context.mergedSchemasIds.set(thenSchema, thenMergedSchemaId)
+  // `then` is optional: a schema may pair `if` with `else` alone. In that case
+  // the true branch adds no keywords, so it serializes with the root schema.
+  let thenMergedLocation = rootLocation
+  if (thenSchema !== undefined) {
+    const thenLocation = location.getPropertyLocation('then')
+    let thenMergedSchemaId = context.mergedSchemasIds.get(thenSchema)
+    if (thenMergedSchemaId) {
+      thenMergedLocation = getMergedLocation(context, thenMergedSchemaId)
+    } else {
+      thenMergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
+      context.mergedSchemasIds.set(thenSchema, thenMergedSchemaId)
 
-    thenMergedLocation = mergeLocations(context, thenMergedSchemaId, [
-      rootLocation,
-      thenLocation
-    ])
+      thenMergedLocation = mergeLocations(context, thenMergedSchemaId, [
+        rootLocation,
+        thenLocation
+      ])
+    }
   }
 
   if (!elseSchema) {
@@ -1494,7 +1513,7 @@ function buildValue (context, location, input) {
     return buildOneOf(context, location, input)
   }
 
-  if (schema.if && schema.then) {
+  if (schema.if && (schema.then || schema.else)) {
     return buildIfThenElse(context, location, input)
   }
 
