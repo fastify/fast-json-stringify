@@ -1077,6 +1077,13 @@ function buildArrayTypeCondition (type, accessor) {
           return buildArrayTypeCondition(subType, accessor)
         })
         condition = `(${conditions.join(' || ')})`
+      } else {
+        // The item schema has no `type` keyword, so it does not constrain the
+        // type of the item at all. That is the case for `{}`, `const`, `enum`,
+        // `oneOf`/`anyOf`/`allOf`, `if`/`then`/`else` and boolean schemas.
+        // Without this branch the condition would be `undefined` and every
+        // value would be rejected.
+        condition = 'true'
       }
   }
   return condition
