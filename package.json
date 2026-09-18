@@ -67,7 +67,6 @@
     "compile-json-stringify": "^0.1.2",
     "eslint": "^9.39.2",
     "fast-json-stringify": ".",
-    "is-my-json-valid": "^2.20.6",
     "json-accelerator": "^0.1.7",
     "neostandard": "^0.13.0",
     "simple-git": "^3.30.0",
