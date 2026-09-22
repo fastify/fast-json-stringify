@@ -77,10 +77,11 @@ test('inline object generation without schema IDs', t => {
 })
 
 test('inline array generation without schema IDs', t => {
-  t.plan(6)
+  t.plan(8)
 
   const build = loadBuildWithLocation(LocationWithoutSchemaId)
   const stringify = build({ type: 'array', items: { type: 'string' } }, { largeArrayMechanism: 'default' })
+  const stringifyProjected = build({ type: 'array', items: { type: 'string' } }, { arrayProjection: true })
   const stringifyNullable = build({ type: 'array', nullable: true })
   const stringifyTuple = build({
     type: 'array',
@@ -107,6 +108,9 @@ test('inline array generation without schema IDs', t => {
   t.assert.throws(() => stringifyFixedTuple(['one', 'two']), /Item at 1/)
   t.assert.equal(stringifyLargeArray([1, 2]), '[1,2]')
   t.assert.throws(() => stringify('not-an-array'), /does not match schema definition/)
+  // long enough to project, and short enough to fall through to concatenation
+  t.assert.equal(stringifyProjected(['one', 'two']), '["one","two"]')
+  t.assert.equal(stringifyProjected(['one']), '["one"]')
 })
 
 test('code generation reference fallbacks', t => {
