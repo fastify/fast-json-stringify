@@ -135,6 +135,8 @@ are rejected before compilation.
 - `inlineValidators`: when using standalone mode, embed Ajv-generated validator functions in the output instead of compiling schemas at runtime. [More details](#standalone)
 - `largeArrayMechanism`: set the mechanism that should be used to handle large
 (by default `20000` or more items) arrays. [More details](#largearrays)
+- `arrayProjection`: override the automatic detection of V8's fast
+`JSON.stringify` path for arrays. [More details](#arrayprojection)
 - `compileValidators`: when `true`, the `ajv` validators used by `anyOf`, `oneOf` and
 `if/then/else` are compiled during `build()` instead of lazily, on the first serialization
 that reaches them. This makes `build()` slower but removes a potentially large one-off cost
@@ -641,6 +643,26 @@ integer-like values, such as:
 - `'20000'`
 - `'2e4'` - _note this will be converted to `2`, not `20000`_
 - `1.5` - _note this will be converted to `1`_
+
+<a name="arrayprojection"></a>
+#### Array Projection
+
+V8 13.8 (Node.js 25) added a fast path to `JSON.stringify` that outruns the
+string concatenation `fast-json-stringify` generates. It only applies to plain
+objects with no accessors, no `toJSON` and no `Date` values, so the user's own
+objects rarely qualify — but the objects `fast-json-stringify` *could* build
+from them always do.
+
+On a supporting V8, arrays of two or more items are therefore serialized by
+projecting each item into a new object holding exactly the schema's properties,
+already coerced, and handing the resulting array to `JSON.stringify`. The output
+is identical, schema filtering and coercion still apply, and the concatenation
+path takes over for anything the projection does not model (`anyOf`, `$ref`,
+`patternProperties`, tuples, deeply nested objects, `BigInt` values, ...).
+
+The behaviour is detected from `process.versions.v8`. Set `arrayProjection` to
+`false` to always concatenate, or to `true` to project regardless of the running
+V8 — both produce the same output, so the option only affects speed.
 
 <a name="unsafe"></a>
 #### Unsafe string
