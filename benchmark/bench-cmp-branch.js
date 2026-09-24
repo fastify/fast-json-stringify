@@ -5,8 +5,8 @@
 // Each benchmark runs in four workers at once, two on the other revision (A) and two on the working
 // tree (B), and they take turns in batches of about 10ms, so a machine that warms up or throttles
 // slows all four together. A against A and B against B is the same code against itself: how far it
-// moves is the noise. A/B is followed by the band that noise gives to it, and a row is a result only
-// when A/B is outside that band.
+// moves is the noise. A/B is followed by the band that noise gives to it: outside the band the row is
+// faster or slower, by at least what is left of A/B once the band is taken off.
 //
 //   npm run bench:cmp                                     main against the working tree
 //   npm run bench:cmp -- --against v7.0.0
@@ -53,15 +53,18 @@ function arm () {
   const build = require(workerData.lib)
   const { schema, options, input, compile } = require('./bench.js')[workerData.index]
   const stringify = compile ? null : build(schema, options)
-  // read at exit, so the calls are not optimized away
-  let sink = 0
+  // The same input at an index that changes, so V8 cannot move the call out of the loop and write
+  // the string once, and every result kept, so it cannot drop the call either. With a constant input
+  // it did one or the other, and two workers on the same code came out up to 3x apart.
+  const inputs = [input, input]
+  const results = new Array(16)
 
   function batch (calls) {
     const start = process.hrtime.bigint()
     if (compile) {
-      for (let i = 0; i < calls; i++) sink += build(schema, options)(input).length
+      for (let i = 0; i < calls; i++) results[i & 15] = build(schema, options)(inputs[i & 1])
     } else {
-      for (let i = 0; i < calls; i++) sink += stringify(input).length
+      for (let i = 0; i < calls; i++) results[i & 15] = stringify(inputs[i & 1])
     }
     return Number(process.hrtime.bigint() - start)
   }
@@ -79,7 +82,6 @@ function arm () {
   parentPort.on('message', ({ ms, calls }) => {
     parentPort.postMessage(ms ? warmup(ms) : Math.log(calls * 1e9 / batch(calls)))
   })
-  process.on('exit', () => sink)
 }
 
 function median (values) {
@@ -186,7 +188,10 @@ async function main () {
         const { aa, bb, ab, band, verdict } = await compare(libs, index, sessions, rounds)
         counts[verdict]++
         const sign = ab > 0 ? '+' : ''
-        const line = `${label} A/A ±${percent(aa)}  B/B ±${percent(bb)}  A/B ${sign}${percent(ab)} ±${percent(band)}  ${verdict}`
+        // A/B with the band taken off: the part of it the noise cannot explain
+        const net = Math.abs(Math.expm1(ab - Math.sign(ab) * band)) * 100
+        const result = verdict === 'noise' ? verdict : `${verdict} by at least ${net.toFixed(1)}%`
+        const line = `${label} A/A ±${percent(aa)}  B/B ±${percent(bb)}  A/B ${sign}${percent(ab)} ±${percent(band)}  ${result}`
         const color = verdict === 'faster' ? greenColor : verdict === 'slower' ? redColor : ''
         console.log(color ? `${color}${line}${resetColor}` : line)
       } catch (error) {
