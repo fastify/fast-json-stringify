@@ -20,6 +20,7 @@ const { once } = require('node:events')
 const { parseArgs } = require('node:util')
 const fs = require('node:fs')
 const path = require('node:path')
+const v8 = require('node:v8')
 
 const ROOT = path.join(__dirname, '..')
 // inside the repo, so the other revision resolves node_modules from here
@@ -53,18 +54,17 @@ function arm () {
   const build = require(workerData.lib)
   const { schema, options, input, compile } = require('./bench.js')[workerData.index]
   const stringify = compile ? null : build(schema, options)
-  // The same input at an index that changes, so V8 cannot move the call out of the loop and write
-  // the string once, and every result kept, so it cannot drop the call either. With a constant input
-  // it did one or the other, and two workers on the same code came out up to 3x apart.
+  // the input at an index that changes and the last two results kept, so V8 can neither write the
+  // string once outside the loop nor drop the call; more results kept put the GC in the measure
   const inputs = [input, input]
-  const results = new Array(16)
+  const results = [null, null]
 
   function batch (calls) {
     const start = process.hrtime.bigint()
     if (compile) {
-      for (let i = 0; i < calls; i++) results[i & 15] = build(schema, options)(inputs[i & 1])
+      for (let i = 0; i < calls; i++) results[i & 1] = build(schema, options)(inputs[i & 1])
     } else {
-      for (let i = 0; i < calls; i++) results[i & 15] = stringify(inputs[i & 1])
+      for (let i = 0; i < calls; i++) results[i & 1] = stringify(inputs[i & 1])
     }
     return Number(process.hrtime.bigint() - start)
   }
@@ -166,6 +166,10 @@ async function main () {
       rounds: { type: 'string', default: '20' }
     }
   })
+  // every worker with the young generation at its largest, or it grows with what the build allocated
+  // and a branch whose build allocates more runs the same code with fewer GCs
+  v8.setFlagsFromString('--min-semi-space-size=16')
+
   const sessions = Number(values.sessions)
   const rounds = Number(values.rounds)
 
