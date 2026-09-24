@@ -31,6 +31,10 @@ expect(build).type.not.toBeCallableWith({
   type: 'number'
 }, { rounding: 'invalid' })
 
+build({} as Schema, { inlineValidators: true })
+build({} as Schema, { inlineValidators: false })
+expect(build).type.not.toBeCallableWith({} as Schema, { inlineValidators: 'true' })
+
 // String schema
 build({
   type: 'string'
@@ -257,6 +261,10 @@ build({}, { largeArraySize: 2000 })
 build({}, { largeArraySize: '2e4' })
 build({}, { largeArraySize: 2n })
 expect(build).type.not.toBeCallableWith({} as Schema, { largeArraySize: ['asdf'] })
+
+// maxDepth
+build({}, { maxDepth: 100 })
+expect(build).type.not.toBeCallableWith({} as Schema, { maxDepth: '500' })
 
 // compileValidators
 build({}, { compileValidators: true })

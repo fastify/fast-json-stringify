@@ -163,9 +163,21 @@ declare namespace build {
      */
     rounding?: 'ceil' | 'floor' | 'round' | 'trunc'
     /**
+     * Maximum number of nested schema levels allowed during compilation (0–100)
+     *
+     * @default 100
+     */
+    maxDepth?: number
+    /**
      * Running mode of fast-json-stringify
      */
     mode?: 'debug' | 'standalone'
+    /**
+     * Embed Ajv-generated validators in standalone output instead of compiling schemas at runtime
+     *
+     * @default false
+     */
+    inlineValidators?: boolean
     /**
      * Large arrays are defined as arrays containing, by default, `20000`
      * elements or more. That value can be adjusted via the option parameter
