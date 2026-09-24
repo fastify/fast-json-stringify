@@ -474,4 +474,9 @@ async function runBenchmarks () {
   }
 }
 
-runBenchmarks()
+// bench-cmp-branch.js runs the same cases
+module.exports = benchmarks
+
+if (require.main === module) {
+  runBenchmarks()
+}
