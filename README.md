@@ -121,13 +121,17 @@ const fastJson = require('fast-json-stringify')
 const stringify = fastJson(mySchema, {
   schema: { ... },
   ajv: { ... },
-  rounding: 'ceil'
+  rounding: 'ceil',
+  maxDepth: 100
 })
 ```
 
 - `schema`: external schemas references by $ref property. [More details](#ref)
 - `ajv`: [ajv v8 instance's settings](https://ajv.js.org/options.html) for those properties that require `ajv`. [More details](#anyof)
 - `rounding`: setup how the `integer` types will be rounded when not integers. [More details](#integer)
+- `maxDepth`: maximum number of nested schema levels allowed during compilation.
+Defaults to `100` and may be set from `0` to `100`. Schemas that exceed this limit
+are rejected before compilation.
 - `inlineValidators`: when using standalone mode, embed Ajv-generated validator functions in the output instead of compiling schemas at runtime. [More details](#standalone)
 - `largeArrayMechanism`: set the mechanism that should be used to handle large
 (by default `20000` or more items) arrays. [More details](#largearrays)

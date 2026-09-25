@@ -650,3 +650,36 @@ test('if with a $ref that has sibling keywords is left unchanged', (t) => {
   const stringify = build(schema, { schema: externalSchema })
   t.assert.equal(stringify({ kind: 'foo', foo: 'ignored', bar: 'fallback' }), '{"bar":"fallback"}')
 })
+
+test('if/else without then applies the else branch', (t) => {
+  t.plan(4)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      kind: { type: 'string' }
+    },
+    if: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['foobar'] }
+      }
+    },
+    else: {
+      type: 'object',
+      properties: {
+        bar: { type: 'string' }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  const elseOutput = stringify({ kind: 'other', bar: 'value' })
+  t.assert.equal(elseOutput, '{"kind":"other","bar":"value"}')
+  t.assert.deepStrictEqual(JSON.parse(elseOutput), { kind: 'other', bar: 'value' })
+
+  const thenOutput = stringify({ kind: 'foobar', bar: 'value' })
+  t.assert.equal(thenOutput, '{"kind":"foobar"}')
+  t.assert.deepStrictEqual(JSON.parse(thenOutput), { kind: 'foobar' })
+})

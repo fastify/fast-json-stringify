@@ -262,6 +262,10 @@ build({}, { largeArraySize: '2e4' })
 build({}, { largeArraySize: 2n })
 expect(build).type.not.toBeCallableWith({} as Schema, { largeArraySize: ['asdf'] })
 
+// maxDepth
+build({}, { maxDepth: 100 })
+expect(build).type.not.toBeCallableWith({} as Schema, { maxDepth: '500' })
+
 // compileValidators
 build({}, { compileValidators: true })
 build({}, { compileValidators: false })

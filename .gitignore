@@ -147,3 +147,8 @@ yarn.lock
 # editor files
 .vscode
 .idea
+
+# AI
+.pi
+AGENTS.md
+CLAUDE.md
