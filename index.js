@@ -311,6 +311,14 @@ function validateSchemaIdsForAjvCodeGeneration (schema, schemaId, seen) {
   }
 }
 
+// a schema ref on a comment line of the generated code: a line terminator in a property name
+// would end the comment and turn the rest of the name into code. JSON.stringify covers \n and
+// \r, the two separators JS also treats as line terminators are escaped by hand
+const LINE_SEPARATORS = /[\u2028\u2029]/g
+function asComment (schemaRef) {
+  return JSON.stringify(schemaRef).replace(LINE_SEPARATORS, (c) => '\\u' + c.charCodeAt(0).toString(16))
+}
+
 function getSafeSchemaRef (context, location) {
   let schemaRef = location.getSchemaRef() || ''
   if (schemaRef.startsWith(context.rootSchemaId)) {
@@ -875,7 +883,10 @@ function buildObject (context, location, input) {
     const functionName = generateFuncName(context)
     context.functionsNamesBySchema.set(schema, functionName)
 
+    const schemaRef = getSafeSchemaRef(context, location)
+
     const functionCode = `
+      // ${asComment(schemaRef)}
       function ${functionName} (input) {
         const obj = ${toJSON('input')}
         if (obj === null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_OBJECT'}
@@ -932,17 +943,17 @@ function buildArray (context, location, input) {
     context.functionsNamesBySchema.set(schema, functionName)
 
     const schemaRef = getSafeSchemaRef(context, location)
-    const schemaRefError = JSON.stringify(`The value of '${schemaRef}' does not match schema definition.`)
 
     let functionCode = `
     function ${functionName} (obj) {
+      // ${asComment(schemaRef)}
       let json = ''
   `
 
     functionCode += `
     if (obj === null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_ARRAY'}
     if (!Array.isArray(obj)) {
-      throw new TypeError(${schemaRefError})
+      throw new TypeError(${JSON.stringify(`The value of '${schemaRef}' does not match schema definition.`)})
     }
     const arrayLength = obj.length
   `
@@ -1020,15 +1031,14 @@ function buildArray (context, location, input) {
   }
 
   context.buildingSet.add(schema)
-  const schemaRef = getSafeSchemaRef(context, location)
-  const schemaRefError = JSON.stringify(`The value of '${schemaRef}' does not match schema definition.`)
+  const safeSchemaRef = getSafeSchemaRef(context, location)
   const objVar = `obj_${context.uid++}`
   let inlinedCode = `
     const ${objVar} = ${input}
     if (${objVar} === null) {
       json += ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_ARRAY'}
     } else if (!Array.isArray(${objVar})) {
-      throw new TypeError(${schemaRefError})
+      throw new TypeError(${JSON.stringify(`The value of '${safeSchemaRef}' does not match schema definition.`)})
     } else {
       const arrayLength_${objVar} = ${objVar}.length
   `
@@ -1229,9 +1239,8 @@ function buildMultiTypeSerializer (context, location, input) {
       }
     }
   })
-  const schemaRef = getSafeSchemaRef(context, location)
   code += `
-    else throw new TypeError(${JSON.stringify(`The value of '${schemaRef}' does not match schema definition.`)})
+    else throw new TypeError(${JSON.stringify(`The value of '${getSafeSchemaRef(context, location)}' does not match schema definition.`)})
   `
 
   return code
@@ -1483,9 +1492,8 @@ function buildOneOf (context, location, input) {
     `
   }
 
-  const schemaRef = getSafeSchemaRef(context, location)
   code += `
-    else throw new TypeError(${JSON.stringify(`The value of '${schemaRef}' does not match schema definition.`)})
+    else throw new TypeError(${JSON.stringify(`The value of '${getSafeSchemaRef(context, location)}' does not match schema definition.`)})
   `
 
   return code
