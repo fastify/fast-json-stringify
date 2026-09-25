@@ -345,6 +345,13 @@ function build (schema, options) {
     recursiveSchemas: new Set(),
     recursivePaths: new Set(),
     buildingSet: new Set(),
+    projectionFunctions: [],
+    projectionFnsBySchema: new Map(),
+    projectionCounter: 0,
+    usesProjection: false,
+    arrayProjection: options.arrayProjection === undefined
+      ? V8_HAS_FAST_STRINGIFY
+      : options.arrayProjection,
     uid: 0
   }
 
@@ -370,6 +377,10 @@ function build (schema, options) {
     if (!validRoundingMethods.has(options.rounding)) {
       throw new Error(`Unsupported integer rounding method ${options.rounding}`)
     }
+  }
+
+  if (options.arrayProjection !== undefined && typeof options.arrayProjection !== 'boolean') {
+    throw new Error(`Unsupported array projection option ${options.arrayProjection}`)
   }
 
   if (options.largeArrayMechanism) {
@@ -413,6 +424,10 @@ function build (schema, options) {
     const JSON_STR_EMPTY_STRING = JSON_STR_QUOTE + JSON_STR_QUOTE
     const JSON_STR_NULL = 'null'
   `
+
+  if (context.usesProjection) {
+    contextFunctionCode += projectionFns + context.projectionFunctions.join('\n')
+  }
 
   // If we have only the invocation of the 'anonymous0' function, we would
   // basically just wrap the 'anonymous0' function in the 'main' function and
@@ -867,6 +882,16 @@ function buildArray (context, location, input) {
   const jsonPointer = location.jsonPointer || ''
   const fullPath = `${schemaId}#${jsonPointer}`
 
+  // On a V8 with the fast JSON.stringify path, projecting the items into plain
+  // fast-mode objects and handing the result to JSON.stringify beats building
+  // the string ourselves, once the array is long enough to amortise the
+  // allocations. Shorter arrays fall through to the concatenation below.
+  const itemProjection = context.arrayProjection &&
+    largeArrayMechanism === 'default' &&
+    !Array.isArray(itemsSchema)
+    ? buildArrayItemProjection(context, itemsLocation)
+    : null
+
   if (context.recursivePaths.has(fullPath) || context.buildingSet.has(schema) || schemaId !== '') {
     const functionName = generateFuncName(context)
     context.functionsNamesBySchema.set(schema, functionName)
@@ -886,6 +911,24 @@ function buildArray (context, location, input) {
     }
     const arrayLength = obj.length
   `
+
+    if (itemProjection !== null) {
+      functionCode += `
+      if (arrayLength >= ${PROJECTION_MIN_ARRAY_LENGTH}) {
+        projectionBailed = false
+        const projected = new Array(arrayLength)
+        for (let i = 0; i < arrayLength; i++) {
+          const value = obj[i]
+          let ${itemProjection.outVar}
+          ${itemProjection.code}
+          projected[i] = ${itemProjection.outVar}
+        }
+        if (projectionBailed === false) {
+          return JSON.stringify(projected)
+        }
+      }
+    `
+    }
 
     if (!schema.additionalItems && Array.isArray(itemsSchema)) {
       functionCode += `
@@ -984,6 +1027,29 @@ function buildArray (context, location, input) {
     inlinedCode += `if (arrayLength_${objVar} >= ${largeArraySize}) json += JSON.stringify(${objVar})\n else {`
   }
 
+  let projectedFlag = null
+  if (itemProjection !== null) {
+    projectedFlag = `projected_${context.uid++}`
+    inlinedCode += `
+      let ${projectedFlag} = false
+      if (arrayLength_${objVar} >= ${PROJECTION_MIN_ARRAY_LENGTH}) {
+        projectionBailed = false
+        const projection_${projectedFlag} = new Array(arrayLength_${objVar})
+        for (let i = 0; i < arrayLength_${objVar}; i++) {
+          const value = ${objVar}[i]
+          let ${itemProjection.outVar}
+          ${itemProjection.code}
+          projection_${projectedFlag}[i] = ${itemProjection.outVar}
+        }
+        if (projectionBailed === false) {
+          json += JSON.stringify(projection_${projectedFlag})
+          ${projectedFlag} = true
+        }
+      }
+      if (${projectedFlag} === false) {
+    `
+  }
+
   inlinedCode += `
     json += JSON_STR_BEGIN_ARRAY
   `
@@ -1038,6 +1104,10 @@ function buildArray (context, location, input) {
     json += JSON_STR_END_ARRAY
   `
 
+  if (projectedFlag !== null) {
+    inlinedCode += '}'
+  }
+
   if (largeArrayMechanism === 'json-stringify') {
     inlinedCode += '}'
   }
@@ -1045,6 +1115,371 @@ function buildArray (context, location, input) {
   inlinedCode += '}'
   context.buildingSet.delete(schema)
   return inlinedCode
+}
+
+/* ---------------------------------------------------------------------------
+ * Array projection fast path.
+ *
+ * V8 >= 13.8 ships a fast path for JSON.stringify that is faster than the
+ * string concatenation we generate, but it only applies to "simple" values:
+ * fast-mode objects with no accessors, no toJSON, no Dates, no prototype
+ * surprises. Rather than hand the user's object to JSON.stringify (which would
+ * lose schema filtering and coercion, and would usually miss the fast path
+ * anyway), we generate a *projection* function: it builds a brand new object
+ * literal holding exactly the schema's properties, already coerced. That object
+ * is fast-mode by construction, so JSON.stringify takes its fast path.
+ *
+ * This only pays off when the projection cost is amortised over many values, so
+ * it is applied to arrays above a length threshold only.
+ * ------------------------------------------------------------------------- */
+
+/* c8 ignore start - depends on the V8 the tests happen to run on */
+const V8_HAS_FAST_STRINGIFY = (() => {
+  const parts = process.versions.v8.split('.')
+  const major = Number(parts[0])
+  const minor = Number(parts[1])
+  return major > 13 || (major === 13 && minor >= 8)
+})()
+/* c8 ignore stop */
+
+// A single-element array is faster to concatenate than to project.
+const PROJECTION_MIN_ARRAY_LENGTH = 2
+
+// Each level of nesting allocates another object per item. Past a shallow
+// depth the allocation and GC cost outweighs the faster JSON.stringify.
+const PROJECTION_MAX_DEPTH = 2
+
+const ARRAY_INDEX_KEY = /^(?:0|[1-9]\d*)$/
+
+// Keywords that change what is emitted in ways the projection does not model.
+function isProjectionBlocked (schema) {
+  return schema.$ref !== undefined ||
+    schema.allOf !== undefined ||
+    schema.anyOf !== undefined ||
+    schema.oneOf !== undefined ||
+    schema.if !== undefined ||
+    schema.not !== undefined ||
+    schema.const !== undefined ||
+    schema.default !== undefined ||
+    schema.patternProperties !== undefined
+}
+
+function projectionTypeGuard (type, input) {
+  switch (type) {
+    case 'string':
+      return `typeof ${input} === "string" ||
+        ${input} === null ||
+        ${input} instanceof Date ||
+        ${input} instanceof RegExp ||
+        (
+          typeof ${input} === "object" &&
+          typeof ${input}.toString === "function" &&
+          ${input}.toString !== Object.prototype.toString
+        )`
+    case 'array':
+      return `Array.isArray(${input})`
+    case 'integer':
+      return `Number.isInteger(${input}) || ${input} === null`
+    case 'object':
+      return `(typeof ${input} === "object" && !Array.isArray(${input})) || ${input} === null`
+    default:
+      return `typeof ${input} === "${type}" || ${input} === null`
+  }
+}
+
+// Emits statements assigning the projected value of `input` to `out`.
+// Returns null when this schema cannot be projected, in which case the caller
+// falls back to the concatenation codegen.
+function buildProjectionValue (context, location, input, out, depth) {
+  const schema = location.schema
+
+  if (schema === null || typeof schema !== 'object' || Array.isArray(schema)) return null
+  if (isProjectionBlocked(schema)) return null
+
+  let type = schema.type
+  if (type === undefined) {
+    type = inferTypeByKeyword(schema)
+    if (!type) return null
+  }
+
+  if (Array.isArray(type)) {
+    // Only `[T, 'null']` is modelled; anything wider needs the full runtime
+    // dispatch that buildMultiTypeSerializer generates.
+    if (type.length !== 2 || !type.includes('null')) return null
+    const innerType = type.find((t) => t !== 'null')
+
+    const inner = buildProjectionTyped(context, location, input, out, innerType, depth)
+    if (inner === null) return null
+
+    return `
+      if (${input} === null) {
+        ${out} = null
+      } else if (${projectionTypeGuard(innerType, input)}) {
+        ${inner}
+      } else {
+        throw new TypeError(\`The value of '${getSafeSchemaRef(context, location)}' does not match schema definition.\`)
+      }
+    `
+  }
+
+  const inner = buildProjectionTyped(context, location, input, out, type, depth)
+  if (inner === null) return null
+
+  if (schema.nullable === true) {
+    return `
+      if (${input} === null) {
+        ${out} = null
+      } else {
+        ${inner}
+      }
+    `
+  }
+  return inner
+}
+
+function buildProjectionTyped (context, location, input, out, type, depth) {
+  const schema = location.schema
+
+  switch (type) {
+    case 'null':
+      return `${out} = null`
+    case 'boolean':
+      return `${out} = projectBoolean(${input})`
+    case 'integer':
+      return `${out} = projectInteger(${input})`
+    case 'number':
+      return `${out} = projectNumber(${input})`
+    case 'string':
+      switch (schema.format) {
+        case undefined:
+          return `${out} = projectString(${input})`
+        case 'date-time':
+          return `${out} = projectDateTime(${input})`
+        case 'date':
+          return `${out} = projectDate(${input})`
+        case 'time':
+          return `${out} = projectTime(${input})`
+        // 'unsafe' emits the string without escaping, which JSON.stringify
+        // would not reproduce.
+        default:
+          return null
+      }
+    case 'object': {
+      const fnName = buildObjectProjectionFunction(context, location, depth + 1)
+      if (fnName === null) return null
+      return `${out} = ${fnName}(${input})`
+    }
+    case 'array': {
+      const fnName = buildArrayProjectionFunction(context, location, depth + 1)
+      if (fnName === null) return null
+      return `${out} = ${fnName}(${input})`
+    }
+    /* c8 ignore next 2 - isValidSchema() has already rejected any other type */
+    default:
+      return null
+  }
+}
+
+function buildObjectProjectionFunction (context, location, depth) {
+  const schema = location.schema
+
+  if (context.projectionFnsBySchema.has(schema)) {
+    return context.projectionFnsBySchema.get(schema)
+  }
+  // A schema reachable from itself would need a recursive projection; the
+  // concatenation path already handles those.
+  if (schema.additionalProperties) return null
+  if (depth > PROJECTION_MAX_DEPTH) return null
+
+  const properties = schema.properties || {}
+  const requiredProperties = schema.required || []
+  const propertiesKeys = Object.keys(properties)
+
+  for (const key of propertiesKeys) {
+    // Integer-like keys are reordered by the JS object itself, and `__proto__`
+    // in an object literal sets the prototype instead of a property.
+    if (ARRAY_INDEX_KEY.test(key) || key === '__proto__') return null
+  }
+  for (const key of requiredProperties) {
+    if (!propertiesKeys.includes(key)) return null
+  }
+
+  // Mirror buildInnerObject: required properties are emitted first.
+  const sortedKeys = propertiesKeys.slice().sort((key1, key2) => {
+    const required1 = requiredProperties.includes(key1)
+    const required2 = requiredProperties.includes(key2)
+    return required1 === required2 ? 0 : required1 ? -1 : 1
+  })
+
+  const propertiesLocation = location.getPropertyLocation('properties')
+  let body = ''
+  const entries = []
+
+  for (const key of sortedKeys) {
+    const propertyLocation = propertiesLocation.getPropertyLocation(key)
+    const sanitizedKey = JSON.stringify(key)
+    const valueVar = `pv_${context.uid++}`
+    const outVar = `po_${context.uid++}`
+
+    const valueCode = buildProjectionValue(context, propertyLocation, valueVar, outVar, depth)
+    if (valueCode === null) return null
+
+    body += `
+      const ${valueVar} = obj[${sanitizedKey}]
+      let ${outVar}
+      if (${valueVar} === undefined) {
+        ${requiredProperties.includes(key)
+          ? `throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')`
+          : ''}
+      } else {
+        ${valueCode}
+      }
+    `
+    entries.push(`${sanitizedKey}: ${outVar}`)
+  }
+
+  const functionName = `projectObject_${context.projectionCounter++}`
+  context.projectionFnsBySchema.set(schema, functionName)
+
+  const nullResult = schema.nullable === true ? 'null' : '{}'
+
+  context.projectionFunctions.push(`
+    function ${functionName} (input) {
+      const obj = ${toJSON('input')}
+      if (obj === null) return ${nullResult}
+      ${body}
+      return { ${entries.join(',\n')} }
+    }
+  `)
+
+  return functionName
+}
+
+function buildArrayProjectionFunction (context, location, depth) {
+  const schema = location.schema
+
+  if (context.projectionFnsBySchema.has(schema)) {
+    return context.projectionFnsBySchema.get(schema)
+  }
+  // Tuple `items` and `additionalItems` are not modelled.
+  if (Array.isArray(schema.items) || schema.additionalItems !== undefined) return null
+
+  const itemsLocation = location.getPropertyLocation('items')
+  if (itemsLocation.schema === undefined) return null
+  if (itemsLocation.schema.$ref) return null
+
+  const outVar = `po_${context.uid++}`
+  const itemCode = buildProjectionValue(context, itemsLocation, 'value', outVar, depth)
+  if (itemCode === null) return null
+
+  const functionName = `projectArray_${context.projectionCounter++}`
+  context.projectionFnsBySchema.set(schema, functionName)
+
+  const nullResult = schema.nullable === true ? 'null' : '[]'
+
+  context.projectionFunctions.push(`
+    function ${functionName} (obj) {
+      if (obj === null) return ${nullResult}
+      if (!Array.isArray(obj)) {
+        throw new TypeError(\`The value of '${getSafeSchemaRef(context, location)}' does not match schema definition.\`)
+      }
+      const arrayLength = obj.length
+      const projected = new Array(arrayLength)
+      for (let i = 0; i < arrayLength; i++) {
+        const value = obj[i]
+        let ${outVar}
+        ${itemCode}
+        projected[i] = ${outVar}
+      }
+      return projected
+    }
+  `)
+
+  return functionName
+}
+
+const projectionFns = `
+let projectionBailed = false
+
+function projectBoolean (value) {
+  return value && true || false // eslint-disable-line
+}
+
+function projectInteger (value) {
+  if (Number.isInteger(value)) return value
+  // JSON.stringify throws on BigInt, so the whole projection is abandoned and
+  // the concatenation path (which prints it verbatim) takes over.
+  if (typeof value === 'bigint') {
+    projectionBailed = true
+    return 0
+  }
+  const integer = serializer.parseInteger(value)
+  // eslint-disable-next-line no-self-compare
+  if (integer === Infinity || integer === -Infinity || integer !== integer) {
+    throw new Error(\`The value "\${value}" cannot be converted to an integer.\`)
+  }
+  return integer
+}
+
+function projectNumber (value) {
+  const num = Number(value)
+  // eslint-disable-next-line no-self-compare
+  if (num !== num) {
+    throw new Error(\`The value "\${value}" cannot be converted to a number.\`)
+  }
+  return num
+}
+
+function projectString (value) {
+  if (typeof value === 'string') return value
+  if (value === null) return ''
+  if (value instanceof Date) return value.toISOString()
+  if (value instanceof RegExp) return value.source
+  return value.toString()
+}
+
+function projectDateTime (value) {
+  if (value === null) return ''
+  if (value instanceof Date) return value.toISOString()
+  if (typeof value === 'string') return value
+  throw new Error(\`The value "\${value}" cannot be converted to a date-time.\`)
+}
+
+function projectDate (value) {
+  if (value === null) return ''
+  if (value instanceof Date) return new Date(value.getTime() - (value.getTimezoneOffset() * 60000)).toISOString().slice(0, 10)
+  if (typeof value === 'string') return value
+  throw new Error(\`The value "\${value}" cannot be converted to a date.\`)
+}
+
+function projectTime (value) {
+  if (value === null) return ''
+  if (value instanceof Date) return new Date(value.getTime() - (value.getTimezoneOffset() * 60000)).toISOString().slice(11, 19)
+  if (typeof value === 'string') return value
+  throw new Error(\`The value "\${value}" cannot be converted to a time.\`)
+}
+`
+
+// Builds the per-item projection for an array. Returns `{ code, outVar }`, or
+// null when the item schema is not projectable — the partially built
+// projection functions are rolled back in that case.
+function buildArrayItemProjection (context, itemsLocation) {
+  const savedFunctions = context.projectionFunctions.length
+  const savedCounter = context.projectionCounter
+  const savedFns = [...context.projectionFnsBySchema.entries()]
+
+  const outVar = `po_${context.uid++}`
+  const code = buildProjectionValue(context, itemsLocation, 'value', outVar, 0)
+
+  if (code === null) {
+    context.projectionFunctions.length = savedFunctions
+    context.projectionCounter = savedCounter
+    context.projectionFnsBySchema = new Map(savedFns)
+    return null
+  }
+
+  context.usesProjection = true
+  return { code, outVar }
 }
 
 function buildArrayTypeCondition (type, accessor) {
