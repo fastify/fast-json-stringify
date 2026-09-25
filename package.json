@@ -8,7 +8,6 @@
   "scripts": {
     "bench": "node --expose-gc ./benchmark/bench.js",
     "bench:cmp": "node ./benchmark/bench-cmp-branch.js",
-    "bench:cmp:ci": "node ./benchmark/bench-cmp-branch.js --ci",
     "benchmark": "node --expose-gc ./benchmark/bench-cmp-lib.js",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
@@ -63,14 +62,12 @@
   ],
   "devDependencies": {
     "c8": "^12.0.0",
-    "cli-select": "^1.1.2",
     "compile-json-stringify": "^0.1.2",
     "eslint": "^9.39.2",
     "fast-json-stringify": ".",
     "is-my-json-valid": "^2.20.6",
     "json-accelerator": "^0.1.7",
     "neostandard": "^0.13.0",
-    "simple-git": "^3.30.0",
     "tinybench": "^6.0.0",
     "tstyche": "^7.1.0",
     "typebox": "^1.0.81",
