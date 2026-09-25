@@ -160,7 +160,7 @@ const benchmarks = [
       type: 'array',
       items: { type: 'string' }
     },
-    input: shortArrayOfShortStrings
+    input: shortArrayOfLongStrings
   },
   {
     name: 'short array of objects with properties of different types',
