@@ -686,3 +686,26 @@ buildTest({
   largeArraySize: '10000',
   largeArrayMechanism: 'default'
 })
+
+test('large-array options do not leak between serializers', (t) => {
+  t.plan(3)
+
+  const schema = {
+    type: 'array',
+    items: { type: 'integer' }
+  }
+
+  const jsonStringify = build(schema, {
+    largeArrayMechanism: 'json-stringify',
+    largeArraySize: 1
+  })
+  t.assert.throws(() => jsonStringify([1n]), /Do not know how to serialize a BigInt/)
+
+  const jsonStringifyWithDefaultSize = build(schema, {
+    largeArrayMechanism: 'json-stringify'
+  })
+  t.assert.equal(jsonStringifyWithDefaultSize([1n]), '[1]')
+
+  const defaultStringify = build(schema)
+  t.assert.equal(defaultStringify([1n]), '[1]')
+})
