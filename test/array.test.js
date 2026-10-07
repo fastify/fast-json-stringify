@@ -686,3 +686,20 @@ buildTest({
   largeArraySize: '10000',
   largeArrayMechanism: 'default'
 })
+
+test('large array options do not leak into the next build', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'array',
+    items: { type: 'string', format: 'date' }
+  }
+  const dates = [new Date(0), new Date(0), new Date(0)]
+
+  const withOptions = build(schema, { largeArrayMechanism: 'json-stringify', largeArraySize: 3 })
+  t.assert.equal(withOptions(dates), JSON.stringify(dates))
+
+  // the options above were kept on the module and read by this build too
+  const withoutOptions = build(schema)
+  t.assert.equal(withoutOptions(dates), '["1970-01-01","1970-01-01","1970-01-01"]')
+})
