@@ -2075,3 +2075,76 @@ test('ref nested', (t) => {
   t.assert.doesNotThrow(() => JSON.parse(output))
   t.assert.equal(output, '{"str":"test"}')
 })
+
+test('ref internal - definitions key with percent-encoded characters (#740)', (t) => {
+  t.plan(2)
+
+  const schema = {
+    title: 'object with $ref',
+    definitions: {
+      'Some%3Cloremipsum%3E': {
+        additionalProperties: {
+          oneOf: [
+            { type: 'string' },
+            { type: 'number' },
+            { type: 'object' },
+            { type: 'null' }
+          ]
+        },
+        type: 'object'
+      }
+    },
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: '#/definitions/Some%3Cloremipsum%3E'
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      str: 'test'
+    }
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test"}}')
+})
+
+test('ref internal - $defs key with percent-encoded characters (#740)', (t) => {
+  t.plan(2)
+
+  const schema = {
+    $defs: {
+      'Some%3Cloremipsum%3E': {
+        type: 'object',
+        properties: {
+          str: { type: 'string' }
+        },
+        required: ['str']
+      }
+    },
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: '#/$defs/Some%3Cloremipsum%3E'
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      str: 'test'
+    }
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test"}}')
+})
