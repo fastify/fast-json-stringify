@@ -281,3 +281,14 @@ test('undefined object properties are still skipped', (t) => {
 
   t.assert.equal('{}', stringify({ str: undefined }))
 })
+
+test('handle undefined in multi-type, tuple and const positions', (t) => {
+  t.plan(6)
+
+  t.assert.equal('["a",null]', build({ type: 'array', items: { type: ['null', 'string'] } })(['a', undefined]))
+  t.assert.equal('[1,0]', build({ type: 'array', items: { type: ['integer', 'string'] } })([1, undefined]))
+  t.assert.equal('[{},{}]', build({ type: 'array', items: { type: ['object', 'string'] } })([{}, undefined]))
+  t.assert.equal('[true,false]', build({ type: 'array', items: { type: ['boolean', 'string'] } })([true, undefined]))
+  t.assert.equal('[null]', build({ type: 'array', items: [{ type: 'null' }] })([undefined]))
+  t.assert.equal('["x",null]', build({ type: 'array', items: { type: ['string', 'null'], const: 'x' } })(['x', undefined]))
+})
