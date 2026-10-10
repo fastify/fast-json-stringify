@@ -818,7 +818,7 @@ function buildObject (context, location, input) {
       // ${asComment(schemaRef)}
       function ${functionName} (input) {
         const obj = ${toJSON('input')}
-        if (obj === null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_OBJECT'}
+        if (obj == null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_OBJECT'}
         let json = ''
 
         ${buildInnerObject(context, location, 'obj')}
@@ -834,7 +834,7 @@ function buildObject (context, location, input) {
   const objVar = `obj_${context.uid++}`
   const code = `
     const ${objVar} = ${toJSON(input)}
-    if (${objVar} === null) {
+    if (${objVar} == null) {
       json += ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_OBJECT'}
     } else {
       ${buildInnerObject(context, location, objVar)}
@@ -880,7 +880,7 @@ function buildArray (context, location, input) {
   `
 
     functionCode += `
-    if (obj === null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_ARRAY'}
+    if (obj == null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_ARRAY'}
     if (!Array.isArray(obj)) {
       throw new TypeError(${JSON.stringify(`The value of '${schemaRef}' does not match schema definition.`)})
     }
@@ -964,7 +964,7 @@ function buildArray (context, location, input) {
   const objVar = `obj_${context.uid++}`
   let inlinedCode = `
     const ${objVar} = ${input}
-    if (${objVar} === null) {
+    if (${objVar} == null) {
       json += ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_ARRAY'}
     } else if (!Array.isArray(${objVar})) {
       throw new TypeError(${JSON.stringify(`The value of '${safeSchemaRef}' does not match schema definition.`)})
@@ -1051,11 +1051,11 @@ function buildArrayTypeCondition (type, accessor) {
   let condition
   switch (type) {
     case 'null':
-      condition = `${accessor} === null`
+      condition = `${accessor} == null`
       break
     case 'string':
       condition = `typeof ${accessor} === 'string' ||
-      ${accessor} === null ||
+      ${accessor} == null ||
       ${accessor} instanceof Date ||
       ${accessor} instanceof RegExp ||
       (
@@ -1108,7 +1108,7 @@ function buildMultiTypeSerializer (context, location, input) {
     switch (type) {
       case 'null':
         code += `
-          ${statement} (${input} === null) {
+          ${statement} (${input} == null) {
             ${nestedResult}
           }
           `
@@ -1117,7 +1117,7 @@ function buildMultiTypeSerializer (context, location, input) {
         code += `
           ${statement}(
             typeof ${input} === "string" ||
-            ${input} === null ||
+            ${input} == null ||
             ${input} instanceof Date ||
             ${input} instanceof RegExp ||
             (
@@ -1141,7 +1141,7 @@ function buildMultiTypeSerializer (context, location, input) {
       }
       case 'integer': {
         code += `
-          ${statement}(Number.isInteger(${input}) || ${input} === null) {
+          ${statement}(Number.isInteger(${input}) || ${input} == null) {
             ${nestedResult}
           }
         `
@@ -1152,7 +1152,7 @@ function buildMultiTypeSerializer (context, location, input) {
         // by this branch and serialized as an object (dropping its items). Exclude
         // arrays here so a sibling `array` type in the same `type` list can match.
         code += `
-          ${statement}((typeof ${input} === "object" && !Array.isArray(${input})) || ${input} === null) {
+          ${statement}((typeof ${input} === "object" && !Array.isArray(${input})) || ${input} == null) {
             ${nestedResult}
           }
         `
@@ -1160,7 +1160,7 @@ function buildMultiTypeSerializer (context, location, input) {
       }
       default: {
         code += `
-          ${statement}(typeof ${input} === "${type}" || ${input} === null) {
+          ${statement}(typeof ${input} === "${type}" || ${input} == null) {
             ${nestedResult}
           }
         `
@@ -1193,7 +1193,7 @@ function buildSingleTypeSerializer (context, location, input) {
       } else {
         return `
         if (typeof ${input} !== 'string') {
-          if (${input} === null) {
+          if (${input} == null) {
             json += JSON_STR_EMPTY_STRING
           } else if (${input} instanceof Date) {
             json += JSON_STR_QUOTE + ${input}.toISOString() + JSON_STR_QUOTE
@@ -1328,7 +1328,7 @@ function buildConstSerializer (location, input) {
 
   if (hasNullType) {
     code += `
-      if (${input} === null) {
+      if (${input} == null) {
         json += JSON_STR_NULL
       } else {
     `
@@ -1538,7 +1538,7 @@ function buildValue (context, location, input) {
   const nullable = schema.nullable === true
   if (nullable) {
     code += `
-      if (${input} === null) {
+      if (${input} == null) {
         json += JSON_STR_NULL
       } else {
     `
