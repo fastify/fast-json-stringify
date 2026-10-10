@@ -19,7 +19,8 @@ for (const name of names) {
 
       const stringify = build({ type: 'object', properties: { [name]: subschema } })
       t.assert.equal(stringify({ [name]: 'v' }), JSON.stringify({ [name]: 'v' }))
-      t.assert.throws(() => stringify({ [name]: {} }), keyword === 'if' ? Error : new TypeError(`The value of '#/properties/${name.replace(/~/g, '~0').replace(/\//g, '~1')}' does not match schema definition.`))
+      const escapedName = encodeURIComponent(name.replace(/~/g, '~0').replace(/\//g, '~1'))
+      t.assert.throws(() => stringify({ [name]: {} }), keyword === 'if' ? Error : new TypeError(`The value of '#/properties/${escapedName}' does not match schema definition.`))
     })
   }
 }

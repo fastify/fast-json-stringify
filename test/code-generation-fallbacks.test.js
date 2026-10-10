@@ -110,18 +110,20 @@ test('inline array generation without schema IDs', t => {
 })
 
 test('code generation reference fallbacks', t => {
-  t.plan(3)
+  t.plan(4)
 
   const buildWithoutPointer = loadBuildWithLocation(LocationWithoutJsonPointer)
   const stringifyObject = buildWithoutPointer({ type: 'object' })
   const stringifyArray = buildWithoutPointer({ type: 'array' })
 
   const buildWithoutRef = loadBuildWithLocation(LocationWithoutSchemaRef)
-  const stringifyWithoutRef = buildWithoutRef({ type: 'object' })
+  const stringifyObjectWithoutRef = buildWithoutRef({ type: 'object' })
+  const stringifyArrayWithoutRef = buildWithoutRef({ type: 'array' })
 
   t.assert.equal(stringifyObject({}), '{}')
   t.assert.equal(stringifyArray([]), '[]')
-  t.assert.equal(stringifyWithoutRef({}), '{}')
+  t.assert.equal(stringifyObjectWithoutRef({}), '{}')
+  t.assert.equal(stringifyArrayWithoutRef([]), '[]')
 })
 
 test('required-property fallback tolerates unexpected property ordering', t => {
