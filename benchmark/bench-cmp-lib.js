@@ -1,6 +1,8 @@
 'use strict'
 
+const assert = require('node:assert/strict')
 const { Bench } = require('tinybench')
+const apiResponses = require('./fixtures/api-responses')
 const suite = new Bench({
   name: 'Library Comparison Benchmarks',
   setup: (_task, mode) => {
@@ -173,138 +175,161 @@ for (let i = 0; i < MULTI_ARRAY_LENGTH; i++) {
   multiArray[i] = obj
 }
 
-suite.add('fast-json-stringify: creation', function () {
-  FJS(schema)
+// Some serializers return unflattened strings. Fastify calls Buffer.byteLength()
+// for Content-Length, which triggers flattening; include that cost in every case.
+suite.add('fast-json-stringify: creation and first stringify', function () {
+  Buffer.byteLength(FJS(schema)(obj))
 })
-suite.add('compile-json-stringify: creation', function () {
-  CJS(schemaCJS)
+suite.add('compile-json-stringify: creation and first stringify', function () {
+  Buffer.byteLength(CJS(schemaCJS)(obj))
 })
-suite.add('AJV: creation', function () {
-  ajv.compileSerializer(schemaAJVJTD)
+suite.add('AJV: creation and first stringify', function () {
+  Buffer.byteLength(ajv.compileSerializer(schemaAJVJTD)(obj))
 })
-suite.add('json-accelerator: creation', function () {
-  createAccelerator(schema)
+suite.add('json-accelerator: creation and first stringify', function () {
+  Buffer.byteLength(createAccelerator(schema)(obj))
 })
 
 suite.add('JSON.stringify: array', function () {
-  JSON.stringify(multiArray)
+  Buffer.byteLength(JSON.stringify(multiArray))
 })
 
 suite.add('fast-json-stringify [default]: array', function () {
-  stringifyArrayDefault(multiArray)
+  Buffer.byteLength(stringifyArrayDefault(multiArray))
 })
 
 suite.add('json-accelerator: array', function () {
-  accelArray(multiArray)
+  Buffer.byteLength(accelArray(multiArray))
 })
 
 suite.add('fast-json-stringify [json-stringify]: array', function () {
-  stringifyArrayJSONStringify(multiArray)
+  Buffer.byteLength(stringifyArrayJSONStringify(multiArray))
 })
 
 suite.add('compile-json-stringify: array', function () {
-  CJSStringifyArray(multiArray)
+  Buffer.byteLength(CJSStringifyArray(multiArray))
 })
 
 suite.add('AJV: array', function () {
-  ajvSerializeArray(multiArray)
+  Buffer.byteLength(ajvSerializeArray(multiArray))
 })
 
 suite.add('JSON.stringify: large array', function () {
-  JSON.stringify(largeArray)
+  Buffer.byteLength(JSON.stringify(largeArray))
 })
 
 suite.add('fast-json-stringify [default]: large array', function () {
-  stringifyArrayDefault(largeArray)
+  Buffer.byteLength(stringifyArrayDefault(largeArray))
 })
 
 suite.add('fast-json-stringify [json-stringify]: large array', function () {
-  stringifyArrayJSONStringify(largeArray)
+  Buffer.byteLength(stringifyArrayJSONStringify(largeArray))
 })
 
 suite.add('compile-json-stringify: large array', function () {
-  CJSStringifyArray(largeArray)
+  Buffer.byteLength(CJSStringifyArray(largeArray))
 })
 
 suite.add('AJV: large array', function () {
-  ajvSerializeArray(largeArray)
+  Buffer.byteLength(ajvSerializeArray(largeArray))
 })
 
 suite.add('JSON.stringify: long string', function () {
-  JSON.stringify(str)
+  Buffer.byteLength(JSON.stringify(str))
 })
 
 suite.add('fast-json-stringify: long string', function () {
-  stringifyString(str)
+  Buffer.byteLength(stringifyString(str))
 })
 
 suite.add('json-accelerator: long string', function () {
-  stringifyString(str)
+  Buffer.byteLength(stringifyString(str))
 })
 
 suite.add('compile-json-stringify: long string', function () {
-  CJSStringifyString(str)
+  Buffer.byteLength(CJSStringifyString(str))
 })
 
 suite.add('AJV: long string', function () {
-  ajvSerializeString(str)
+  Buffer.byteLength(ajvSerializeString(str))
 })
 
 suite.add('JSON.stringify: short string', function () {
-  JSON.stringify('hello world')
+  Buffer.byteLength(JSON.stringify('hello world'))
 })
 
 suite.add('fast-json-stringify: short string', function () {
-  stringifyString('hello world')
+  Buffer.byteLength(stringifyString('hello world'))
 })
 
 suite.add('json-accelerator: short string', function () {
-  accelString('hello world')
+  Buffer.byteLength(accelString('hello world'))
 })
 
 suite.add('compile-json-stringify: short string', function () {
-  CJSStringifyString('hello world')
+  Buffer.byteLength(CJSStringifyString('hello world'))
 })
 
 suite.add('AJV: short string', function () {
-  ajvSerializeString('hello world')
+  Buffer.byteLength(ajvSerializeString('hello world'))
 })
 
 suite.add('JSON.stringify: obj', function () {
-  JSON.stringify(obj)
+  Buffer.byteLength(JSON.stringify(obj))
 })
 
 suite.add('fast-json-stringify: obj', function () {
-  stringify(obj)
+  Buffer.byteLength(stringify(obj))
 })
 
 suite.add('json-accelerator: obj', function () {
-  accelStringify(obj)
+  Buffer.byteLength(accelStringify(obj))
 })
 
 suite.add('compile-json-stringify: obj', function () {
-  CJSStringify(obj)
+  Buffer.byteLength(CJSStringify(obj))
 })
 
 suite.add('AJV: obj', function () {
-  ajvSerialize(obj)
+  Buffer.byteLength(ajvSerialize(obj))
 })
 
 suite.add('JSON.stringify: date', function () {
-  JSON.stringify(date)
+  Buffer.byteLength(JSON.stringify(date))
 })
 
 suite.add('fast-json-stringify: date', function () {
-  stringifyDate(date)
+  Buffer.byteLength(stringifyDate(date))
 })
 
 suite.add('json-accelerate: date', function () {
-  accelDate(date)
+  Buffer.byteLength(accelDate(date))
 })
 
 suite.add('compile-json-stringify: date', function () {
-  CJSStringifyDate(date)
+  Buffer.byteLength(CJSStringifyDate(date))
 })
+
+for (const { name, schema: responseSchema, input } of apiResponses) {
+  const stringifyResponse = FJS(responseSchema)
+  // Check outside the timed loop that the schema preserves the complete response.
+  assert.deepStrictEqual(JSON.parse(stringifyResponse(input)), JSON.parse(JSON.stringify(input)))
+
+  suite.add(`JSON.stringify: ${name}`, function () {
+    Buffer.byteLength(JSON.stringify(input))
+  })
+  suite.add(`fast-json-stringify: ${name}`, function () {
+    Buffer.byteLength(stringifyResponse(input))
+  })
+}
+
+if (process.argv.includes('--fjs-vs-json')) {
+  for (const task of suite.tasks) {
+    if (!task.name.startsWith('fast-json-stringify') && !task.name.startsWith('JSON.stringify:')) {
+      suite.remove(task.name)
+    }
+  }
+}
 
 suite.run().then(() => {
   const results = suite.tasks.map(task => ({
