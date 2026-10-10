@@ -193,6 +193,13 @@ declare namespace build {
      */
     largeArrayMechanism?: 'default' | 'json-stringify'
     /**
+     * Serialize arrays by projecting their items into plain objects and
+     * handing the result to `JSON.stringify`, which is faster than string
+     * concatenation on V8 13.8 and newer. Defaults to whether the running V8
+     * supports it; set it explicitly to override the detection.
+     */
+    arrayProjection?: boolean
+    /**
      * Eagerly compile the Ajv validators used by `anyOf`, `oneOf` and
      * `if/then/else` at build time instead of on the first serialization
      * that reaches them.
