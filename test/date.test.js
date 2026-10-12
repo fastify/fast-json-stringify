@@ -200,6 +200,23 @@ test('verify padding for rendered date in a string when format is time', (t) => 
   t.assert.ok(validate(JSON.parse(output)), 'valid schema')
 })
 
+test('render a time in a string when the year needs the ISO 8601 expanded notation', (t) => {
+  t.plan(3)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'time'
+  }
+  const stringify = build(schema)
+
+  // Years outside 0-9999 render as '+275760-09-12T23:59:59.999Z', which is
+  // longer than the 24 character form the time used to be sliced out of.
+  t.assert.equal(stringify(new Date(8640000000000000 - 1)), '"23:59:59"')
+  t.assert.equal(stringify(new Date(8640000000000000)), '"00:00:00"')
+  t.assert.equal(stringify(new Date(-8640000000000000)), '"00:00:00"')
+})
+
 test('render a nested object in a string when type is date-format as ISOString', (t) => {
   t.plan(2)
 
