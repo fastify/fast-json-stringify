@@ -23,6 +23,31 @@ test('error on invalid largeArrayMechanism', (t) => {
   }), Error('Unsupported large array mechanism invalid'))
 })
 
+test('does not leak largeArrayMechanism across build() calls', (t) => {
+  t.plan(2)
+
+  const users = []
+  for (let i = 0; i < 100; i++) users.push({ name: 'user' + i, password: 'secret' + i })
+
+  const schema = {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' }
+      }
+    }
+  }
+
+  // An unrelated build() opts into json-stringify for its own schema.
+  const optedIn = build({ type: 'array' }, { largeArrayMechanism: 'json-stringify', largeArraySize: 100 })
+  t.assert.equal(optedIn(users).includes('password'), true)
+
+  // A later build() without options must not inherit the mechanism.
+  const stringify = build(schema)
+  t.assert.equal(stringify(users).includes('password'), false)
+})
+
 function buildTest (schema, toStringify, options) {
   test(`render a ${schema.title} as JSON`, (t) => {
     t.plan(3)
