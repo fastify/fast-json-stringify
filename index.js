@@ -34,6 +34,7 @@ const arraySchemaKeywords = [
 ]
 
 const objectSchemaKeywords = [
+  '$defs',
   'definitions',
   'patternProperties',
   'properties'
@@ -262,6 +263,54 @@ function getSchemaId (schema, rootSchemaId) {
   return rootSchemaId
 }
 
+function validateSchemaIdsForAjvCodeGeneration (schema, schemaId, seen) {
+  if (typeof schema !== 'object' || schema === null || seen.has(schema)) return
+
+  seen.add(schema)
+  // Ajv emits the active schema ID inside a block-comment sourceURL.
+  const id = schema[schemaId]
+  if (typeof id === 'string' && id.includes('*/')) {
+    throw new Error(`Schema ${schemaId} must not contain "*/" when Ajv source code generation is enabled`)
+  }
+
+  for (const keyword of objectSchemaKeywords) {
+    const schemas = schema[keyword]
+    if (typeof schemas === 'object' && schemas !== null && !Array.isArray(schemas)) {
+      for (const nestedSchema of Object.values(schemas)) {
+        validateSchemaIdsForAjvCodeGeneration(nestedSchema, schemaId, seen)
+      }
+    }
+  }
+
+  for (const keyword of singleSchemaKeywords) {
+    validateSchemaIdsForAjvCodeGeneration(schema[keyword], schemaId, seen)
+  }
+
+  if (Array.isArray(schema.items)) {
+    for (const item of schema.items) {
+      validateSchemaIdsForAjvCodeGeneration(item, schemaId, seen)
+    }
+  } else {
+    validateSchemaIdsForAjvCodeGeneration(schema.items, schemaId, seen)
+  }
+
+  for (const keyword of arraySchemaKeywords) {
+    if (Array.isArray(schema[keyword])) {
+      for (const nestedSchema of schema[keyword]) {
+        validateSchemaIdsForAjvCodeGeneration(nestedSchema, schemaId, seen)
+      }
+    }
+  }
+
+  if (typeof schema.dependencies === 'object' && schema.dependencies !== null) {
+    for (const dependency of Object.values(schema.dependencies)) {
+      if (!Array.isArray(dependency)) {
+        validateSchemaIdsForAjvCodeGeneration(dependency, schemaId, seen)
+      }
+    }
+  }
+}
+
 // a schema ref on a comment line of the generated code: a line terminator in a property name
 // would end the comment and turn the rest of the name into code. JSON.stringify covers \n and
 // \r, the two separators JS also treats as line terminators are escaped by hand
@@ -345,6 +394,7 @@ function build (schema, options) {
     recursiveSchemas: new Set(),
     recursivePaths: new Set(),
     buildingSet: new Set(),
+    patternRegexes: [],
     uid: 0
   }
 
@@ -401,6 +451,7 @@ function build (schema, options) {
 
   let contextFunctionCode = `
     ${serializerFns}
+    ${context.patternRegexes.join('\n    ')}
     const JSON_STR_BEGIN_OBJECT = '{'
     const JSON_STR_END_OBJECT = '}'
     const JSON_STR_BEGIN_ARRAY = '['
@@ -442,13 +493,26 @@ function build (schema, options) {
     options.ajv,
     options.mode === 'standalone' && options.inlineValidators
   )
+  const ajvCodeOptions = options.ajv && options.ajv.code
+  const validateAjvSchemaIds = (
+    (options.mode === 'standalone' && options.inlineValidators) ||
+    (ajvCodeOptions && (ajvCodeOptions.source || ajvCodeOptions.process))
+  )
+  const ajvSchemaId = options.ajv?.schemaId ?? '$id'
+  const seenAjvSchemas = new WeakSet()
 
   for (const schemaId of context.validatorSchemasIds) {
     const schema = context.refResolver.getSchema(schemaId)
+    if (validateAjvSchemaIds) {
+      validateSchemaIdsForAjvCodeGeneration(schema, ajvSchemaId, seenAjvSchemas)
+    }
     validator.addSchema(schema, schemaId)
 
     const dependencies = getSchemaDependencies(context.refResolver, schemaId)
     for (const [schemaId, schema] of Object.entries(dependencies)) {
+      if (validateAjvSchemaIds) {
+        validateSchemaIdsForAjvCodeGeneration(schema, ajvSchemaId, seenAjvSchemas)
+      }
       validator.addSchema(schema, schemaId)
     }
   }
@@ -548,12 +612,16 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
   const patternPropertiesLocation = location.getPropertyLocation('patternProperties')
   const patternPropertiesSchema = patternPropertiesLocation.schema
 
+  // Compile each pattern regex once at module scope, next to the generated
+  // functions, instead of rebuilding it for every key on every serialization.
   if (patternPropertiesSchema !== undefined) {
     for (const propertyKey in patternPropertiesSchema) {
+      const regexVar = `patternRegex_${context.uid++}`
       const propertyLocation = patternPropertiesLocation.getPropertyLocation(propertyKey)
 
+      context.patternRegexes.push(`const ${regexVar} = new RegExp(${JSON.stringify(propertyKey)})`)
       code += `
-        if (/${propertyKey.replace(/\\*\//g, '\\/')}/.test(key)) {
+        if (${regexVar}.test(key)) {
           ${addComma}
           json += asString(key) + JSON_STR_COLONS
           ${buildValue(context, propertyLocation, 'value')}
@@ -613,7 +681,8 @@ function buildInnerObject (context, location, objVar) {
   for (const key of requiredProperties) {
     if (!propertiesKeys.includes(key)) {
       const sanitizedKey = JSON.stringify(key)
-      code += `if (${objVar}[${sanitizedKey}] === undefined) throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')\n`
+      const requiredError = JSON.stringify(`"${key}" is required!`)
+      code += `if (${objVar}[${sanitizedKey}] === undefined) throw new Error(${requiredError})\n`
     }
   }
 
@@ -661,8 +730,9 @@ function buildInnerObject (context, location, objVar) {
       }
       `
       } else if (isRequired) {
+        const requiredError = JSON.stringify(`"${key}" is required!`)
         code += ` else {
-        throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')
+        throw new Error(${requiredError})
       }
       `
       } else {
@@ -711,8 +781,9 @@ function buildInnerObject (context, location, objVar) {
           `
       } else if (isRequired) {
         // Should not happen if requiredProperties.length === 0 but safety
+        const requiredError = JSON.stringify(`"${key}" is required!`)
         code += ` else {
-            throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')
+            throw new Error(${requiredError})
           }
           `
       } else {
