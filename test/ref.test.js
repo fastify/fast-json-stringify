@@ -2075,3 +2075,230 @@ test('ref nested', (t) => {
   t.assert.doesNotThrow(() => JSON.parse(output))
   t.assert.equal(output, '{"str":"test"}')
 })
+
+test('ref internal - sibling keywords', (t) => {
+  t.plan(3)
+
+  const schema = {
+    definitions: {
+      def: {
+        type: 'object',
+        properties: {
+          str: {
+            type: 'string'
+          },
+          num: {
+            type: 'integer'
+          }
+        },
+        required: ['str']
+      }
+    },
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: '#/definitions/def',
+        required: ['num']
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      str: 'test',
+      num: 42
+    }
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test","num":42}}')
+
+  t.assert.throws(() => {
+    stringify({
+      obj: {
+        str: 'test'
+      }
+    })
+  }, { message: '"num" is required!' })
+})
+
+test('ref external - sibling keywords', (t) => {
+  t.plan(3)
+
+  const externalSchema = {
+    external: {
+      definitions: {
+        def: {
+          type: 'object',
+          properties: {
+            str: {
+              type: 'string'
+            },
+            num: {
+              type: 'integer'
+            }
+          },
+          required: ['str']
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: 'external#/definitions/def',
+        required: ['num']
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      str: 'test',
+      num: 42
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test","num":42}}')
+
+  t.assert.throws(() => {
+    stringify({
+      obj: {
+        str: 'test'
+      }
+    })
+  }, { message: '"num" is required!' })
+})
+
+test('ref external - recursive sibling keywords', (t) => {
+  t.plan(3)
+
+  const externalSchema = {
+    node: {
+      $id: 'node',
+      type: 'object',
+      properties: {
+        str: {
+          type: 'string'
+        },
+        next: {
+          $ref: 'node#',
+          required: ['str']
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      root: {
+        $ref: 'node#',
+        required: ['str']
+      }
+    }
+  }
+
+  const object = {
+    root: {
+      str: 'test',
+      next: {
+        str: 'nested'
+      }
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"root":{"str":"test","next":{"str":"nested"}}}')
+
+  t.assert.throws(() => {
+    stringify({
+      root: {
+        str: 'test',
+        next: {}
+      }
+    })
+  }, { message: '"str" is required!' })
+})
+
+test('ref internal - conflicting sibling keywords', (t) => {
+  t.plan(2)
+
+  const schema = {
+    definitions: {
+      def: {
+        type: 'string'
+      }
+    },
+    type: 'object',
+    properties: {
+      value: {
+        $ref: '#/definitions/def',
+        type: 'integer'
+      }
+    }
+  }
+
+  const object = {
+    value: 42
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"value":"42"}')
+})
+
+test('ref external - sibling keywords with a duplicated anchor', (t) => {
+  t.plan(1)
+
+  const externalSchema = {
+    external: {
+      $id: 'external',
+      definitions: {
+        def: {
+          type: 'object',
+          properties: {
+            str: {
+              $id: '#anchor',
+              type: 'string'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: 'external#/definitions/def',
+        properties: {
+          num: {
+            $id: '#anchor',
+            type: 'integer'
+          }
+        }
+      }
+    }
+  }
+
+  t.assert.throws(
+    () => build(schema, { schema: externalSchema }),
+    { message: /There is already another anchor "#anchor"/ }
+  )
+})
