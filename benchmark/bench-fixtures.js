@@ -51,33 +51,4 @@ function arrayFixture (kind, size) {
   return { schema: { type: 'array', items }, input, typed: ArrayBuffer.isView(input) }
 }
 
-function compileFixtures () {
-  const wide = { type: 'object', properties: {} }
-  for (let i = 0; i < 200; i++) wide.properties[`p${i}`] = { type: ['string', 'number', 'boolean'][i % 3] }
-  let deep = { type: 'string' }
-  for (let i = 0; i < 20; i++) deep = { type: 'object', properties: { child: deep } }
-  const refs = { type: 'object', definitions: {}, properties: {} }
-  for (let i = 0; i < 50; i++) {
-    refs.definitions[`d${i}`] = structuredClone(flatSchema)
-    refs.properties[`p${i}`] = { $ref: `#/definitions/d${i}` }
-  }
-  return {
-    tiny: { schema: { type: 'string' } },
-    wide: { schema: wide },
-    deep: { schema: deep },
-    refs: { schema: refs },
-    'array-of-objects': { schema: { type: 'array', items: flatSchema } },
-    'oneOf-anyOf': {
-      schema: {
-        type: 'object',
-        properties: {
-          choice: { oneOf: [{ type: 'string' }, { type: 'integer' }] },
-          payload: { anyOf: [{ type: 'boolean' }, flatSchema] }
-        }
-      }
-    },
-    standalone: { schema: wide, options: { mode: 'standalone' } }
-  }
-}
-
-module.exports = { arrayKinds, arraySizes, mechanisms, arrayFixture, compileFixtures }
+module.exports = { arrayKinds, arraySizes, mechanisms, arrayFixture }
