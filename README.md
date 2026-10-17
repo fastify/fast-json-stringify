@@ -127,7 +127,7 @@ const stringify = fastJson(mySchema, {
 ```
 
 - `schema`: external schemas references by $ref property. [More details](#ref)
-- `ajv`: [ajv v8 instance's settings](https://ajv.js.org/options.html) for those properties that require `ajv`. [More details](#anyof)
+- `ajv`: [ajv v8 instance's settings](https://ajv.js.org/options.html) for those properties that require `ajv`. [More details](#anyof) Schema strictness defaults to `false`; pass `ajv: { strictSchema: true }` to reject unknown schema keywords or `ajv: { strictSchema: 'log' }` to log warnings. This applies only to schema paths compiled by Ajv, not to every schema processed by fast-json-stringify.
 - `rounding`: setup how the `integer` types will be rounded when not integers. [More details](#integer)
 - `maxDepth`: maximum number of nested schema levels allowed during compilation.
 Defaults to `100` and may be set from `0` to `100`. Schemas that exceed this limit
