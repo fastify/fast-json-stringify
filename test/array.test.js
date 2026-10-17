@@ -711,3 +711,46 @@ buildTest({
   largeArraySize: '10000',
   largeArrayMechanism: 'default'
 })
+
+buildTest({
+  title: 'string array whose items declare const',
+  type: 'array',
+  items: { type: 'string', const: 'a' }
+}, ['a', 'a'])
+
+buildTest({
+  title: 'string array whose items declare allOf',
+  type: 'array',
+  items: { type: 'string', allOf: [{ type: 'string' }] }
+}, ['a', 'b'])
+
+buildTest({
+  title: 'string array whose items declare anyOf',
+  type: 'array',
+  items: { type: 'string', anyOf: [{ type: 'string' }] }
+}, ['a', 'b'])
+
+buildTest({
+  title: 'string array whose items declare oneOf',
+  type: 'array',
+  items: { type: 'string', oneOf: [{ type: 'string' }] }
+}, ['a', 'b'])
+
+buildTest({
+  title: 'string array whose items declare if',
+  type: 'array',
+  items: { type: 'string', if: { type: 'string' }, then: { type: 'string' } }
+}, ['a', 'b'])
+
+test('string array coerces a non-string item', (t) => {
+  const stringify = build({
+    type: 'array',
+    items: { type: 'string' }
+  }, { largeArraySize: 2 })
+  const date = new Date('2020-01-02T03:04:05.006Z')
+
+  t.assert.equal(
+    stringify([1, 'a', null, date, /re/]),
+    '["1","a","","2020-01-02T03:04:05.006Z","re"]'
+  )
+})
