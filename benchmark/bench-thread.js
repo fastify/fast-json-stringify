@@ -18,10 +18,12 @@ const FJS = require('..')
 const stringify = benchmark.compile ? null : FJS(benchmark.schema, benchmark.options)
 
 bench.add(benchmark.name, () => {
+  // Some serializers return unflattened strings. Fastify calls Buffer.byteLength()
+  // for Content-Length, which triggers flattening; include that cost here too.
   if (benchmark.compile) {
-    FJS(benchmark.schema, benchmark.options)(benchmark.input)
+    Buffer.byteLength(FJS(benchmark.schema, benchmark.options)(benchmark.input))
   } else {
-    stringify(benchmark.input)
+    Buffer.byteLength(stringify(benchmark.input))
   }
 }).run().then(() => {
   const task = bench.tasks[0]
