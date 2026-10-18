@@ -797,13 +797,25 @@ test('large integer array applies the rounding option after the fallback', (t) =
   t.assert.equal(output.slice(-3), ',3]')
 })
 
-test('large number array still throws on NaN after the fallback', (t) => {
+test('large number array still throws on a non-numeric string after the fallback', (t) => {
   const stringify = build({ type: 'array', items: { type: 'number' } })
   const input = Array.from({ length: FAST_PATH_LENGTH }, (_, i) => i / 10)
   input[FAST_PATH_LENGTH >> 1] = 'not a number'
 
   t.assert.throws(() => stringify(input), new Error('The value "not a number" cannot be converted to a number.'))
 })
+
+// A real NaN is typeof 'number', so only the `v === v` half of the fast-path
+// condition rejects it. Check it at every position the copy loop can stop at.
+for (const [position, index] of [['start', 0], ['middle', FAST_PATH_LENGTH >> 1], ['end', FAST_PATH_LENGTH - 1]]) {
+  test(`large number array still throws on NaN at the ${position} after the fallback`, (t) => {
+    const stringify = build({ type: 'array', items: { type: 'number' } })
+    const input = Array.from({ length: FAST_PATH_LENGTH }, (_, i) => i / 10)
+    input[index] = NaN
+
+    t.assert.throws(() => stringify(input), new Error('The value "NaN" cannot be converted to a number.'))
+  })
+}
 
 test('large number array reads each element once across the fallback', (t) => {
   const stringify = build({ type: 'array', items: { type: 'number' } })
