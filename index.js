@@ -13,6 +13,29 @@ const mergeSchemas = require('./lib/merge-schemas')
 const DEFAULT_MAX_DEPTH = 100
 const NAMED_FRAGMENT_REF = /^#[a-z_][-\w._]*$/i
 
+// Minimum array lengths at which copying into a null-prototype array and
+// calling native JSON.stringify beats the generated per-item loop. Measured
+// against main with tinybench (alternating rounds, median ops/s, output
+// consumed with Buffer.byteLength) on Node 20, 22, 24 and 26 x64.
+//
+// Node 22+: floats win from 32 elements, but integer-valued elements under a
+// `number` schema only break even around 100 on Node 26 (-25% at 32), and a
+// `number` schema cannot tell the two apart at build time, so numbers wait
+// for 128. Integers win from 512 because small-int ToString is cached, so
+// the loop is already cheap below that.
+//
+// Node 20: JSON.stringify only beats the loop for every element kind from
+// ~3e5 (1e5 is machine-dependent), so both kinds wait for 3e5 there.
+//
+// Booleans never win and keep the loop. The array lookup instead of a
+// ternary keeps both branches covered on every Node.
+// TODO: drop the Node 20 tier (and this version check) once Node 20 is no
+// longer supported.
+const nodeMajor = Number.parseInt(process.versions.node, 10)
+const PRIMITIVE_FAST_PATH_MIN_LENGTH = [{ integer: 3e5, number: 3e5 }, { integer: 512, number: 128 }][+(nodeMajor >= 22)]
+const INTEGER_ARRAY_FAST_PATH = { condition: 'Number.isInteger(v)', minLength: PRIMITIVE_FAST_PATH_MIN_LENGTH.integer }
+const NUMBER_ARRAY_FAST_PATH = { condition: 'typeof v === \'number\' && v === v', minLength: PRIMITIVE_FAST_PATH_MIN_LENGTH.number }
+
 const singleSchemaKeywords = [
   'additionalItems',
   'additionalProperties',
@@ -44,7 +67,8 @@ const {
   asDateTime,
   asDate,
   asTime,
-  asUnsafeString
+  asUnsafeString,
+  asPlainStringArray
 } = serializer
 
 const asInteger = serializer.asInteger.bind(serializer)
@@ -81,6 +105,7 @@ function schemaDepthError (maxDepth, name) {
 function assertObjectDepth (schema, maxDepth, name) {
   const stack = [{ value: schema, depth: 0, exit: false }]
   const path = new WeakSet()
+  let hasRef = false
 
   while (stack.length > 0) {
     const entry = stack.pop()
@@ -107,9 +132,19 @@ function assertObjectDepth (schema, maxDepth, name) {
     stack.push({ value, depth: entry.depth, exit: true })
 
     for (const key in value) {
-      stack.push({ value: value[key], depth: entry.depth + 1, exit: false })
+      const child = value[key]
+      if (key === '$ref' && typeof child === 'string') {
+        hasRef = true
+      }
+      // Primitive values cannot contain cycles or contribute object depth.
+      // Avoid allocating stack entries that the next iteration would discard.
+      if (typeof child === 'object' && child !== null) {
+        stack.push({ value: child, depth: entry.depth + 1, exit: false })
+      }
     }
   }
+
+  return hasRef
 }
 
 function assertSchemaDepth (schema, maxDepth, name) {
@@ -324,7 +359,9 @@ function build (schema, options) {
   options = options || {}
 
   const maxDepth = getMaxDepth(options)
-  assertObjectDepth(schema, maxDepth)
+  // assertObjectDepth also reports whether any $ref appears; recursive-schema
+  // detection is only needed when $ref can form cycles.
+  let hasRef = assertObjectDepth(schema, maxDepth)
   assertSchemaDepth(schema, maxDepth)
   isValidSchema(schema)
 
@@ -357,7 +394,9 @@ function build (schema, options) {
       const schema = options.schema[key]
       const schemaId = getSchemaId(schema, key)
       if (!context.refResolver.hasSchema(schemaId)) {
-        assertObjectDepth(schema, maxDepth, key)
+        if (assertObjectDepth(schema, maxDepth, key)) {
+          hasRef = true
+        }
         assertSchemaDepth(schema, maxDepth, key)
         isValidSchema(schema, key)
         context.refResolver.addSchema(schema, key)
@@ -395,7 +434,11 @@ function build (schema, options) {
   }
 
   const location = new Location(schema, context.rootSchemaId)
-  detectRecursiveSchemas(context, location)
+  // Without $ref, json-pointer paths are unique in a tree walk, so no cycle
+  // can appear in recursivePaths. Skip the third full-schema traversal.
+  if (hasRef) {
+    detectRecursiveSchemas(context, location)
+  }
   const code = buildValue(context, location, 'input')
 
   let contextFunctionCode = `
@@ -437,23 +480,35 @@ function build (schema, options) {
   }
 
   const serializer = new Serializer(options)
-  const validator = new Validator(
-    options.ajv,
-    options.mode === 'standalone' && options.inlineValidators
-  )
+  // Ajv construction dominates tiny build() cost. Only create a Validator when
+  // generated code needs validator.validate (anyOf/oneOf/if-then-else), or when
+  // debug mode exposes the instance. Standalone already emits `validator = null`
+  // when validatorSchemasIds is empty.
+  const needsValidator =
+    context.validatorSchemasIds.size > 0 ||
+    options.mode === 'debug'
 
-  for (const schemaId of context.validatorSchemasIds) {
-    const schema = context.refResolver.getSchema(schemaId)
-    validator.addSchema(schema, schemaId)
+  const validator = needsValidator
+    ? new Validator(
+      options.ajv,
+      options.mode === 'standalone' && options.inlineValidators
+    )
+    : null
 
-    const dependencies = getSchemaDependencies(context.refResolver, schemaId)
-    for (const [schemaId, schema] of Object.entries(dependencies)) {
+  if (validator !== null) {
+    for (const schemaId of context.validatorSchemasIds) {
+      const schema = context.refResolver.getSchema(schemaId)
       validator.addSchema(schema, schemaId)
-    }
-  }
 
-  if (options.compileValidators) {
-    validator.compileSchemas(context.validatorSchemaRefs)
+      const dependencies = getSchemaDependencies(context.refResolver, schemaId)
+      for (const [schemaId, schema] of Object.entries(dependencies)) {
+        validator.addSchema(schema, schemaId)
+      }
+    }
+
+    if (options.compileValidators) {
+      validator.compileSchemas(context.validatorSchemaRefs)
+    }
   }
 
   if (options.mode === 'debug') {
@@ -592,7 +647,7 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
   return code
 }
 
-function buildInnerObject (context, location, objVar) {
+function buildInnerObject (context, location, objVar, isReturnForm) {
   const schema = location.schema
 
   const propertiesLocation = location.getPropertyLocation('properties')
@@ -616,17 +671,16 @@ function buildInnerObject (context, location, objVar) {
     }
   }
 
-  code += 'json += JSON_STR_BEGIN_OBJECT\n'
-
   const localUid = context.uid++
   let addComma = ''
+  let emptyObjectGuard = null
 
   // propertiesKeys is sorted required-first; the guard checks [0] is required because
   // otherwise additionalProperties/patternProperties would emit a stray `{ ,"k":v }`.
   if (propertiesKeys.length > 0 && requiredProperties.includes(propertiesKeys[0])) {
-    // The first property is required, so we don't need a comma.
-    // For the subsequent properties, we can blindly add a comma.
-
+    // The first property is required, so it always emits (or throws): fold the
+    // object-open brace into its key prefix. Subsequent properties fold the
+    // comma into their key prefix the same way, cutting one append per property.
     for (let i = 0; i < propertiesKeys.length; i++) {
       const key = propertiesKeys[i]
       const propertyLocation = propertiesLocation.getPropertyLocation(key)
@@ -640,23 +694,18 @@ function buildInnerObject (context, location, objVar) {
       const value = `value_${key.replace(/[^a-zA-Z0-9]/g, '_')}_${context.uid++}`
       const defaultValue = resolvedLocation.schema.default
       const isRequired = requiredProperties.includes(key)
-
-      // i === 0 means it's the first property, and it IS required (due to sort). No comma.
-      // i > 0 means it follows a required property (or a sequence starting with one). Unconditional comma.
-      const currentAddComma = i === 0 ? '' : 'json += JSON_STR_COMMA'
+      const keyPrefix = (i === 0 ? '{' : ',') + sanitizedKey + ':'
 
       code += `
       const ${value} = ${objVar}[${sanitizedKey}]
       if (${value} !== undefined) {
-        ${currentAddComma}
-        json += ${JSON.stringify(sanitizedKey + ':')}
+        json += ${JSON.stringify(keyPrefix)}
         ${buildValue(context, resolvedLocation, `${value}`)}
       }`
 
       if (defaultValue !== undefined) {
         code += ` else {
-        ${currentAddComma}
-        json += ${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))}
+        json += ${JSON.stringify(keyPrefix + JSON.stringify(defaultValue))}
       }
       `
       } else if (isRequired) {
@@ -671,11 +720,16 @@ function buildInnerObject (context, location, objVar) {
 
     addComma = 'json += JSON_STR_COMMA'
   } else {
+    // No property is guaranteed to emit: fold `{` into whichever property
+    // emits first, and only emit a bare `{` when none does.
     const needsRuntimeComma = propertiesKeys.length > 1 || schema.patternProperties || (schema.additionalProperties !== undefined && schema.additionalProperties !== false)
 
     if (needsRuntimeComma) {
       code += `let addComma_${localUid} = false\n`
-      addComma = `!addComma_${localUid} && (addComma_${localUid} = true) || (json += JSON_STR_COMMA)`
+      addComma = `json += addComma_${localUid} ? JSON_STR_COMMA : ((addComma_${localUid} = true), JSON_STR_BEGIN_OBJECT)`
+      emptyObjectGuard = `if (!addComma_${localUid}) json += JSON_STR_BEGIN_OBJECT\n`
+    } else if (propertiesKeys.length === 0) {
+      code += 'json += JSON_STR_BEGIN_OBJECT\n'
     }
 
     for (const key of propertiesKeys) {
@@ -688,12 +742,10 @@ function buildInnerObject (context, location, objVar) {
       const value = `value_${key.replace(/[^a-zA-Z0-9]/g, '_')}_${context.uid++}`
       const defaultValue = propertyLocation.schema.default
       const isRequired = requiredProperties.includes(key) // Should be false here but good to keep
-      // Select a complete prefix so the comma does not need a separate concatenation.
-      const propertyPrefix = sanitizedKey + ':'
+      const keyColon = sanitizedKey + ':'
       const addProperty = needsRuntimeComma
-        ? `json += addComma_${localUid} ? ${JSON.stringify(',' + propertyPrefix)} : ${JSON.stringify(propertyPrefix)}
-           addComma_${localUid} = true`
-        : `json += ${JSON.stringify(propertyPrefix)}`
+        ? `json += addComma_${localUid} ? ${JSON.stringify(',' + keyColon)} : ((addComma_${localUid} = true), ${JSON.stringify('{' + keyColon)})`
+        : `json += ${JSON.stringify('{' + keyColon)}`
 
       code += `
           const ${value} = ${objVar}[${sanitizedKey}]
@@ -703,15 +755,32 @@ function buildInnerObject (context, location, objVar) {
           }`
 
       if (defaultValue !== undefined) {
-        code += ` else {
+        const defaultValueLiteral = JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))
+        if (needsRuntimeComma) {
+          code += ` else {
             ${addComma}
-            json += ${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))}
+            json += ${defaultValueLiteral}
           }
           `
+        } else {
+          // Single optional property with default: `{` is folded into the
+          // default literal so the absent branch still opens the object.
+          code += ` else {
+            json += ${JSON.stringify('{' + sanitizedKey + ':' + JSON.stringify(defaultValue))}
+          }
+          `
+        }
       } else if (isRequired) {
         // Should not happen if requiredProperties.length === 0 but safety
         code += ` else {
             throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')
+          }
+          `
+      } else if (!needsRuntimeComma) {
+        // Single optional property: `{` is folded into its key, so emit `{`
+        // when the property is absent.
+        code += ` else {
+            json += JSON_STR_BEGIN_OBJECT
           }
           `
       } else {
@@ -724,9 +793,15 @@ function buildInnerObject (context, location, objVar) {
     code += buildExtraObjectPropertiesSerializer(context, location, addComma, objVar)
   }
 
-  code += `
-    json += JSON_STR_END_OBJECT
-  `
+  if (emptyObjectGuard !== null) {
+    code += emptyObjectGuard
+  }
+
+  // Named object serializers can return `json + '}'` directly, saving one
+  // append + intermediate assignment in the hot per-item path.
+  code += isReturnForm
+    ? '\nreturn json + JSON_STR_END_OBJECT\n'
+    : '\njson += JSON_STR_END_OBJECT\n'
   return code
 }
 
@@ -820,8 +895,7 @@ function buildObject (context, location, input) {
         if (obj === null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_OBJECT'}
         let json = ''
 
-        ${buildInnerObject(context, location, 'obj')}
-        return json
+        ${buildInnerObject(context, location, 'obj', true)}
       }
     `
 
@@ -843,6 +917,73 @@ function buildObject (context, location, input) {
   return code
 }
 
+// Per-element condition under which a native JSON.stringify(array) is
+// byte-identical to the generated per-item serializer for primitive item
+// schemas, plus the minimum array length at which copying beats the existing
+// loop. Returns null when the item schema uses any keyword that changes
+// serialization dispatch, or when the kind never wins (boolean: 'true'/'false'
+// concat is already cheap; the copy loses 25-44% at every size on Node 24).
+function getPrimitiveArrayFastPathCondition (itemsSchema) {
+  if (
+    Array.isArray(itemsSchema) ||
+    itemsSchema.$ref !== undefined ||
+    typeof itemsSchema.type !== 'string' ||
+    itemsSchema.const !== undefined ||
+    itemsSchema.nullable === true ||
+    itemsSchema.allOf !== undefined ||
+    itemsSchema.anyOf !== undefined ||
+    itemsSchema.oneOf !== undefined ||
+    itemsSchema.if !== undefined
+  ) {
+    return null
+  }
+  switch (itemsSchema.type) {
+    case 'number':
+      // asNumber(): NaN throws, Infinity serializes as null, every other
+      // number renders via ToString, exactly like JSON.stringify. The cutoff
+      // is in NUMBER_ARRAY_FAST_PATH.
+      return NUMBER_ARRAY_FAST_PATH
+    case 'integer':
+      // asInteger(): only integer numbers skip the (rounding-dependent)
+      // parseInteger path; those render via ToString like JSON.stringify.
+      // Small-int ToString is cached, so the loop stays cheap for longer;
+      // the cutoff is in INTEGER_ARRAY_FAST_PATH.
+      return INTEGER_ARRAY_FAST_PATH
+    default:
+      return null
+  }
+}
+
+// Item schema { type: 'string' } with no format, nullable, const, or combinator.
+// Other keywords (enum, pattern, minLength) are not applied while serializing.
+function isPlainStringItemsSchema (schema) {
+  if (schema.type !== 'string') {
+    return false
+  }
+  if (schema.format !== undefined) {
+    return false
+  }
+  if (schema.nullable === true) {
+    return false
+  }
+  if (schema.const !== undefined) {
+    return false
+  }
+  if (schema.allOf !== undefined) {
+    return false
+  }
+  if (schema.anyOf !== undefined) {
+    return false
+  }
+  if (schema.oneOf !== undefined) {
+    return false
+  }
+  if (schema.if !== undefined) {
+    return false
+  }
+  return true
+}
+
 function buildArray (context, location, input) {
   const schema = location.schema
 
@@ -854,6 +995,9 @@ function buildArray (context, location, input) {
   }
 
   const itemsSchema = itemsLocation.schema
+  const plainStringFastPath = context.largeArrayMechanism !== 'json-stringify' &&
+    !Array.isArray(itemsSchema) &&
+    isPlainStringItemsSchema(itemsSchema)
 
   if (context.functionsNamesBySchema.has(schema)) {
     const funcName = context.functionsNamesBySchema.get(schema)
@@ -896,6 +1040,44 @@ function buildArray (context, location, input) {
 
     if (context.largeArrayMechanism === 'json-stringify') {
       functionCode += `if (arrayLength >= ${context.largeArraySize}) return JSON.stringify(obj)\n`
+    } else if (plainStringFastPath) {
+      // Copy strings once; the helper resumes ordered coercion on the first miss.
+      functionCode += `
+      if (typeof arrayLength === 'number' && arrayLength >= ${context.largeArraySize} && Number.isInteger(arrayLength) && arrayLength <= 0xffffffff) {
+        return asPlainStringArray(obj, arrayLength)
+      }
+      `
+    } else {
+      const fastPath = getPrimitiveArrayFastPathCondition(itemsSchema)
+      if (fastPath) {
+        const valueCode = buildValue(context, itemsLocation, 'v')
+        functionCode += `
+        // Copying small arrays costs more than the existing loop.
+        if (typeof arrayLength === 'number' && arrayLength >= ${fastPath.minLength} && Number.isInteger(arrayLength) && arrayLength <= 0xffffffff) {
+          const copy = new Array(arrayLength)
+          Object.setPrototypeOf(copy, null)
+          for (let i = 0; i < arrayLength; i++) {
+            const v = obj[i]
+            if (!(${fastPath.condition})) {
+              // Serialize the captured prefix, then resume at the first miss.
+              // Never reread getters or read ahead of an item's coercion.
+              copy.length = i
+              json = JSON.stringify(copy).slice(0, -1)
+              if (i > 0) json += JSON_STR_COMMA
+              ${valueCode}
+              for (i++; i < arrayLength; i++) {
+                json += JSON_STR_COMMA
+                const v = obj[i]
+                ${valueCode}
+              }
+              return json + JSON_STR_END_ARRAY
+            }
+            copy[i] = v
+          }
+          return JSON.stringify(copy)
+        }
+      `
+      }
     }
 
     functionCode += `
@@ -981,6 +1163,13 @@ function buildArray (context, location, input) {
 
   if (context.largeArrayMechanism === 'json-stringify') {
     inlinedCode += `if (arrayLength_${objVar} >= ${context.largeArraySize}) json += JSON.stringify(${objVar})\n else {`
+  } else if (plainStringFastPath) {
+    inlinedCode += `
+      let fjsPlain_${objVar}
+      if (typeof arrayLength_${objVar} === 'number' && arrayLength_${objVar} >= ${context.largeArraySize} && Number.isInteger(arrayLength_${objVar}) && arrayLength_${objVar} <= 0xffffffff) fjsPlain_${objVar} = asPlainStringArray(${objVar}, arrayLength_${objVar})
+      if (fjsPlain_${objVar} !== undefined) json += fjsPlain_${objVar}
+      else {
+    `
   }
 
   inlinedCode += `
@@ -1037,7 +1226,7 @@ function buildArray (context, location, input) {
     json += JSON_STR_END_ARRAY
   `
 
-  if (context.largeArrayMechanism === 'json-stringify') {
+  if (context.largeArrayMechanism === 'json-stringify' || plainStringFastPath) {
     inlinedCode += '}'
   }
 
@@ -1236,8 +1425,8 @@ function detectRecursiveSchemas (context, location) {
       throw schemaDepthError(context.maxDepth)
     }
 
-    const schemaId = location.schemaId || ''
-    const jsonPointer = location.jsonPointer || ''
+    const schemaId = location.schemaId
+    const jsonPointer = location.jsonPointer
     const fullPath = `${schemaId}#${jsonPointer}`
 
     if (pathStack.has(fullPath)) {
