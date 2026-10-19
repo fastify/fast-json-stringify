@@ -1546,6 +1546,9 @@ function buildAllOf (context, location, input) {
   context.mergedSchemasIds.set(schema, mergedSchemaId)
 
   const { allOf, ...schemaWithoutAllOf } = location.schema
+  const dropAdditionalProperties = schemaWithoutAllOf.additionalProperties === false
+  if (dropAdditionalProperties) delete schemaWithoutAllOf.additionalProperties
+
   const locations = [
     new Location(
       schemaWithoutAllOf,
@@ -1560,6 +1563,7 @@ function buildAllOf (context, location, input) {
   }
 
   const mergedLocation = mergeLocations(context, mergedSchemaId, locations)
+  if (dropAdditionalProperties) mergedLocation.schema.additionalProperties = false
   return buildValue(context, mergedLocation, input)
 }
 
