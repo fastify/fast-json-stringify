@@ -711,3 +711,125 @@ buildTest({
   largeArraySize: '10000',
   largeArrayMechanism: 'default'
 })
+
+buildTest({
+  title: 'string array whose items declare const',
+  type: 'array',
+  items: { type: 'string', const: 'a' }
+}, ['a', 'a'])
+
+buildTest({
+  title: 'string array whose items declare allOf',
+  type: 'array',
+  items: { type: 'string', allOf: [{ type: 'string' }] }
+}, ['a', 'b'])
+
+buildTest({
+  title: 'string array whose items declare anyOf',
+  type: 'array',
+  items: { type: 'string', anyOf: [{ type: 'string' }] }
+}, ['a', 'b'])
+
+buildTest({
+  title: 'string array whose items declare oneOf',
+  type: 'array',
+  items: { type: 'string', oneOf: [{ type: 'string' }] }
+}, ['a', 'b'])
+
+buildTest({
+  title: 'string array whose items declare if',
+  type: 'array',
+  items: { type: 'string', if: { type: 'string' }, then: { type: 'string' } }
+}, ['a', 'b'])
+
+test('string array coerces a non-string item', (t) => {
+  const stringify = build({
+    type: 'array',
+    items: { type: 'string' }
+  }, { largeArraySize: 2 })
+  const date = new Date('2020-01-02T03:04:05.006Z')
+
+  t.assert.equal(
+    stringify([1, 'a', null, date, /re/]),
+    '["1","a","","2020-01-02T03:04:05.006Z","re"]'
+  )
+})
+
+// Large number/integer arrays are copied and handed to JSON.stringify. The
+// first element that is not already the right type switches to the per-item
+// loop from that index on. 3e5 elements is the largest fast-path cutoff on
+// any supported Node release (see PRIMITIVE_FAST_PATH_MIN_LENGTH in index.js),
+// so these always exercise the resume path.
+const FAST_PATH_LENGTH = 3e5
+
+for (const [type, bad, expected] of [
+  ['integer', 1.9, '1'],
+  ['integer', '7', '7'],
+  ['integer', null, '0'],
+  ['number', '7.5', '7.5'],
+  ['number', null, '0'],
+  ['number', true, '1']
+]) {
+  for (const [position, index] of [
+    ['start', 0],
+    ['middle', FAST_PATH_LENGTH >> 1],
+    ['end', FAST_PATH_LENGTH - 1]
+  ]) {
+    test(`large ${type} array falls back to the loop on ${JSON.stringify(bad)} at the ${position}`, (t) => {
+      const stringify = build({ type: 'array', items: { type } })
+      const input = Array.from({ length: FAST_PATH_LENGTH }, (_, i) => i - 1000)
+      input[index] = bad
+
+      const reference = Array.from(input, (v, i) => i === index ? expected : String(v))
+      t.assert.equal(stringify(input), '[' + reference.join(',') + ']')
+    })
+  }
+}
+
+test('large integer array applies the rounding option after the fallback', (t) => {
+  const stringify = build({ type: 'array', items: { type: 'integer' } }, { rounding: 'ceil' })
+  const input = Array.from({ length: FAST_PATH_LENGTH }, (_, i) => i)
+  input[10] = 1.1
+  input[FAST_PATH_LENGTH - 1] = 2.1
+
+  const output = stringify(input)
+  t.assert.equal(output.slice(0, 23), '[0,1,2,3,4,5,6,7,8,9,2,')
+  t.assert.equal(output.slice(-3), ',3]')
+})
+
+test('large number array still throws on a non-numeric string after the fallback', (t) => {
+  const stringify = build({ type: 'array', items: { type: 'number' } })
+  const input = Array.from({ length: FAST_PATH_LENGTH }, (_, i) => i / 10)
+  input[FAST_PATH_LENGTH >> 1] = 'not a number'
+
+  t.assert.throws(() => stringify(input), new Error('The value "not a number" cannot be converted to a number.'))
+})
+
+// A real NaN is typeof 'number', so only the `v === v` half of the fast-path
+// condition rejects it. Check it at every position the copy loop can stop at.
+for (const [position, index] of [['start', 0], ['middle', FAST_PATH_LENGTH >> 1], ['end', FAST_PATH_LENGTH - 1]]) {
+  test(`large number array still throws on NaN at the ${position} after the fallback`, (t) => {
+    const stringify = build({ type: 'array', items: { type: 'number' } })
+    const input = Array.from({ length: FAST_PATH_LENGTH }, (_, i) => i / 10)
+    input[index] = NaN
+
+    t.assert.throws(() => stringify(input), new Error('The value "NaN" cannot be converted to a number.'))
+  })
+}
+
+test('large number array reads each element once across the fallback', (t) => {
+  const stringify = build({ type: 'array', items: { type: 'number' } })
+  const input = Array.from({ length: FAST_PATH_LENGTH }, (_, i) => i)
+  const reads = []
+  for (const index of [0, 1, FAST_PATH_LENGTH >> 1, FAST_PATH_LENGTH - 1]) {
+    Object.defineProperty(input, index, {
+      get () {
+        reads.push(index)
+        return index === 1 ? '1' : index
+      }
+    })
+  }
+
+  t.assert.equal(stringify(input), JSON.stringify(Array.from({ length: FAST_PATH_LENGTH }, (_, i) => i)))
+  t.assert.deepEqual(reads, [0, 1, FAST_PATH_LENGTH >> 1, FAST_PATH_LENGTH - 1])
+})
