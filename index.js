@@ -13,7 +13,7 @@ const mergeSchemas = require('./lib/merge-schemas')
 const DEFAULT_MAX_DEPTH = 100
 const NAMED_FRAGMENT_REF = /^#[a-z_][-\w._]*$/i
 
-// Minimum array lengths at which copying into a null-prototype array and
+// Minimum array lengths at which copying into a plain array and
 // calling native JSON.stringify beats the generated per-item loop. Measured
 // against main with tinybench (alternating rounds, median ops/s, output
 // consumed with Buffer.byteLength) on Node 20, 22, 24 and 26 x64.
@@ -1055,7 +1055,10 @@ function buildArray (context, location, input) {
         // Copying small arrays costs more than the existing loop.
         if (typeof arrayLength === 'number' && arrayLength >= ${fastPath.minLength} && Number.isInteger(arrayLength) && arrayLength <= 0xffffffff) {
           const copy = new Array(arrayLength)
-          Object.setPrototypeOf(copy, null)
+          // V8's side-effect-free JSON.stringify fast path (V8 >= 13.8) requires
+          // the standard Array.prototype; a null prototype halves its throughput.
+          // Only detach the prototype when a toJSON hook would otherwise be called.
+          if (Array.prototype.toJSON !== undefined) Object.setPrototypeOf(copy, null)
           for (let i = 0; i < arrayLength; i++) {
             const v = obj[i]
             if (!(${fastPath.condition})) {
