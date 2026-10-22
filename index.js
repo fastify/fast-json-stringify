@@ -27,12 +27,21 @@ const NAMED_FRAGMENT_REF = /^#[a-z_][-\w._]*$/i
 // Node 20: JSON.stringify only beats the loop for every element kind from
 // ~3e5 (1e5 is machine-dependent), so both kinds wait for 3e5 there.
 //
+// Strings: the generated loop escapes each element in JS (asString), which
+// is far slower than the native serializer, so the copy wins almost
+// immediately. Node 22+: from 2 elements for every string length and content
+// (2-6x faster from 8 elements on). Node 20: from 32 elements for short
+// strings, but only from 128 for long (~120 chars) strings without escapes,
+// so Node 20 waits for 128. Measured on Node 20, 22, 24 and 26 (arm64) with
+// 8, 40 and 120 char strings, with and without characters to escape.
+//
 // Booleans never win and keep the loop. The array lookup instead of a
 // ternary keeps both branches covered on every Node.
 // TODO: drop the Node 20 tier (and this version check) once Node 20 is no
 // longer supported.
 const nodeMajor = Number.parseInt(process.versions.node, 10)
-const PRIMITIVE_FAST_PATH_MIN_LENGTH = [{ integer: 3e5, number: 3e5 }, { integer: 512, number: 128 }][+(nodeMajor >= 22)]
+const PRIMITIVE_FAST_PATH_MIN_LENGTH = [{ integer: 3e5, number: 3e5, string: 128 }, { integer: 512, number: 128, string: 8 }][+(nodeMajor >= 22)]
+const STRING_ARRAY_FAST_PATH_MIN_LENGTH = PRIMITIVE_FAST_PATH_MIN_LENGTH.string
 const INTEGER_ARRAY_FAST_PATH = { condition: 'Number.isInteger(v)', minLength: PRIMITIVE_FAST_PATH_MIN_LENGTH.integer }
 const NUMBER_ARRAY_FAST_PATH = { condition: 'typeof v === \'number\' && v === v', minLength: PRIMITIVE_FAST_PATH_MIN_LENGTH.number }
 
@@ -1043,7 +1052,7 @@ function buildArray (context, location, input) {
     } else if (plainStringFastPath) {
       // Copy strings once; the helper resumes ordered coercion on the first miss.
       functionCode += `
-      if (typeof arrayLength === 'number' && arrayLength >= ${context.largeArraySize} && Number.isInteger(arrayLength) && arrayLength <= 0xffffffff) {
+      if (typeof arrayLength === 'number' && arrayLength >= ${STRING_ARRAY_FAST_PATH_MIN_LENGTH} && Number.isInteger(arrayLength) && arrayLength <= 0xffffffff) {
         return asPlainStringArray(obj, arrayLength)
       }
       `
@@ -1169,7 +1178,7 @@ function buildArray (context, location, input) {
   } else if (plainStringFastPath) {
     inlinedCode += `
       let fjsPlain_${objVar}
-      if (typeof arrayLength_${objVar} === 'number' && arrayLength_${objVar} >= ${context.largeArraySize} && Number.isInteger(arrayLength_${objVar}) && arrayLength_${objVar} <= 0xffffffff) fjsPlain_${objVar} = asPlainStringArray(${objVar}, arrayLength_${objVar})
+      if (typeof arrayLength_${objVar} === 'number' && arrayLength_${objVar} >= ${STRING_ARRAY_FAST_PATH_MIN_LENGTH} && Number.isInteger(arrayLength_${objVar}) && arrayLength_${objVar} <= 0xffffffff) fjsPlain_${objVar} = asPlainStringArray(${objVar}, arrayLength_${objVar})
       if (fjsPlain_${objVar} !== undefined) json += fjsPlain_${objVar}
       else {
     `
