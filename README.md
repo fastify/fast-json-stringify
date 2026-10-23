@@ -393,6 +393,45 @@ const stringify = fastJson({
 })
 ```
 
+At an *anyOf* or *oneOf* node, branch selection validates the input before
+serializing the selected branch. For object schemas, this includes checking
+required properties on nested objects before calling their `toJSON()` methods.
+An object whose required properties exist only in its `toJSON()` result can
+therefore fail to match any branch, even if it serializes successfully with the
+same object schema outside *anyOf* or *oneOf*.
+
+Convert those objects before passing them to `stringify`:
+
+```javascript
+const stringify = fastJson({
+  oneOf: [{
+    type: 'object',
+    properties: {
+      balance: {
+        type: 'object',
+        properties: {
+          value: { type: 'number' }
+        },
+        required: ['value']
+      }
+    },
+    required: ['balance']
+  }, {
+    type: 'null'
+  }]
+})
+
+const balance = {
+  amount: 100,
+  toJSON () {
+    return { value: this.amount }
+  }
+}
+
+console.log(stringify({ balance: balance.toJSON() })) // '{"balance":{"value":100}}'
+stringify({ balance }) // throws: The value of '#' does not match schema definition.
+```
+
 <a name="if-then-else"></a>
 #### If/then/else
 `fast-json-stringify` supports `if/then/else` jsonschema feature. See [ajv documentation](https://ajv.js.org/keywords.html#ifthenelse).
