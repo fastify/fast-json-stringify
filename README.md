@@ -625,13 +625,10 @@ In order to improve that the user can set the `largeArrayMechanism` and
 
 - `default` - This option keeps the full feature set of this lib: every element
 is still coerced to the type declared in `items`, and type errors are still
-thrown. Arrays whose `items` schema is a plain `{ type: 'string' }` (no
-`format`, `nullable`, `const`, or combinator keyword) are serialized at or
-above `largeArraySize` by copying the elements and calling the native
-`JSON.stringify` on the copy, which is several times faster than appending one
-element at a time. If an element is not a string, that element and the ones
-after it go through the regular per-element coercion, so the output is the
-same as before.
+thrown. Arrays of plain primitives (`string`, `number`, `integer`) use a
+copy-then-`JSON.stringify` strategy with their own length cutoffs, see
+[Primitive arrays](#primitive-arrays) below; `largeArraySize` does not affect
+them.
 - `json-stringify` - This option will remove support for schema validation
 within **large arrays** completely. By doing so the overhead previously
 mentioned is nulled, greatly improving execution time. Mind there's no change
@@ -646,27 +643,31 @@ integer-like values, such as:
 - `'2e4'` - _note this will be converted to `2`, not `20000`_
 - `1.5` - _note this will be converted to `1`_
 
-##### Number and integer arrays
+<a name="primitive-arrays"></a>
+##### Primitive arrays
 
 With `largeArrayMechanism: 'default'`, arrays whose `items` schema is a plain
-`{ type: 'number' }` or `{ type: 'integer' }` (no `nullable`, `const`, `$ref`,
-or combinator keyword) use the same copy-then-`JSON.stringify` strategy, but
-with their own length cutoffs that do not depend on `largeArraySize`. The
-cutoffs are the array lengths above which the copy beats the per-element loop,
-and they depend on the V8 version:
+`{ type: 'string' }`, `{ type: 'number' }` or `{ type: 'integer' }` (no
+`format`, `nullable`, `const`, or combinator keyword; a `$ref` to a plain
+string schema also qualifies, a `$ref` for `number`/`integer` does not) are
+serialized by copying the elements into a fresh array and calling the native
+`JSON.stringify` on the copy, which is several times faster than appending one
+element at a time. This happens at or above a length cutoff that does not
+depend on `largeArraySize`. The cutoffs are the array lengths above which the
+copy beats the per-element loop, and they depend on the V8 version:
 
-| Node.js | `number` | `integer` |
-|---|---:|---:|
-| 22 and later | 128 elements | 512 elements |
-| 20 | 300000 elements | 300000 elements |
+| Node.js | `string` | `number` | `integer` |
+|---|---:|---:|---:|
+| 22 and later | 8 elements | 128 elements | 512 elements |
+| 20 | 128 elements | 300000 elements | 300000 elements |
 
 Below the cutoff the array is serialized element by element as before. Above
-it, the elements are copied until one is found that is not already a `number`
-(or not already an integer, for `integer`); that element and the ones after it
-go through the regular per-element coercion and validation (`null` still
-becomes `0`, `rounding` still applies, `NaN` still throws). The output is
-byte-identical either way. Arrays of `boolean`, `null`, objects, or any other
-`items` schema are not affected.
+it, the elements are copied until one is found that is not already of the
+declared type (not a string, not a `number`, or not an integer for `integer`);
+that element and the ones after it go through the regular per-element coercion
+and validation (`null` still becomes `""` or `0`, `rounding` still applies,
+`NaN` still throws). The output is byte-identical either way. Arrays of
+`boolean`, `null`, objects, or any other `items` schema are not affected.
 
 In [standalone mode](#standalone) the cutoffs are baked into the generated
 code, so the generated module inherits the cutoffs of the Node.js version that

@@ -181,7 +181,8 @@ declare namespace build {
     /**
      * Large arrays are defined as arrays containing, by default, `20000`
      * elements or more. That value can be adjusted via the option parameter
-     * `largeArraySize`.
+     * `largeArraySize`. Only used with `largeArrayMechanism: 'json-stringify'`;
+     * arrays of plain primitives have their own, runtime-dependent cutoffs.
      *
      * @default 20000
      */
