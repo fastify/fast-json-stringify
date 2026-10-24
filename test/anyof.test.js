@@ -927,3 +927,30 @@ test('anyOf branch with user-defined property named propertyNames preserves Date
   t.assert.equal(stringify({ data: null }), '{"data":null}')
   t.assert.equal(warnMock.mock.callCount(), 0)
 })
+
+test('$defs entry named propertyNames is still converted (Date serialization)', (t) => {
+  t.plan(2)
+
+  const warnMock = t.mock.method(console, 'warn')
+
+  const stringify = build({
+    type: 'object',
+    $defs: {
+      propertyNames: { type: 'string', format: 'date-time' }
+    },
+    properties: {
+      data: {
+        anyOf: [
+          { $ref: '#/$defs/propertyNames' },
+          { type: 'null' }
+        ]
+      }
+    }
+  })
+
+  t.assert.equal(
+    stringify({ data: new Date('2026-01-01T00:00:00.000Z') }),
+    '{"data":"2026-01-01T00:00:00.000Z"}'
+  )
+  t.assert.equal(warnMock.mock.callCount(), 0)
+})
