@@ -318,6 +318,38 @@ test('inline validators with external oneOf refs and toJSON values', async (t) =
   t.assert.throws(() => stringify({ value: true }), /does not match schema definition/)
 })
 
+test('restored validator handles toJSON values', async (t) => {
+  t.plan(3)
+
+  after(async () => {
+    await fs.promises.rm(destination, { force: true })
+  })
+
+  const code = fjs({
+    type: 'object',
+    properties: {
+      value: {
+        oneOf: [
+          { type: 'string', format: 'date-time' },
+          { type: 'integer' }
+        ]
+      }
+    }
+  }, { mode: 'standalone', inlineValidators: false })
+
+  const destination = path.resolve(tmpDir, 'standalone-restored-toJSON.js')
+
+  await fs.promises.writeFile(destination, code)
+  const stringify = require(destination)
+
+  t.assert.equal(
+    stringify({ value: new Date('2020-01-02T03:04:05.000Z') }),
+    '{"value":"2020-01-02T03:04:05.000Z"}'
+  )
+  t.assert.equal(stringify({ value: 42 }), '{"value":42}')
+  t.assert.throws(() => stringify({ value: true }), /does not match schema definition/)
+})
+
 test('does not emit unused inline validators', (t) => {
   const code = build({ mode: 'standalone', inlineValidators: true })
 

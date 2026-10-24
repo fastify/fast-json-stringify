@@ -127,7 +127,7 @@ const stringify = fastJson(mySchema, {
 ```
 
 - `schema`: external schemas references by $ref property. [More details](#ref)
-- `ajv`: [ajv v8 instance's settings](https://ajv.js.org/options.html) for those properties that require `ajv`. [More details](#anyof)
+- `ajv`: [ajv v8 instance's settings](https://ajv.js.org/options.html) for those properties that require `ajv`. [More details](#anyof) Schema strictness defaults to `false`; pass `ajv: { strictSchema: true }` to reject unknown schema keywords or `ajv: { strictSchema: 'log' }` to log warnings. This applies only to schema paths compiled by Ajv, not to every schema processed by fast-json-stringify.
 - `rounding`: setup how the `integer` types will be rounded when not integers. [More details](#integer)
 - `maxDepth`: maximum number of nested schema levels allowed during compilation.
 Defaults to `100` and may be set from `0` to `100`. Schemas that exceed this limit
@@ -623,11 +623,15 @@ In order to improve that the user can set the `largeArrayMechanism` and
 
 `largeArrayMechanism`'s default value is `default`. Valid values for it are:
 
-- `default` - This option is a compromise between performance and feature set by
-still providing the expected functionality out of this lib but giving up some
-possible performance gain. With this option set, **large arrays** would be
-stringified by joining their stringified elements using `Array.join` instead of
-string concatenation for better performance
+- `default` - This option keeps the full feature set of this lib: every element
+is still coerced to the type declared in `items`, and type errors are still
+thrown. Arrays whose `items` schema is a plain `{ type: 'string' }` (no
+`format`, `nullable`, `const`, or combinator keyword) are serialized at or
+above `largeArraySize` by copying the elements and calling the native
+`JSON.stringify` on the copy, which is several times faster than appending one
+element at a time. If an element is not a string, that element and the ones
+after it go through the regular per-element coercion, so the output is the
+same as before.
 - `json-stringify` - This option will remove support for schema validation
 within **large arrays** completely. By doing so the overhead previously
 mentioned is nulled, greatly improving execution time. Mind there's no change
@@ -641,6 +645,32 @@ integer-like values, such as:
 - `'20000'`
 - `'2e4'` - _note this will be converted to `2`, not `20000`_
 - `1.5` - _note this will be converted to `1`_
+
+##### Number and integer arrays
+
+With `largeArrayMechanism: 'default'`, arrays whose `items` schema is a plain
+`{ type: 'number' }` or `{ type: 'integer' }` (no `nullable`, `const`, `$ref`,
+or combinator keyword) use the same copy-then-`JSON.stringify` strategy, but
+with their own length cutoffs that do not depend on `largeArraySize`. The
+cutoffs are the array lengths above which the copy beats the per-element loop,
+and they depend on the V8 version:
+
+| Node.js | `number` | `integer` |
+|---|---:|---:|
+| 22 and later | 128 elements | 512 elements |
+| 20 | 300000 elements | 300000 elements |
+
+Below the cutoff the array is serialized element by element as before. Above
+it, the elements are copied until one is found that is not already a `number`
+(or not already an integer, for `integer`); that element and the ones after it
+go through the regular per-element coercion and validation (`null` still
+becomes `0`, `rounding` still applies, `NaN` still throws). The output is
+byte-identical either way. Arrays of `boolean`, `null`, objects, or any other
+`items` schema are not affected.
+
+In [standalone mode](#standalone) the cutoffs are baked into the generated
+code, so the generated module inherits the cutoffs of the Node.js version that
+ran `build()`, not of the one that runs the module.
 
 <a name="unsafe"></a>
 #### Unsafe string
@@ -747,6 +777,12 @@ generated module still requires `fast-json-stringify` for its serializer and
 may require Ajv runtime helpers used by the generated validation code. Custom
 Ajv formats used by these schemas must support Ajv's standalone code
 generation.
+
+The generated code also bakes in the length cutoffs used for
+[number and integer arrays](#largearrays). Those cutoffs are chosen for the
+Node.js version that ran `build()`; a module built on Node.js 20 and run on
+Node.js 22 or later keeps the Node.js 20 cutoffs, and vice versa. The output is
+the same either way, only the speed differs.
 
 <a name="acknowledgments"></a>
 ## Acknowledgments
