@@ -7,6 +7,7 @@ const { MergeError } = require('@fastify/merge-json-schemas')
 
 const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
+const { buildProjection } = require('./lib/projection')
 const Location = require('./lib/location')
 const validate = require('./lib/schema-validator')
 const mergeSchemas = require('./lib/merge-schemas')
@@ -41,6 +42,9 @@ const NAMED_FRAGMENT_REF = /^#[a-z_][-\w._]*$/i
 // TODO: drop the Node 20 tier (and this version check) once Node 20 is no
 // longer supported.
 const nodeMajor = Number.parseInt(process.versions.node, 10)
+// V8 13.8 (Node 25+) introduced the side-effect-free JSON.stringify fast path
+// that objectMechanism: 'native' relies on.
+const PROJECTION_SUPPORTED = nodeMajor >= 25
 const PRIMITIVE_FAST_PATH_MIN_LENGTH = [{ integer: 3e5, number: 3e5, string: 128 }, { integer: 512, number: 128, string: 8 }][+(nodeMajor >= 22)]
 const STRING_ARRAY_FAST_PATH_MIN_LENGTH = PRIMITIVE_FAST_PATH_MIN_LENGTH.string
 const INTEGER_ARRAY_FAST_PATH = { condition: 'Number.isInteger(v)', minLength: PRIMITIVE_FAST_PATH_MIN_LENGTH.integer }
@@ -95,6 +99,11 @@ const validRoundingMethods = new Set([
 const validLargeArrayMechanisms = new Set([
   'default',
   'json-stringify'
+])
+
+const validObjectMechanisms = new Set([
+  'default',
+  'native'
 ])
 
 // Keywords that do not change the output, so a $ref carrying only these
@@ -442,6 +451,7 @@ function build (schema, options) {
     buildingSet: new Set(),
     largeArraySize: 2e4,
     largeArrayMechanism: 'default',
+    objectMechanism: 'default',
     uid: 0
   }
 
@@ -479,6 +489,14 @@ function build (schema, options) {
     }
   }
 
+  if (options.objectMechanism) {
+    if (validObjectMechanisms.has(options.objectMechanism)) {
+      context.objectMechanism = options.objectMechanism
+    } else {
+      throw new Error(`Unsupported object mechanism ${options.objectMechanism}`)
+    }
+  }
+
   if (options.largeArraySize) {
     const largeArraySizeType = typeof options.largeArraySize
     let parsedNumber
@@ -500,7 +518,24 @@ function build (schema, options) {
   if (hasRef) {
     detectRecursiveSchemas(context, location)
   }
-  const code = buildValue(context, location, 'input')
+
+  // objectMechanism: 'native' projects the input into shape-stable scratch
+  // objects and delegates to the native JSON.stringify. Only whole schemas
+  // made of objects, arrays and primitives qualify; anything else falls back
+  // to the string codegen below, so output never changes for unsupported shapes.
+  // The projection only pays off where V8 has the side-effect-free
+  // JSON.stringify fast path (V8 13.8+, Node 25+): on older runtimes the
+  // string codegen is up to 2x faster, so the option is a no-op there.
+  let code = null
+  let projection = null
+  // `forceProjection` is an internal, undocumented escape hatch used by the
+  // test suite to exercise the projection on runtimes where it is gated off.
+  if (context.objectMechanism === 'native' && (options.forceProjection === true || PROJECTION_SUPPORTED)) {
+    projection = buildProjection(schema)
+  }
+  if (projection === null) {
+    code = buildValue(context, location, 'input')
+  }
 
   let contextFunctionCode = `
     ${serializerFns}
@@ -522,7 +557,9 @@ function build (schema, options) {
   // and the overhead of the intermediate variable 'json'. We can avoid the
   // wrapping and the unnecessary memory allocation by aliasing 'anonymous0' to
   // 'main'
-  if (code === 'json += anonymous0(input)') {
+  if (projection !== null) {
+    contextFunctionCode += projection
+  } else if (code === 'json += anonymous0(input)') {
     contextFunctionCode += `
     ${context.functions.join('\n')}
     const main = anonymous0
