@@ -852,3 +852,105 @@ test('invalid anyOf schema', (t) => {
     t.assert.ok(err.message.includes('schema is invalid'))
   }
 })
+
+test('anyOf branch with propertyNames does not emit Ajv strictTypes warnings', (t) => {
+  t.plan(7)
+
+  const warnMock = t.mock.method(console, 'warn')
+
+  const stringify = build({
+    type: 'object',
+    definitions: {
+      KeySchema: { type: 'string', minLength: 1 }
+    },
+    properties: {
+      fields: {
+        anyOf: [
+          { type: 'object', propertyNames: { type: 'string' }, additionalProperties: { type: 'string' } },
+          { type: 'null' }
+        ]
+      },
+      nestedCombinators: {
+        anyOf: [
+          {
+            type: 'object',
+            propertyNames: {
+              allOf: [{ type: 'string', minLength: 1 }, { $ref: '#/definitions/KeySchema' }],
+              anyOf: [{ type: 'string', pattern: '^[a-z]+$' }],
+              oneOf: [{ type: 'string' }],
+              not: { type: 'string', enum: ['forbidden'] }
+            },
+            additionalProperties: { type: 'string' }
+          },
+          { type: 'null' }
+        ]
+      }
+    }
+  })
+
+  t.assert.equal(stringify({ fields: { a: 'b' }, nestedCombinators: { abc: 'x' } }), '{"fields":{"a":"b"},"nestedCombinators":{"abc":"x"}}')
+  t.assert.equal(stringify({ fields: { a: new Date('2026-01-01T00:00:00.000Z') }, nestedCombinators: null }), '{"fields":{"a":"2026-01-01T00:00:00.000Z"},"nestedCombinators":null}')
+  t.assert.equal(stringify({ fields: null, nestedCombinators: null }), '{"fields":null,"nestedCombinators":null}')
+  t.assert.throws(() => stringify({ fields: { a: 'b' }, nestedCombinators: { forbidden: 'x' } }))
+  t.assert.throws(() => stringify({ fields: { a: 'b' }, nestedCombinators: { 123: 'x' } }))
+  t.assert.throws(() => stringify({ fields: 123, nestedCombinators: null }))
+  t.assert.equal(warnMock.mock.callCount(), 0)
+})
+
+test('anyOf branch with user-defined property named propertyNames preserves Date serialization', (t) => {
+  t.plan(3)
+
+  const warnMock = t.mock.method(console, 'warn')
+
+  const stringify = build({
+    type: 'object',
+    properties: {
+      data: {
+        anyOf: [
+          {
+            type: 'object',
+            properties: {
+              propertyNames: { type: 'string', format: 'date-time' }
+            },
+            required: ['propertyNames']
+          },
+          { type: 'null' }
+        ]
+      }
+    }
+  })
+
+  t.assert.equal(
+    stringify({ data: { propertyNames: new Date('2026-01-01T00:00:00.000Z') } }),
+    '{"data":{"propertyNames":"2026-01-01T00:00:00.000Z"}}'
+  )
+  t.assert.equal(stringify({ data: null }), '{"data":null}')
+  t.assert.equal(warnMock.mock.callCount(), 0)
+})
+
+test('$defs entry named propertyNames is still converted (Date serialization)', (t) => {
+  t.plan(2)
+
+  const warnMock = t.mock.method(console, 'warn')
+
+  const stringify = build({
+    type: 'object',
+    $defs: {
+      propertyNames: { type: 'string', format: 'date-time' }
+    },
+    properties: {
+      data: {
+        anyOf: [
+          { $ref: '#/$defs/propertyNames' },
+          { type: 'null' }
+        ]
+      }
+    }
+  })
+
+  t.assert.equal(
+    stringify({ data: new Date('2026-01-01T00:00:00.000Z') }),
+    '{"data":"2026-01-01T00:00:00.000Z"}'
+  )
+  t.assert.equal(warnMock.mock.callCount(), 0)
+})
