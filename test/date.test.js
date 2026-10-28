@@ -6,6 +6,15 @@ const build = require('..')
 
 process.env.TZ = 'UTC'
 
+test('render time for dates with expanded ISO years', (t) => {
+  const stringify = build({ type: 'string', format: 'time' })
+  for (const year of [-10000, -1, 10000, 100000]) {
+    const date = new Date(Date.UTC(2000, 0, 1, 12, 34, 56))
+    date.setUTCFullYear(year)
+    t.assert.equal(stringify(date), '"12:34:56"', `time for year ${year}`)
+  }
+})
+
 test('render a date in a string as JSON', (t) => {
   t.plan(2)
 
