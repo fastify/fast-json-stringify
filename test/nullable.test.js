@@ -541,3 +541,107 @@ test('nullable value in oneOf', (t) => {
   const data = { data: [{ job: null }] }
   t.assert.equal(stringify(data), JSON.stringify(data))
 })
+
+test('handle nullable items in a tuple correctly', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'array',
+    items: [
+      { type: 'integer', nullable: true },
+      { type: 'string' }
+    ]
+  }
+
+  const stringify = build(schema)
+
+  const data = [null, 'a']
+  const result = stringify(data)
+
+  t.assert.equal(result, JSON.stringify(data))
+})
+
+test('handle nullable tuple items with values of each type correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'array',
+    items: [
+      { type: 'integer', nullable: true },
+      { type: 'boolean', nullable: true },
+      { type: 'object', nullable: true },
+      { type: 'array', nullable: true }
+    ]
+  }
+
+  const stringify = build(schema)
+
+  const data = [42, true, {}, []]
+  const result = stringify(data)
+  t.assert.equal(result, JSON.stringify(data))
+
+  const nullableData = [null, null, null, null]
+  const nullableResult = stringify(nullableData)
+  t.assert.equal(nullableResult, JSON.stringify(nullableData))
+})
+
+test('throw for null in a non-nullable tuple item', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'array',
+    items: [
+      { type: 'integer' },
+      { type: 'string' }
+    ]
+  }
+
+  const stringify = build(schema)
+
+  t.assert.throws(() => stringify([null, 'a']), new Error('Item at 0 does not match schema definition.'))
+})
+
+test('throw for extra items in a tuple', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'array',
+    items: [
+      { type: 'integer', nullable: true },
+      { type: 'string' }
+    ]
+  }
+
+  const stringify = build(schema)
+
+  t.assert.throws(() => stringify([1, 'a', 'extra']), new Error('Item at 2 does not match schema definition.'))
+})
+
+test('handle nullable items in a tuple nested in an object property correctly', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      tuple: {
+        type: 'array',
+        items: [
+          { type: 'integer', nullable: true },
+          { type: 'string', nullable: true }
+        ]
+      }
+    }
+  }
+
+  const stringify = build(schema)
+
+  const data = { tuple: [null, 'a'] }
+  const result = stringify(data)
+
+  t.assert.equal(result, '{"tuple":[null,"a"]}')
+
+  const valuedData = { tuple: [1, 'a'] }
+  const valuedResult = stringify(valuedData)
+
+  t.assert.equal(valuedResult, '{"tuple":[1,"a"]}')
+})
