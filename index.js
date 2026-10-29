@@ -1161,7 +1161,7 @@ function buildArray (context, location, input) {
         const tmpRes = buildValue(context, itemLocation, value)
         functionCode += `
         if (${i} < arrayLength) {
-          if (${buildArrayTypeCondition(item.type, value)}) {
+          if (${buildArrayTypeCondition(item.type, value, item.nullable)}) {
             if (${i}) {
               json += JSON_STR_COMMA
             }
@@ -1255,7 +1255,7 @@ function buildArray (context, location, input) {
       const tmpRes = buildValue(context, itemLocation, value)
       inlinedCode += `
         if (${i} < arrayLength_${objVar}) {
-          if (${buildArrayTypeCondition(item.type, value)}) {
+          if (${buildArrayTypeCondition(item.type, value, item.nullable)}) {
             !addComma_${localUid} && (addComma_${localUid} = true) || (json += JSON_STR_COMMA)
             ${tmpRes}
           } else {
@@ -1299,7 +1299,7 @@ function buildArray (context, location, input) {
   return inlinedCode
 }
 
-function buildArrayTypeCondition (type, accessor) {
+function buildArrayTypeCondition (type, accessor, nullable) {
   let condition
   switch (type) {
     case 'null':
@@ -1338,6 +1338,11 @@ function buildArrayTypeCondition (type, accessor) {
         })
         condition = `(${conditions.join(' || ')})`
       }
+  }
+  // A nullable item schema must accept null here, matching the non-tuple items
+  // path (which relies on buildValue's nullable handling)
+  if (nullable === true) {
+    condition = `${condition} || ${accessor} === null`
   }
   return condition
 }
