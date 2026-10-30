@@ -1179,7 +1179,7 @@ function buildArray (context, location, input) {
           if (i) {
             json += JSON_STR_COMMA
           }
-          json += JSON.stringify(obj[i])
+          json += JSON.stringify(obj[i]) ?? JSON_STR_NULL
         }`
       }
     } else {
@@ -1269,7 +1269,7 @@ function buildArray (context, location, input) {
       inlinedCode += `
         for (let i = ${itemsSchema.length}; i < arrayLength_${objVar}; i++) {
           !addComma_${localUid} && (addComma_${localUid} = true) || (json += JSON_STR_COMMA)
-          json += JSON.stringify(${objVar}[i])
+          json += JSON.stringify(${objVar}[i]) ?? JSON_STR_NULL
         }`
     }
   } else {
@@ -1473,7 +1473,10 @@ function buildSingleTypeSerializer (context, location, input) {
       return buildArray(context, location, input)
     }
     case undefined:
-      return `json += JSON.stringify(${input})`
+      // JSON.stringify returns undefined for undefined, functions and symbols.
+      // Write null instead, as JSON.stringify does for array items, so the
+      // output stays valid JSON.
+      return `json += JSON.stringify(${input}) ?? JSON_STR_NULL`
     default:
       throw new Error(`${schema.type} unsupported`)
   }
@@ -1761,7 +1764,7 @@ function buildValue (context, location, input) {
   let schema = location.schema
 
   if (typeof schema === 'boolean') {
-    return `json += JSON.stringify(${input})`
+    return `json += JSON.stringify(${input}) ?? JSON_STR_NULL`
   }
 
   if (schema.$ref) {
