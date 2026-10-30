@@ -1631,6 +1631,17 @@ function buildAllOf (context, location, input) {
   return buildValue(context, mergedLocation, input)
 }
 
+function isPureRefSchema (schema) {
+  return schema != null &&
+    typeof schema === 'object' &&
+    typeof schema.$ref === 'string' &&
+    Object.keys(schema).every((key) => key === '$ref')
+}
+
+function isEmptyObjectSchema (schema) {
+  return Object.keys(schema).length === 0
+}
+
 function buildOneOf (context, location, input) {
   context.validatorSchemasIds.add(location.schemaId)
 
@@ -1645,6 +1656,11 @@ function buildOneOf (context, location, input) {
     location.jsonPointer
   )
   const oneOfsLocation = location.getPropertyLocation(type)
+  // When the anyOf/oneOf has no sibling keywords, a pure `$ref` option can be
+  // built directly. Merging it with an empty sibling schema would clone the
+  // target (often the root) and re-enter buildOneOf forever for multiple
+  // fields that each `$ref: '#'` (https://github.com/fastify/fast-json-stringify/issues/724).
+  const withoutIsEmpty = isEmptyObjectSchema(schemaWithoutAnyOf)
 
   let code = ''
 
@@ -1652,21 +1668,27 @@ function buildOneOf (context, location, input) {
     const optionLocation = oneOfsLocation.getPropertyLocation(index)
     const optionSchema = optionLocation.schema
 
-    let mergedSchemaId = context.mergedSchemasIds.get(optionSchema)
-    let mergedLocation = null
-    if (mergedSchemaId) {
-      mergedLocation = getMergedLocation(context, mergedSchemaId)
+    let nestedResult
+    if (withoutIsEmpty && isPureRefSchema(optionSchema)) {
+      nestedResult = buildValue(context, resolveRef(context, optionLocation), input)
     } else {
-      mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
-      context.mergedSchemasIds.set(optionSchema, mergedSchemaId)
+      let mergedSchemaId = context.mergedSchemasIds.get(optionSchema)
+      let mergedLocation = null
+      if (mergedSchemaId) {
+        mergedLocation = getMergedLocation(context, mergedSchemaId)
+      } else {
+        mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
+        context.mergedSchemasIds.set(optionSchema, mergedSchemaId)
 
-      mergedLocation = mergeLocations(context, mergedSchemaId, [
-        locationWithoutOneOf,
-        optionLocation
-      ])
+        mergedLocation = mergeLocations(context, mergedSchemaId, [
+          locationWithoutOneOf,
+          optionLocation
+        ])
+      }
+
+      nestedResult = buildValue(context, mergedLocation, input)
     }
 
-    const nestedResult = buildValue(context, mergedLocation, input)
     const schemaRef = getValidatorSchemaRef(context, optionLocation)
     context.validatorSchemaRefs.add(schemaRef)
 
