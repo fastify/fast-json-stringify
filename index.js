@@ -1161,7 +1161,7 @@ function buildArray (context, location, input) {
         const tmpRes = buildValue(context, itemLocation, value)
         functionCode += `
         if (${i} < arrayLength) {
-          if (${buildArrayTypeCondition(item.type, value)}) {
+          if (${buildTupleItemCondition(item, value)}) {
             if (${i}) {
               json += JSON_STR_COMMA
             }
@@ -1255,7 +1255,7 @@ function buildArray (context, location, input) {
       const tmpRes = buildValue(context, itemLocation, value)
       inlinedCode += `
         if (${i} < arrayLength_${objVar}) {
-          if (${buildArrayTypeCondition(item.type, value)}) {
+          if (${buildTupleItemCondition(item, value)}) {
             !addComma_${localUid} && (addComma_${localUid} = true) || (json += JSON_STR_COMMA)
             ${tmpRes}
           } else {
@@ -1340,6 +1340,13 @@ function buildArrayTypeCondition (type, accessor) {
       }
   }
   return condition
+}
+
+// A nullable tuple item accepts null on top of its declared type(s);
+// buildValue() then serializes it as `null`.
+function buildTupleItemCondition (item, accessor) {
+  const condition = buildArrayTypeCondition(item.type, accessor)
+  return item.nullable === true ? `${accessor} === null || ${condition}` : condition
 }
 
 function generateFuncName (context) {
