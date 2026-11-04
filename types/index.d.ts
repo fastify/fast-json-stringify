@@ -194,6 +194,15 @@ declare namespace build {
      */
     largeArrayMechanism?: 'default' | 'json-stringify'
     /**
+     * Specify how objects should be stringified. `'native'` projects the
+     * input into schema-shaped scratch objects and delegates to the native
+     * `JSON.stringify`. Effective on Node.js 25+ only (no-op on older
+     * runtimes); schemas it cannot project silently use the default mechanism.
+     *
+     * @default 'default'
+     */
+    objectMechanism?: 'default' | 'native'
+    /**
      * Eagerly compile the Ajv validators used by `anyOf`, `oneOf` and
      * `if/then/else` at build time instead of on the first serialization
      * that reaches them.

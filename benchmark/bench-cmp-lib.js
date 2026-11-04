@@ -114,6 +114,7 @@ const CJSStringifyString = CJS({ type: 'string' })
 
 const FJS = require('..')
 const stringify = FJS(schema)
+const stringifyNative = FJS(schema, { objectMechanism: 'native' })
 const stringifyArrayDefault = FJS(arraySchema)
 const stringifyArrayJSONStringify = FJS(arraySchema, {
   largeArrayMechanism: 'json-stringify'
@@ -282,6 +283,10 @@ suite.add('fast-json-stringify: obj', function () {
   Buffer.byteLength(stringify(obj))
 })
 
+suite.add('fast-json-stringify [native]: obj', function () {
+  Buffer.byteLength(stringifyNative(obj))
+})
+
 suite.add('json-accelerator: obj', function () {
   Buffer.byteLength(accelStringify(obj))
 })
@@ -312,14 +317,19 @@ suite.add('compile-json-stringify: date', function () {
 
 for (const { name, schema: responseSchema, input } of apiResponses) {
   const stringifyResponse = FJS(responseSchema)
+  const stringifyResponseNative = FJS(responseSchema, { objectMechanism: 'native' })
   // Check outside the timed loop that the schema preserves the complete response.
   assert.deepStrictEqual(JSON.parse(stringifyResponse(input)), JSON.parse(JSON.stringify(input)))
+  assert.equal(stringifyResponseNative(input), stringifyResponse(input))
 
   suite.add(`JSON.stringify: ${name}`, function () {
     Buffer.byteLength(JSON.stringify(input))
   })
   suite.add(`fast-json-stringify: ${name}`, function () {
     Buffer.byteLength(stringifyResponse(input))
+  })
+  suite.add(`fast-json-stringify [native]: ${name}`, function () {
+    Buffer.byteLength(stringifyResponseNative(input))
   })
 }
 
