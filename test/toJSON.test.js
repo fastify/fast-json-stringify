@@ -58,6 +58,44 @@ test('use toJSON method on nested object types', (t) => {
   t.assert.equal('[{"productName":"cola"},{"productName":"sprite"}]', stringify(array))
 })
 
+for (const keyword of ['anyOf', 'oneOf']) {
+  test(`${keyword} validates nested objects before calling toJSON`, (t) => {
+    t.plan(4)
+
+    const schema = {
+      type: 'object',
+      properties: {
+        balance: {
+          type: 'object',
+          properties: {
+            value: { type: 'number' }
+          },
+          required: ['value']
+        }
+      },
+      required: ['balance']
+    }
+    const stringify = build({
+      [keyword]: [schema, { type: 'null' }]
+    })
+    let calls = 0
+    const balance = {
+      amount: 100,
+      toJSON () {
+        calls++
+        return { value: this.amount }
+      }
+    }
+
+    t.assert.throws(() => stringify({ balance }), {
+      message: "The value of '#' does not match schema definition."
+    })
+    t.assert.equal(calls, 0)
+    t.assert.equal(stringify({ balance: balance.toJSON() }), '{"balance":{"value":100}}')
+    t.assert.equal(build(schema)({ balance }), '{"balance":{"value":100}}')
+  })
+}
+
 test('not use toJSON if does not exist', (t) => {
   t.plan(1)
 
