@@ -2302,3 +2302,51 @@ test('ref external - sibling keywords with a duplicated anchor', (t) => {
     { message: /There is already another anchor "#anchor"/ }
   )
 })
+
+test('multiple anyOf fields with root $ref do not overflow the stack', (t) => {
+  t.plan(3)
+
+  // Regression for https://github.com/fastify/fast-json-stringify/issues/724
+  const schema = {
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    type: 'object',
+    properties: {
+      field: { type: 'string' },
+      field1: { anyOf: [{ $ref: '#' }, { type: 'null' }] },
+      field2: { anyOf: [{ $ref: '#' }, { type: 'null' }] }
+    }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(
+    stringify({ field: 'a', field1: null, field2: null }),
+    '{"field":"a","field1":null,"field2":null}'
+  )
+  t.assert.equal(
+    stringify({ field: 'a', field1: { field: 'b', field1: null, field2: null }, field2: null }),
+    '{"field":"a","field1":{"field":"b","field1":null,"field2":null},"field2":null}'
+  )
+  t.assert.equal(
+    stringify({ field: 'a', field1: null, field2: { field: 'c', field1: null, field2: null } }),
+    '{"field":"a","field1":null,"field2":{"field":"c","field1":null,"field2":null}}'
+  )
+})
+
+test('multiple oneOf fields with root $ref do not overflow the stack', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      field: { type: 'string' },
+      field1: { oneOf: [{ $ref: '#' }, { type: 'null' }] },
+      field2: { oneOf: [{ $ref: '#' }, { type: 'null' }] }
+    }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(
+    stringify({ field: 'a', field1: null, field2: { field: 'b', field1: null, field2: null } }),
+    '{"field":"a","field1":null,"field2":{"field":"b","field1":null,"field2":null}}'
+  )
+})
