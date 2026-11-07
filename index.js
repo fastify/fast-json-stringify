@@ -1675,13 +1675,6 @@ function buildAllOf (context, location, input) {
   return buildValue(context, mergedLocation, input)
 }
 
-function isPureRefSchema (schema) {
-  return schema != null &&
-    typeof schema === 'object' &&
-    typeof schema.$ref === 'string' &&
-    Object.keys(schema).every((key) => key === '$ref')
-}
-
 function isEmptyObjectSchema (schema) {
   return Object.keys(schema).length === 0
 }
@@ -1700,7 +1693,7 @@ function buildOneOf (context, location, input) {
     location.jsonPointer
   )
   const oneOfsLocation = location.getPropertyLocation(type)
-  // When the anyOf/oneOf has no sibling keywords, a pure `$ref` option can be
+  // When the anyOf/oneOf has no sibling keywords, a `$ref` option can be
   // built directly. Merging it with an empty sibling schema would clone the
   // target (often the root) and re-enter buildOneOf forever for multiple
   // fields that each `$ref: '#'` (https://github.com/fastify/fast-json-stringify/issues/724).
@@ -1713,8 +1706,32 @@ function buildOneOf (context, location, input) {
     const optionSchema = optionLocation.schema
 
     let nestedResult
-    if (withoutIsEmpty && isPureRefSchema(optionSchema)) {
-      nestedResult = buildValue(context, resolveRef(context, optionLocation), input)
+    if (typeof optionSchema.$ref === 'string') {
+      // resolveRef merges the option's own sibling keywords (memoized by
+      // content), so the location it returns is stable across clones.
+      const resolvedLocation = resolveRef(context, optionLocation)
+      let mergedLocation = resolvedLocation
+      if (!withoutIsEmpty) {
+        // Keyed by content, not by identity: the option is cloned on every
+        // merge of its target, so a recursive $ref would otherwise be merged
+        // again on each level (same as resolveRef for sibling keywords).
+        // The siblings are cloned first so that their relative $refs are made
+        // absolute: the same sibling text in two schemas must not share a key.
+        const siblingLocation = new Location(
+          cloneOriginSchema(context, schemaWithoutAnyOf, location.schemaId),
+          location.schemaId,
+          location.jsonPointer
+        )
+        const mergedSchemaKey = resolvedLocation.getSchemaRef() + JSON.stringify(siblingLocation.schema)
+        let mergedSchemaId = context.mergedRefsIds.get(mergedSchemaKey)
+        if (mergedSchemaId === undefined) {
+          mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
+          mergeLocations(context, mergedSchemaId, [siblingLocation, resolvedLocation])
+          context.mergedRefsIds.set(mergedSchemaKey, mergedSchemaId)
+        }
+        mergedLocation = getMergedLocation(context, mergedSchemaId)
+      }
+      nestedResult = buildValue(context, mergedLocation, input)
     } else {
       let mergedSchemaId = context.mergedSchemasIds.get(optionSchema)
       let mergedLocation = null

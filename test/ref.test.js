@@ -2350,3 +2350,128 @@ test('multiple oneOf fields with root $ref do not overflow the stack', (t) => {
     '{"field":"a","field1":null,"field2":{"field":"b","field1":null,"field2":null}}'
   )
 })
+
+test('multiple anyOf root refs with sibling keywords do not overflow the stack', (t) => {
+  t.plan(2)
+
+  // Sibling keywords next to anyOf (e.g. a description, as emitted by most
+  // schema generators) force a merge of the $ref target: that merge must be
+  // memoized by content, or each cloned level merges the root again.
+  const schema = {
+    type: 'object',
+    properties: {
+      field: { type: 'string' },
+      field1: { description: 'first', anyOf: [{ $ref: '#' }, { type: 'null' }] },
+      field2: { description: 'second', anyOf: [{ $ref: '#' }, { type: 'null' }] }
+    }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(
+    stringify({ field: 'a', field1: { field: 'b', field1: null, field2: null }, field2: null }),
+    '{"field":"a","field1":{"field":"b","field1":null,"field2":null},"field2":null}'
+  )
+  t.assert.equal(
+    stringify({ field: 'a', field1: null, field2: { field: 'c', field1: { field: 'd', field1: null, field2: null }, field2: null } }),
+    '{"field":"a","field1":null,"field2":{"field":"c","field1":{"field":"d","field1":null,"field2":null},"field2":null}}'
+  )
+})
+
+test('multiple anyOf refs to a non-root definition do not overflow the stack', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    definitions: {
+      node: {
+        type: 'object',
+        properties: {
+          value: { type: 'integer' },
+          left: { anyOf: [{ $ref: '#/definitions/node' }, { type: 'null' }] },
+          right: { anyOf: [{ $ref: '#/definitions/node' }, { type: 'null' }] }
+        }
+      }
+    },
+    properties: { root: { $ref: '#/definitions/node' } }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(
+    stringify({ root: { value: 1, left: { value: 2, left: null, right: null }, right: null } }),
+    '{"root":{"value":1,"left":{"value":2,"left":null,"right":null},"right":null}}'
+  )
+})
+
+test('inline anyOf options reuse their merged schema when the same definition is referenced twice', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    definitions: {
+      maybeString: { anyOf: [{ type: 'string' }, { type: 'null' }] }
+    },
+    properties: {
+      a: { $ref: '#/definitions/maybeString' },
+      b: { $ref: '#/definitions/maybeString' }
+    }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(stringify({ a: 'x', b: null }), '{"a":"x","b":null}')
+  t.assert.equal(stringify({ a: null, b: 'y' }), '{"a":null,"b":"y"}')
+})
+
+test('anyOf $ref options with the same sibling keywords in different schemas are merged separately', (t) => {
+  t.plan(1)
+
+  // The merge of a $ref option with its sibling keywords is memoized by
+  // content: a relative $ref in the siblings must be resolved against its own
+  // schema, or S2 would reuse the merge built for S1.
+  const common = { $id: 'common', type: 'object', properties: { c: { type: 'string' } } }
+  const makeSchema = (id, props) => ({
+    $id: id,
+    type: 'object',
+    definitions: { P: { type: 'object', properties: props } },
+    properties: {
+      x: {
+        type: 'object',
+        properties: { p: { $ref: '#/definitions/P' } },
+        anyOf: [{ $ref: 'common#' }]
+      }
+    }
+  })
+  const S1 = makeSchema('S1', { n: { type: 'integer' } })
+  const S2 = makeSchema('S2', { s: { type: 'string' } })
+
+  const stringify = build(
+    { type: 'object', properties: { a: { $ref: 'S1#' }, b: { $ref: 'S2#' } } },
+    { schema: { common, S1, S2 } }
+  )
+  t.assert.equal(
+    stringify({ a: { x: { c: 'c1', p: { n: 1 } } }, b: { x: { c: 'c2', p: { s: 'str' } } } }),
+    '{"a":{"x":{"p":{"n":1},"c":"c1"}},"b":{"x":{"p":{"s":"str"},"c":"c2"}}}'
+  )
+})
+
+test('multiple anyOf root refs with sibling keywords on the option do not overflow the stack', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      field: { type: 'string' },
+      field1: { anyOf: [{ $ref: '#', type: 'object', nullable: true }, { type: 'null' }] },
+      field2: { description: 'd', anyOf: [{ $ref: '#', title: 't' }, { type: 'null' }] }
+    }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(
+    stringify({ field: 'a', field1: { field: 'b', field1: null, field2: null }, field2: null }),
+    '{"field":"a","field1":{"field":"b","field1":null,"field2":null},"field2":null}'
+  )
+  t.assert.equal(
+    stringify({ field: 'a', field1: null, field2: { field: 'c', field1: null, field2: null } }),
+    '{"field":"a","field1":null,"field2":{"field":"c","field1":null,"field2":null}}'
+  )
+})
