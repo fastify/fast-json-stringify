@@ -255,6 +255,10 @@ expect(stringify7).type.not.toBeCallableWith('a string')
 // largeArrayMechanism
 build({}, { largeArrayMechanism: 'json-stringify' })
 build({}, { largeArrayMechanism: 'default' })
+
+// objectMechanism
+build({}, { objectMechanism: 'native' })
+build({}, { objectMechanism: 'default' })
 expect(build).type.not.toBeCallableWith({} as Schema, { largeArrayMechanism: 'invalid' })
 
 build({}, { largeArraySize: 2000 })

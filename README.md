@@ -135,9 +135,8 @@ are rejected before compilation.
 - `inlineValidators`: when using standalone mode, embed Ajv-generated validator functions in the output instead of compiling schemas at runtime. [More details](#standalone)
 - `largeArrayMechanism`: set the mechanism that should be used to handle large
 (by default `20000` or more items) arrays. [More details](#largearrays)
-- `compileValidators`: when `true`, the `ajv` validators used by `anyOf`, `oneOf` and
-`if/then/else` are compiled during `build()` instead of lazily, on the first serialization
-that reaches them. This makes `build()` slower but removes a potentially large one-off cost
+- `objectMechanism`: set the mechanism used to serialize objects. `'native'` projects the input into schema-shaped scratch objects and delegates to the native `JSON.stringify`, which is much faster on Node.js 25+. [More details](#objectmechanism)
+- `compileValidators`: when `true`, the `ajv` validators used by `anyOf`, `oneOf` and `if/then/else` are compiled during `build()` instead of lazily, on the first serialization that reaches them. This makes `build()` slower but removes a potentially large one-off cost
 from the first `stringify()` call. Defaults to `false`.
 
 
@@ -672,6 +671,52 @@ and validation (`null` still becomes `""` or `0`, `rounding` still applies,
 In [standalone mode](#standalone) the cutoffs are baked into the generated
 code, so the generated module inherits the cutoffs of the Node.js version that
 ran `build()`, not of the one that runs the module.
+
+<a name="objectmechanism"></a>
+#### Object mechanism
+
+By default every object is serialized by generated code that appends the JSON
+text property by property. Since V8 13.8 (Node.js 25+) the native
+`JSON.stringify` has a side-effect-free fast path that no JavaScript string
+building can match, but that fast path bails out as soon as the input carries a
+`Date`, a `toJSON`, a class prototype or any property that is not plain data.
+
+With `objectMechanism: 'native'`, `fast-json-stringify` instead *projects* the
+input into preallocated scratch objects whose keys are exactly the schema
+properties, in schema order, and hands the scratch to the native
+`JSON.stringify`. The scratch is plain by construction, so the fast path is
+always taken, whatever the input looks like, while the schema is still applied:
+undeclared properties are dropped, `required` is enforced, `default` applied,
+types coerced and `format: date-time` / `date` / `time` rendered as before.
+The output is byte-identical to the default mechanism.
+
+```js
+const stringify = fastJson(schema, { objectMechanism: 'native' })
+```
+
+The projection covers schemas made only of:
+
+- `object` with `properties` (no `additionalProperties`, `patternProperties`,
+  `nullable`, `dependencies`, combinators or `$ref`), with at least one property;
+- `string` (optionally with `format: date-time`, `date` or `time`), `number`,
+  `integer`, `boolean`, without `nullable`, `const`, `enum`, combinators or `$ref`;
+- the two-element forms `['string', 'null']`, `['number', 'null']` and
+  `['boolean', 'null']` (in either order), with the same strict type dispatch
+  as the default mechanism;
+- `array` whose `items` is one such schema (no tuples), nested to any depth;
+  every array element gets its own scratch objects.
+
+Any other schema silently uses the default mechanism, so the option is always
+safe to enable. The projection only pays off where V8 has the fast path, so on
+Node.js 24 and older the option is a no-op and the default mechanism is used.
+On Node.js 25+ the projection serializes plain objects within 5-15% of a bare
+`JSON.stringify` (the default mechanism is 35-50% behind it there), and objects
+coming from an ORM (extra columns, `Date` instances, class prototypes) several
+times faster than both the default mechanism and `JSON.stringify` itself.
+
+The scratch objects are reused across calls; `JSON.stringify` is synchronous,
+so this is safe, and no reference to the last input is retained beyond the
+primitive values written into the scratch.
 
 <a name="unsafe"></a>
 #### Unsafe string
