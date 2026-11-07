@@ -1392,7 +1392,7 @@ function generateFuncName (context) {
 
 function buildMultiTypeSerializer (context, location, input) {
   const schema = location.schema
-  const types = schema.type.sort(t1 => t1 === 'null' ? -1 : 1)
+  const types = [...schema.type].sort(t1 => t1 === 'null' ? -1 : 1)
 
   let code = ''
 
