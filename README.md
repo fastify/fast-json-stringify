@@ -8,7 +8,7 @@
 __fast-json-stringify__ serializes JSON payloads described by a JSON Schema: undeclared properties are stripped, types are coerced and formats applied, so the output is exactly what the schema declares. How fast it is relative to `JSON.stringify()` depends on the Node.js version:
 
 - On Node.js 24 and older, the generated code is faster than `JSON.stringify()` on small payloads (short strings, dates, small objects) and slower on large responses, where `JSON.stringify()` is 2-3x faster than the generated code.
-- On Node.js 25+, V8 ships a `JSON.stringify()` fast path that no JavaScript code can beat on plain data. With [`objectMechanism: 'native'`](#object-mechanism) fast-json-stringify delegates to that fast path while still applying the schema, serializing within 3-7% of a bare `JSON.stringify()` on plain objects and several times faster than it on real-world payloads (`Date` fields, undeclared ORM columns, class instances), where the fast path bails out.
+- On Node.js 25+, V8 ships a `JSON.stringify()` fast path that no JavaScript code can beat on plain data. With [`objectMechanism: 'native'`](#object-mechanism) fast-json-stringify delegates to that fast path while still applying the schema, serializing within 3-7% of a bare `JSON.stringify()` on plain objects and several times faster than it on real-world payloads (`Date` fields, undeclared ORM columns, class instances), where the fast path bails out. If you run on Node.js 25+, enable it (see [when to use it](#object-mechanism)).
 
 
 ### How it works
@@ -780,6 +780,35 @@ mechanism and `JSON.stringify` itself.
 The scratch objects are reused across calls; `JSON.stringify` is synchronous,
 so this is safe, and no reference to the last input is retained beyond the
 primitive values written into the scratch.
+
+**When to use it**
+
+Enable `objectMechanism: 'native'` when your application runs on Node.js 25+.
+There is no downside: schemas the projection does not cover keep the default
+mechanism, the output is the same, and on older Node.js versions the option
+does nothing. It pays off most when:
+
+- the serialized objects are not plain data: ORM entities or class instances,
+  objects with `Date` properties or a `toJSON`, or objects carrying columns
+  that the schema does not declare (the usual case for a response schema).
+  On such input a bare `JSON.stringify` loses its fast path and emits the
+  undeclared columns; the projection stays on the fast path and strips them,
+  several times faster than both the default mechanism and `JSON.stringify`;
+- the response is a list of objects, or a large object: that is where the
+  default mechanism is furthest behind `JSON.stringify` (2-3x on the
+  `benchmark/fixtures/api-responses` schemas).
+
+Keep the default mechanism when a benchmark on your own payloads shows no
+gain, or on Node.js 24 and older, where the option has no effect. The two
+mechanisms are interchangeable at any time, since they produce the same output.
+
+With Fastify, pass the option through `serializerOpts`:
+
+```js
+const app = fastify({
+  serializerOpts: { objectMechanism: 'native' }
+})
+```
 
 <a name="unsafe"></a>
 #### Unsafe string
