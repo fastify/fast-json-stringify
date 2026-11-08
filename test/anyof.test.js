@@ -954,3 +954,24 @@ test('$defs entry named propertyNames is still converted (Date serialization)', 
   )
   t.assert.equal(warnMock.mock.callCount(), 0)
 })
+
+test('property named $id inside anyOf compiles and serializes correctly (#918)', (t) => {
+  t.plan(2)
+
+  const stringify = build({
+    anyOf: [
+      {
+        type: 'object',
+        properties: {
+          $id: { type: 'string' }
+        }
+      },
+      {
+        type: 'number'
+      }
+    ]
+  })
+
+  t.assert.equal(stringify({ $id: 'x' }), '{"$id":"x"}')
+  t.assert.equal(stringify(42), '42')
+})
