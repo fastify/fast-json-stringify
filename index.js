@@ -356,7 +356,7 @@ function getMergedLocation (context, mergedSchemaId) {
 }
 
 function getSchemaId (schema, rootSchemaId) {
-  if (schema.$id && schema.$id.charAt(0) !== '#') {
+  if (typeof schema.$id === 'string' && schema.$id.charAt(0) !== '#') {
     return schema.$id
   }
   return rootSchemaId
@@ -930,7 +930,7 @@ function cloneOriginSchema (context, schema, schemaId) {
   const clonedSchema = Array.isArray(schema) ? [] : {}
 
   if (
-    schema.$id !== undefined &&
+    typeof schema.$id === 'string' &&
     schema.$id.charAt(0) !== '#'
   ) {
     schemaId = schema.$id
