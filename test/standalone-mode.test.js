@@ -356,3 +356,36 @@ test('does not emit unused inline validators', (t) => {
   t.assert.doesNotMatch(code, /function validate\d/)
   t.assert.match(code, /const validator = null/)
 })
+
+test('inline validators with percent-encoded $ref definition key', async (t) => {
+  t.plan(2)
+
+  after(async () => {
+    await fs.promises.rm(destination, { force: true })
+  })
+
+  // See https://github.com/fastify/fast-json-stringify/issues/740
+  const code = fjs({
+    type: 'object',
+    definitions: {
+      'Some%3Cloremipsum%3E': {
+        type: 'object',
+        additionalProperties: {
+          oneOf: [{ type: 'string' }, { type: 'number' }]
+        }
+      }
+    },
+    properties: {
+      obj: { $ref: '#/definitions/Some%3Cloremipsum%3E' }
+    }
+  }, { mode: 'standalone', inlineValidators: true })
+
+  t.assert.doesNotMatch(code, /fast-json-stringify\/lib\/validator/)
+
+  const destination = path.resolve(tmpDir, 'standalone-inline-percent-ref.js')
+
+  await fs.promises.writeFile(destination, code)
+  const stringify = require(destination)
+
+  t.assert.equal(stringify({ obj: { str: 'test', num: 1 } }), '{"obj":{"str":"test","num":1}}')
+})

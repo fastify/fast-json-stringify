@@ -7,6 +7,7 @@ const { MergeError } = require('@fastify/merge-json-schemas')
 
 const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
+const { escapeRefForAjv } = Validator
 const { buildProjection } = require('./lib/projection')
 const Location = require('./lib/location')
 const validate = require('./lib/schema-validator')
@@ -379,7 +380,15 @@ function getSafeSchemaRef (context, location) {
   return schemaRef
 }
 
+// The ref the generated code passes to validator.validate(). It is always a
+// literal JSON pointer (built from the actual keys, or a $ref whose literal
+// target exists), so it is escaped for Ajv here, once at build time, rather
+// than on every validate() call at serialization time.
 function getValidatorSchemaRef (context, location) {
+  return escapeRefForAjv(resolveValidatorSchemaRef(context, location))
+}
+
+function resolveValidatorSchemaRef (context, location) {
   let schemaRef = location.getSchemaRef()
   const schema = location.schema
 
@@ -596,11 +605,11 @@ function build (schema, options) {
   if (validator !== null) {
     for (const schemaId of context.validatorSchemasIds) {
       const schema = context.refResolver.getSchema(schemaId)
-      validator.addSchema(schema, schemaId)
+      validator.addSchema(schema, schemaId, context.refResolver)
 
       const dependencies = getSchemaDependencies(context.refResolver, schemaId)
       for (const [schemaId, schema] of Object.entries(dependencies)) {
-        validator.addSchema(schema, schemaId)
+        validator.addSchema(schema, schemaId, context.refResolver)
       }
     }
 
