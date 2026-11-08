@@ -2539,3 +2539,82 @@ test('ref internal - percent-encoded definition key with anyOf and compileValida
   const stringify = build(schema, { compileValidators: true })
   t.assert.equal(stringify({ obj: { str: 'test', num: 2 } }), '{"obj":{"str":"test","num":2}}')
 })
+
+test('ref internal - RFC 6901 percent-encoded $ref seen only by Ajv keeps resolving', (t) => {
+  t.plan(2)
+
+  // The key is `a b` and the ref is spec-encoded as `a%20b`. The serializer never
+  // resolves this ref (it only lives inside `if`), so it must not be re-escaped
+  // for Ajv: Ajv's own decoding is the only thing that can find the key.
+  const schema = {
+    type: 'object',
+    definitions: {
+      'a b': { type: 'object', required: ['kind'] }
+    },
+    if: { $ref: '#/definitions/a%20b' },
+    then: { properties: { kind: { type: 'string' } } },
+    else: { properties: { other: { type: 'number' } } }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(stringify({ kind: 'x' }), '{"kind":"x"}')
+  t.assert.equal(stringify({ other: 3 }), '{"other":3}')
+})
+
+test('ref internal - literal percent-encoded $ref seen only by Ajv resolves literally', (t) => {
+  t.plan(2)
+
+  // Same shape, but the key is the literal `a%20b`: the ref must be escaped so
+  // that Ajv lands on the literal key, consistently with the serializer.
+  const schema = {
+    type: 'object',
+    definitions: {
+      'a%20b': { type: 'object', required: ['kind'] }
+    },
+    if: { $ref: '#/definitions/a%20b' },
+    then: { properties: { kind: { type: 'string' } } },
+    else: { properties: { other: { type: 'number' } } }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(stringify({ kind: 'x' }), '{"kind":"x"}')
+  t.assert.equal(stringify({ other: 3 }), '{"other":3}')
+})
+
+test('Validator.addSchema without a ref resolver escapes every percent-encoded $ref', (t) => {
+  t.plan(1)
+
+  const Validator = require('../lib/validator')
+  const validator = new Validator()
+  validator.addSchema({ type: 'number' }, 'other')
+  validator.addSchema({
+    definitions: { 'a%20b': { type: 'number' } },
+    properties: {
+      obj: { $ref: '#/definitions/a%20b' },
+      // a $ref without a fragment has nothing to escape
+      plain: { $ref: 'other' }
+    }
+  }, 'test')
+
+  t.assert.deepEqual([
+    validator.validate('test#/properties/obj', 1),
+    validator.validate('test#/properties/plain', 1)
+  ], [true, true])
+})
+
+test('ref external - $ref without a fragment seen only by Ajv', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    if: { $ref: 'ext' },
+    then: { properties: { kind: { type: 'string' } } },
+    else: { properties: { other: { type: 'number' } } }
+  }
+
+  const stringify = build(schema, {
+    schema: { ext: { $id: 'ext', type: 'object', required: ['kind'] } }
+  })
+  t.assert.equal(stringify({ kind: 'x' }), '{"kind":"x"}')
+  t.assert.equal(stringify({ other: 3 }), '{"other":3}')
+})
