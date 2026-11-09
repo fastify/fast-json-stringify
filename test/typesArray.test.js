@@ -607,3 +607,36 @@ test('multi-type [object, array] round-trips an array of objects (JSON:API data)
   }
   t.assert.deepEqual(JSON.parse(stringify(objectInput)), objectInput)
 })
+
+test('multi-type [string, array] round-trips an array', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      data: {
+        type: ['string', 'array'],
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            type: { type: 'string' }
+          }
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema, { ajv: { allowUnionTypes: true } })
+
+  const arrayInput = {
+    data: [
+      { id: '1', type: 'article' },
+      { id: '2', type: 'article' }
+    ]
+  }
+  t.assert.deepEqual(JSON.parse(stringify(arrayInput)), arrayInput)
+
+  const stringInput = { data: 'plain' }
+  t.assert.deepEqual(JSON.parse(stringify(stringInput)), stringInput)
+})
