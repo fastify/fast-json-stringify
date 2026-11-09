@@ -1,7 +1,7 @@
 'use strict'
 
 const { test } = require('node:test')
-const validator = require('is-my-json-valid')
+const validator = require('./utils/validator')
 const build = require('..')
 
 process.env.TZ = 'UTC'

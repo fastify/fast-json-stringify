@@ -301,6 +301,80 @@ const benchmarks = [
     input: { firstName: 'Max', lastName: 'Power', age: 22 }
   },
   {
+    name: 'nested object with array and required',
+    schema: {
+      type: 'object',
+      required: ['id'],
+      properties: {
+        id: { type: 'integer' },
+        name: { type: 'string' },
+        email: { type: 'string' },
+        active: { type: 'boolean' },
+        score: { type: 'number' },
+        tags: { type: 'array', items: { type: 'string' } },
+        address: {
+          type: 'object',
+          properties: {
+            street: { type: 'string' },
+            city: { type: 'string' },
+            zip: { type: 'string' }
+          }
+        }
+      }
+    },
+    input: { id: 1, name: 'John Doe', email: 'john@example.com', active: true, score: 42.195, tags: ['a', 'b', 'c'], address: { street: '1 Example Street', city: 'London', zip: 'SW1A 1AA' } }
+  },
+  {
+    name: 'nested object with array and required (objectMechanism: native)',
+    schema: {
+      type: 'object',
+      required: ['id'],
+      properties: {
+        id: { type: 'integer' },
+        name: { type: 'string' },
+        email: { type: 'string' },
+        active: { type: 'boolean' },
+        score: { type: 'number' },
+        tags: { type: 'array', items: { type: 'string' } },
+        address: {
+          type: 'object',
+          properties: {
+            street: { type: 'string' },
+            city: { type: 'string' },
+            zip: { type: 'string' }
+          }
+        }
+      }
+    },
+    options: { objectMechanism: 'native' },
+    input: { id: 1, name: 'John Doe', email: 'john@example.com', active: true, score: 42.195, tags: ['a', 'b', 'c'], address: { street: '1 Example Street', city: 'London', zip: 'SW1A 1AA' } }
+  },
+  {
+    name: 'nested object with extra props and Date (objectMechanism: native)',
+    schema: {
+      type: 'object',
+      required: ['id'],
+      properties: {
+        id: { type: 'integer' },
+        name: { type: 'string' },
+        email: { type: 'string' },
+        active: { type: 'boolean' },
+        score: { type: 'number' },
+        tags: { type: 'array', items: { type: 'string' } },
+        address: {
+          type: 'object',
+          properties: {
+            street: { type: 'string' },
+            city: { type: 'string' },
+            zip: { type: 'string' }
+          }
+        }
+      }
+    },
+    options: { objectMechanism: 'native' },
+    input: { id: 1, name: 'John Doe', email: 'john@example.com', active: true, score: 42.195, tags: ['a', 'b', 'c'], address: { street: '1 Example Street', city: 'London', zip: 'SW1A 1AA' }, passwordHash: 'x', createdAt: new Date(0) }
+  },
+  {
     name: 'oneOf external refs compile and first stringify',
     compile: true,
     schema: {

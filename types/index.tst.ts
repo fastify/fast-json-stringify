@@ -31,6 +31,10 @@ expect(build).type.not.toBeCallableWith({
   type: 'number'
 }, { rounding: 'invalid' })
 
+build({} as Schema, { inlineValidators: true })
+build({} as Schema, { inlineValidators: false })
+expect(build).type.not.toBeCallableWith({} as Schema, { inlineValidators: 'true' })
+
 // String schema
 build({
   type: 'string'
@@ -251,9 +255,22 @@ expect(stringify7).type.not.toBeCallableWith('a string')
 // largeArrayMechanism
 build({}, { largeArrayMechanism: 'json-stringify' })
 build({}, { largeArrayMechanism: 'default' })
+
+// objectMechanism
+build({}, { objectMechanism: 'native' })
+build({}, { objectMechanism: 'default' })
 expect(build).type.not.toBeCallableWith({} as Schema, { largeArrayMechanism: 'invalid' })
 
 build({}, { largeArraySize: 2000 })
 build({}, { largeArraySize: '2e4' })
 build({}, { largeArraySize: 2n })
 expect(build).type.not.toBeCallableWith({} as Schema, { largeArraySize: ['asdf'] })
+
+// maxDepth
+build({}, { maxDepth: 100 })
+expect(build).type.not.toBeCallableWith({} as Schema, { maxDepth: '500' })
+
+// compileValidators
+build({}, { compileValidators: true })
+build({}, { compileValidators: false })
+expect(build).type.not.toBeCallableWith({} as Schema, { compileValidators: 'yes' })

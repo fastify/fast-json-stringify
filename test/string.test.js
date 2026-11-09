@@ -4,6 +4,14 @@ const { test } = require('node:test')
 
 const build = require('..')
 
+test('serialize an empty string', (t) => {
+  t.plan(1)
+
+  const stringify = build({ type: 'string' })
+
+  t.assert.equal(stringify(''), '""')
+})
+
 test('serialize short string', (t) => {
   t.plan(2)
 
