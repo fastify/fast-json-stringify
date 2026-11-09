@@ -217,6 +217,93 @@ test('render a time in a string when the year needs the ISO 8601 expanded notati
   t.assert.equal(stringify(new Date(-8640000000000000)), '"00:00:00"')
 })
 
+// Builds a UTC date with an arbitrary year; the Date constructor maps years
+// 0-99 to 1900-1999, so the year is set explicitly afterwards.
+function dateWithYear (year, month = 0, day = 1, hours = 0, minutes = 0, seconds = 0, ms = 0) {
+  const date = new Date(Date.UTC(2000, month, day, hours, minutes, seconds, ms))
+  date.setUTCFullYear(year)
+  return date
+}
+
+test('verify year and millisecond padding when format is date-time', (t) => {
+  t.plan(5)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'date-time'
+  }
+  const stringify = build(schema)
+
+  t.assert.equal(stringify(dateWithYear(0)), '"0000-01-01T00:00:00.000Z"')
+  t.assert.equal(stringify(dateWithYear(1, 1, 3, 4, 5, 6, 7)), '"0001-02-03T04:05:06.007Z"')
+  t.assert.equal(stringify(dateWithYear(99, 11, 31, 23, 59, 59, 99)), '"0099-12-31T23:59:59.099Z"')
+  t.assert.equal(stringify(dateWithYear(999, 5, 15, 12, 0, 0, 0)), '"0999-06-15T12:00:00.000Z"')
+  t.assert.equal(stringify(dateWithYear(9999, 11, 31, 23, 59, 59, 999)), '"9999-12-31T23:59:59.999Z"')
+})
+
+test('verify year padding when format is date', (t) => {
+  t.plan(4)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'date'
+  }
+  const stringify = build(schema)
+
+  t.assert.equal(stringify(dateWithYear(0)), '"0000-01-01"')
+  t.assert.equal(stringify(dateWithYear(1, 1, 3)), '"0001-02-03"')
+  t.assert.equal(stringify(dateWithYear(99, 11, 31)), '"0099-12-31"')
+  t.assert.equal(stringify(dateWithYear(999, 5, 15)), '"0999-06-15"')
+})
+
+test('render a date-time in a string when the year needs the ISO 8601 expanded notation', (t) => {
+  t.plan(4)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'date-time'
+  }
+  const stringify = build(schema)
+
+  // Years outside 0-9999 keep the '+YYYYYY' / '-YYYYYY' form of toISOString()
+  t.assert.equal(stringify(dateWithYear(-1)), '"-000001-01-01T00:00:00.000Z"')
+  t.assert.equal(stringify(dateWithYear(10000)), '"+010000-01-01T00:00:00.000Z"')
+  t.assert.equal(stringify(new Date(8640000000000000)), '"+275760-09-13T00:00:00.000Z"')
+  t.assert.equal(stringify(new Date(-8640000000000000)), '"-271821-04-20T00:00:00.000Z"')
+})
+
+test('render a date in a string when the year needs the ISO 8601 expanded notation', (t) => {
+  t.plan(4)
+
+  const schema = {
+    title: 'a date in a string',
+    type: 'string',
+    format: 'date'
+  }
+  const stringify = build(schema)
+
+  // Years outside 0-9999 keep the pre-existing toISOString().slice(0, 10) output
+  for (const date of [dateWithYear(-1), dateWithYear(10000), new Date(8640000000000000), new Date(-8640000000000000)]) {
+    t.assert.equal(stringify(date), JSON.stringify(date.toISOString().slice(0, 10)))
+  }
+})
+
+test('throw a RangeError for an invalid Date when format is date-time, date or time', (t) => {
+  t.plan(3)
+
+  for (const format of ['date-time', 'date', 'time']) {
+    const stringify = build({
+      title: 'a date in a string',
+      type: 'string',
+      format
+    })
+    t.assert.throws(() => stringify(new Date(NaN)), RangeError)
+  }
+})
+
 test('render a nested object in a string when type is date-format as ISOString', (t) => {
   t.plan(2)
 
