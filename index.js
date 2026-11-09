@@ -506,7 +506,7 @@ function build (schema, options) {
     }
   }
 
-  if (options.largeArraySize) {
+  if (options.largeArraySize !== undefined) {
     const largeArraySizeType = typeof options.largeArraySize
     let parsedNumber
 
