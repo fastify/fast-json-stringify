@@ -745,6 +745,16 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
   return code
 }
 
+// Members of Object.prototype are read only when the input owns them: a plain
+// object inherits toString, constructor, valueOf, ... and those must not be
+// serialized (nor coerced, which throws for an integer property).
+function buildPropertyRead (objVar, key, sanitizedKey) {
+  if (Object.hasOwn(Object.prototype, key)) {
+    return `Object.hasOwn(${objVar}, ${sanitizedKey}) ? ${objVar}[${sanitizedKey}] : undefined`
+  }
+  return `${objVar}[${sanitizedKey}]`
+}
+
 function buildInnerObject (context, location, objVar, isReturnForm) {
   const schema = location.schema
 
@@ -795,7 +805,7 @@ function buildInnerObject (context, location, objVar, isReturnForm) {
       const keyPrefix = (i === 0 ? '{' : ',') + sanitizedKey + ':'
 
       code += `
-      const ${value} = ${objVar}[${sanitizedKey}]
+      const ${value} = ${buildPropertyRead(objVar, key, sanitizedKey)}
       if (${value} !== undefined) {
         json += ${JSON.stringify(keyPrefix)}
         ${buildValue(context, resolvedLocation, `${value}`)}
@@ -846,7 +856,7 @@ function buildInnerObject (context, location, objVar, isReturnForm) {
         : `json += ${JSON.stringify('{' + keyColon)}`
 
       code += `
-          const ${value} = ${objVar}[${sanitizedKey}]
+          const ${value} = ${buildPropertyRead(objVar, key, sanitizedKey)}
           if (${value} !== undefined) {
             ${addProperty}
             ${buildValue(context, propertyLocation, `${value}`)}
