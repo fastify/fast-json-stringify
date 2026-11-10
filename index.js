@@ -43,9 +43,8 @@ const NAMED_FRAGMENT_REF = /^#[a-z_][-\w._]*$/i
 // TODO: drop the Node 20 tier (and this version check) once Node 20 is no
 // longer supported.
 const nodeMajor = Number.parseInt(process.versions.node, 10)
-// V8 13.8 (Node 25+) introduced the side-effect-free JSON.stringify fast path
-// that objectMechanism: 'native' relies on.
-const PROJECTION_SUPPORTED = nodeMajor >= 25
+// objectMechanism: 'native' relies on the V8 13.8 JSON.stringify fast path.
+const { HAS_FAST_JSON_STRINGIFY: PROJECTION_SUPPORTED } = require('./lib/v8')
 const PRIMITIVE_FAST_PATH_MIN_LENGTH = [{ integer: 3e5, number: 3e5, string: 128 }, { integer: 512, number: 128, string: 8 }][+(nodeMajor >= 22)]
 const STRING_ARRAY_FAST_PATH_MIN_LENGTH = PRIMITIVE_FAST_PATH_MIN_LENGTH.string
 const INTEGER_ARRAY_FAST_PATH = { condition: 'Number.isInteger(v)', minLength: PRIMITIVE_FAST_PATH_MIN_LENGTH.integer }
