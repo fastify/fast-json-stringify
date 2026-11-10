@@ -8,7 +8,7 @@
 __fast-json-stringify__ serializes JSON payloads described by a JSON Schema: undeclared properties are stripped, types are coerced and formats applied, so the output is exactly what the schema declares. How fast it is relative to `JSON.stringify()` depends on the Node.js version:
 
 - On Node.js 24 and older, the generated code is faster than `JSON.stringify()` on short strings and dates and slower on objects: about 1.3x slower on a three-property object, 2-3x slower on realistic API responses.
-- On Node.js 25+, V8 ships a `JSON.stringify()` fast path that no JavaScript code can beat on plain data. With [`objectMechanism: 'native'`](#objectmechanism) fast-json-stringify delegates to that fast path while still applying the schema, serializing within 2-6% of a bare `JSON.stringify()` on plain objects and several times faster than it on real-world payloads (`Date` fields, undeclared ORM columns, class instances), where the fast path bails out. If you run on Node.js 25+, enable it (see [when to use it](#objectmechanism)).
+- On Node.js 25+, V8 ships a `JSON.stringify()` fast path that no JavaScript code can beat on plain data. With [`objectMechanism: 'native'`](#objectmechanism) fast-json-stringify delegates to that fast path while still applying the schema, serializing within 2-6% of a bare `JSON.stringify()` on plain objects, and faster than it when the input carries properties that the schema does not declare (the extra columns of an ORM entity, for instance): `JSON.stringify()` leaves its fast path and serializes them, the schema strips them. See [when to use it](#objectmechanism).
 
 
 ### How it works
@@ -66,7 +66,7 @@ fast-json-stringify [native] paginated products response x 15,511 ops/sec ±0.06
 fast-json-stringify paginated products response x 10,584 ops/sec ±0.20% (10531 runs sampled)
 ```
 
-The benchmark above only uses plain objects. On an ORM-like payload (a seven-property object with two undeclared columns and two `Date` fields, measured in [#906](https://github.com/fastify/fast-json-stringify/pull/906)) `objectMechanism: 'native'` runs at 4.28M ops/sec against 575k for `JSON.stringify`, about 7x faster, and `JSON.stringify` also emits the undeclared columns.
+The benchmark above only uses plain objects. On an ORM-like payload (a seven-property object that also carries two properties and a `Date` that the schema does not declare, measured in [#906](https://github.com/fastify/fast-json-stringify/pull/906)) `objectMechanism: 'native'` runs at 4.28M ops/sec against 575k for `JSON.stringify`, about 7x faster, and `JSON.stringify` also emits the undeclared properties. That gain comes from what the schema strips: `Date` values that the schema declares have to be formatted, and behave differently (see [when to use it](#objectmechanism)).
 
 **Node.js 24** (`v24.22.0`, fast-json-stringify 7.3.5), same machine. Without the V8 fast path `objectMechanism: 'native'` is a no-op, so `[native]` matches the default:
 
@@ -773,9 +773,10 @@ safe to enable. The projection only pays off where V8 has the fast path, so on
 Node.js 24 and older the option is a no-op and the default mechanism is used.
 On Node.js 25+ the projection serializes plain objects within 3-15% of a bare
 `JSON.stringify` (2-6% on the fixtures in `benchmark/`; the default mechanism
-is 25-45% behind it there), and objects coming from an ORM (extra columns,
-`Date` instances, class prototypes) several times faster than both the default
-mechanism and `JSON.stringify` itself.
+is 25-45% behind it there). On a list of 50 eight-column rows it is 1.6-1.9x
+faster than the default mechanism, whether the rows are plain objects, class
+instances or carry undeclared columns, and with undeclared columns it is also
+1.2x faster than `JSON.stringify` itself.
 
 The scratch objects are reused across calls; `JSON.stringify` is synchronous,
 so this is safe, and no reference to the last input is retained beyond the
@@ -784,22 +785,24 @@ primitive values written into the scratch.
 **When to use it**
 
 Enable `objectMechanism: 'native'` when your application runs on Node.js 25+.
-There is no downside: schemas the projection does not cover keep the default
-mechanism, the output is the same, and on older Node.js versions the option
-does nothing. It pays off most when:
+Schemas the projection does not cover keep the default mechanism, the output
+is the same, and on older Node.js versions the option does nothing. It pays
+off most when:
 
-- the serialized objects are not plain data: ORM entities or class instances,
-  objects with `Date` properties or a `toJSON`, or objects carrying columns
+- the serialized objects are ORM entities or class instances, or carry columns
   that the schema does not declare (the usual case for a response schema).
   On such input a bare `JSON.stringify` loses its fast path and emits the
-  undeclared columns; the projection stays on the fast path and strips them,
-  several times faster than both the default mechanism and `JSON.stringify`;
+  undeclared columns; the projection stays on the fast path and strips them;
 - the response is a list of objects, or a large object: that is where the
   default mechanism is furthest behind `JSON.stringify` (1.4-1.7x on the
   `benchmark/fixtures/api-responses` schemas on Node.js 25+).
 
-Keep the default mechanism when a benchmark on your own payloads shows no
-gain, or on Node.js 24 and older, where the option has no effect. The two
+Keep the default mechanism when the objects have `Date` values in properties
+declared as `format: date-time`: formatting them outweighs the gain, and with
+one or two such properties per object the default mechanism is 1.2-1.7x
+faster than the projection (which is still faster than `JSON.stringify`).
+Keep it also when a benchmark on your own payloads shows no gain, or on
+Node.js 24 and older, where the option has no effect. The two
 mechanisms are interchangeable at any time, since they produce the same output.
 
 With Fastify, pass the option through `serializerOpts`:
