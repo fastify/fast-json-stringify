@@ -3,18 +3,52 @@
 /* eslint no-prototype-builtins: 0 */
 
 const { RefResolver } = require('json-schema-ref-resolver')
+const { MergeError } = require('@fastify/merge-json-schemas')
 
 const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
+const { escapeRefForAjv } = Validator
+const { buildProjection } = require('./lib/projection')
 const Location = require('./lib/location')
 const validate = require('./lib/schema-validator')
 const mergeSchemas = require('./lib/merge-schemas')
 
-let largeArraySize = 2e4
-let largeArrayMechanism = 'default'
-
 const DEFAULT_MAX_DEPTH = 100
 const NAMED_FRAGMENT_REF = /^#[a-z_][-\w._]*$/i
+
+// Minimum array lengths at which copying into a plain array and
+// calling native JSON.stringify beats the generated per-item loop. Measured
+// against main with tinybench (alternating rounds, median ops/s, output
+// consumed with Buffer.byteLength) on Node 20, 22, 24 and 26 x64.
+//
+// Node 22+: floats win from 32 elements, but integer-valued elements under a
+// `number` schema only break even around 100 on Node 26 (-25% at 32), and a
+// `number` schema cannot tell the two apart at build time, so numbers wait
+// for 128. Integers win from 512 because small-int ToString is cached, so
+// the loop is already cheap below that.
+//
+// Node 20: JSON.stringify only beats the loop for every element kind from
+// ~3e5 (1e5 is machine-dependent), so both kinds wait for 3e5 there.
+//
+// Strings: the generated loop escapes each element in JS (asString), which
+// is far slower than the native serializer, so the copy wins almost
+// immediately. Node 22+: from 2 elements for every string length and content
+// (2-6x faster from 8 elements on). Node 20: from 32 elements for short
+// strings, but only from 128 for long (~120 chars) strings without escapes,
+// so Node 20 waits for 128. Measured on Node 20, 22, 24 and 26 (arm64) with
+// 8, 40 and 120 char strings, with and without characters to escape.
+//
+// Booleans never win and keep the loop. The array lookup instead of a
+// ternary keeps both branches covered on every Node.
+// TODO: drop the Node 20 tier (and this version check) once Node 20 is no
+// longer supported.
+const nodeMajor = Number.parseInt(process.versions.node, 10)
+// objectMechanism: 'native' relies on the V8 13.8 JSON.stringify fast path.
+const { HAS_FAST_JSON_STRINGIFY: PROJECTION_SUPPORTED } = require('./lib/v8')
+const PRIMITIVE_FAST_PATH_MIN_LENGTH = [{ integer: 3e5, number: 3e5, string: 128 }, { integer: 512, number: 128, string: 8 }][+(nodeMajor >= 22)]
+const STRING_ARRAY_FAST_PATH_MIN_LENGTH = PRIMITIVE_FAST_PATH_MIN_LENGTH.string
+const INTEGER_ARRAY_FAST_PATH = { condition: 'Number.isInteger(v)', minLength: PRIMITIVE_FAST_PATH_MIN_LENGTH.integer }
+const NUMBER_ARRAY_FAST_PATH = { condition: 'typeof v === \'number\' && v === v', minLength: PRIMITIVE_FAST_PATH_MIN_LENGTH.number }
 
 const singleSchemaKeywords = [
   'additionalItems',
@@ -47,7 +81,8 @@ const {
   asDateTime,
   asDate,
   asTime,
-  asUnsafeString
+  asUnsafeString,
+  asPlainStringArray
 } = serializer
 
 const asInteger = serializer.asInteger.bind(serializer)
@@ -64,6 +99,24 @@ const validRoundingMethods = new Set([
 const validLargeArrayMechanisms = new Set([
   'default',
   'json-stringify'
+])
+
+const validObjectMechanisms = new Set([
+  'default',
+  'native'
+])
+
+// Keywords that do not change the output, so a $ref carrying only these
+// can still be dereferenced directly instead of merged with its target.
+const IGNORED_REF_SIBLING_KEYWORDS = new Set([
+  '$ref',
+  '$comment',
+  'title',
+  'description',
+  'examples',
+  'deprecated',
+  'readOnly',
+  'writeOnly'
 ])
 
 let schemaIdCounter = 0
@@ -84,6 +137,7 @@ function schemaDepthError (maxDepth, name) {
 function assertObjectDepth (schema, maxDepth, name) {
   const stack = [{ value: schema, depth: 0, exit: false }]
   const path = new WeakSet()
+  let hasRef = false
 
   while (stack.length > 0) {
     const entry = stack.pop()
@@ -110,9 +164,19 @@ function assertObjectDepth (schema, maxDepth, name) {
     stack.push({ value, depth: entry.depth, exit: true })
 
     for (const key in value) {
-      stack.push({ value: value[key], depth: entry.depth + 1, exit: false })
+      const child = value[key]
+      if (key === '$ref' && typeof child === 'string') {
+        hasRef = true
+      }
+      // Primitive values cannot contain cycles or contribute object depth.
+      // Avoid allocating stack entries that the next iteration would discard.
+      if (typeof child === 'object' && child !== null) {
+        stack.push({ value: child, depth: entry.depth + 1, exit: false })
+      }
     }
   }
+
+  return hasRef
 }
 
 function assertSchemaDepth (schema, maxDepth, name) {
@@ -191,10 +255,12 @@ function isValidSchema (schema, name) {
 
 function resolveRef (context, location) {
   const seen = new Set()
+  const siblingLocations = []
   let depth = 0
 
   while (location.schema.$ref !== undefined) {
-    const ref = location.schema.$ref
+    const refSchema = location.schema
+    const ref = refSchema.$ref
     const locationRef = location.getSchemaRef()
 
     if (seen.has(locationRef)) {
@@ -219,10 +285,45 @@ function resolveRef (context, location) {
       throw new Error(`Cannot find reference "${ref}"`)
     }
 
+    const siblingSchema = {}
+    for (const key in refSchema) {
+      if (!IGNORED_REF_SIBLING_KEYWORDS.has(key)) {
+        siblingSchema[key] = refSchema[key]
+      }
+    }
+
+    if (Object.keys(siblingSchema).length !== 0) {
+      siblingLocations.unshift(new Location(
+        cloneOriginSchema(context, siblingSchema, location.schemaId),
+        location.schemaId,
+        location.jsonPointer
+      ))
+    }
+
     location = new Location(schema, schemaId, jsonPointer)
   }
 
-  return location
+  if (siblingLocations.length === 0) {
+    return location
+  }
+
+  // Keyed by content, not by identity: a merged schema is cloned on every
+  // merge, so a recursive $ref would otherwise be merged again on each level.
+  const mergedSchemaKey = location.getSchemaRef() + JSON.stringify(siblingLocations.map((l) => l.schema))
+
+  let mergedSchemaId = context.mergedRefsIds.get(mergedSchemaKey)
+  if (mergedSchemaId === undefined) {
+    mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
+    try {
+      mergeLocations(context, mergedSchemaId, [location, ...siblingLocations])
+    } catch (err) {
+      if (!(err instanceof MergeError)) throw err
+      return location
+    }
+    context.mergedRefsIds.set(mergedSchemaKey, mergedSchemaId)
+  }
+
+  return getMergedLocation(context, mergedSchemaId)
 }
 
 function getSchemaDependencies (refResolver, schemaId) {
@@ -256,7 +357,7 @@ function getMergedLocation (context, mergedSchemaId) {
 }
 
 function getSchemaId (schema, rootSchemaId) {
-  if (schema.$id && schema.$id.charAt(0) !== '#') {
+  if (typeof schema.$id === 'string' && schema.$id.charAt(0) !== '#') {
     return schema.$id
   }
   return rootSchemaId
@@ -278,7 +379,15 @@ function getSafeSchemaRef (context, location) {
   return schemaRef
 }
 
+// The ref the generated code passes to validator.validate(). It is always a
+// literal JSON pointer (built from the actual keys, or a $ref whose literal
+// target exists), so it is escaped for Ajv here, once at build time, rather
+// than on every validate() call at serialization time.
 function getValidatorSchemaRef (context, location) {
+  return escapeRefForAjv(resolveValidatorSchemaRef(context, location))
+}
+
+function resolveValidatorSchemaRef (context, location) {
   let schemaRef = location.getSchemaRef()
   const schema = location.schema
 
@@ -327,7 +436,9 @@ function build (schema, options) {
   options = options || {}
 
   const maxDepth = getMaxDepth(options)
-  assertObjectDepth(schema, maxDepth)
+  // assertObjectDepth also reports whether any $ref appears; recursive-schema
+  // detection is only needed when $ref can form cycles.
+  let hasRef = assertObjectDepth(schema, maxDepth)
   assertSchemaDepth(schema, maxDepth)
   isValidSchema(schema)
 
@@ -341,10 +452,14 @@ function build (schema, options) {
     validatorSchemasIds: new Set(),
     validatorSchemaRefs: new Set(),
     mergedSchemasIds: new Map(),
+    mergedRefsIds: new Map(),
     maxDepth,
     recursiveSchemas: new Set(),
     recursivePaths: new Set(),
     buildingSet: new Set(),
+    largeArraySize: 2e4,
+    largeArrayMechanism: 'default',
+    objectMechanism: 'default',
     uid: 0
   }
 
@@ -358,7 +473,9 @@ function build (schema, options) {
       const schema = options.schema[key]
       const schemaId = getSchemaId(schema, key)
       if (!context.refResolver.hasSchema(schemaId)) {
-        assertObjectDepth(schema, maxDepth, key)
+        if (assertObjectDepth(schema, maxDepth, key)) {
+          hasRef = true
+        }
         assertSchemaDepth(schema, maxDepth, key)
         isValidSchema(schema, key)
         context.refResolver.addSchema(schema, key)
@@ -374,9 +491,17 @@ function build (schema, options) {
 
   if (options.largeArrayMechanism) {
     if (validLargeArrayMechanisms.has(options.largeArrayMechanism)) {
-      largeArrayMechanism = options.largeArrayMechanism
+      context.largeArrayMechanism = options.largeArrayMechanism
     } else {
       throw new Error(`Unsupported large array mechanism ${options.largeArrayMechanism}`)
+    }
+  }
+
+  if (options.objectMechanism) {
+    if (validObjectMechanisms.has(options.objectMechanism)) {
+      context.objectMechanism = options.objectMechanism
+    } else {
+      throw new Error(`Unsupported object mechanism ${options.objectMechanism}`)
     }
   }
 
@@ -385,19 +510,40 @@ function build (schema, options) {
     let parsedNumber
 
     if (largeArraySizeType === 'string' && Number.isFinite((parsedNumber = Number.parseInt(options.largeArraySize, 10)))) {
-      largeArraySize = parsedNumber
+      context.largeArraySize = parsedNumber
     } else if (largeArraySizeType === 'number' && Number.isInteger(options.largeArraySize)) {
-      largeArraySize = options.largeArraySize
+      context.largeArraySize = options.largeArraySize
     } else if (largeArraySizeType === 'bigint') {
-      largeArraySize = Number(options.largeArraySize)
+      context.largeArraySize = Number(options.largeArraySize)
     } else {
       throw new Error(`Unsupported large array size. Expected integer-like, got ${typeof options.largeArraySize} with value ${options.largeArraySize}`)
     }
   }
 
   const location = new Location(schema, context.rootSchemaId)
-  detectRecursiveSchemas(context, location)
-  const code = buildValue(context, location, 'input')
+  // Without $ref, json-pointer paths are unique in a tree walk, so no cycle
+  // can appear in recursivePaths. Skip the third full-schema traversal.
+  if (hasRef) {
+    detectRecursiveSchemas(context, location)
+  }
+
+  // objectMechanism: 'native' projects the input into shape-stable scratch
+  // objects and delegates to the native JSON.stringify. Only whole schemas
+  // made of objects, arrays and primitives qualify; anything else falls back
+  // to the string codegen below, so output never changes for unsupported shapes.
+  // The projection only pays off where V8 has the side-effect-free
+  // JSON.stringify fast path (V8 13.8+, Node 25+): on older runtimes the
+  // string codegen is up to 2x faster, so the option is a no-op there.
+  let code = null
+  let projection = null
+  // `forceProjection` is an internal, undocumented escape hatch used by the
+  // test suite to exercise the projection on runtimes where it is gated off.
+  if (context.objectMechanism === 'native' && (options.forceProjection === true || PROJECTION_SUPPORTED)) {
+    projection = buildProjection(schema)
+  }
+  if (projection === null) {
+    code = buildValue(context, location, 'input')
+  }
 
   let contextFunctionCode = `
     ${serializerFns}
@@ -419,7 +565,9 @@ function build (schema, options) {
   // and the overhead of the intermediate variable 'json'. We can avoid the
   // wrapping and the unnecessary memory allocation by aliasing 'anonymous0' to
   // 'main'
-  if (code === 'json += anonymous0(input)') {
+  if (projection !== null) {
+    contextFunctionCode += projection
+  } else if (code === 'json += anonymous0(input)') {
     contextFunctionCode += `
     ${context.functions.join('\n')}
     const main = anonymous0
@@ -438,23 +586,35 @@ function build (schema, options) {
   }
 
   const serializer = new Serializer(options)
-  const validator = new Validator(
-    options.ajv,
-    options.mode === 'standalone' && options.inlineValidators
-  )
+  // Ajv construction dominates tiny build() cost. Only create a Validator when
+  // generated code needs validator.validate (anyOf/oneOf/if-then-else), or when
+  // debug mode exposes the instance. Standalone already emits `validator = null`
+  // when validatorSchemasIds is empty.
+  const needsValidator =
+    context.validatorSchemasIds.size > 0 ||
+    options.mode === 'debug'
 
-  for (const schemaId of context.validatorSchemasIds) {
-    const schema = context.refResolver.getSchema(schemaId)
-    validator.addSchema(schema, schemaId)
+  const validator = needsValidator
+    ? new Validator(
+      options.ajv,
+      options.mode === 'standalone' && options.inlineValidators
+    )
+    : null
 
-    const dependencies = getSchemaDependencies(context.refResolver, schemaId)
-    for (const [schemaId, schema] of Object.entries(dependencies)) {
-      validator.addSchema(schema, schemaId)
+  if (validator !== null) {
+    for (const schemaId of context.validatorSchemasIds) {
+      const schema = context.refResolver.getSchema(schemaId)
+      validator.addSchema(schema, schemaId, context.refResolver)
+
+      const dependencies = getSchemaDependencies(context.refResolver, schemaId)
+      for (const [schemaId, schema] of Object.entries(dependencies)) {
+        validator.addSchema(schema, schemaId, context.refResolver)
+      }
     }
-  }
 
-  if (options.compileValidators) {
-    validator.compileSchemas(context.validatorSchemaRefs)
+    if (options.compileValidators) {
+      validator.compileSchemas(context.validatorSchemaRefs)
+    }
   }
 
   if (options.mode === 'debug') {
@@ -593,7 +753,7 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
   return code
 }
 
-function buildInnerObject (context, location, objVar) {
+function buildInnerObject (context, location, objVar, isReturnForm) {
   const schema = location.schema
 
   const propertiesLocation = location.getPropertyLocation('properties')
@@ -617,17 +777,16 @@ function buildInnerObject (context, location, objVar) {
     }
   }
 
-  code += 'json += JSON_STR_BEGIN_OBJECT\n'
-
   const localUid = context.uid++
   let addComma = ''
+  let emptyObjectGuard = null
 
   // propertiesKeys is sorted required-first; the guard checks [0] is required because
   // otherwise additionalProperties/patternProperties would emit a stray `{ ,"k":v }`.
   if (propertiesKeys.length > 0 && requiredProperties.includes(propertiesKeys[0])) {
-    // The first property is required, so we don't need a comma.
-    // For the subsequent properties, we can blindly add a comma.
-
+    // The first property is required, so it always emits (or throws): fold the
+    // object-open brace into its key prefix. Subsequent properties fold the
+    // comma into their key prefix the same way, cutting one append per property.
     for (let i = 0; i < propertiesKeys.length; i++) {
       const key = propertiesKeys[i]
       const propertyLocation = propertiesLocation.getPropertyLocation(key)
@@ -641,23 +800,18 @@ function buildInnerObject (context, location, objVar) {
       const value = `value_${key.replace(/[^a-zA-Z0-9]/g, '_')}_${context.uid++}`
       const defaultValue = resolvedLocation.schema.default
       const isRequired = requiredProperties.includes(key)
-
-      // i === 0 means it's the first property, and it IS required (due to sort). No comma.
-      // i > 0 means it follows a required property (or a sequence starting with one). Unconditional comma.
-      const currentAddComma = i === 0 ? '' : 'json += JSON_STR_COMMA'
+      const keyPrefix = (i === 0 ? '{' : ',') + sanitizedKey + ':'
 
       code += `
       const ${value} = ${objVar}[${sanitizedKey}]
       if (${value} !== undefined) {
-        ${currentAddComma}
-        json += ${JSON.stringify(sanitizedKey + ':')}
+        json += ${JSON.stringify(keyPrefix)}
         ${buildValue(context, resolvedLocation, `${value}`)}
       }`
 
       if (defaultValue !== undefined) {
         code += ` else {
-        ${currentAddComma}
-        json += ${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))}
+        json += ${JSON.stringify(keyPrefix + JSON.stringify(defaultValue))}
       }
       `
       } else if (isRequired) {
@@ -672,11 +826,16 @@ function buildInnerObject (context, location, objVar) {
 
     addComma = 'json += JSON_STR_COMMA'
   } else {
+    // No property is guaranteed to emit: fold `{` into whichever property
+    // emits first, and only emit a bare `{` when none does.
     const needsRuntimeComma = propertiesKeys.length > 1 || schema.patternProperties || (schema.additionalProperties !== undefined && schema.additionalProperties !== false)
 
     if (needsRuntimeComma) {
       code += `let addComma_${localUid} = false\n`
-      addComma = `!addComma_${localUid} && (addComma_${localUid} = true) || (json += JSON_STR_COMMA)`
+      addComma = `json += addComma_${localUid} ? JSON_STR_COMMA : ((addComma_${localUid} = true), JSON_STR_BEGIN_OBJECT)`
+      emptyObjectGuard = `if (!addComma_${localUid}) json += JSON_STR_BEGIN_OBJECT\n`
+    } else if (propertiesKeys.length === 0) {
+      code += 'json += JSON_STR_BEGIN_OBJECT\n'
     }
 
     for (const key of propertiesKeys) {
@@ -689,12 +848,10 @@ function buildInnerObject (context, location, objVar) {
       const value = `value_${key.replace(/[^a-zA-Z0-9]/g, '_')}_${context.uid++}`
       const defaultValue = propertyLocation.schema.default
       const isRequired = requiredProperties.includes(key) // Should be false here but good to keep
-      // Select a complete prefix so the comma does not need a separate concatenation.
-      const propertyPrefix = sanitizedKey + ':'
+      const keyColon = sanitizedKey + ':'
       const addProperty = needsRuntimeComma
-        ? `json += addComma_${localUid} ? ${JSON.stringify(',' + propertyPrefix)} : ${JSON.stringify(propertyPrefix)}
-           addComma_${localUid} = true`
-        : `json += ${JSON.stringify(propertyPrefix)}`
+        ? `json += addComma_${localUid} ? ${JSON.stringify(',' + keyColon)} : ((addComma_${localUid} = true), ${JSON.stringify('{' + keyColon)})`
+        : `json += ${JSON.stringify('{' + keyColon)}`
 
       code += `
           const ${value} = ${objVar}[${sanitizedKey}]
@@ -704,15 +861,32 @@ function buildInnerObject (context, location, objVar) {
           }`
 
       if (defaultValue !== undefined) {
-        code += ` else {
+        const defaultValueLiteral = JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))
+        if (needsRuntimeComma) {
+          code += ` else {
             ${addComma}
-            json += ${JSON.stringify(sanitizedKey + ':' + JSON.stringify(defaultValue))}
+            json += ${defaultValueLiteral}
           }
           `
+        } else {
+          // Single optional property with default: `{` is folded into the
+          // default literal so the absent branch still opens the object.
+          code += ` else {
+            json += ${JSON.stringify('{' + sanitizedKey + ':' + JSON.stringify(defaultValue))}
+          }
+          `
+        }
       } else if (isRequired) {
         // Should not happen if requiredProperties.length === 0 but safety
         code += ` else {
             throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')
+          }
+          `
+      } else if (!needsRuntimeComma) {
+        // Single optional property: `{` is folded into its key, so emit `{`
+        // when the property is absent.
+        code += ` else {
+            json += JSON_STR_BEGIN_OBJECT
           }
           `
       } else {
@@ -725,9 +899,15 @@ function buildInnerObject (context, location, objVar) {
     code += buildExtraObjectPropertiesSerializer(context, location, addComma, objVar)
   }
 
-  code += `
-    json += JSON_STR_END_OBJECT
-  `
+  if (emptyObjectGuard !== null) {
+    code += emptyObjectGuard
+  }
+
+  // Named object serializers can return `json + '}'` directly, saving one
+  // append + intermediate assignment in the hot per-item path.
+  code += isReturnForm
+    ? '\nreturn json + JSON_STR_END_OBJECT\n'
+    : '\njson += JSON_STR_END_OBJECT\n'
   return code
 }
 
@@ -759,7 +939,7 @@ function cloneOriginSchema (context, schema, schemaId) {
   const clonedSchema = Array.isArray(schema) ? [] : {}
 
   if (
-    schema.$id !== undefined &&
+    typeof schema.$id === 'string' &&
     schema.$id.charAt(0) !== '#'
   ) {
     schemaId = schema.$id
@@ -821,8 +1001,7 @@ function buildObject (context, location, input) {
         if (obj === null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_OBJECT'}
         let json = ''
 
-        ${buildInnerObject(context, location, 'obj')}
-        return json
+        ${buildInnerObject(context, location, 'obj', true)}
       }
     `
 
@@ -844,6 +1023,73 @@ function buildObject (context, location, input) {
   return code
 }
 
+// Per-element condition under which a native JSON.stringify(array) is
+// byte-identical to the generated per-item serializer for primitive item
+// schemas, plus the minimum array length at which copying beats the existing
+// loop. Returns null when the item schema uses any keyword that changes
+// serialization dispatch, or when the kind never wins (boolean: 'true'/'false'
+// concat is already cheap; the copy loses 25-44% at every size on Node 24).
+function getPrimitiveArrayFastPathCondition (itemsSchema) {
+  if (
+    Array.isArray(itemsSchema) ||
+    itemsSchema.$ref !== undefined ||
+    typeof itemsSchema.type !== 'string' ||
+    itemsSchema.const !== undefined ||
+    itemsSchema.nullable === true ||
+    itemsSchema.allOf !== undefined ||
+    itemsSchema.anyOf !== undefined ||
+    itemsSchema.oneOf !== undefined ||
+    itemsSchema.if !== undefined
+  ) {
+    return null
+  }
+  switch (itemsSchema.type) {
+    case 'number':
+      // asNumber(): NaN throws, Infinity serializes as null, every other
+      // number renders via ToString, exactly like JSON.stringify. The cutoff
+      // is in NUMBER_ARRAY_FAST_PATH.
+      return NUMBER_ARRAY_FAST_PATH
+    case 'integer':
+      // asInteger(): only integer numbers skip the (rounding-dependent)
+      // parseInteger path; those render via ToString like JSON.stringify.
+      // Small-int ToString is cached, so the loop stays cheap for longer;
+      // the cutoff is in INTEGER_ARRAY_FAST_PATH.
+      return INTEGER_ARRAY_FAST_PATH
+    default:
+      return null
+  }
+}
+
+// Item schema { type: 'string' } with no format, nullable, const, or combinator.
+// Other keywords (enum, pattern, minLength) are not applied while serializing.
+function isPlainStringItemsSchema (schema) {
+  if (schema.type !== 'string') {
+    return false
+  }
+  if (schema.format !== undefined) {
+    return false
+  }
+  if (schema.nullable === true) {
+    return false
+  }
+  if (schema.const !== undefined) {
+    return false
+  }
+  if (schema.allOf !== undefined) {
+    return false
+  }
+  if (schema.anyOf !== undefined) {
+    return false
+  }
+  if (schema.oneOf !== undefined) {
+    return false
+  }
+  if (schema.if !== undefined) {
+    return false
+  }
+  return true
+}
+
 function buildArray (context, location, input) {
   const schema = location.schema
 
@@ -855,6 +1101,9 @@ function buildArray (context, location, input) {
   }
 
   const itemsSchema = itemsLocation.schema
+  const plainStringFastPath = context.largeArrayMechanism !== 'json-stringify' &&
+    !Array.isArray(itemsSchema) &&
+    isPlainStringItemsSchema(itemsSchema)
 
   if (context.functionsNamesBySchema.has(schema)) {
     const funcName = context.functionsNamesBySchema.get(schema)
@@ -895,8 +1144,49 @@ function buildArray (context, location, input) {
     `
     }
 
-    if (largeArrayMechanism === 'json-stringify') {
-      functionCode += `if (arrayLength >= ${largeArraySize}) return JSON.stringify(obj)\n`
+    if (context.largeArrayMechanism === 'json-stringify') {
+      functionCode += `if (arrayLength >= ${context.largeArraySize}) return JSON.stringify(obj)\n`
+    } else if (plainStringFastPath) {
+      // Copy strings once; the helper resumes ordered coercion on the first miss.
+      functionCode += `
+      if (typeof arrayLength === 'number' && arrayLength >= ${STRING_ARRAY_FAST_PATH_MIN_LENGTH} && Number.isInteger(arrayLength) && arrayLength <= 0xffffffff) {
+        return asPlainStringArray(obj, arrayLength)
+      }
+      `
+    } else {
+      const fastPath = getPrimitiveArrayFastPathCondition(itemsSchema)
+      if (fastPath) {
+        const valueCode = buildValue(context, itemsLocation, 'v')
+        functionCode += `
+        // Copying small arrays costs more than the existing loop.
+        if (typeof arrayLength === 'number' && arrayLength >= ${fastPath.minLength} && Number.isInteger(arrayLength) && arrayLength <= 0xffffffff) {
+          const copy = new Array(arrayLength)
+          // V8's side-effect-free JSON.stringify fast path (V8 >= 13.8) requires
+          // the standard Array.prototype; a null prototype halves its throughput.
+          // Only detach the prototype when a toJSON hook would otherwise be called.
+          if (Array.prototype.toJSON !== undefined) Object.setPrototypeOf(copy, null)
+          for (let i = 0; i < arrayLength; i++) {
+            const v = obj[i]
+            if (!(${fastPath.condition})) {
+              // Serialize the captured prefix, then resume at the first miss.
+              // Never reread getters or read ahead of an item's coercion.
+              copy.length = i
+              json = JSON.stringify(copy).slice(0, -1)
+              if (i > 0) json += JSON_STR_COMMA
+              ${valueCode}
+              for (i++; i < arrayLength; i++) {
+                json += JSON_STR_COMMA
+                const v = obj[i]
+                ${valueCode}
+              }
+              return json + JSON_STR_END_ARRAY
+            }
+            copy[i] = v
+          }
+          return JSON.stringify(copy)
+        }
+      `
+      }
     }
 
     functionCode += `
@@ -916,7 +1206,7 @@ function buildArray (context, location, input) {
         const tmpRes = buildValue(context, itemLocation, value)
         functionCode += `
         if (${i} < arrayLength) {
-          if (${buildArrayTypeCondition(item.type, value)}) {
+          if (${buildTupleItemCondition(item, value)}) {
             if (${i}) {
               json += JSON_STR_COMMA
             }
@@ -980,8 +1270,15 @@ function buildArray (context, location, input) {
     `
   }
 
-  if (largeArrayMechanism === 'json-stringify') {
-    inlinedCode += `if (arrayLength_${objVar} >= ${largeArraySize}) json += JSON.stringify(${objVar})\n else {`
+  if (context.largeArrayMechanism === 'json-stringify') {
+    inlinedCode += `if (arrayLength_${objVar} >= ${context.largeArraySize}) json += JSON.stringify(${objVar})\n else {`
+  } else if (plainStringFastPath) {
+    inlinedCode += `
+      let fjsPlain_${objVar}
+      if (typeof arrayLength_${objVar} === 'number' && arrayLength_${objVar} >= ${STRING_ARRAY_FAST_PATH_MIN_LENGTH} && Number.isInteger(arrayLength_${objVar}) && arrayLength_${objVar} <= 0xffffffff) fjsPlain_${objVar} = asPlainStringArray(${objVar}, arrayLength_${objVar})
+      if (fjsPlain_${objVar} !== undefined) json += fjsPlain_${objVar}
+      else {
+    `
   }
 
   inlinedCode += `
@@ -1003,7 +1300,7 @@ function buildArray (context, location, input) {
       const tmpRes = buildValue(context, itemLocation, value)
       inlinedCode += `
         if (${i} < arrayLength_${objVar}) {
-          if (${buildArrayTypeCondition(item.type, value)}) {
+          if (${buildTupleItemCondition(item, value)}) {
             !addComma_${localUid} && (addComma_${localUid} = true) || (json += JSON_STR_COMMA)
             ${tmpRes}
           } else {
@@ -1038,7 +1335,7 @@ function buildArray (context, location, input) {
     json += JSON_STR_END_ARRAY
   `
 
-  if (largeArrayMechanism === 'json-stringify') {
+  if (context.largeArrayMechanism === 'json-stringify' || plainStringFastPath) {
     inlinedCode += '}'
   }
 
@@ -1090,13 +1387,20 @@ function buildArrayTypeCondition (type, accessor) {
   return condition
 }
 
+// A nullable tuple item accepts null on top of its declared type(s);
+// buildValue() then serializes it as `null`.
+function buildTupleItemCondition (item, accessor) {
+  const condition = buildArrayTypeCondition(item.type, accessor)
+  return item.nullable === true ? `${accessor} === null || ${condition}` : condition
+}
+
 function generateFuncName (context) {
   return 'anonymous' + context.functionsCounter++
 }
 
 function buildMultiTypeSerializer (context, location, input) {
   const schema = location.schema
-  const types = schema.type.sort(t1 => t1 === 'null' ? -1 : 1)
+  const types = [...schema.type].sort(t1 => t1 === 'null' ? -1 : 1)
 
   let code = ''
 
@@ -1237,8 +1541,8 @@ function detectRecursiveSchemas (context, location) {
       throw schemaDepthError(context.maxDepth)
     }
 
-    const schemaId = location.schemaId || ''
-    const jsonPointer = location.jsonPointer || ''
+    const schemaId = location.schemaId
+    const jsonPointer = location.jsonPointer
     const fullPath = `${schemaId}#${jsonPointer}`
 
     if (pathStack.has(fullPath)) {
@@ -1358,6 +1662,9 @@ function buildAllOf (context, location, input) {
   context.mergedSchemasIds.set(schema, mergedSchemaId)
 
   const { allOf, ...schemaWithoutAllOf } = location.schema
+  const dropAdditionalProperties = schemaWithoutAllOf.additionalProperties === false
+  if (dropAdditionalProperties) delete schemaWithoutAllOf.additionalProperties
+
   const locations = [
     new Location(
       schemaWithoutAllOf,
@@ -1372,7 +1679,12 @@ function buildAllOf (context, location, input) {
   }
 
   const mergedLocation = mergeLocations(context, mergedSchemaId, locations)
+  if (dropAdditionalProperties) mergedLocation.schema.additionalProperties = false
   return buildValue(context, mergedLocation, input)
+}
+
+function isEmptyObjectSchema (schema) {
+  return Object.keys(schema).length === 0
 }
 
 function buildOneOf (context, location, input) {
@@ -1389,6 +1701,11 @@ function buildOneOf (context, location, input) {
     location.jsonPointer
   )
   const oneOfsLocation = location.getPropertyLocation(type)
+  // When the anyOf/oneOf has no sibling keywords, a `$ref` option can be
+  // built directly. Merging it with an empty sibling schema would clone the
+  // target (often the root) and re-enter buildOneOf forever for multiple
+  // fields that each `$ref: '#'` (https://github.com/fastify/fast-json-stringify/issues/724).
+  const withoutIsEmpty = isEmptyObjectSchema(schemaWithoutAnyOf)
 
   let code = ''
 
@@ -1396,21 +1713,51 @@ function buildOneOf (context, location, input) {
     const optionLocation = oneOfsLocation.getPropertyLocation(index)
     const optionSchema = optionLocation.schema
 
-    let mergedSchemaId = context.mergedSchemasIds.get(optionSchema)
-    let mergedLocation = null
-    if (mergedSchemaId) {
-      mergedLocation = getMergedLocation(context, mergedSchemaId)
+    let nestedResult
+    if (typeof optionSchema.$ref === 'string') {
+      // resolveRef merges the option's own sibling keywords (memoized by
+      // content), so the location it returns is stable across clones.
+      const resolvedLocation = resolveRef(context, optionLocation)
+      let mergedLocation = resolvedLocation
+      if (!withoutIsEmpty) {
+        // Keyed by content, not by identity: the option is cloned on every
+        // merge of its target, so a recursive $ref would otherwise be merged
+        // again on each level (same as resolveRef for sibling keywords).
+        // The siblings are cloned first so that their relative $refs are made
+        // absolute: the same sibling text in two schemas must not share a key.
+        const siblingLocation = new Location(
+          cloneOriginSchema(context, schemaWithoutAnyOf, location.schemaId),
+          location.schemaId,
+          location.jsonPointer
+        )
+        const mergedSchemaKey = resolvedLocation.getSchemaRef() + JSON.stringify(siblingLocation.schema)
+        let mergedSchemaId = context.mergedRefsIds.get(mergedSchemaKey)
+        if (mergedSchemaId === undefined) {
+          mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
+          mergeLocations(context, mergedSchemaId, [siblingLocation, resolvedLocation])
+          context.mergedRefsIds.set(mergedSchemaKey, mergedSchemaId)
+        }
+        mergedLocation = getMergedLocation(context, mergedSchemaId)
+      }
+      nestedResult = buildValue(context, mergedLocation, input)
     } else {
-      mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
-      context.mergedSchemasIds.set(optionSchema, mergedSchemaId)
+      let mergedSchemaId = context.mergedSchemasIds.get(optionSchema)
+      let mergedLocation = null
+      if (mergedSchemaId) {
+        mergedLocation = getMergedLocation(context, mergedSchemaId)
+      } else {
+        mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
+        context.mergedSchemasIds.set(optionSchema, mergedSchemaId)
 
-      mergedLocation = mergeLocations(context, mergedSchemaId, [
-        locationWithoutOneOf,
-        optionLocation
-      ])
+        mergedLocation = mergeLocations(context, mergedSchemaId, [
+          locationWithoutOneOf,
+          optionLocation
+        ])
+      }
+
+      nestedResult = buildValue(context, mergedLocation, input)
     }
 
-    const nestedResult = buildValue(context, mergedLocation, input)
     const schemaRef = getValidatorSchemaRef(context, optionLocation)
     context.validatorSchemaRefs.add(schemaRef)
 

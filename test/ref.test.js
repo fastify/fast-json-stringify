@@ -2075,3 +2075,546 @@ test('ref nested', (t) => {
   t.assert.doesNotThrow(() => JSON.parse(output))
   t.assert.equal(output, '{"str":"test"}')
 })
+
+test('ref internal - sibling keywords', (t) => {
+  t.plan(3)
+
+  const schema = {
+    definitions: {
+      def: {
+        type: 'object',
+        properties: {
+          str: {
+            type: 'string'
+          },
+          num: {
+            type: 'integer'
+          }
+        },
+        required: ['str']
+      }
+    },
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: '#/definitions/def',
+        required: ['num']
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      str: 'test',
+      num: 42
+    }
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test","num":42}}')
+
+  t.assert.throws(() => {
+    stringify({
+      obj: {
+        str: 'test'
+      }
+    })
+  }, { message: '"num" is required!' })
+})
+
+test('ref external - sibling keywords', (t) => {
+  t.plan(3)
+
+  const externalSchema = {
+    external: {
+      definitions: {
+        def: {
+          type: 'object',
+          properties: {
+            str: {
+              type: 'string'
+            },
+            num: {
+              type: 'integer'
+            }
+          },
+          required: ['str']
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: 'external#/definitions/def',
+        required: ['num']
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      str: 'test',
+      num: 42
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test","num":42}}')
+
+  t.assert.throws(() => {
+    stringify({
+      obj: {
+        str: 'test'
+      }
+    })
+  }, { message: '"num" is required!' })
+})
+
+test('ref external - recursive sibling keywords', (t) => {
+  t.plan(3)
+
+  const externalSchema = {
+    node: {
+      $id: 'node',
+      type: 'object',
+      properties: {
+        str: {
+          type: 'string'
+        },
+        next: {
+          $ref: 'node#',
+          required: ['str']
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      root: {
+        $ref: 'node#',
+        required: ['str']
+      }
+    }
+  }
+
+  const object = {
+    root: {
+      str: 'test',
+      next: {
+        str: 'nested'
+      }
+    }
+  }
+
+  const stringify = build(schema, { schema: externalSchema })
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"root":{"str":"test","next":{"str":"nested"}}}')
+
+  t.assert.throws(() => {
+    stringify({
+      root: {
+        str: 'test',
+        next: {}
+      }
+    })
+  }, { message: '"str" is required!' })
+})
+
+test('ref internal - conflicting sibling keywords', (t) => {
+  t.plan(2)
+
+  const schema = {
+    definitions: {
+      def: {
+        type: 'string'
+      }
+    },
+    type: 'object',
+    properties: {
+      value: {
+        $ref: '#/definitions/def',
+        type: 'integer'
+      }
+    }
+  }
+
+  const object = {
+    value: 42
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"value":"42"}')
+})
+
+test('ref external - sibling keywords with a duplicated anchor', (t) => {
+  t.plan(1)
+
+  const externalSchema = {
+    external: {
+      $id: 'external',
+      definitions: {
+        def: {
+          type: 'object',
+          properties: {
+            str: {
+              $id: '#anchor',
+              type: 'string'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: 'external#/definitions/def',
+        properties: {
+          num: {
+            $id: '#anchor',
+            type: 'integer'
+          }
+        }
+      }
+    }
+  }
+
+  t.assert.throws(
+    () => build(schema, { schema: externalSchema }),
+    { message: /There is already another anchor "#anchor"/ }
+  )
+})
+
+test('multiple anyOf fields with root $ref do not overflow the stack', (t) => {
+  t.plan(3)
+
+  // Regression for https://github.com/fastify/fast-json-stringify/issues/724
+  const schema = {
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    type: 'object',
+    properties: {
+      field: { type: 'string' },
+      field1: { anyOf: [{ $ref: '#' }, { type: 'null' }] },
+      field2: { anyOf: [{ $ref: '#' }, { type: 'null' }] }
+    }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(
+    stringify({ field: 'a', field1: null, field2: null }),
+    '{"field":"a","field1":null,"field2":null}'
+  )
+  t.assert.equal(
+    stringify({ field: 'a', field1: { field: 'b', field1: null, field2: null }, field2: null }),
+    '{"field":"a","field1":{"field":"b","field1":null,"field2":null},"field2":null}'
+  )
+  t.assert.equal(
+    stringify({ field: 'a', field1: null, field2: { field: 'c', field1: null, field2: null } }),
+    '{"field":"a","field1":null,"field2":{"field":"c","field1":null,"field2":null}}'
+  )
+})
+
+test('multiple oneOf fields with root $ref do not overflow the stack', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      field: { type: 'string' },
+      field1: { oneOf: [{ $ref: '#' }, { type: 'null' }] },
+      field2: { oneOf: [{ $ref: '#' }, { type: 'null' }] }
+    }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(
+    stringify({ field: 'a', field1: null, field2: { field: 'b', field1: null, field2: null } }),
+    '{"field":"a","field1":null,"field2":{"field":"b","field1":null,"field2":null}}'
+  )
+})
+
+test('multiple anyOf root refs with sibling keywords do not overflow the stack', (t) => {
+  t.plan(2)
+
+  // Sibling keywords next to anyOf (e.g. a description, as emitted by most
+  // schema generators) force a merge of the $ref target: that merge must be
+  // memoized by content, or each cloned level merges the root again.
+  const schema = {
+    type: 'object',
+    properties: {
+      field: { type: 'string' },
+      field1: { description: 'first', anyOf: [{ $ref: '#' }, { type: 'null' }] },
+      field2: { description: 'second', anyOf: [{ $ref: '#' }, { type: 'null' }] }
+    }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(
+    stringify({ field: 'a', field1: { field: 'b', field1: null, field2: null }, field2: null }),
+    '{"field":"a","field1":{"field":"b","field1":null,"field2":null},"field2":null}'
+  )
+  t.assert.equal(
+    stringify({ field: 'a', field1: null, field2: { field: 'c', field1: { field: 'd', field1: null, field2: null }, field2: null } }),
+    '{"field":"a","field1":null,"field2":{"field":"c","field1":{"field":"d","field1":null,"field2":null},"field2":null}}'
+  )
+})
+
+test('multiple anyOf refs to a non-root definition do not overflow the stack', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    definitions: {
+      node: {
+        type: 'object',
+        properties: {
+          value: { type: 'integer' },
+          left: { anyOf: [{ $ref: '#/definitions/node' }, { type: 'null' }] },
+          right: { anyOf: [{ $ref: '#/definitions/node' }, { type: 'null' }] }
+        }
+      }
+    },
+    properties: { root: { $ref: '#/definitions/node' } }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(
+    stringify({ root: { value: 1, left: { value: 2, left: null, right: null }, right: null } }),
+    '{"root":{"value":1,"left":{"value":2,"left":null,"right":null},"right":null}}'
+  )
+})
+
+test('inline anyOf options reuse their merged schema when the same definition is referenced twice', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    definitions: {
+      maybeString: { anyOf: [{ type: 'string' }, { type: 'null' }] }
+    },
+    properties: {
+      a: { $ref: '#/definitions/maybeString' },
+      b: { $ref: '#/definitions/maybeString' }
+    }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(stringify({ a: 'x', b: null }), '{"a":"x","b":null}')
+  t.assert.equal(stringify({ a: null, b: 'y' }), '{"a":null,"b":"y"}')
+})
+
+test('anyOf $ref options with the same sibling keywords in different schemas are merged separately', (t) => {
+  t.plan(1)
+
+  // The merge of a $ref option with its sibling keywords is memoized by
+  // content: a relative $ref in the siblings must be resolved against its own
+  // schema, or S2 would reuse the merge built for S1.
+  const common = { $id: 'common', type: 'object', properties: { c: { type: 'string' } } }
+  const makeSchema = (id, props) => ({
+    $id: id,
+    type: 'object',
+    definitions: { P: { type: 'object', properties: props } },
+    properties: {
+      x: {
+        type: 'object',
+        properties: { p: { $ref: '#/definitions/P' } },
+        anyOf: [{ $ref: 'common#' }]
+      }
+    }
+  })
+  const S1 = makeSchema('S1', { n: { type: 'integer' } })
+  const S2 = makeSchema('S2', { s: { type: 'string' } })
+
+  const stringify = build(
+    { type: 'object', properties: { a: { $ref: 'S1#' }, b: { $ref: 'S2#' } } },
+    { schema: { common, S1, S2 } }
+  )
+  t.assert.equal(
+    stringify({ a: { x: { c: 'c1', p: { n: 1 } } }, b: { x: { c: 'c2', p: { s: 'str' } } } }),
+    '{"a":{"x":{"p":{"n":1},"c":"c1"}},"b":{"x":{"p":{"s":"str"},"c":"c2"}}}'
+  )
+})
+
+test('multiple anyOf root refs with sibling keywords on the option do not overflow the stack', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      field: { type: 'string' },
+      field1: { anyOf: [{ $ref: '#', type: 'object', nullable: true }, { type: 'null' }] },
+      field2: { description: 'd', anyOf: [{ $ref: '#', title: 't' }, { type: 'null' }] }
+    }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(
+    stringify({ field: 'a', field1: { field: 'b', field1: null, field2: null }, field2: null }),
+    '{"field":"a","field1":{"field":"b","field1":null,"field2":null},"field2":null}'
+  )
+  t.assert.equal(
+    stringify({ field: 'a', field1: null, field2: { field: 'c', field1: null, field2: null } }),
+    '{"field":"a","field1":null,"field2":{"field":"c","field1":null,"field2":null}}'
+  )
+})
+
+test('ref internal - percent-encoded definition key with oneOf', (t) => {
+  t.plan(2)
+
+  // See https://github.com/fastify/fast-json-stringify/issues/740
+  // A definition key that is itself percent-encoded (e.g. `Some%3Cloremipsum%3E`)
+  // must still resolve when the referenced schema contains oneOf/anyOf/allOf.
+  const schema = {
+    title: 'object with $ref',
+    definitions: {
+      'Some%3Cloremipsum%3E': {
+        type: 'object',
+        additionalProperties: {
+          oneOf: [
+            { type: 'string' },
+            { type: 'number' },
+            { type: 'object' },
+            { type: 'null' }
+          ]
+        }
+      }
+    },
+    type: 'object',
+    properties: {
+      obj: {
+        $ref: '#/definitions/Some%3Cloremipsum%3E'
+      }
+    }
+  }
+
+  const object = {
+    obj: {
+      str: 'test'
+    }
+  }
+
+  const stringify = build(schema)
+  const output = stringify(object)
+
+  t.assert.doesNotThrow(() => JSON.parse(output))
+  t.assert.equal(output, '{"obj":{"str":"test"}}')
+})
+
+test('ref internal - percent-encoded definition key with anyOf and compileValidators', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    definitions: {
+      'a%20b': {
+        type: 'object',
+        additionalProperties: {
+          anyOf: [{ type: 'string' }, { type: 'number' }]
+        }
+      }
+    },
+    properties: {
+      obj: { $ref: '#/definitions/a%20b' }
+    }
+  }
+
+  const stringify = build(schema, { compileValidators: true })
+  t.assert.equal(stringify({ obj: { str: 'test', num: 2 } }), '{"obj":{"str":"test","num":2}}')
+})
+
+test('ref internal - RFC 6901 percent-encoded $ref seen only by Ajv keeps resolving', (t) => {
+  t.plan(2)
+
+  // The key is `a b` and the ref is spec-encoded as `a%20b`. The serializer never
+  // resolves this ref (it only lives inside `if`), so it must not be re-escaped
+  // for Ajv: Ajv's own decoding is the only thing that can find the key.
+  const schema = {
+    type: 'object',
+    definitions: {
+      'a b': { type: 'object', required: ['kind'] }
+    },
+    if: { $ref: '#/definitions/a%20b' },
+    then: { properties: { kind: { type: 'string' } } },
+    else: { properties: { other: { type: 'number' } } }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(stringify({ kind: 'x' }), '{"kind":"x"}')
+  t.assert.equal(stringify({ other: 3 }), '{"other":3}')
+})
+
+test('ref internal - literal percent-encoded $ref seen only by Ajv resolves literally', (t) => {
+  t.plan(2)
+
+  // Same shape, but the key is the literal `a%20b`: the ref must be escaped so
+  // that Ajv lands on the literal key, consistently with the serializer.
+  const schema = {
+    type: 'object',
+    definitions: {
+      'a%20b': { type: 'object', required: ['kind'] }
+    },
+    if: { $ref: '#/definitions/a%20b' },
+    then: { properties: { kind: { type: 'string' } } },
+    else: { properties: { other: { type: 'number' } } }
+  }
+
+  const stringify = build(schema)
+  t.assert.equal(stringify({ kind: 'x' }), '{"kind":"x"}')
+  t.assert.equal(stringify({ other: 3 }), '{"other":3}')
+})
+
+test('Validator.addSchema without a ref resolver escapes every percent-encoded $ref', (t) => {
+  t.plan(1)
+
+  const Validator = require('../lib/validator')
+  const validator = new Validator()
+  validator.addSchema({ type: 'number' }, 'other')
+  validator.addSchema({
+    definitions: { 'a%20b': { type: 'number' } },
+    properties: {
+      obj: { $ref: '#/definitions/a%20b' },
+      // a $ref without a fragment has nothing to escape
+      plain: { $ref: 'other' }
+    }
+  }, 'test')
+
+  t.assert.deepEqual([
+    validator.validate('test#/properties/obj', 1),
+    validator.validate('test#/properties/plain', 1)
+  ], [true, true])
+})
+
+test('ref external - $ref without a fragment seen only by Ajv', (t) => {
+  t.plan(2)
+
+  const schema = {
+    type: 'object',
+    if: { $ref: 'ext' },
+    then: { properties: { kind: { type: 'string' } } },
+    else: { properties: { other: { type: 'number' } } }
+  }
+
+  const stringify = build(schema, {
+    schema: { ext: { $id: 'ext', type: 'object', required: ['kind'] } }
+  })
+  t.assert.equal(stringify({ kind: 'x' }), '{"kind":"x"}')
+  t.assert.equal(stringify({ other: 3 }), '{"other":3}')
+})

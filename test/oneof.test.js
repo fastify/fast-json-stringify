@@ -750,3 +750,24 @@ test('invalid oneOf schema', (t) => {
     t.assert.ok(err.message.includes('schema is invalid'))
   }
 })
+
+test('property named $id inside oneOf compiles and serializes correctly (#918)', (t) => {
+  t.plan(2)
+
+  const stringify = build({
+    oneOf: [
+      {
+        type: 'object',
+        properties: {
+          $id: { type: 'string' }
+        }
+      },
+      {
+        type: 'number'
+      }
+    ]
+  })
+
+  t.assert.equal(stringify({ $id: 'x' }), '{"$id":"x"}')
+  t.assert.equal(stringify(42), '42')
+})

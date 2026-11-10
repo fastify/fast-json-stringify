@@ -110,11 +110,23 @@ test('rejects invalid maximum schema depths', (t) => {
 test('checks schema dependencies without treating property lists as schemas', (t) => {
   t.assert.doesNotThrow(() => build({
     type: 'object',
+    definitions: {
+      valueProp: { type: 'string' },
+      any: true
+    },
+    // Include a $ref so recursive-schema detection runs and walks dependency
+    // schema forms (property-list dependencies must still be ignored). Boolean
+    // schemas must also be visited so traverse's non-object early-return stays covered.
+    properties: {
+      link: { $ref: '#/definitions/valueProp' },
+      flag: { $ref: '#/definitions/any' },
+      open: true
+    },
     dependencies: {
-      enabled: { properties: { value: { type: 'string' } } },
+      enabled: { properties: { value: { $ref: '#/definitions/valueProp' } } },
       value: ['enabled']
     }
-  }, { maxDepth: 2 }))
+  }, { maxDepth: 3 }))
 })
 
 test('checks external schemas before validating them recursively', (t) => {
