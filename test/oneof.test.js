@@ -379,8 +379,8 @@ test('oneOf with a bare top-level $ref branch validates directly against the reg
   }
 
   const code = build(schema, { mode: 'standalone', schema: externalSchema })
-  t.assert.ok(code.includes('validator.validate("Foo#"'), 'validates directly against the bare registered id')
-  t.assert.ok(code.includes('validator.validate("Bar#"'), 'validates directly against the bare registered id')
+  t.assert.ok(code.includes('validator.getSchemaValidator("Foo#"'), 'validates directly against the bare registered id')
+  t.assert.ok(code.includes('validator.getSchemaValidator("Bar#"'), 'validates directly against the bare registered id')
 
   const stringify = build(schema, { schema: externalSchema })
   t.assert.equal(stringify({ content: { b: 'yo' } }), '{"content":{"b":"yo"}}')
@@ -412,7 +412,7 @@ test('oneOf with a bare top-level $ref branch to a $id schema validates directly
   }
 
   const code = build(schema, { mode: 'standalone', schema: externalSchema })
-  t.assert.ok(code.includes('validator.validate("urn:fjs:test:Foo#"'), 'validates directly against the bare registered $id')
+  t.assert.ok(code.includes('validator.getSchemaValidator("urn:fjs:test:Foo#"'), 'validates directly against the bare registered $id')
 
   const stringify = build(schema, { schema: externalSchema })
   t.assert.equal(stringify({ content: { a: 'yo' } }), '{"content":{"a":"yo"}}')
@@ -443,7 +443,7 @@ test('oneOf with a bare top-level $ref branch to a relative $id schema is left u
   }
 
   const code = build(schema, { mode: 'standalone', schema: externalSchema })
-  t.assert.ok(!code.includes('validator.validate("Foo#"'), 'relative $id schema is not redirected to the bare parent id')
+  t.assert.ok(!code.includes('validator.getSchemaValidator("Foo#"'), 'relative $id schema is not redirected to the bare parent id')
 })
 
 test('oneOf with a $ref branch to a relative root $id validates directly against the registered schema', (t) => {
@@ -471,7 +471,7 @@ test('oneOf with a $ref branch to a relative root $id validates directly against
   }
 
   const code = build(schema, { mode: 'standalone', schema: externalSchema })
-  t.assert.ok(code.includes('validator.validate("Foo#foo"'), 'validates directly against the relative root $id')
+  t.assert.ok(code.includes('validator.getSchemaValidator("Foo#foo"'), 'validates directly against the relative root $id')
 
   const stringify = build(schema, { schema: externalSchema })
   t.assert.equal(stringify({ content: { a: 'yo' } }), '{"content":{"a":"yo"}}')
@@ -502,7 +502,7 @@ test('oneOf with a named-fragment $ref branch validates directly against the reg
   }
 
   const code = build(schema, { mode: 'standalone', schema: externalSchema })
-  t.assert.ok(code.includes('validator.validate("Foo#tag"'), 'validates directly against the registered schema anchor')
+  t.assert.ok(code.includes('validator.getSchemaValidator("Foo#tag"'), 'validates directly against the registered schema anchor')
 
   const stringify = build(schema, { schema: externalSchema })
   t.assert.equal(stringify({ content: 'yo' }), '{"content":"yo"}')
@@ -532,7 +532,7 @@ test('oneOf with a $ref into a JSON-pointer sub-path validates directly against 
   }
 
   const code = build(schema, { mode: 'standalone', schema: externalSchema })
-  t.assert.ok(code.includes('validator.validate("Foo#/definitions/Bar"'), 'validates directly against the sub-path ref')
+  t.assert.ok(code.includes('validator.getSchemaValidator("Foo#/definitions/Bar"'), 'validates directly against the sub-path ref')
 
   const stringify = build(schema, { schema: externalSchema })
   t.assert.equal(stringify({ content: { b: 'yo' } }), '{"content":{"b":"yo"}}')
@@ -562,7 +562,7 @@ test('oneOf with a $ref branch that has sibling keywords is left unchanged', (t)
   }
 
   const code = build(schema, { mode: 'standalone', schema: externalSchema })
-  t.assert.ok(!code.includes('validator.validate("Foo#"'), 'ref with sibling keywords is not redirected')
+  t.assert.ok(!code.includes('validator.getSchemaValidator("Foo#"'), 'ref with sibling keywords is not redirected')
 
   const stringify = build(schema, { schema: externalSchema })
   t.assert.throws(() => stringify({ content: { a: 'yo' } }))

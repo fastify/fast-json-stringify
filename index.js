@@ -379,12 +379,26 @@ function getSafeSchemaRef (context, location) {
   return schemaRef
 }
 
-// The ref the generated code passes to validator.validate(). It is always a
+// The ref the generated code passes to validator.getSchemaValidator(). It is always a
 // literal JSON pointer (built from the actual keys, or a $ref whose literal
 // target exists), so it is escaped for Ajv here, once at build time, rather
 // than on every validate() call at serialization time.
 function getValidatorSchemaRef (context, location) {
   return escapeRefForAjv(resolveValidatorSchemaRef(context, location))
+}
+
+// The expression that validates `input` against `schemaRef` in the generated
+// code. Looking a schema up by its ref is the expensive part of a validation
+// (Ajv normalizes the ref and walks its registries on every call), so each ref
+// gets one variable in the serializer scope that holds its validation function.
+// It is filled on first use: the schema is still compiled lazily, as before.
+function buildValidation (context, schemaRef, input) {
+  let name = context.validatorFunctions.get(schemaRef)
+  if (name === undefined) {
+    name = `validate_${context.validatorFunctions.size}`
+    context.validatorFunctions.set(schemaRef, name)
+  }
+  return `(${name} || (${name} = validator.getSchemaValidator(${JSON.stringify(schemaRef)})))(${input})`
 }
 
 function resolveValidatorSchemaRef (context, location) {
@@ -451,6 +465,7 @@ function build (schema, options) {
     rootSchemaId: schema.$id || `__fjs_root_${schemaIdCounter++}`,
     validatorSchemasIds: new Set(),
     validatorSchemaRefs: new Set(),
+    validatorFunctions: new Map(),
     mergedSchemasIds: new Map(),
     mergedRefsIds: new Map(),
     maxDepth,
@@ -558,6 +573,7 @@ function build (schema, options) {
     const JSON_STR_EMPTY_ARRAY = JSON_STR_BEGIN_ARRAY + JSON_STR_END_ARRAY
     const JSON_STR_EMPTY_STRING = JSON_STR_QUOTE + JSON_STR_QUOTE
     const JSON_STR_NULL = 'null'
+    ${[...context.validatorFunctions.values()].map((name) => `let ${name}`).join('\n    ')}
   `
 
   // If we have only the invocation of the 'anonymous0' function, we would
@@ -587,7 +603,7 @@ function build (schema, options) {
 
   const serializer = new Serializer(options)
   // Ajv construction dominates tiny build() cost. Only create a Validator when
-  // generated code needs validator.validate (anyOf/oneOf/if-then-else), or when
+  // generated code needs a schema validator (anyOf/oneOf/if-then-else), or when
   // debug mode exposes the instance. Standalone already emits `validator = null`
   // when validatorSchemasIds is empty.
   const needsValidator =
@@ -1762,7 +1778,7 @@ function buildOneOf (context, location, input) {
     context.validatorSchemaRefs.add(schemaRef)
 
     code += `
-      ${index === 0 ? 'if' : 'else if'}(validator.validate(${JSON.stringify(schemaRef)}, ${input})) {
+      ${index === 0 ? 'if' : 'else if'}(${buildValidation(context, schemaRef, input)}) {
         ${nestedResult}
       }
     `
@@ -1816,7 +1832,7 @@ function buildIfThenElse (context, location, input) {
 
   if (!elseSchema) {
     return `
-      if (validator.validate(${JSON.stringify(ifSchemaRef)}, ${input})) {
+      if (${buildValidation(context, ifSchemaRef, input)}) {
         ${buildValue(context, thenMergedLocation, input)}
       } else {
         ${buildValue(context, rootLocation, input)}
@@ -1840,7 +1856,7 @@ function buildIfThenElse (context, location, input) {
   }
 
   return `
-    if (validator.validate(${JSON.stringify(ifSchemaRef)}, ${input})) {
+    if (${buildValidation(context, ifSchemaRef, input)}) {
       ${buildValue(context, thenMergedLocation, input)}
     } else {
       ${buildValue(context, elseMergedLocation, input)}
