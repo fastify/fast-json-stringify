@@ -462,6 +462,55 @@ test('array items is a list of schema and additionalItems is a schema', (t) => {
   t.assert.equal(result, '{"foo":["foo",42]}')
 })
 
+test('array items is a list of schema and additionalItems is a schema, additional items are coerced', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        type: 'array',
+        items: [
+          { type: 'string' }
+        ],
+        additionalItems: { type: 'string' }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const result = stringify({ foo: ['foo', 42, true, null] })
+
+  t.assert.equal(result, '{"foo":["foo","42","true",""]}')
+})
+
+test('array items is a list of schema and additionalItems is an object schema, undeclared properties are dropped', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        type: 'array',
+        items: [
+          { type: 'string' }
+        ],
+        additionalItems: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' }
+          }
+        }
+      }
+    }
+  }
+
+  const stringify = build(schema)
+  const result = stringify({ foo: ['foo', { name: 'bar', password: 'secret' }] })
+
+  t.assert.equal(result, '{"foo":["foo",{"name":"bar"}]}')
+})
+
 // https://github.com/fastify/fast-json-stringify/issues/279
 test('object array with anyOf and symbol', (t) => {
   t.plan(1)

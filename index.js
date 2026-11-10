@@ -1220,12 +1220,14 @@ function buildArray (context, location, input) {
       }
 
       if (schema.additionalItems) {
+        const additionalItemsLocation = location.getPropertyLocation('additionalItems')
         functionCode += `
         for (let i = ${itemsSchema.length}; i < arrayLength; i++) {
           if (i) {
             json += JSON_STR_COMMA
           }
-          json += JSON.stringify(obj[i])
+          const value = obj[i]
+          ${buildValue(context, additionalItemsLocation, 'value')}
         }`
       }
     } else {
@@ -1312,10 +1314,12 @@ function buildArray (context, location, input) {
     }
 
     if (schema.additionalItems) {
+      const additionalItemsLocation = location.getPropertyLocation('additionalItems')
       inlinedCode += `
         for (let i = ${itemsSchema.length}; i < arrayLength_${objVar}; i++) {
           !addComma_${localUid} && (addComma_${localUid} = true) || (json += JSON_STR_COMMA)
-          json += JSON.stringify(${objVar}[i])
+          const value = ${objVar}[i]
+          ${buildValue(context, additionalItemsLocation, 'value')}
         }`
     }
   } else {
