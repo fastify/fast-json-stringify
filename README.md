@@ -8,7 +8,7 @@
 __fast-json-stringify__ serializes JSON payloads described by a JSON Schema: undeclared properties are stripped, types are coerced and formats applied, so the output is exactly what the schema declares. How fast it is relative to `JSON.stringify()` depends on the Node.js version:
 
 - On Node.js 24 and older, the generated code is faster than `JSON.stringify()` on small payloads (short strings, dates, small objects) and slower on large responses, where `JSON.stringify()` is 2-3x faster than the generated code.
-- On Node.js 25+, V8 ships a `JSON.stringify()` fast path that no JavaScript code can beat on plain data. With [`objectMechanism: 'native'`](#object-mechanism) fast-json-stringify delegates to that fast path while still applying the schema, serializing within 3-7% of a bare `JSON.stringify()` on plain objects and several times faster than it on real-world payloads (`Date` fields, undeclared ORM columns, class instances), where the fast path bails out. If you run on Node.js 25+, enable it (see [when to use it](#object-mechanism)).
+- On Node.js 25+, V8 ships a `JSON.stringify()` fast path that no JavaScript code can beat on plain data. With [`objectMechanism: 'native'`](#object-mechanism) fast-json-stringify delegates to that fast path while still applying the schema, serializing within 2-6% of a bare `JSON.stringify()` on plain objects and several times faster than it on real-world payloads (`Date` fields, undeclared ORM columns, class instances), where the fast path bails out. If you run on Node.js 25+, enable it (see [when to use it](#object-mechanism)).
 
 
 ### How it works
@@ -17,104 +17,104 @@ fast-json-stringify requires a [JSON Schema Draft 7](https://json-schema.org/spe
 
 ##### Benchmarks
 
-**Node.js 26** (`v26.12.0`, fast-json-stringify 7.3.0), machine `Apple Silicon, macOS`. `fast-json-stringify [native]` is `objectMechanism: 'native'`:
+**Node.js 26** (`v26.12.0`, fast-json-stringify 7.3.5), machine `Apple Silicon, macOS`. `fast-json-stringify [native]` is `objectMechanism: 'native'`:
 
 ```
-AJV creation and first stringify x 7,395,408 ops/sec ±0.48% (7174361 runs sampled)
-json-accelerator creation and first stringify x 1,223,673 ops/sec ±1.98% (1170774 runs sampled)
-compile-json-stringify creation and first stringify x 704,267 ops/sec ±0.36% (676910 runs sampled)
-fast-json-stringify creation and first stringify x 114,323 ops/sec ±0.88% (106616 runs sampled)
-JSON.stringify array x 29,393 ops/sec ±0.27% (28930 runs sampled)
-json-accelerator array x 10,095 ops/sec ±0.51% (9861 runs sampled)
-compile-json-stringify array x 8,527 ops/sec ±0.77% (8201 runs sampled)
-AJV array x 8,522 ops/sec ±0.85% (8142 runs sampled)
-fast-json-stringify [default] array x 6,500 ops/sec ±0.55% (6383 runs sampled)
-fast-json-stringify [json-stringify] array x 6,295 ops/sec ±0.64% (6134 runs sampled)
-fast-json-stringify [json-stringify] large array x 1,312 ops/sec ±1.00% (1291 runs sampled)
-JSON.stringify large array x 1,294 ops/sec ±1.29% (1257 runs sampled)
-compile-json-stringify large array x 373 ops/sec ±7.09% (344 runs sampled)
-AJV large array x 320 ops/sec ±5.06% (280 runs sampled)
-fast-json-stringify [default] large array x 273 ops/sec ±2.47% (265 runs sampled)
-json-accelerator long string x 60,342 ops/sec ±0.59% (57012 runs sampled)
-compile-json-stringify long string x 60,232 ops/sec ±0.40% (58288 runs sampled)
-JSON.stringify long string x 59,669 ops/sec ±0.38% (57633 runs sampled)
-fast-json-stringify long string x 59,533 ops/sec ±0.42% (57274 runs sampled)
-AJV long string x 26,909 ops/sec ±0.61% (25468 runs sampled)
-compile-json-stringify short string x 23,177,641 ops/sec ±0.04% (22359291 runs sampled)
-JSON.stringify short string x 21,773,121 ops/sec ±0.17% (19930883 runs sampled)
-AJV short string x 14,828,438 ops/sec ±0.33% (13202787 runs sampled)
-fast-json-stringify short string x 12,801,637 ops/sec ±0.05% (12219013 runs sampled)
-json-accelerator short string x 12,597,046 ops/sec ±0.22% (11597451 runs sampled)
-JSON.stringify obj x 13,194,102 ops/sec ±4.86% (11927935 runs sampled)
-fast-json-stringify [native] obj x 12,923,096 ops/sec ±0.17% (12185675 runs sampled)
-json-accelerator obj x 7,774,567 ops/sec ±0.57% (7543765 runs sampled)
-AJV obj x 7,425,593 ops/sec ±0.54% (7131253 runs sampled)
-compile-json-stringify obj x 7,222,681 ops/sec ±3.90% (6739137 runs sampled)
-fast-json-stringify obj x 5,367,717 ops/sec ±4.29% (5085041 runs sampled)
-json-accelerate date x 2,360,074 ops/sec ±0.05% (2336114 runs sampled)
-fast-json-stringify date x 2,340,452 ops/sec ±1.92% (2297187 runs sampled)
-compile-json-stringify date x 1,653,483 ops/sec ±0.08% (1639934 runs sampled)
-JSON.stringify date x 1,636,853 ops/sec ±2.36% (1603048 runs sampled)
-JSON.stringify user profile response x 856,309 ops/sec ±2.16% (835935 runs sampled)
-fast-json-stringify [native] user profile response x 814,408 ops/sec ±0.40% (805937 runs sampled)
-fast-json-stringify user profile response x 320,086 ops/sec ±0.99% (315887 runs sampled)
-JSON.stringify order response x 116,340 ops/sec ±1.32% (114677 runs sampled)
-fast-json-stringify [native] order response x 111,177 ops/sec ±0.11% (110614 runs sampled)
-fast-json-stringify order response x 54,821 ops/sec ±0.19% (54334 runs sampled)
-JSON.stringify paginated products response x 16,567 ops/sec ±0.14% (16510 runs sampled)
-fast-json-stringify [native] paginated products response x 15,656 ops/sec ±0.17% (15583 runs sampled)
-fast-json-stringify paginated products response x 6,596 ops/sec ±0.20% (6571 runs sampled)
+AJV creation and first stringify x 7,502,118 ops/sec ±0.45% (7249640 runs sampled)
+json-accelerator creation and first stringify x 1,263,084 ops/sec ±2.30% (1229682 runs sampled)
+compile-json-stringify creation and first stringify x 714,957 ops/sec ±0.26% (700461 runs sampled)
+fast-json-stringify creation and first stringify x 118,538 ops/sec ±0.69% (111943 runs sampled)
+JSON.stringify array x 29,428 ops/sec ±0.27% (29069 runs sampled)
+fast-json-stringify [default] array x 10,645 ops/sec ±0.38% (10486 runs sampled)
+fast-json-stringify [json-stringify] array x 10,641 ops/sec ±0.37% (10486 runs sampled)
+json-accelerator array x 10,285 ops/sec ±0.40% (10119 runs sampled)
+compile-json-stringify array x 9,536 ops/sec ±0.38% (9405 runs sampled)
+AJV array x 9,058 ops/sec ±0.51% (8861 runs sampled)
+fast-json-stringify [json-stringify] large array x 1,382 ops/sec ±0.41% (1376 runs sampled)
+JSON.stringify large array x 1,371 ops/sec ±0.46% (1364 runs sampled)
+fast-json-stringify [default] large array x 496 ops/sec ±3.09% (465 runs sampled)
+compile-json-stringify large array x 432 ops/sec ±1.25% (426 runs sampled)
+AJV large array x 372 ops/sec ±4.04% (332 runs sampled)
+fast-json-stringify long string x 63,760 ops/sec ±0.08% (63551 runs sampled)
+JSON.stringify long string x 63,415 ops/sec ±0.10% (63066 runs sampled)
+json-accelerator long string x 62,846 ops/sec ±0.19% (62280 runs sampled)
+compile-json-stringify long string x 61,975 ops/sec ±0.15% (61243 runs sampled)
+AJV long string x 28,146 ops/sec ±0.13% (27970 runs sampled)
+compile-json-stringify short string x 23,022,913 ops/sec ±0.05% (22111249 runs sampled)
+JSON.stringify short string x 21,723,683 ops/sec ±0.59% (19993757 runs sampled)
+json-accelerator short string x 21,707,301 ops/sec ±1.86% (19787846 runs sampled)
+fast-json-stringify short string x 21,638,305 ops/sec ±1.59% (19745443 runs sampled)
+AJV short string x 15,821,850 ops/sec ±4.40% (13672118 runs sampled)
+JSON.stringify obj x 13,866,829 ops/sec ±1.20% (12601821 runs sampled)
+fast-json-stringify [native] obj x 13,563,393 ops/sec ±4.20% (12292389 runs sampled)
+fast-json-stringify obj x 7,952,375 ops/sec ±0.14% (7846666 runs sampled)
+json-accelerator obj x 7,793,437 ops/sec ±0.28% (7602119 runs sampled)
+AJV obj x 7,558,615 ops/sec ±3.23% (7022145 runs sampled)
+compile-json-stringify obj x 7,321,680 ops/sec ±4.99% (6868015 runs sampled)
+fast-json-stringify date x 2,388,475 ops/sec ±0.05% (2376821 runs sampled)
+json-accelerate date x 2,382,662 ops/sec ±2.54% (2319591 runs sampled)
+JSON.stringify date x 1,691,933 ops/sec ±0.04% (1686490 runs sampled)
+compile-json-stringify date x 1,691,225 ops/sec ±0.06% (1682910 runs sampled)
+JSON.stringify user profile response x 860,216 ops/sec ±0.43% (849697 runs sampled)
+fast-json-stringify [native] user profile response x 814,035 ops/sec ±0.08% (810499 runs sampled)
+fast-json-stringify user profile response x 511,317 ops/sec ±0.04% (509913 runs sampled)
+JSON.stringify order response x 116,554 ops/sec ±0.07% (116189 runs sampled)
+fast-json-stringify [native] order response x 110,042 ops/sec ±0.13% (109666 runs sampled)
+fast-json-stringify order response x 84,933 ops/sec ±0.10% (84579 runs sampled)
+JSON.stringify paginated products response x 16,299 ops/sec ±0.15% (16273 runs sampled)
+fast-json-stringify [native] paginated products response x 15,511 ops/sec ±0.06% (15496 runs sampled)
+fast-json-stringify paginated products response x 10,584 ops/sec ±0.20% (10531 runs sampled)
 ```
 
 On an ORM-like payload (undeclared columns and `Date` fields) `objectMechanism: 'native'` is about 7x faster than `JSON.stringify`, which also emits the undeclared columns.
 
-**Node.js 24** (`v24.22.0`, fast-json-stringify 7.3.0), same machine. Without the V8 fast path `objectMechanism: 'native'` is a no-op, so `[native]` matches the default:
+**Node.js 24** (`v24.22.0`, fast-json-stringify 7.3.5), same machine. Without the V8 fast path `objectMechanism: 'native'` is a no-op, so `[native]` matches the default:
 
 ```
-AJV creation and first stringify x 7,585,328 ops/sec ±0.44% (7416924 runs sampled)
-json-accelerator creation and first stringify x 902,389 ops/sec ±7.77% (843624 runs sampled)
-compile-json-stringify creation and first stringify x 282,768 ops/sec ±0.11% (281616 runs sampled)
-fast-json-stringify creation and first stringify x 79,885 ops/sec ±0.46% (77613 runs sampled)
-JSON.stringify array x 14,526 ops/sec ±0.08% (14513 runs sampled)
-fast-json-stringify [default] array x 11,452 ops/sec ±0.29% (11341 runs sampled)
-AJV array x 9,897 ops/sec ±0.37% (9769 runs sampled)
-compile-json-stringify array x 9,859 ops/sec ±0.38% (9758 runs sampled)
-json-accelerator array x 8,830 ops/sec ±0.26% (8772 runs sampled)
-fast-json-stringify [json-stringify] array x 6,878 ops/sec ±0.28% (6836 runs sampled)
-fast-json-stringify [json-stringify] large array x 675 ops/sec ±0.49% (674 runs sampled)
-JSON.stringify large array x 667 ops/sec ±0.49% (666 runs sampled)
-fast-json-stringify [default] large array x 523 ops/sec ±0.75% (520 runs sampled)
-AJV large array x 451 ops/sec ±1.16% (446 runs sampled)
-compile-json-stringify large array x 439 ops/sec ±1.61% (430 runs sampled)
-JSON.stringify long string x 50,022 ops/sec ±0.10% (49829 runs sampled)
-fast-json-stringify long string x 50,000 ops/sec ±0.12% (49870 runs sampled)
-compile-json-stringify long string x 49,965 ops/sec ±0.08% (49861 runs sampled)
-json-accelerator long string x 49,898 ops/sec ±0.11% (49745 runs sampled)
-AJV long string x 25,850 ops/sec ±0.12% (25762 runs sampled)
-fast-json-stringify short string x 23,720,760 ops/sec ±0.02% (23397699 runs sampled)
-json-accelerator short string x 23,713,795 ops/sec ±0.05% (23365791 runs sampled)
-compile-json-stringify short string x 22,758,598 ops/sec ±0.03% (21678105 runs sampled)
-JSON.stringify short string x 17,095,535 ops/sec ±0.03% (15180439 runs sampled)
-AJV short string x 16,533,310 ops/sec ±0.04% (14746075 runs sampled)
-compile-json-stringify obj x 10,395,271 ops/sec ±0.05% (9942192 runs sampled)
-AJV obj x 7,811,278 ops/sec ±2.08% (7615504 runs sampled)
-json-accelerator obj x 7,153,834 ops/sec ±2.19% (6881251 runs sampled)
-JSON.stringify obj x 6,962,250 ops/sec ±0.21% (6775830 runs sampled)
-fast-json-stringify obj x 5,604,075 ops/sec ±0.32% (5505196 runs sampled)
-fast-json-stringify [native] obj x 5,586,413 ops/sec ±5.14% (5290160 runs sampled)
-json-accelerate date x 2,388,177 ops/sec ±0.05% (2364308 runs sampled)
-fast-json-stringify date x 2,358,110 ops/sec ±0.08% (2345870 runs sampled)
-compile-json-stringify date x 1,606,039 ops/sec ±0.19% (1593567 runs sampled)
-JSON.stringify date x 1,561,526 ops/sec ±0.14% (1519404 runs sampled)
-JSON.stringify user profile response x 685,651 ops/sec ±20.64% (436435 runs sampled)
-fast-json-stringify [native] user profile response x 346,187 ops/sec ±0.16% (343976 runs sampled)
-fast-json-stringify user profile response x 342,661 ops/sec ±0.18% (338315 runs sampled)
-JSON.stringify order response x 135,642 ops/sec ±0.07% (135353 runs sampled)
-fast-json-stringify [native] order response x 53,313 ops/sec ±0.16% (53131 runs sampled)
-fast-json-stringify order response x 53,188 ops/sec ±0.14% (52952 runs sampled)
-JSON.stringify paginated products response x 18,295 ops/sec ±0.09% (18266 runs sampled)
-fast-json-stringify paginated products response x 6,168 ops/sec ±0.14% (6158 runs sampled)
-fast-json-stringify [native] paginated products response x 6,159 ops/sec ±0.15% (6146 runs sampled)
+AJV creation and first stringify x 7,999,102 ops/sec ±0.10% (7869618 runs sampled)
+json-accelerator creation and first stringify x 929,052 ops/sec ±6.69% (885518 runs sampled)
+compile-json-stringify creation and first stringify x 280,806 ops/sec ±0.11% (278793 runs sampled)
+fast-json-stringify creation and first stringify x 81,224 ops/sec ±0.41% (79266 runs sampled)
+JSON.stringify array x 15,390 ops/sec ±0.12% (15359 runs sampled)
+fast-json-stringify [default] array x 12,025 ops/sec ±0.29% (11912 runs sampled)
+AJV array x 10,402 ops/sec ±0.32% (10296 runs sampled)
+compile-json-stringify array x 10,227 ops/sec ±0.27% (10150 runs sampled)
+json-accelerator array x 9,452 ops/sec ±0.26% (9386 runs sampled)
+fast-json-stringify [json-stringify] array x 7,331 ops/sec ±0.24% (7292 runs sampled)
+fast-json-stringify [json-stringify] large array x 716 ops/sec ±0.53% (714 runs sampled)
+JSON.stringify large array x 713 ops/sec ±0.63% (710 runs sampled)
+fast-json-stringify [default] large array x 547 ops/sec ±0.63% (545 runs sampled)
+AJV large array x 468 ops/sec ±1.21% (463 runs sampled)
+compile-json-stringify large array x 454 ops/sec ±1.60% (444 runs sampled)
+json-accelerator long string x 50,592 ops/sec ±0.09% (50449 runs sampled)
+fast-json-stringify long string x 50,122 ops/sec ±0.08% (49965 runs sampled)
+JSON.stringify long string x 50,105 ops/sec ±0.09% (49933 runs sampled)
+compile-json-stringify long string x 50,013 ops/sec ±0.07% (49909 runs sampled)
+AJV long string x 25,887 ops/sec ±0.11% (25811 runs sampled)
+fast-json-stringify short string x 23,893,227 ops/sec ±0.03% (24574663 runs sampled)
+json-accelerator short string x 23,795,235 ops/sec ±0.03% (24084452 runs sampled)
+compile-json-stringify short string x 23,277,974 ops/sec ±0.04% (22621881 runs sampled)
+JSON.stringify short string x 17,931,192 ops/sec ±0.03% (15868126 runs sampled)
+AJV short string x 16,794,776 ops/sec ±0.03% (14948140 runs sampled)
+compile-json-stringify obj x 10,759,909 ops/sec ±0.04% (10342960 runs sampled)
+AJV obj x 8,020,994 ops/sec ±2.50% (7751282 runs sampled)
+JSON.stringify obj x 7,183,553 ops/sec ±0.09% (7003762 runs sampled)
+json-accelerator obj x 7,164,298 ops/sec ±5.91% (6769549 runs sampled)
+fast-json-stringify obj x 5,642,056 ops/sec ±0.14% (5534922 runs sampled)
+fast-json-stringify [native] obj x 5,580,243 ops/sec ±5.59% (5322880 runs sampled)
+json-accelerate date x 2,482,753 ops/sec ±3.17% (2413223 runs sampled)
+fast-json-stringify date x 2,450,987 ops/sec ±2.81% (2386442 runs sampled)
+JSON.stringify date x 1,671,128 ops/sec ±5.99% (1612569 runs sampled)
+compile-json-stringify date x 1,667,451 ops/sec ±0.10% (1658170 runs sampled)
+JSON.stringify user profile response x 724,269 ops/sec ±0.07% (721859 runs sampled)
+fast-json-stringify [native] user profile response x 355,683 ops/sec ±0.12% (352431 runs sampled)
+fast-json-stringify user profile response x 354,563 ops/sec ±0.11% (352466 runs sampled)
+JSON.stringify order response x 138,114 ops/sec ±0.42% (137243 runs sampled)
+fast-json-stringify order response x 55,713 ops/sec ±0.10% (55492 runs sampled)
+fast-json-stringify [native] order response x 55,113 ops/sec ±0.15% (54840 runs sampled)
+JSON.stringify paginated products response x 18,413 ops/sec ±0.06% (18395 runs sampled)
+fast-json-stringify paginated products response x 6,279 ops/sec ±0.58% (6245 runs sampled)
+fast-json-stringify [native] paginated products response x 6,217 ops/sec ±0.14% (6204 runs sampled)
 ```
 
 #### Table of contents:
@@ -772,8 +772,8 @@ Any other schema silently uses the default mechanism, so the option is always
 safe to enable. The projection only pays off where V8 has the fast path, so on
 Node.js 24 and older the option is a no-op and the default mechanism is used.
 On Node.js 25+ the projection serializes plain objects within 3-15% of a bare
-`JSON.stringify` (3-7% on the fixtures in `benchmark/`; the default mechanism
-is 35-65% behind it there), and objects coming from an ORM (extra columns,
+`JSON.stringify` (2-6% on the fixtures in `benchmark/`; the default mechanism
+is 25-45% behind it there), and objects coming from an ORM (extra columns,
 `Date` instances, class prototypes) several times faster than both the default
 mechanism and `JSON.stringify` itself.
 
@@ -795,8 +795,8 @@ does nothing. It pays off most when:
   undeclared columns; the projection stays on the fast path and strips them,
   several times faster than both the default mechanism and `JSON.stringify`;
 - the response is a list of objects, or a large object: that is where the
-  default mechanism is furthest behind `JSON.stringify` (2-3x on the
-  `benchmark/fixtures/api-responses` schemas).
+  default mechanism is furthest behind `JSON.stringify` (1.4-1.7x on the
+  `benchmark/fixtures/api-responses` schemas on Node.js 25+).
 
 Keep the default mechanism when a benchmark on your own payloads shows no
 gain, or on Node.js 24 and older, where the option has no effect. The two
