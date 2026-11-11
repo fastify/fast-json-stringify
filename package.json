@@ -1,6 +1,6 @@
 {
   "name": "fast-json-stringify",
-  "version": "7.0.1",
+  "version": "7.3.5",
   "description": "Stringify your JSON at max speed",
   "main": "index.js",
   "type": "commonjs",
@@ -65,7 +65,6 @@
     "compile-json-stringify": "^0.1.2",
     "eslint": "^9.39.2",
     "fast-json-stringify": ".",
-    "is-my-json-valid": "^2.20.6",
     "json-accelerator": "^0.1.7",
     "neostandard": "^0.13.0",
     "tinybench": "^6.0.0",

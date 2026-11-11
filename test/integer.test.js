@@ -2,7 +2,7 @@
 
 const { test } = require('node:test')
 
-const validator = require('is-my-json-valid')
+const validator = require('./utils/validator')
 const build = require('..')
 const ROUNDING_TYPES = ['ceil', 'floor', 'round']
 

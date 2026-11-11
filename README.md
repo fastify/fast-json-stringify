@@ -127,7 +127,7 @@ const stringify = fastJson(mySchema, {
 ```
 
 - `schema`: external schemas references by $ref property. [More details](#ref)
-- `ajv`: [ajv v8 instance's settings](https://ajv.js.org/options.html) for those properties that require `ajv`. [More details](#anyof)
+- `ajv`: [ajv v8 instance's settings](https://ajv.js.org/options.html) for those properties that require `ajv`. [More details](#anyof) Schema strictness defaults to `false`; pass `ajv: { strictSchema: true }` to reject unknown schema keywords or `ajv: { strictSchema: 'log' }` to log warnings. This applies only to schema paths compiled by Ajv, not to every schema processed by fast-json-stringify.
 - `rounding`: setup how the `integer` types will be rounded when not integers. [More details](#integer)
 - `maxDepth`: maximum number of nested schema levels allowed during compilation.
 Defaults to `100` and may be set from `0` to `100`. Schemas that exceed this limit
@@ -135,9 +135,8 @@ are rejected before compilation.
 - `inlineValidators`: when using standalone mode, embed Ajv-generated validator functions in the output instead of compiling schemas at runtime. [More details](#standalone)
 - `largeArrayMechanism`: set the mechanism that should be used to handle large
 (by default `20000` or more items) arrays. [More details](#largearrays)
-- `compileValidators`: when `true`, the `ajv` validators used by `anyOf`, `oneOf` and
-`if/then/else` are compiled during `build()` instead of lazily, on the first serialization
-that reaches them. This makes `build()` slower but removes a potentially large one-off cost
+- `objectMechanism`: set the mechanism used to serialize objects. `'native'` projects the input into schema-shaped scratch objects and delegates to the native `JSON.stringify`, which is much faster on Node.js 25+. [More details](#objectmechanism)
+- `compileValidators`: when `true`, the `ajv` validators used by `anyOf`, `oneOf` and `if/then/else` are compiled during `build()` instead of lazily, on the first serialization that reaches them. This makes `build()` slower but removes a potentially large one-off cost
 from the first `stringify()` call. Defaults to `false`.
 
 
@@ -623,11 +622,12 @@ In order to improve that the user can set the `largeArrayMechanism` and
 
 `largeArrayMechanism`'s default value is `default`. Valid values for it are:
 
-- `default` - This option is a compromise between performance and feature set by
-still providing the expected functionality out of this lib but giving up some
-possible performance gain. With this option set, **large arrays** would be
-stringified by joining their stringified elements using `Array.join` instead of
-string concatenation for better performance
+- `default` - This option keeps the full feature set of this lib: every element
+is still coerced to the type declared in `items`, and type errors are still
+thrown. Arrays of plain primitives (`string`, `number`, `integer`) use a
+copy-then-`JSON.stringify` strategy with their own length cutoffs, see
+[Primitive arrays](#primitive-arrays) below; `largeArraySize` does not affect
+them.
 - `json-stringify` - This option will remove support for schema validation
 within **large arrays** completely. By doing so the overhead previously
 mentioned is nulled, greatly improving execution time. Mind there's no change
@@ -641,6 +641,82 @@ integer-like values, such as:
 - `'20000'`
 - `'2e4'` - _note this will be converted to `2`, not `20000`_
 - `1.5` - _note this will be converted to `1`_
+
+<a name="primitive-arrays"></a>
+##### Primitive arrays
+
+With `largeArrayMechanism: 'default'`, arrays whose `items` schema is a plain
+`{ type: 'string' }`, `{ type: 'number' }` or `{ type: 'integer' }` (no
+`format`, `nullable`, `const`, or combinator keyword; a `$ref` to a plain
+string schema also qualifies, a `$ref` for `number`/`integer` does not) are
+serialized by copying the elements into a fresh array and calling the native
+`JSON.stringify` on the copy, which is several times faster than appending one
+element at a time. This happens at or above a length cutoff that does not
+depend on `largeArraySize`. The cutoffs are the array lengths above which the
+copy beats the per-element loop, and they depend on the V8 version:
+
+| Node.js | `string` | `number` | `integer` |
+|---|---:|---:|---:|
+| 22 and later | 8 elements | 128 elements | 512 elements |
+| 20 | 128 elements | 300000 elements | 300000 elements |
+
+Below the cutoff the array is serialized element by element as before. Above
+it, the elements are copied until one is found that is not already of the
+declared type (not a string, not a `number`, or not an integer for `integer`);
+that element and the ones after it go through the regular per-element coercion
+and validation (`null` still becomes `""` or `0`, `rounding` still applies,
+`NaN` still throws). The output is byte-identical either way. Arrays of
+`boolean`, `null`, objects, or any other `items` schema are not affected.
+
+In [standalone mode](#standalone) the cutoffs are baked into the generated
+code, so the generated module inherits the cutoffs of the Node.js version that
+ran `build()`, not of the one that runs the module.
+
+<a name="objectmechanism"></a>
+#### Object mechanism
+
+By default every object is serialized by generated code that appends the JSON
+text property by property. Since V8 13.8 (Node.js 25+) the native
+`JSON.stringify` has a side-effect-free fast path that no JavaScript string
+building can match, but that fast path bails out as soon as the input carries a
+`Date`, a `toJSON`, a class prototype or any property that is not plain data.
+
+With `objectMechanism: 'native'`, `fast-json-stringify` instead *projects* the
+input into preallocated scratch objects whose keys are exactly the schema
+properties, in schema order, and hands the scratch to the native
+`JSON.stringify`. The scratch is plain by construction, so the fast path is
+always taken, whatever the input looks like, while the schema is still applied:
+undeclared properties are dropped, `required` is enforced, `default` applied,
+types coerced and `format: date-time` / `date` / `time` rendered as before.
+The output is byte-identical to the default mechanism.
+
+```js
+const stringify = fastJson(schema, { objectMechanism: 'native' })
+```
+
+The projection covers schemas made only of:
+
+- `object` with `properties` (no `additionalProperties`, `patternProperties`,
+  `nullable`, `dependencies`, combinators or `$ref`), with at least one property;
+- `string` (optionally with `format: date-time`, `date` or `time`), `number`,
+  `integer`, `boolean`, without `nullable`, `const`, `enum`, combinators or `$ref`;
+- the two-element forms `['string', 'null']`, `['number', 'null']` and
+  `['boolean', 'null']` (in either order), with the same strict type dispatch
+  as the default mechanism;
+- `array` whose `items` is one such schema (no tuples), nested to any depth;
+  every array element gets its own scratch objects.
+
+Any other schema silently uses the default mechanism, so the option is always
+safe to enable. The projection only pays off where V8 has the fast path, so on
+Node.js 24 and older the option is a no-op and the default mechanism is used.
+On Node.js 25+ the projection serializes plain objects within 5-15% of a bare
+`JSON.stringify` (the default mechanism is 35-50% behind it there), and objects
+coming from an ORM (extra columns, `Date` instances, class prototypes) several
+times faster than both the default mechanism and `JSON.stringify` itself.
+
+The scratch objects are reused across calls; `JSON.stringify` is synchronous,
+so this is safe, and no reference to the last input is retained beyond the
+primitive values written into the scratch.
 
 <a name="unsafe"></a>
 #### Unsafe string
@@ -747,6 +823,12 @@ generated module still requires `fast-json-stringify` for its serializer and
 may require Ajv runtime helpers used by the generated validation code. Custom
 Ajv formats used by these schemas must support Ajv's standalone code
 generation.
+
+The generated code also bakes in the length cutoffs used for
+[number and integer arrays](#largearrays). Those cutoffs are chosen for the
+Node.js version that ran `build()`; a module built on Node.js 20 and run on
+Node.js 22 or later keeps the Node.js 20 cutoffs, and vice versa. The output is
+the same either way, only the speed differs.
 
 <a name="acknowledgments"></a>
 ## Acknowledgments
