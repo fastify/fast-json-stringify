@@ -78,6 +78,23 @@ const inputs = {
   'NaN throws': { id: 1, score: NaN },
   'Infinity becomes null': { id: 1, score: Infinity },
   'bigint integer': { id: 10n },
+  'bigint at the safe integer limits': { id: 9007199254740991n, friends: [{ id: -9007199254740991n }] },
+  'bigint just outside the safe integer range': { id: 9007199254740992n, friends: [{ id: -9007199254740992n }] },
+  'bigint outside the safe integer range keeps every digit': { ...base, id: 2n ** 64n },
+  'negative bigint outside the safe integer range': { id: -(2n ** 64n) },
+  'bigint outside the safe integer range in an array item': {
+    id: 1,
+    name: 'a"b\\c\n',
+    active: false,
+    score: Infinity,
+    address: undefined,
+    tags: [],
+    scores: [1.5],
+    friends: [{ id: 2n ** 70n, name: 'big' }, {}, { id: 3 }, null]
+  },
+  'date given as a string that needs escaping': { id: 1, birthday: 'a"b\\c\n\u2028' },
+  'time given as a string that needs escaping': { id: 1, at: '"\ud83d\u0000' },
+  'date and time given as plain strings': { id: 1, birthday: '2020-01-01', at: '10:00:00' },
   'object items with missing fields': { id: 1, friends: [{ id: 1 }, { name: 'x' }, {}] },
   'empty arrays': { id: 1, tags: [], scores: [], friends: [] },
   'input key order differs from schema': { friends: [], address: { zip: '1', city: 'c', street: 's' }, score: 1, id: 1 },
@@ -302,4 +319,110 @@ test('native mechanism: array elements never share scratch objects (no aliasing)
   t.assert.equal(nat(b), def(b))
   t.assert.equal(nat(a), def(a), 'shrinking then growing again keeps elements independent')
   t.assert.ok(nat(a).includes('"url":"a"') && nat(a).includes('"url":"c"'))
+})
+
+test('native mechanism: a default satisfies a required property, like the default codegen', t => {
+  const schema = {
+    type: 'object',
+    required: ['a', 'b', 'nested'],
+    properties: {
+      a: { type: 'string', default: 'da' },
+      b: { type: 'integer' },
+      nested: {
+        type: 'object',
+        default: { c: 'from default' },
+        required: ['c'],
+        properties: { c: { type: 'string', default: 'dc' } }
+      },
+      list: { type: 'array', items: { type: 'object', required: ['n'], properties: { n: { type: 'number', default: 1.5 } } } }
+    }
+  }
+  const def = build(schema)
+  const nat = build(schema, { objectMechanism: 'native' })
+  const cases = [
+    { b: 1 },
+    { a: 'x', b: 1, nested: {} },
+    { a: undefined, b: 1, nested: { c: undefined }, list: [{}, { n: 2 }, { n: undefined }] },
+    { a: 'x' },
+    {}
+  ]
+  t.plan(cases.length)
+  for (const c of cases) t.assert.deepStrictEqual(run(nat, c), run(def, c), JSON.stringify(c))
+})
+
+test('native mechanism: bigint array items outside the safe integer range', t => {
+  const data = [1, 2n, 2n ** 64n, -(2n ** 64n), 9007199254740991n, 9007199254740992n, 3]
+  const schemas = [
+    { type: 'array', items: { type: 'integer' } },
+    { type: 'object', properties: { ids: { type: 'array', items: { type: 'integer' } }, name: { type: 'string' } } }
+  ]
+  t.plan(4)
+  for (const schema of schemas) {
+    const def = build(schema)
+    const nat = build(schema, { objectMechanism: 'native' })
+    const input = schema.type === 'array' ? data : { ids: data, name: 'n' }
+    t.assert.deepStrictEqual(run(nat, input), run(def, input))
+    // the next call goes back to the native JSON.stringify and to plain numbers
+    const small = schema.type === 'array' ? [1, 2] : { ids: [1, 2], name: 'n' }
+    t.assert.deepStrictEqual(run(nat, small), run(def, small))
+  }
+})
+
+test('native mechanism: a serializer can be called again while it is serializing', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      a: { type: 'string' },
+      b: { type: 'string' },
+      c: { type: 'string' },
+      list: { type: 'array', items: { type: 'object', properties: { x: { type: 'string' } } } }
+    }
+  }
+  const def = build(schema)
+  const nat = build(schema, { objectMechanism: 'native' })
+
+  // `depth` nested calls: the getter of `b` serializes another object with the
+  // same serializer before the outer call has read `c` and `list`.
+  const reentrant = (stringify, depth, seen) => ({
+    a: 'a' + depth,
+    get b () {
+      if (depth > 0) seen.push(stringify(reentrant(stringify, depth - 1, seen)))
+      return 'b' + depth
+    },
+    c: 'c' + depth,
+    list: [{ x: 'x' + depth }, { x: 'y' + depth }]
+  })
+
+  // an array item whose toJSON() serializes another object
+  class Row {
+    constructor (x, stringify) { this.x = x; this.stringify = stringify }
+    toJSON () {
+      this.stringify({ a: 'inner', b: 'inner', c: 'inner', list: [{ x: 'inner 1' }, { x: 'inner 2' }, { x: 'inner 3' }] })
+      return { x: this.x }
+    }
+  }
+  const withRows = (stringify) => ({ a: 'a', b: 'b', c: 'c', list: [{ x: 'first' }, new Row('second', stringify), { x: 'third' }] })
+
+  const throwing = (stringify) => ({
+    a: 'a',
+    get b () {
+      try { stringify({ a: 'inner', get b () { throw new Error('inner failure') } }) } catch {}
+      return 'b'
+    },
+    c: 'c',
+    list: [{ x: 'x' }]
+  })
+
+  t.plan(10)
+  for (const depth of [1, 2, 3]) {
+    const seenNative = []
+    const seenDefault = []
+    t.assert.equal(nat(reentrant(nat, depth, seenNative)), def(reentrant(def, depth, seenDefault)), `outer output, depth ${depth}`)
+    t.assert.deepStrictEqual(seenNative, seenDefault, `inner outputs, depth ${depth}`)
+  }
+  t.assert.equal(nat(withRows(nat)), def(withRows(def)))
+  t.assert.equal(nat(throwing(nat)), def(throwing(def)), 'an error in a nested call does not affect the outer one')
+  t.assert.throws(() => nat({ get a () { throw new Error('outer failure') } }), /outer failure/)
+  // after an error the serializer is not left in the "serializing" state
+  t.assert.equal(nat({ a: '1', b: '2', c: '3', list: [{ x: '4' }] }), '{"a":"1","b":"2","c":"3","list":[{"x":"4"}]}')
 })
