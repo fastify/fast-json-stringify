@@ -422,8 +422,8 @@ test('anyOf with registered $ref branches validates directly against the ref tar
   }
 
   const code = build(schema, { mode: 'standalone', schema: externalSchema })
-  t.assert.ok(code.includes('validator.validate("Foo#"'), 'validates directly against the bare registered id')
-  t.assert.ok(code.includes('validator.validate("Bar#/definitions/Baz"'), 'validates directly against the registered sub-path ref')
+  t.assert.ok(code.includes('validator.getSchemaValidator("Foo#"'), 'validates directly against the bare registered id')
+  t.assert.ok(code.includes('validator.getSchemaValidator("Bar#/definitions/Baz"'), 'validates directly against the registered sub-path ref')
 
   const stringify = build(schema, { schema: externalSchema })
   t.assert.equal(stringify({ content: { b: 'yo' } }), '{"content":{"b":"yo"}}')
