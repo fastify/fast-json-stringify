@@ -1665,6 +1665,78 @@ function buildConstSerializer (location, input) {
   return code
 }
 
+function isPlainIfThenWithoutElse (schema) {
+  return schema !== null &&
+    typeof schema === 'object' &&
+    !Array.isArray(schema) &&
+    schema.if !== undefined &&
+    schema.then !== undefined &&
+    schema.else === undefined &&
+    schema.allOf === undefined &&
+    schema.anyOf === undefined &&
+    schema.oneOf === undefined
+}
+
+// Merging multiple if/then schemas with @fastify/merge-json-schemas nests later
+// conditionals inside the first `then`, so only the first branch serializes.
+// Fold them into an if/else chain first (AJV still validates each independently;
+// for mutually exclusive discriminators this matches serialization expectations).
+function foldAllOfIfThenSchemas (allOf) {
+  if (!Array.isArray(allOf) || allOf.length < 2) {
+    return null
+  }
+
+  // Skip when another sibling already has if/then/else — merge-json-schemas
+  // would nest the folded chain into that sibling's then/else and reintroduce
+  // the same class of bug.
+  for (let i = 0; i < allOf.length; i++) {
+    const schema = allOf[i]
+    if (
+      schema !== null &&
+      typeof schema === 'object' &&
+      !Array.isArray(schema) &&
+      schema.if !== undefined &&
+      schema.else !== undefined
+    ) {
+      return null
+    }
+  }
+
+  const ifThenIndexes = []
+  for (let i = 0; i < allOf.length; i++) {
+    if (isPlainIfThenWithoutElse(allOf[i])) {
+      ifThenIndexes.push(i)
+    }
+  }
+
+  if (ifThenIndexes.length < 2) {
+    return null
+  }
+
+  let folded = { ...allOf[ifThenIndexes[ifThenIndexes.length - 1]] }
+  for (let i = ifThenIndexes.length - 2; i >= 0; i--) {
+    folded = {
+      ...allOf[ifThenIndexes[i]],
+      else: folded
+    }
+  }
+
+  const foldedAllOf = []
+  let insertedFolded = false
+  for (let i = 0; i < allOf.length; i++) {
+    if (ifThenIndexes.includes(i)) {
+      if (!insertedFolded) {
+        foldedAllOf.push(folded)
+        insertedFolded = true
+      }
+    } else {
+      foldedAllOf.push(allOf[i])
+    }
+  }
+
+  return foldedAllOf
+}
+
 function buildAllOf (context, location, input) {
   const schema = location.schema
 
@@ -1677,9 +1749,12 @@ function buildAllOf (context, location, input) {
   mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
   context.mergedSchemasIds.set(schema, mergedSchemaId)
 
-  const { allOf, ...schemaWithoutAllOf } = location.schema
+  const { allOf: originalAllOf, ...schemaWithoutAllOf } = location.schema
   const dropAdditionalProperties = schemaWithoutAllOf.additionalProperties === false
   if (dropAdditionalProperties) delete schemaWithoutAllOf.additionalProperties
+
+  const foldedAllOf = foldAllOfIfThenSchemas(originalAllOf)
+  const allOf = foldedAllOf || originalAllOf
 
   const locations = [
     new Location(
@@ -1689,9 +1764,15 @@ function buildAllOf (context, location, input) {
     )
   ]
 
-  const allOfsLocation = location.getPropertyLocation('allOf')
-  for (let i = 0, allOfLength = allOf.length; i < allOfLength; i++) {
-    locations.push(allOfsLocation.getPropertyLocation(i))
+  if (foldedAllOf) {
+    for (const subSchema of allOf) {
+      locations.push(new Location(subSchema, location.schemaId))
+    }
+  } else {
+    const allOfsLocation = location.getPropertyLocation('allOf')
+    for (let i = 0, allOfLength = allOf.length; i < allOfLength; i++) {
+      locations.push(allOfsLocation.getPropertyLocation(i))
+    }
   }
 
   const mergedLocation = mergeLocations(context, mergedSchemaId, locations)
