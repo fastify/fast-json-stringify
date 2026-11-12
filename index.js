@@ -86,6 +86,7 @@ const {
 } = serializer
 
 const asInteger = serializer.asInteger.bind(serializer)
+const ownValue = (obj, key) => Object.hasOwn(obj, key) ? obj[key] : undefined
 
 `
 
@@ -789,7 +790,7 @@ function buildInnerObject (context, location, objVar, isReturnForm) {
   for (const key of requiredProperties) {
     if (!propertiesKeys.includes(key)) {
       const sanitizedKey = JSON.stringify(key)
-      code += `if (${objVar}[${sanitizedKey}] === undefined) throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')\n`
+      code += `if (!Object.hasOwn(${objVar}, ${sanitizedKey}) || ${objVar}[${sanitizedKey}] === undefined) throw new Error('${sanitizedKey.replace(/'/g, '\\\'')} is required!')\n`
     }
   }
 
@@ -819,7 +820,7 @@ function buildInnerObject (context, location, objVar, isReturnForm) {
       const keyPrefix = (i === 0 ? '{' : ',') + sanitizedKey + ':'
 
       code += `
-      const ${value} = ${objVar}[${sanitizedKey}]
+      const ${value} = ownValue(${objVar}, ${sanitizedKey})
       if (${value} !== undefined) {
         json += ${JSON.stringify(keyPrefix)}
         ${buildValue(context, resolvedLocation, `${value}`)}
@@ -870,7 +871,7 @@ function buildInnerObject (context, location, objVar, isReturnForm) {
         : `json += ${JSON.stringify('{' + keyColon)}`
 
       code += `
-          const ${value} = ${objVar}[${sanitizedKey}]
+          const ${value} = ownValue(${objVar}, ${sanitizedKey})
           if (${value} !== undefined) {
             ${addProperty}
             ${buildValue(context, propertyLocation, `${value}`)}
