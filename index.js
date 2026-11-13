@@ -87,6 +87,12 @@ const {
 
 const asInteger = serializer.asInteger.bind(serializer)
 
+// TypedArrays are array-like for serialization (schema type: array) but fail
+// Array.isArray. DataView is also ArrayBuffer.isView and has no useful length.
+function isArrayLike (obj) {
+  return Array.isArray(obj) || (ArrayBuffer.isView(obj) && !(obj instanceof DataView))
+}
+
 `
 
 const validRoundingMethods = new Set([
@@ -1146,7 +1152,7 @@ function buildArray (context, location, input) {
 
     functionCode += `
     if (obj === null) return ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_ARRAY'}
-    if (!Array.isArray(obj)) {
+    if (!isArrayLike(obj)) {
       throw new TypeError(${JSON.stringify(`The value of '${schemaRef}' does not match schema definition.`)})
     }
     const arrayLength = obj.length
@@ -1160,8 +1166,10 @@ function buildArray (context, location, input) {
     `
     }
 
+    // JSON.stringify(TypedArray) emits an object ({"0":…}), not a JSON array.
+    // Skip the large-array shortcut for TypedArrays (treat as default).
     if (context.largeArrayMechanism === 'json-stringify') {
-      functionCode += `if (arrayLength >= ${context.largeArraySize}) return JSON.stringify(obj)\n`
+      functionCode += `if (Array.isArray(obj) && arrayLength >= ${context.largeArraySize}) return JSON.stringify(obj)\n`
     } else if (plainStringFastPath) {
       // Copy strings once; the helper resumes ordered coercion on the first miss.
       functionCode += `
@@ -1272,7 +1280,7 @@ function buildArray (context, location, input) {
     const ${objVar} = ${input}
     if (${objVar} === null) {
       json += ${nullable ? 'JSON_STR_NULL' : 'JSON_STR_EMPTY_ARRAY'}
-    } else if (!Array.isArray(${objVar})) {
+    } else if (!isArrayLike(${objVar})) {
       throw new TypeError(${JSON.stringify(`The value of '${safeSchemaRef}' does not match schema definition.`)})
     } else {
       const arrayLength_${objVar} = ${objVar}.length
@@ -1286,8 +1294,10 @@ function buildArray (context, location, input) {
     `
   }
 
+  // JSON.stringify(TypedArray) emits an object ({"0":…}), not a JSON array.
+  // Skip the large-array shortcut for TypedArrays (treat as default).
   if (context.largeArrayMechanism === 'json-stringify') {
-    inlinedCode += `if (arrayLength_${objVar} >= ${context.largeArraySize}) json += JSON.stringify(${objVar})\n else {`
+    inlinedCode += `if (Array.isArray(${objVar}) && arrayLength_${objVar} >= ${context.largeArraySize}) json += JSON.stringify(${objVar})\n else {`
   } else if (plainStringFastPath) {
     inlinedCode += `
       let fjsPlain_${objVar}
@@ -1390,7 +1400,7 @@ function buildArrayTypeCondition (type, accessor) {
       condition = `${accessor} && typeof ${accessor} === 'object' && ${accessor}.constructor === Object`
       break
     case 'array':
-      condition = `Array.isArray(${accessor})`
+      condition = `isArrayLike(${accessor})`
       break
     default:
       if (Array.isArray(type)) {
@@ -1453,7 +1463,7 @@ function buildMultiTypeSerializer (context, location, input) {
       }
       case 'array': {
         code += `
-          ${statement}(Array.isArray(${input})) {
+          ${statement}(isArrayLike(${input})) {
             ${nestedResult}
           }
         `
@@ -1470,9 +1480,10 @@ function buildMultiTypeSerializer (context, location, input) {
       case 'object': {
         // An array is `typeof === 'object'`, so it would otherwise be captured
         // by this branch and serialized as an object (dropping its items). Exclude
-        // arrays here so a sibling `array` type in the same `type` list can match.
+        // arrays and TypedArrays here so a sibling `array` type in the same
+        // `type` list can match.
         code += `
-          ${statement}((typeof ${input} === "object" && !Array.isArray(${input})) || ${input} === null) {
+          ${statement}((typeof ${input} === "object" && !isArrayLike(${input})) || ${input} === null) {
             ${nestedResult}
           }
         `
