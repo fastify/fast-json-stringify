@@ -152,3 +152,6 @@ yarn.lock
 .pi
 AGENTS.md
 CLAUDE.md
+
+# the other revision benchmark/bench-cmp-branch.js measures against
+.bench-worktree
