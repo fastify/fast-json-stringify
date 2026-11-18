@@ -690,7 +690,7 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
     if (additionalPropertiesSchema === true) {
       code += `
         ${addComma}
-        json += asString(key) + JSON_STR_COLONS + JSON.stringify(value)
+        json += asString(key) + JSON_STR_COLONS + (JSON.stringify(value) ?? JSON_STR_NULL)
       `
     } else {
       const propertyLocation = location.getPropertyLocation('additionalProperties')
