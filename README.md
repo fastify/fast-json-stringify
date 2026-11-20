@@ -300,6 +300,8 @@ const obj = {
 console.log(stringify(obj)) // '{"mail":"mail@example.com"}'
 ```
 
+A property set to `undefined` is left out as well. Values that JSON cannot represent (functions, symbols, objects whose `toJSON()` returns `undefined`) are written as `null` when they reach a schema without a `type`, such as `{}` or `true`. `JSON.stringify` also writes `null` for them inside arrays, but leaves the key out inside objects. Additional and pattern properties holding a function or a symbol are still left out.
+
 <a name="defaults"></a>
 #### Defaults
 `fast-json-stringify` supports `default` jsonschema key in order to serialize a value
