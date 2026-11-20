@@ -5,12 +5,14 @@
 // Each benchmark runs in four workers at once, two on the other revision (A) and two on the working
 // tree (B), and they take turns in batches of about 10ms, so a machine that warms up or throttles
 // slows all four together. A against A and B against B is the same code against itself: how far it
-// moves is the noise. A/B is followed by the band that noise gives to it: outside the band the row is
-// faster or slower, by at least what is left of A/B once the band is taken off.
+// moves is the noise, printed as "noise A" and "noise B". "B vs A" is positive when the working tree
+// is faster, and it is followed by the band that noise gives to it: outside the band the row is
+// faster or slower, by at least what is left of B vs A once the band is taken off.
 //
 //   npm run bench:cmp                                     main against the working tree
 //   npm run bench:cmp -- --against v7.0.0
 //   npm run bench:cmp -- --only "short string" --sessions 10
+//   npm run bench:cmp -- --min-effect 0.5                 report what is over the band by 0.5%, 1% when not given
 //
 // On a clean tree, --against HEAD puts the same code on both sides and every row should be noise.
 
@@ -126,7 +128,7 @@ async function session (libs, index, rounds, number) {
 
 // A/B is the mean over the sessions, and its band comes from A/A and B/B: under the same code the
 // four workers are alike, so A/B spreads as much as A/A and B/B together, halved
-async function compare (libs, index, sessions, rounds) {
+async function compare (libs, index, sessions, rounds, minEffect) {
   const results = []
   for (let i = 0; i < sessions; i++) results.push(await session(libs, index, rounds, i))
 
@@ -135,7 +137,11 @@ async function compare (libs, index, sessions, rounds) {
   const bb = spread('bb')
   const ab = results.reduce((sum, result) => sum + result.ab, 0) / sessions
   const band = BAND * Math.sqrt((aa ** 2 + bb ** 2) / 4 / sessions)
-  const verdict = Math.abs(ab) <= band ? 'noise' : ab > 0 ? 'faster' : 'slower'
+  // what is left of A/B once the band is taken off has to be over this, or the row is noise: the
+  // band is the noise the four workers share, and on a row that hardly moves it gets narrower than
+  // a small offset between the two sides
+  const floor = Math.log1p(minEffect / 100)
+  const verdict = Math.abs(ab) <= band + floor ? 'noise' : ab > 0 ? 'faster' : 'slower'
   return { aa, bb, ab, band, verdict }
 }
 
@@ -163,7 +169,8 @@ async function main () {
       against: { type: 'string', default: 'main' },
       only: { type: 'string' },
       sessions: { type: 'string', default: '5' },
-      rounds: { type: 'string', default: '20' }
+      rounds: { type: 'string', default: '20' },
+      'min-effect': { type: 'string', default: '1' }
     }
   })
   // every worker with the young generation at its largest, or it grows with what the build allocated
@@ -172,35 +179,55 @@ async function main () {
 
   const sessions = Number(values.sessions)
   const rounds = Number(values.rounds)
+  for (const [name, value] of [['sessions', sessions], ['rounds', rounds]]) {
+    if (!Number.isInteger(value) || value < 1) throw new Error(`--${name} must be a positive integer`)
+  }
+
+  const minEffect = Number(values['min-effect'])
+  if (!(minEffect >= 0)) throw new Error('--min-effect must be a percentage, 0 or more')
 
   const benchmarks = require('./bench.js')
   const selected = benchmarks
     .map((benchmark, index) => ({ name: benchmark.name, index }))
     .filter(({ name }) => !values.only || name.includes(values.only))
-  const width = Math.max(...selected.map(({ name }) => name.length)) + 3
+  if (selected.length === 0) throw new Error(`no benchmark has "${values.only}" in its name`)
+  const width = Math.max(...selected.map(({ name }) => name.length)) + 2
+  // one row of the table: the name, dots up to the columns, then the four numbers to the right of them
+  const row = (name, ...cells) => name.padEnd(width, name ? '.' : ' ') + cells.map((cell) => cell.padStart(10)).join('')
 
   removeWorktree()
   git('worktree', 'add', '--detach', WORKTREE, values.against)
   const libs = [WORKTREE, WORKTREE, ROOT, ROOT]
 
   console.log(`${values.against} (A) against the working tree (B), ${sessions} sessions of ${rounds} rounds\n`)
+  console.log('Columns:')
+  console.log('  noise A, noise B   the same code against itself: how far this machine moves it')
+  console.log('  B vs A             positive when the working tree is faster')
+  console.log('  band               what the noise alone gives to B vs A: inside it the row is noise')
+  console.log(`  result             faster or slower when B vs A is outside the band by more than ${minEffect}%\n`)
   const counts = { faster: 0, slower: 0, noise: 0, failed: 0 }
+  // the titles of the columns come with the first row, not alone while it is being measured
+  let titles = row('', 'noise A', 'noise B', 'B vs A', 'band') + '   result\n'
+  const print = (line) => {
+    console.log(titles + line)
+    titles = ''
+  }
   try {
     for (const { name, index } of selected) {
-      const label = name.padEnd(width, '.')
       try {
-        const { aa, bb, ab, band, verdict } = await compare(libs, index, sessions, rounds)
+        const { aa, bb, ab, band, verdict } = await compare(libs, index, sessions, rounds, minEffect)
         counts[verdict]++
         const sign = ab > 0 ? '+' : ''
-        // A/B with the band taken off: the part of it the noise cannot explain
+        // B vs A with the band taken off: the part of it the noise cannot explain
         const net = Math.abs(Math.expm1(ab - Math.sign(ab) * band)) * 100
         const result = verdict === 'noise' ? verdict : `${verdict} by at least ${net.toFixed(1)}%`
-        const line = `${label} A/A ±${percent(aa)}  B/B ±${percent(bb)}  A/B ${sign}${percent(ab)} ±${percent(band)}  ${result}`
+        const line = row(name, '±' + percent(aa), '±' + percent(bb), sign + percent(ab), '±' + percent(band)) +
+          '   ' + result
         const color = verdict === 'faster' ? greenColor : verdict === 'slower' ? redColor : ''
-        console.log(color ? `${color}${line}${resetColor}` : line)
+        print(color ? `${color}${line}${resetColor}` : line)
       } catch (error) {
         counts.failed++
-        console.log(`${label} failed: ${error.message}`)
+        print(`${name.padEnd(width, '.')} failed: ${error.message}`)
       }
     }
   } finally {
