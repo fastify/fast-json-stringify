@@ -569,7 +569,7 @@ test('if with a bare top-level $ref validates directly against the registered sc
   }
 
   const code = build(schema, { mode: 'standalone', schema: externalSchema })
-  t.assert.ok(code.includes('validator.validate("IsFoo#"'), 'validates directly against the bare registered id')
+  t.assert.ok(code.includes('validator.getSchemaValidator("IsFoo#"'), 'validates directly against the bare registered id')
 
   const stringify = build(schema, { schema: externalSchema })
   t.assert.equal(stringify({ kind: 'foo', foo: 'value', bar: 'ignored' }), '{"foo":"value"}')
@@ -609,7 +609,7 @@ test('if with a $ref into a JSON-pointer sub-path validates directly against tha
   }
 
   const code = build(schema, { mode: 'standalone', schema: externalSchema })
-  t.assert.ok(code.includes('validator.validate("Rules#/definitions/IsFoo"'), 'validates directly against the registered sub-path ref')
+  t.assert.ok(code.includes('validator.getSchemaValidator("Rules#/definitions/IsFoo"'), 'validates directly against the registered sub-path ref')
 
   const stringify = build(schema, { schema: externalSchema })
   t.assert.equal(stringify({ kind: 'foo', foo: 'value', bar: 'ignored' }), '{"foo":"value"}')
@@ -645,7 +645,7 @@ test('if with a $ref that has sibling keywords is left unchanged', (t) => {
   }
 
   const code = build(schema, { mode: 'standalone', schema: externalSchema })
-  t.assert.ok(!code.includes('validator.validate("IsFoo#"'), 'ref with sibling keywords is not redirected')
+  t.assert.ok(!code.includes('validator.getSchemaValidator("IsFoo#"'), 'ref with sibling keywords is not redirected')
 
   const stringify = build(schema, { schema: externalSchema })
   t.assert.equal(stringify({ kind: 'foo', foo: 'ignored', bar: 'fallback' }), '{"bar":"fallback"}')

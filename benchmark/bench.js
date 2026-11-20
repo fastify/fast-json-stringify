@@ -131,6 +131,26 @@ const benchmarks = [
     input: new Date()
   },
   {
+    name: 'Date in a string without format',
+    schema: {
+      type: 'string'
+    },
+    input: new Date()
+  },
+  {
+    name: 'object with Dates in strings without format',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'integer' },
+        name: { type: 'string' },
+        createdAt: { type: 'string' },
+        updatedAt: { type: ['string', 'null'] }
+      }
+    },
+    input: { id: 1, name: 'John Doe', createdAt: new Date(), updatedAt: new Date() }
+  },
+  {
     name: 'short array of numbers',
     schema: {
       type: 'array',

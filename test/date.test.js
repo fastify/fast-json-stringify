@@ -304,6 +304,59 @@ test('throw a RangeError for an invalid Date when format is date-time, date or t
   }
 })
 
+test('render a Date in a string without format as toISOString() for all years', (t) => {
+  const dates = [
+    new Date(1674263005800),
+    dateWithYear(0),
+    dateWithYear(1, 1, 3, 4, 5, 6, 7),
+    dateWithYear(999, 5, 15, 23, 59, 59, 50),
+    dateWithYear(9999, 11, 31, 23, 59, 59, 999),
+    dateWithYear(-1),
+    dateWithYear(10000),
+    new Date(8640000000000000),
+    new Date(-8640000000000000)
+  ]
+  const schemas = [
+    { type: 'string' },
+    { type: 'string', nullable: true },
+    { type: ['string', 'null'] },
+    { anyOf: [{ type: 'string' }, { type: 'null' }] }
+  ]
+  t.plan(schemas.length * (dates.length + 1))
+
+  for (const schema of schemas) {
+    const stringify = build(schema)
+    for (const date of dates) {
+      t.assert.equal(stringify(date), JSON.stringify(date.toISOString()))
+    }
+    t.assert.throws(() => stringify(new Date(NaN)), RangeError)
+  }
+})
+
+test('render a Date subclass in a string without format like format date-time', (t) => {
+  t.plan(2)
+
+  class CustomDate extends Date {
+    toISOString () { return 'custom' }
+  }
+  const date = new CustomDate(1674263005800)
+
+  // A toISOString() override is not called, the same as for format: 'date-time'
+  t.assert.equal(build({ type: 'string' })(date), '"2023-01-21T01:03:25.800Z"')
+  t.assert.equal(build({ type: 'string', format: 'date-time' })(date), '"2023-01-21T01:03:25.800Z"')
+})
+
+test('render Dates in a long string array without format as toISOString()', (t) => {
+  t.plan(2)
+
+  const stringify = build({ type: 'array', items: { type: 'string' } })
+  const dates = Array.from({ length: 200 }, (_, i) => dateWithYear(i * 61 - 1, i % 12, 1 + i % 28, i % 24, i % 60, i % 60, i))
+  dates.unshift('first')
+
+  t.assert.equal(stringify(dates), JSON.stringify(dates.map((v) => v instanceof Date ? v.toISOString() : v)))
+  t.assert.throws(() => stringify(['first', ...dates.slice(1), new Date(NaN)]), RangeError)
+})
+
 test('render a nested object in a string when type is date-format as ISOString', (t) => {
   t.plan(2)
 
