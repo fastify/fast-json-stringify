@@ -712,13 +712,13 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
 
   let code = `
     for (const key of Object.keys(${objVar})) {
-      if (
-        ${propertiesKeys.length > 0 ? propertiesKeys.map(k => `key === ${JSON.stringify(k)}`).join(' || ') + ' ||' : ''}
-        ${objVar}[key] === undefined ||
-        typeof ${objVar}[key] === 'function' ||
-        typeof ${objVar}[key] === 'symbol'
-      ) continue
+      ${propertiesKeys.length > 0 ? `if (${propertiesKeys.map(k => `key === ${JSON.stringify(k)}`).join(' || ')}) continue` : ''}
       const value = ${objVar}[key]
+      if (
+        value === undefined ||
+        typeof value === 'function' ||
+        typeof value === 'symbol'
+      ) continue
   `
 
   const patternPropertiesLocation = location.getPropertyLocation('patternProperties')
