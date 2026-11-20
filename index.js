@@ -1516,7 +1516,7 @@ function buildSingleTypeSerializer (context, location, input) {
           if (${input} === null) {
             json += JSON_STR_EMPTY_STRING
           } else if (${input} instanceof Date) {
-            json += JSON_STR_QUOTE + ${input}.toISOString() + JSON_STR_QUOTE
+            json += asDateTime(${input})
           } else if (${input} instanceof RegExp) {
             json += asString(${input}.source)
           } else {
