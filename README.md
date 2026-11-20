@@ -224,11 +224,11 @@ And nested ones, too.
 <a name="specific"></a>
 #### Specific use cases
 
-| Instance | Serialized as                |
-| -------- | ---------------------------- |
-| `Date`   | `string` via `toISOString()` |
-| `RegExp` | `string`                     |
-| `BigInt` | `integer` via `toString`     |
+| Instance | Serialized as                                         |
+| -------- | ----------------------------------------------------- |
+| `Date`   | `string` in ISO 8601 format (same as `toISOString()`) |
+| `RegExp` | `string`                                              |
+| `BigInt` | `integer` via `toString`                              |
 
 [JSON Schema built-in formats](https://json-schema.org/draft/2020-12/draft-bhutton-json-schema-validation-00#rfc.section.7.3.1) for dates are supported and will be serialized as:
 
