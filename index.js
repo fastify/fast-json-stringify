@@ -706,6 +706,20 @@ function inferTypeByKeyword (schema) {
   return schema.type
 }
 
+// A pattern made only of literal characters, optionally anchored at the start,
+// matches exactly when the key contains (or starts with) that text: test it
+// with a string method instead of running the regular expression per key.
+const LITERAL_PATTERN = /^\^?[A-Za-z0-9_-]+$/
+
+function buildPatternTest (pattern, keyVar) {
+  if (LITERAL_PATTERN.test(pattern)) {
+    return pattern[0] === '^'
+      ? `${keyVar}.startsWith(${JSON.stringify(pattern.slice(1))})`
+      : `${keyVar}.includes(${JSON.stringify(pattern)})`
+  }
+  return `/${pattern.replace(/\\*\//g, '\\/')}/.test(${keyVar})`
+}
+
 function buildExtraObjectPropertiesSerializer (context, location, addComma, objVar) {
   const schema = location.schema
   const propertiesKeys = Object.keys(schema.properties || {})
@@ -729,7 +743,7 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
       const propertyLocation = patternPropertiesLocation.getPropertyLocation(propertyKey)
 
       code += `
-        if (/${propertyKey.replace(/\\*\//g, '\\/')}/.test(key)) {
+        if (${buildPatternTest(propertyKey, 'key')}) {
           ${addComma}
           json += asString(key) + JSON_STR_COLONS
           ${buildValue(context, propertyLocation, 'value')}
