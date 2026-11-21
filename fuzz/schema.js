@@ -168,11 +168,16 @@ function drawValue (rng, schema, depth, root = { definitions: DEFINITIONS }) {
 }
 
 // how the serializer writes a Date for each format, as the README promises
+// date and time are the local calendar and clock, also where the offset has seconds (local mean
+// time before 1900); a year past 0-9999 keeps the old way, the offset in minutes
 const local = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString()
+const pad = (n) => String(n).padStart(2, '0')
 const FORMATS = {
   'date-time': (d) => d.toISOString(),
-  date: (d) => local(d).slice(0, 10),
-  time: (d) => local(d).slice(11, 19)
+  date: (d) => d.getFullYear() >= 0 && d.getFullYear() <= 9999
+    ? String(d.getFullYear()).padStart(4, '0') + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+    : local(d).slice(0, 10),
+  time: (d) => pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds())
 }
 
 const typeOf = (value) => value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value === 'number' ? (Number.isInteger(value) ? 'integer' : 'number') : typeof value
