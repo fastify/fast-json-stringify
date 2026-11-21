@@ -1,0 +1,61 @@
+name: Benchmark
+
+# runs on a pull request with the benchmark label, it takes about 15 minutes
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled]
+  workflow_dispatch:
+    inputs:
+      against:
+        description: 'Ref to compare this branch against'
+        default: main
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
+      (github.event.action != 'labeled' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+    timeout-minutes: 40
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # the base revision has to be in the clone for the worktree of bench:cmp
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: lts/*
+      - name: Install
+        run: npm install --ignore-scripts
+      - name: Run benchmark
+        env:
+          AGAINST: ${{ github.event.pull_request.base.sha || inputs.against }}
+        run: |
+          {
+            echo '<!-- benchmark-comment -->'
+            echo "### Benchmark against \`${AGAINST:0:12}\`"
+            echo
+            echo "Node $(node --version) on $RUNNER_OS, from \`npm run bench:cmp\`."
+            echo
+            echo '```text'
+            node benchmark/bench-cmp-branch.js --against "$AGAINST"
+            echo '```'
+          } > benchmark_summary.md
+      - name: Publish the summary
+        if: always()
+        run: cat benchmark_summary.md >> "$GITHUB_STEP_SUMMARY"
+      # the comment on the pull request is posted by benchmark-comment.yml from this artifact:
+      # the token of a pull request from a fork cannot write comments
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: benchmark-summary
+          path: benchmark_summary.md
