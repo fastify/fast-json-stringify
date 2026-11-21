@@ -180,7 +180,7 @@ const benchmarks = [
       type: 'array',
       items: { type: 'string' }
     },
-    input: shortArrayOfShortStrings
+    input: shortArrayOfLongStrings
   },
   {
     name: 'short array of objects with properties of different types',
@@ -598,4 +598,9 @@ async function runBenchmarks () {
   }
 }
 
-runBenchmarks()
+// bench-cmp-branch.js runs the same cases
+module.exports = benchmarks
+
+if (require.main === module) {
+  runBenchmarks()
+}
