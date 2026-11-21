@@ -249,7 +249,6 @@ test('native mechanism generates projection code only for projectable schemas', 
     { type: 'object', properties: { a: { anyOf: [{ type: 'string' }] } } },
     { type: 'object', properties: { a: { type: 'string', format: 'unsafe' } } },
     { type: 'object', properties: { a: { type: ['string', 'null'], format: 'unsafe' } } },
-    { type: 'object', properties: { a: { $ref: '#/definitions/s' } }, definitions: { s: { type: 'string' } } },
     { type: 'object', properties: { a: { type: 'array', items: [{ type: 'string' }] } } },
     { type: 'object', properties: { a: { type: 'array' } } },
     { type: 'object', properties: { a: { type: 'null' } } }
@@ -261,6 +260,158 @@ test('native mechanism generates projection code only for projectable schemas', 
   for (const s of notProjectable) {
     t.assert.ok(!build(s, { objectMechanism: 'native', mode: 'debug' }).code.includes('asStringValue'), JSON.stringify(s))
   }
+})
+
+test('native mechanism: $ref is projected and matches the default mechanism', t => {
+  const user = {
+    type: 'object',
+    required: ['id'],
+    properties: {
+      id: { type: 'integer' },
+      name: { type: ['string', 'null'] },
+      'a/b': { type: ['number', 'null'] },
+      tags: { type: 'array', items: { type: 'string' } }
+    }
+  }
+  const external = {
+    $id: 'external',
+    type: 'object',
+    properties: { street: { type: 'string' }, city: { $ref: '#/definitions/city' } },
+    definitions: {
+      city: { type: 'object', nullable: true, properties: { name: { type: ['string', 'null'] } } },
+      zip: { type: 'string' }
+    }
+  }
+  const list = { $id: 'list', type: 'array', items: { $ref: 'external#/definitions/city' } }
+  const options = { schema: { external, list } }
+  const schemas = [
+    // the same definition used twice and inside an array
+    {
+      type: 'object',
+      definitions: { user },
+      properties: {
+        owner: { $ref: '#/definitions/user' },
+        editor: { $ref: '#/definitions/user', description: 'a keyword that does not change the target' },
+        members: { type: 'array', items: { $ref: '#/definitions/user' } }
+      }
+    },
+    // a $ref to a $ref, and a $ref inside a definition
+    {
+      type: 'object',
+      definitions: { a: { $ref: '#/definitions/b' }, b: { type: 'object', properties: { owner: { $ref: '#/definitions/user' } } }, user },
+      properties: { owner: { $ref: '#/definitions/a' }, members: { type: 'array', items: { $ref: '#/definitions/a' } } }
+    },
+    // external schemas, with a $ref relative to them, a sub-schema and an anchor
+    {
+      $id: 'http://example.com/root.json',
+      type: 'object',
+      definitions: { anchored: { $id: '#anchor', type: 'object', properties: { name: { type: ['string', 'null'] } } } },
+      properties: {
+        owner: { $ref: 'external#' },
+        editor: { $ref: 'external' },
+        members: { $ref: 'list' },
+        tags: { $ref: 'external#/definitions/zip' },
+        id: { $ref: 'external#/properties/street' },
+        name: { $ref: '#anchor' }
+      }
+    }
+  ]
+  const noPrototype = Object.assign(Object.create(null), { id: 1 })
+  const values = [
+    { id: 1, name: 'x', 'a/b': 1.5, tags: ['a', 'b'], street: 's', city: { name: 'c' }, extra: 'dropped' },
+    { id: 2, name: null, 'a/b': null, tags: [], city: null },
+    { id: 3, name: 5 },
+    { id: 4, 'a/b': 'text' },
+    { id: 5, tags: 'text' },
+    { id: 6, city: { name: 5 } },
+    { name: 'no id' },
+    { toJSON () { return { id: 7, name: 'from toJSON' } } },
+    {},
+    null,
+    'text',
+    [{ name: 'in a list' }, null, { name: 5 }]
+  ]
+  let checks = 0
+  for (const schema of schemas) {
+    t.assert.ok(build(schema, { ...options, objectMechanism: 'native', mode: 'debug' }).code.includes('asStringValue'), `projected: ${JSON.stringify(schema)}`)
+    const nat = build(schema, { ...options, objectMechanism: 'native' })
+    const def = build(schema, options)
+    const inputs = [null, {}, ...values]
+    for (const a of values) {
+      for (const b of values) {
+        inputs.push({ owner: a, editor: b, members: [a, b, a], tags: a, id: b, name: a })
+      }
+    }
+    for (const input of inputs) {
+      const expected = run(def, input)
+      t.assert.deepStrictEqual([run(nat, input), run(nat, input)], [expected, expected])
+      checks++
+    }
+  }
+  t.assert.ok(checks > 400)
+
+  // each use of a definition has its own scratch
+  const twice = build(schemas[0], { objectMechanism: 'native' })
+  t.assert.equal(
+    twice({ owner: { id: 1, name: 'a' }, editor: { id: 2, tags: ['t'] }, members: [{ id: 3 }, { id: 4, name: 'd' }] }),
+    '{"owner":{"id":1,"name":"a"},"editor":{"id":2,"tags":["t"]},"members":[{"id":3},{"id":4,"name":"d"}]}'
+  )
+  // the pointer in an error is the one of the target, with its escaped key
+  t.assert.throws(() => twice({ owner: { id: 1, 'a/b': 'text' } }), new TypeError("The value of '#/definitions/user/properties/a~1b' does not match schema definition."))
+  // a required key that is not a property, on an object without a prototype
+  const required = { type: 'object', required: ['constructor'], properties: { id: { type: 'integer' } } }
+  t.assert.deepStrictEqual(run(build(required, { objectMechanism: 'native' }), noPrototype), run(build(required), noPrototype))
+  t.assert.deepStrictEqual(run(build(required, { objectMechanism: 'native' }), noPrototype), { err: 'Error: "constructor" is required!' })
+  // a $ref that cannot be found is the same error
+  const missing = { type: 'object', properties: { a: { $ref: '#/definitions/missing' } } }
+  t.assert.throws(() => build(missing, { objectMechanism: 'native' }), /Cannot find reference "#\/definitions\/missing"/)
+})
+
+test('native mechanism: a $ref the projection does not cover keeps the default mechanism', t => {
+  const leaf = { type: 'object', properties: { a: { type: 'string' }, b: { type: 'string' }, c: { type: 'string' } } }
+  // 4 x 4 x 4 x 4 uses of a 4-node schema: more than 1000 nodes once expanded
+  const wide = (target) => ({ type: 'object', properties: { p0: { $ref: target }, p1: { $ref: target }, p2: { $ref: target }, p3: { $ref: target } } })
+  const notProjectable = [
+    // keywords next to a $ref are merged with its target, definitions included
+    { $ref: '#/definitions/o', definitions: { o: { type: 'object', properties: { a: { type: 'string' } } } } },
+    { type: 'object', definitions: { s: { type: 'string' } }, properties: { a: { $ref: '#/definitions/s', nullable: true } } },
+    // recursive, directly and through another definition
+    { type: 'object', definitions: { node: { type: 'object', properties: { value: { type: 'string' }, next: { $ref: '#/definitions/node' } } } }, properties: { head: { $ref: '#/definitions/node' } } },
+    { $id: 'tree', type: 'object', properties: { children: { type: 'array', items: { $ref: 'tree#' } } } },
+    {
+      type: 'object',
+      definitions: {
+        a: { type: 'object', properties: { b: { $ref: '#/definitions/b' } } },
+        b: { type: 'object', properties: { a: { $ref: '#/definitions/a' } } }
+      },
+      properties: { a: { $ref: '#/definitions/a' } }
+    },
+    // the target is not projectable
+    { type: 'object', definitions: { s: { anyOf: [{ type: 'string' }, { type: 'number' }] } }, properties: { a: { $ref: '#/definitions/s' } } },
+    { type: 'object', definitions: { s: true }, properties: { a: { $ref: '#/definitions/s' } } },
+    { type: 'object', definitions: { l: { type: 'array', items: { anyOf: [{ type: 'string' }] } } }, properties: { a: { $ref: '#/definitions/l' } } },
+    { type: 'object', definitions: { d0: leaf, d1: wide('#/definitions/d0'), d2: wide('#/definitions/d1'), d3: wide('#/definitions/d2'), d4: wide('#/definitions/d3') }, properties: { a: { $ref: '#/definitions/d4' } } }
+  ]
+  const inputs = [
+    { a: 'x' },
+    { a: null },
+    { a: ['x'] },
+    { head: { value: 'x', next: { value: 'y', next: null } } },
+    { children: [{ children: [] }] },
+    { a: { b: { a: {} } } },
+    { a: { p0: { p1: { p2: { p3: { a: 'deep' } } } } } },
+    {}
+  ]
+  t.plan(notProjectable.length * (inputs.length + 1) + 1)
+  for (const schema of notProjectable) {
+    t.assert.ok(!build(schema, { objectMechanism: 'native', mode: 'debug' }).code.includes('asStringValue'), JSON.stringify(schema))
+    const nat = build(schema, { objectMechanism: 'native' })
+    const def = build(schema)
+    for (const input of inputs) t.assert.deepStrictEqual(run(nat, input), run(def, input))
+  }
+  // the same shape, one level less, is small enough to be projected
+  const small = { type: 'object', definitions: { d0: leaf, d1: wide('#/definitions/d0'), d2: wide('#/definitions/d1'), d3: wide('#/definitions/d2') }, properties: { a: { $ref: '#/definitions/d3' } } }
+  t.assert.ok(build(small, { objectMechanism: 'native', mode: 'debug' }).code.includes('asStringValue'))
 })
 
 test('native mechanism: unsupported schemas keep the default output', t => {
