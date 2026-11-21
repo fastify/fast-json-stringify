@@ -11,12 +11,13 @@ const { positiveNumber, runWorker, saveResults } = require('./bench-utils')
 async function measure ({ kind, size, mechanism, time, iterations }) {
   const { schema, input, typed } = arrayFixture(kind, size)
   const stringify = mechanism === 'native' ? JSON.stringify : build(schema, { largeArrayMechanism: mechanism })
-  if (typed && mechanism !== 'native') {
-    // Rejection is existing behavior; do not time exceptions as serialization.
-    assert.throws(() => stringify(input), TypeError)
-    return { kind, size, mechanism, status: 'unsupported (TypeError)' }
-  }
-  assert.equal(stringify(input), JSON.stringify(input))
+  // Native JSON.stringify(TypedArray) emits an indexed object; FJS serializes
+  // TypedArrays as JSON arrays. Compare FJS against Array.from for typed input.
+  // Native mechanism still measures JSON.stringify as-is (object form).
+  const expected = typed && mechanism !== 'native'
+    ? JSON.stringify(Array.from(input))
+    : JSON.stringify(input)
+  assert.equal(stringify(input), expected)
   const bytes = Buffer.byteLength(stringify(input))
   const bench = new Bench({ time, iterations, warmupTime: 100, warmupIterations: 2, throws: true })
   bench.add(kind, () => {
@@ -56,7 +57,7 @@ async function main () {
       }
     }
   }
-  console.log('\nTyped arrays are rejected by FJS; native serializes indexed objects. Each measured call includes Buffer.byteLength().')
+  console.log('\nFJS serializes TypedArrays as JSON arrays; native JSON.stringify emits indexed objects. Each measured call includes Buffer.byteLength().')
   saveResults(values.json, { ...config, kinds, sizes }, rows)
 }
 
