@@ -152,3 +152,6 @@ yarn.lock
 .pi
 AGENTS.md
 CLAUDE.md
+
+# what the fuzzer writes to require back
+fuzz/standalone/
