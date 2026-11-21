@@ -142,6 +142,81 @@ test('native mechanism: array root of primitives', t => {
   }
 })
 
+test('native mechanism: Date values match the default mechanism', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      at: { type: 'string', format: 'date-time' },
+      maybe: { type: ['string', 'null'], format: 'date-time' },
+      list: { type: 'array', items: { type: 'string', format: 'date-time' } },
+      plain: { type: 'string' },
+      plainMaybe: { type: ['string', 'null'] },
+      plainList: { type: 'array', items: { type: 'string' } }
+    }
+  }
+  const def = build(schema)
+  const nat = build(schema, { objectMechanism: 'native' })
+
+  class LocalDate extends Date {
+    toISOString () { return 'overridden' }
+  }
+
+  const dates = [
+    new Date(0),
+    new Date(1),
+    new Date(-1),
+    new Date('2024-02-29T23:59:59.999Z'),
+    new Date('1999-12-31T00:00:00.000Z'),
+    new Date('2026-01-09T08:07:06.005Z'),
+    new Date('0000-01-01T00:00:00.000Z'),
+    new Date('9999-12-31T23:59:59.999Z'),
+    new Date(-62167219200001), // one millisecond before year 0
+    new Date(253402300800000), // first millisecond of year 10000
+    new Date(8.64e15),
+    new Date(-8.64e15),
+    new Date(NaN),
+    new LocalDate(86400000)
+  ]
+
+  t.plan(dates.length + 2)
+  for (const date of dates) {
+    const input = { at: date, maybe: date, list: [date, date], plain: date, plainMaybe: date, plainList: [date, date] }
+    t.assert.deepStrictEqual(run(nat, input), run(def, input), String(date.getTime()))
+  }
+  t.assert.equal(
+    nat({ at: new Date(0), maybe: null, list: [], plain: new Date(1), plainMaybe: null, plainList: [] }),
+    '{"at":"1970-01-01T00:00:00.000Z","maybe":null,"list":[],"plain":"1970-01-01T00:00:00.001Z","plainMaybe":null,"plainList":[]}'
+  )
+  t.assert.equal(nat({ at: '2020-01-01T00:00:00.000Z' }), def({ at: '2020-01-01T00:00:00.000Z' }))
+})
+
+test('native mechanism: arrays that keep their length, grow, shrink and become null between calls', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      tags: { type: 'array', items: { type: 'string' } },
+      scores: { type: 'array', items: { type: 'number' } },
+      rows: {
+        type: 'array',
+        items: { type: 'object', properties: { id: { type: 'integer' }, labels: { type: 'array', items: { type: 'string' } } } }
+      }
+    }
+  }
+  const def = build(schema)
+  const nat = build(schema, { objectMechanism: 'native' })
+  const make = (n, seed) => ({
+    tags: Array.from({ length: n }, (_, i) => 't' + seed + i),
+    scores: Array.from({ length: n }, (_, i) => seed + i + 0.5),
+    rows: Array.from({ length: n }, (_, i) => ({ id: seed + i, labels: Array.from({ length: (i + n) % 4 }, (_, j) => 'l' + seed + j) }))
+  })
+  const inputs = [
+    make(0, 1), make(0, 2), make(5, 3), make(5, 4), make(2, 5), make(9, 6), make(9, 7),
+    { tags: null, scores: null, rows: null }, make(3, 8), {}, make(3, 9), make(1, 10), make(9, 11)
+  ]
+  t.plan(inputs.length)
+  for (const input of inputs) t.assert.equal(nat(input), def(input))
+})
+
 test('native mechanism generates projection code only for projectable schemas', t => {
   const projectable = [
     userSchema,
