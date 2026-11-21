@@ -43,8 +43,11 @@ const NAMED_FRAGMENT_REF = /^#[a-z_][-\w._]*$/i
 // TODO: drop the Node 20 tier (and this version check) once Node 20 is no
 // longer supported.
 const nodeMajor = Number.parseInt(process.versions.node, 10)
-// objectMechanism: 'native' relies on the V8 13.8 JSON.stringify fast path.
-const { HAS_FAST_JSON_STRINGIFY: PROJECTION_SUPPORTED } = require('./lib/v8')
+// objectMechanism: 'native' is used for every projectable schema where V8 has
+// the JSON.stringify fast path (V8 13.8+, Node 25+), only for the schemas made
+// mostly of strings on Node 22 and 24, and never on older runtimes.
+// 0: never, 1: schemas made mostly of strings, 2: always
+const PROJECTION_TIER = Number(require('./lib/v8').HAS_FAST_JSON_STRINGIFY) + Number(nodeMajor >= 22)
 const PRIMITIVE_FAST_PATH_MIN_LENGTH = [{ integer: 3e5, number: 3e5, string: 128 }, { integer: 512, number: 128, string: 8 }][+(nodeMajor >= 22)]
 const STRING_ARRAY_FAST_PATH_MIN_LENGTH = PRIMITIVE_FAST_PATH_MIN_LENGTH.string
 const INTEGER_ARRAY_FAST_PATH = { condition: 'Number.isInteger(v)', minLength: PRIMITIVE_FAST_PATH_MIN_LENGTH.integer }
@@ -546,15 +549,19 @@ function build (schema, options) {
   // objects and delegates to the native JSON.stringify. Only whole schemas
   // made of objects, arrays and primitives qualify; anything else falls back
   // to the string codegen below, so output never changes for unsupported shapes.
-  // The projection only pays off where V8 has the side-effect-free
-  // JSON.stringify fast path (V8 13.8+, Node 25+): on older runtimes the
-  // string codegen is up to 2x faster, so the option is a no-op there.
+  // Where V8 has the side-effect-free JSON.stringify fast path (V8 13.8+,
+  // Node 25+) the projection pays off on every projectable schema. Without it
+  // (Node 22 and 24) it pays off on strings, which the string codegen escapes
+  // one by one in JavaScript, and not on numbers and booleans, so it is used
+  // only for the schemas made mostly of strings.
   let code = null
   let projection = null
   // `forceProjection` is an internal, undocumented escape hatch used by the
-  // test suite to exercise the projection on runtimes where it is gated off.
-  if (context.objectMechanism === 'native' && (options.forceProjection === true || PROJECTION_SUPPORTED)) {
-    projection = buildProjection(schema)
+  // test suite to exercise each tier on every runtime: true is the tier of
+  // Node 25+, 'string-heavy' the one of Node 22 and 24.
+  const projectionTier = options.forceProjection === true ? 2 : options.forceProjection === 'string-heavy' ? 1 : PROJECTION_TIER
+  if (context.objectMechanism === 'native' && projectionTier !== 0) {
+    projection = buildProjection(schema, projectionTier === 1)
   }
   if (projection === null) {
     code = buildValue(context, location, 'input')
