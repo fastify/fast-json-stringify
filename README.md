@@ -758,15 +758,18 @@ const stringify = fastJson(schema, { objectMechanism: 'native' })
 
 The projection covers schemas made only of:
 
-- `object` with `properties` (no `additionalProperties`, `patternProperties`,
-  `nullable`, `dependencies`, combinators or `$ref`), with at least one property;
-- `string` (optionally with `format: date-time`, `date` or `time`), `number`,
-  `integer`, `boolean`, without `nullable`, `const`, `enum`, combinators or `$ref`;
+- `object` with `properties` (no `patternProperties`, `dependencies`,
+  combinators or `$ref`; `additionalProperties` absent or `false`), with at
+  least one property;
+- `string` (with any `format` except `unsafe`), `number`, `integer`, `boolean`,
+  without `const`, combinators or `$ref`;
 - the two-element forms `['string', 'null']`, `['number', 'null']` and
   `['boolean', 'null']` (in either order), with the same strict type dispatch
   as the default mechanism;
 - `array` whose `items` is one such schema (no tuples), nested to any depth;
   every array element gets its own scratch objects.
+
+Each of them can be `nullable: true` and can have an `enum`.
 
 Any other schema silently uses the default mechanism, so the option is always
 safe to enable. The projection only pays off where V8 has the fast path, so on
