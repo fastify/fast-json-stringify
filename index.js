@@ -135,33 +135,33 @@ function schemaDepthError (maxDepth, name) {
 }
 
 function assertObjectDepth (schema, maxDepth, name) {
-  const stack = [{ value: schema, depth: 0, exit: false }]
-  const path = new WeakSet()
+  if (typeof schema !== 'object' || schema === null) return false
+
+  // Iterative depth-first walk. `values` and `depths` hold the pending nodes.
+  // `path[d]` is the ancestor at depth d of the current node, so a node that
+  // is already in `path` closes a cycle. The depth is limited to
+  // maxDepth * 2, so the linear scan of `path` stays cheap.
+  const values = [schema]
+  const depths = [0]
+  const path = []
   let hasRef = false
 
-  while (stack.length > 0) {
-    const entry = stack.pop()
-    const value = entry.value
-
-    if (typeof value !== 'object' || value === null) continue
+  while (values.length > 0) {
+    const value = values.pop()
+    const depth = depths.pop()
 
     // Schema maps and arrays add at most one container between schema nodes.
     // Keep dependency traversals within the same stack-safety envelope while
     // still allowing maxDepth schema nodes nested through `properties`.
-    if (entry.depth > maxDepth * 2) {
+    if (depth > maxDepth * 2) {
       throw schemaDepthError(maxDepth, name)
     }
 
-    if (entry.exit) {
-      path.delete(value)
-      continue
-    }
-
-    if (path.has(value)) {
+    path.length = depth
+    if (path.includes(value)) {
       throw new Error('schema contains a circular object reference; use $ref instead')
     }
-    path.add(value)
-    stack.push({ value, depth: entry.depth, exit: true })
+    path.push(value)
 
     for (const key in value) {
       const child = value[key]
@@ -169,9 +169,9 @@ function assertObjectDepth (schema, maxDepth, name) {
         hasRef = true
       }
       // Primitive values cannot contain cycles or contribute object depth.
-      // Avoid allocating stack entries that the next iteration would discard.
       if (typeof child === 'object' && child !== null) {
-        stack.push({ value: child, depth: entry.depth + 1, exit: false })
+        values.push(child)
+        depths.push(depth + 1)
       }
     }
   }
@@ -712,13 +712,13 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
 
   let code = `
     for (const key of Object.keys(${objVar})) {
-      if (
-        ${propertiesKeys.length > 0 ? propertiesKeys.map(k => `key === ${JSON.stringify(k)}`).join(' || ') + ' ||' : ''}
-        ${objVar}[key] === undefined ||
-        typeof ${objVar}[key] === 'function' ||
-        typeof ${objVar}[key] === 'symbol'
-      ) continue
+      ${propertiesKeys.length > 0 ? `if (${propertiesKeys.map(k => `key === ${JSON.stringify(k)}`).join(' || ')}) continue` : ''}
       const value = ${objVar}[key]
+      if (
+        value === undefined ||
+        typeof value === 'function' ||
+        typeof value === 'symbol'
+      ) continue
   `
 
   const patternPropertiesLocation = location.getPropertyLocation('patternProperties')

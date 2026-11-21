@@ -180,7 +180,7 @@ const benchmarks = [
       type: 'array',
       items: { type: 'string' }
     },
-    input: shortArrayOfShortStrings
+    input: shortArrayOfLongStrings
   },
   {
     name: 'short array of objects with properties of different types',
@@ -276,6 +276,36 @@ const benchmarks = [
       n5: 42,
       b5: true
     }
+  },
+  {
+    name: 'object with additionalProperties',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'integer' }
+      },
+      additionalProperties: { type: 'string' }
+    },
+    input: { id: 1, k0: 'v0', k1: 'v1', k2: 'v2', k3: 'v3', k4: 'v4', k5: 'v5', k6: 'v6', k7: 'v7', k8: 'v8' }
+  },
+  {
+    name: 'object with additionalProperties: true',
+    schema: {
+      type: 'object',
+      additionalProperties: true
+    },
+    input: { a: 1, b: 'two', c: true, d: null, e: 3.5, f: [1, 2], g: { h: 1 }, i: 'str', j: false, k: 42 }
+  },
+  {
+    name: 'object with patternProperties',
+    schema: {
+      type: 'object',
+      patternProperties: {
+        '^s_': { type: 'string' },
+        '^n_': { type: 'number' }
+      }
+    },
+    input: { s_0: 'a', s_1: 'b', s_2: 'c', s_3: 'd', s_4: 'e', n_0: 0, n_1: 1.5, n_2: 3, n_3: 4.5, n_4: 6 }
   },
   {
     name: 'simple object',
@@ -568,4 +598,9 @@ async function runBenchmarks () {
   }
 }
 
-runBenchmarks()
+// bench-cmp-branch.js runs the same cases
+module.exports = benchmarks
+
+if (require.main === module) {
+  runBenchmarks()
+}
