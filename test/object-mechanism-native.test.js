@@ -149,21 +149,31 @@ test('native mechanism generates projection code only for projectable schemas', 
     { type: 'array', items: { type: 'object', properties: { a: { type: 'string' } } } },
     { type: 'object', properties: { a: { type: 'array', items: { type: 'array', items: { type: 'string' } } } } },
     { type: 'object', properties: { a: { type: 'array', items: { type: 'object', properties: { b: { type: 'object', properties: { c: { type: 'string' } } } } } } } },
-    { type: 'object', properties: { a: { type: ['string', 'null'] } } }
+    { type: 'object', properties: { a: { type: ['string', 'null'] } } },
+    { type: 'object', properties: { a: { type: 'string' } }, additionalProperties: false },
+    { type: 'object', nullable: true, properties: { a: { type: 'string' } } },
+    { type: 'object', properties: { a: { type: 'string', nullable: true } } },
+    { type: 'object', properties: { a: { type: 'string', enum: ['x'] } } },
+    { type: 'object', properties: { a: { type: 'string', format: 'email' } } },
+    { type: 'object', properties: { a: { type: 'integer', format: 'int64' } } },
+    { type: 'object', properties: { a: { type: ['string', 'null'], format: 'email' } } },
+    { type: 'object', properties: { a: { type: ['number', 'null'], format: 'float' } } },
+    { type: 'object', properties: { a: { type: 'array', nullable: true, items: { type: 'string' } } } }
   ]
   const notProjectable = [
     { type: 'string' },
     { type: 'object', properties: {} },
     { type: 'object', properties: { a: { type: 'string' } }, additionalProperties: true },
     { type: 'object', properties: { a: { type: 'string' } }, patternProperties: { '^x': { type: 'string' } } },
-    { type: 'object', nullable: true, properties: { a: { type: 'string' } } },
-    { type: 'object', properties: { a: { type: 'string', nullable: true } } },
+    { type: 'object', properties: { a: { type: 'string' } }, additionalProperties: { type: 'string' } },
     { type: 'object', properties: { a: { type: ['string', 'number'] } } },
     { type: 'object', properties: { a: { type: ['integer', 'null'] } } },
     { type: 'object', properties: { a: { const: 'x' } } },
-    { type: 'object', properties: { a: { type: 'string', enum: ['x'] } } },
+    { type: 'object', properties: { a: { enum: ['x'] } } },
+    { type: 'object', properties: { a: { nullable: true } } },
     { type: 'object', properties: { a: { anyOf: [{ type: 'string' }] } } },
-    { type: 'object', properties: { a: { type: 'string', format: 'email' } } },
+    { type: 'object', properties: { a: { type: 'string', format: 'unsafe' } } },
+    { type: 'object', properties: { a: { type: ['string', 'null'], format: 'unsafe' } } },
     { type: 'object', properties: { a: { $ref: '#/definitions/s' } }, definitions: { s: { type: 'string' } } },
     { type: 'object', properties: { a: { type: 'array', items: [{ type: 'string' }] } } },
     { type: 'object', properties: { a: { type: 'array' } } },
@@ -181,12 +191,92 @@ test('native mechanism generates projection code only for projectable schemas', 
 test('native mechanism: unsupported schemas keep the default output', t => {
   const schema = {
     type: 'object',
-    properties: { a: { type: 'string' }, b: { type: 'string', nullable: true } },
+    properties: { a: { type: 'string' }, b: { type: 'string', format: 'unsafe' } },
     additionalProperties: { type: 'number' }
   }
-  const data = { a: 'x', b: null, c: 1, d: 2 }
+  const data = { a: 'x', b: 'y', c: 1, d: 2 }
   t.plan(1)
   t.assert.equal(build(schema, { objectMechanism: 'native' })(data), build(schema)(data))
+})
+
+test('native mechanism: nullable, enum, format and additionalProperties false match the default mechanism', t => {
+  class Entity {
+    constructor (value) { this.value = value }
+    toJSON () { return this.value }
+  }
+  const valuesByType = {
+    string: ['x', 'needs "escaping"\n', '', 5, true, new Date(0), /re/, { toString () { return 'custom' } }],
+    number: [1.5, 0, -0, '3', Infinity, NaN, 10n, true],
+    integer: [1, 1.5, '3', 10n, 2n ** 64n, NaN, true],
+    boolean: [true, false, 0, 'y', ''],
+    object: [{ a: 'x' }, { a: null }, {}, { a: 'x', extra: 1 }, new Entity({ a: 'x' }), new Entity(null), 'text', 5],
+    array: [['x'], [], [null, 'y'], 'text', 5, {}]
+  }
+  const keywordsByType = {
+    string: [{}, { format: 'email' }, { format: 'uuid' }, { format: 'date-time' }, { format: 'date' }, { format: 'time' }, { enum: ['x', 'y'] }, { default: 'd' }],
+    number: [{}, { format: 'float' }, { enum: [1, 2] }, { default: 7 }],
+    integer: [{}, { format: 'int64' }, { enum: [1, 2] }],
+    boolean: [{}, { enum: [true] }, { format: 'ignored' }],
+    object: [{ properties: { a: { type: 'string', nullable: true } } }, { properties: { a: { type: 'string' } }, additionalProperties: false, required: ['a'] }],
+    array: [{ items: { type: 'string', nullable: true } }, { items: { type: 'object', nullable: true, additionalProperties: false, properties: { a: { type: 'string' } } } }]
+  }
+  const multiTypes = [
+    [{ type: ['string', 'null'] }, valuesByType.string],
+    [{ type: ['null', 'string'], format: 'email' }, valuesByType.string],
+    [{ type: ['number', 'null'], format: 'float' }, valuesByType.number],
+    [{ type: ['boolean', 'null'], enum: [true, null] }, valuesByType.boolean]
+  ]
+  const label = (v) => JSON.stringify(v, (k, x) => typeof x === 'bigint' ? `${x}n` : x instanceof RegExp ? String(x) : x)
+
+  const variants = []
+  for (const type of Object.keys(valuesByType)) {
+    for (const keywords of keywordsByType[type]) {
+      for (const nullable of [true, false]) {
+        const schema = nullable ? { type, nullable, ...keywords } : { type, ...keywords }
+        variants.push([schema, valuesByType[type]])
+      }
+    }
+  }
+  for (const [schema, values] of multiTypes) {
+    variants.push([schema, values], [{ ...schema, nullable: true }, values])
+  }
+
+  let checks = 0
+  for (const [schema, values] of variants) {
+    const wrappers = [
+      { type: 'object', additionalProperties: false, properties: { p: schema, last: { type: 'boolean' } } },
+      { type: 'object', required: ['p'], properties: { p: schema } },
+      { type: 'object', nullable: true, properties: { list: { type: 'array', nullable: true, items: schema } } }
+    ]
+    for (const wrapper of wrappers) {
+      const nat = build(wrapper, { objectMechanism: 'native' })
+      const def = build(wrapper)
+      t.assert.ok(build(wrapper, { objectMechanism: 'native', mode: 'debug' }).code.includes('asStringValue'), `projected: ${label(wrapper)}`)
+      checks++
+      const inputs = [null, {}, { p: null, list: null }, { p: undefined, list: [] }, new Entity(null)]
+      for (const value of [null, ...values]) {
+        inputs.push({ p: value, last: 1, extra: 'dropped', list: [value, null, value] })
+        inputs.push(new Entity({ p: value, list: [value] }))
+      }
+      for (const input of inputs) {
+        const twice = [run(nat, input), run(nat, input)]
+        const expected = run(def, input)
+        t.assert.deepStrictEqual(twice, [expected, expected], `${label(wrapper)} <- ${label(input)}`)
+        checks++
+      }
+    }
+  }
+  t.assert.ok(checks > 3000)
+
+  // a nullable root, after a call that filled the scratch
+  const root = build({ type: 'object', nullable: true, properties: { a: { type: 'string' } } }, { objectMechanism: 'native' })
+  t.assert.equal(root({ a: 'x' }), '{"a":"x"}')
+  t.assert.equal(root(null), 'null')
+  t.assert.equal(root({ a: 'y' }), '{"a":"y"}')
+  const list = build({ type: 'array', nullable: true, items: { type: 'string', nullable: true } }, { objectMechanism: 'native' })
+  t.assert.equal(list(['x', null]), '["x",null]')
+  t.assert.equal(list(null), 'null')
+  t.assert.equal(list([]), '[]')
 })
 
 test('objectMechanism option validation', t => {
@@ -276,7 +366,7 @@ test('native mechanism: [primitive, null] multi-type properties keep the strict 
   t.assert.ok(build(schema, { objectMechanism: 'native', mode: 'debug' }).code.includes('asStringValue'), 'schema is projected')
   for (const c of cases) t.assert.deepStrictEqual(run(nat, c), run(def, c), JSON.stringify(c, (k, v) => typeof v === 'bigint' ? 'bigint' : v))
   // ['integer', 'null'] and non-null multi-types are not projected
-  const notProjected = [{ type: ['integer', 'null'] }, { type: ['string', 'number'] }, { type: ['string', 'null', 'number'] }, { type: ['string', 'null'], format: 'email' }]
+  const notProjected = [{ type: ['integer', 'null'] }, { type: ['string', 'number'] }, { type: ['string', 'null', 'number'] }, { type: ['string', 'null'], format: 'unsafe' }]
   t.assert.ok(notProjected.every((p) => !build({ type: 'object', properties: { a: p } }, { objectMechanism: 'native', mode: 'debug' }).code.includes('asStringValue')))
 })
 
