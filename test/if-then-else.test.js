@@ -539,6 +539,195 @@ test('if-then-else with allOf', (t) => {
   t.assert.equal(output, '{"base":"test","foo":"value"}')
 })
 
+test('allOf with multiple if/then schemas serializes each matching branch', (t) => {
+  t.plan(3)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      kind: {
+        enum: ['obj_1', 'obj_2']
+      }
+    },
+    allOf: [
+      {
+        if: {
+          properties: {
+            kind: { type: 'string', const: 'obj_1' }
+          }
+        },
+        then: {
+          type: 'object',
+          properties: {
+            kind: { type: 'string' },
+            prop_1: { type: 'integer' }
+          }
+        }
+      },
+      {
+        if: {
+          properties: {
+            kind: { type: 'string', const: 'obj_2' }
+          }
+        },
+        then: {
+          type: 'object',
+          properties: {
+            kind: { type: 'string' },
+            prop_2: { type: 'string' }
+          }
+        }
+      }
+    ],
+    required: ['kind']
+  }
+
+  const stringify = build(schema)
+
+  t.assert.equal(stringify({ kind: 'obj_1', prop_1: 5 }), '{"kind":"obj_1","prop_1":5}')
+  t.assert.equal(stringify({ kind: 'obj_2', prop_2: '5' }), '{"kind":"obj_2","prop_2":"5"}')
+  t.assert.equal(stringify({ kind: 'obj_2', prop_2: 5 }), '{"kind":"obj_2","prop_2":"5"}')
+})
+
+test('allOf folds if/then schemas while keeping sibling schemas', (t) => {
+  t.plan(3)
+
+  const schema = {
+    type: 'object',
+    allOf: [
+      {
+        type: 'object',
+        properties: {
+          base: { type: 'string' }
+        }
+      },
+      {
+        if: {
+          properties: {
+            kind: { type: 'string', const: 'obj_1' }
+          }
+        },
+        then: {
+          type: 'object',
+          properties: {
+            kind: { type: 'string' },
+            prop_1: { type: 'integer' }
+          }
+        }
+      },
+      {
+        if: {
+          properties: {
+            kind: { type: 'string', const: 'obj_2' }
+          }
+        },
+        then: {
+          type: 'object',
+          properties: {
+            kind: { type: 'string' },
+            prop_2: { type: 'string' }
+          }
+        }
+      },
+      {
+        if: {
+          properties: {
+            kind: { type: 'string', const: 'obj_3' }
+          }
+        },
+        then: {
+          type: 'object',
+          properties: {
+            kind: { type: 'string' },
+            prop_3: { type: 'boolean' }
+          }
+        }
+      }
+    ]
+  }
+
+  const stringify = build(schema)
+
+  t.assert.equal(
+    stringify({ base: 'x', kind: 'obj_1', prop_1: 5 }),
+    '{"base":"x","kind":"obj_1","prop_1":5}'
+  )
+  t.assert.equal(
+    stringify({ base: 'x', kind: 'obj_2', prop_2: '5' }),
+    '{"base":"x","kind":"obj_2","prop_2":"5"}'
+  )
+  t.assert.equal(
+    stringify({ base: 'x', kind: 'obj_3', prop_3: true }),
+    '{"base":"x","kind":"obj_3","prop_3":true}'
+  )
+})
+
+test('allOf does not fold when a sibling already has else', (t) => {
+  t.plan(1)
+
+  const schema = {
+    type: 'object',
+    properties: {
+      kind: { type: 'string' }
+    },
+    allOf: [
+      {
+        if: {
+          properties: {
+            kind: { type: 'string', const: 'a' }
+          }
+        },
+        then: {
+          type: 'object',
+          properties: {
+            kind: { type: 'string' },
+            a: { type: 'number' }
+          }
+        },
+        else: {
+          type: 'object',
+          properties: {
+            kind: { type: 'string' },
+            other: { type: 'string' }
+          }
+        }
+      },
+      {
+        if: {
+          properties: {
+            kind: { type: 'string', const: 'b' }
+          }
+        },
+        then: {
+          type: 'object',
+          properties: {
+            kind: { type: 'string' },
+            b: { type: 'boolean' }
+          }
+        }
+      },
+      {
+        if: {
+          properties: {
+            kind: { type: 'string', const: 'c' }
+          }
+        },
+        then: {
+          type: 'object',
+          properties: {
+            kind: { type: 'string' },
+            c: { type: 'string' }
+          }
+        }
+      }
+    ]
+  }
+
+  // Must still compile; folding is skipped to avoid nesting into the sibling else.
+  const stringify = build(schema)
+  t.assert.equal(typeof stringify({ kind: 'a', a: 1 }), 'string')
+})
+
 test('if with a bare top-level $ref validates directly against the registered schema', (t) => {
   t.plan(2)
 
