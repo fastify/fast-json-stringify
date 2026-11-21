@@ -758,11 +758,11 @@ const stringify = fastJson(schema, { objectMechanism: 'native' })
 
 The projection covers schemas made only of:
 
-- `object` with `properties` (no `patternProperties`, `dependencies`,
-  combinators or `$ref`; `additionalProperties` absent or `false`), with at
-  least one property;
+- `object` with `properties` (no `patternProperties`, `dependencies` or
+  combinators; `additionalProperties` absent or `false`), with at least one
+  property;
 - `string` (with any `format` except `unsafe`), `number`, `integer`, `boolean`,
-  without `const`, combinators or `$ref`;
+  without `const` or combinators;
 - the two-element forms `['string', 'null']`, `['number', 'null']` and
   `['boolean', 'null']` (in either order), with the same strict type dispatch
   as the default mechanism;
@@ -770,6 +770,13 @@ The projection covers schemas made only of:
   every array element gets its own scratch objects.
 
 Each of them can be `nullable: true` and can have an `enum`.
+
+Each of them can also be reached through a `$ref`, to a definition of the same
+schema or to an external schema. Two kinds of `$ref` keep the default
+mechanism: a recursive one, and one with other keywords next to it (a
+`nullable` or a `default`, for instance; `title`, `description` and the other
+annotations are fine). The same holds for a root schema that is itself a
+`$ref` with its `definitions` next to it.
 
 Any other schema silently uses the default mechanism, so the option is always
 safe to enable. The projection only pays off where V8 has the fast path, so on
