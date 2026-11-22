@@ -554,7 +554,11 @@ function build (schema, options) {
   // `forceProjection` is an internal, undocumented escape hatch used by the
   // test suite to exercise the projection on runtimes where it is gated off.
   if (context.objectMechanism === 'native' && (options.forceProjection === true || PROJECTION_SUPPORTED)) {
-    projection = buildProjection(schema)
+    projection = buildProjection(location, {
+      resolve: (location) => resolveRef(context, location),
+      pointer: (location) => getSafeSchemaRef(context, location),
+      ignoredSiblings: IGNORED_REF_SIBLING_KEYWORDS
+    })
   }
   if (projection === null) {
     code = buildValue(context, location, 'input')
