@@ -6,6 +6,18 @@ const build = require('..')
 
 process.env.TZ = 'UTC'
 
+for (const iso of ['+010000-02-03T04:05:06.000Z', '-000001-02-03T04:05:06.000Z', '0000-02-03T04:05:06.000Z', '9999-02-03T04:05:06.000Z']) {
+  test(`preserve the whole calendar date for ${iso}`, (t) => {
+    const stringify = build({ type: 'string', format: 'date' })
+    t.assert.equal(stringify(new Date(iso)), JSON.stringify(iso.split('T')[0]))
+  })
+
+  test(`preserve the time for ${iso}`, (t) => {
+    const stringify = build({ type: 'string', format: 'time' })
+    t.assert.equal(stringify(new Date(iso)), '"04:05:06"')
+  })
+}
+
 test('render a date in a string as JSON', (t) => {
   t.plan(2)
 
@@ -285,9 +297,9 @@ test('render a date in a string when the year needs the ISO 8601 expanded notati
   }
   const stringify = build(schema)
 
-  // Years outside 0-9999 keep the pre-existing toISOString().slice(0, 10) output
+  // Years outside 0-9999 keep the complete calendar date, including the expanded year
   for (const date of [dateWithYear(-1), dateWithYear(10000), new Date(8640000000000000), new Date(-8640000000000000)]) {
-    t.assert.equal(stringify(date), JSON.stringify(date.toISOString().slice(0, 10)))
+    t.assert.equal(stringify(date), JSON.stringify(date.toISOString().split('T')[0]))
   }
 })
 
