@@ -367,6 +367,34 @@ test('native mechanism: $ref is projected and matches the default mechanism', t 
   t.assert.throws(() => build(missing, { objectMechanism: 'native' }), /Cannot find reference "#\/definitions\/missing"/)
 })
 
+test('native mechanism: an empty $ref is not a reference, as in the default mechanism', t => {
+  const external = {
+    $id: 'external',
+    type: 'object',
+    properties: { a: { type: 'string' } },
+    definitions: { d: { type: 'object', properties: { x: { $ref: '' }, y: { type: 'string' } } } }
+  }
+  const cases = [
+    [{ $ref: '' }, { a: 1 }],
+    [{ type: 'object', properties: { a: { $ref: '' }, b: { type: 'string' } } }, { a: { z: 1 }, b: 'x' }],
+    [{ type: 'object', properties: { a: { type: 'string', $ref: '' } } }, { a: 5 }],
+    [{ type: 'array', items: { $ref: '' } }, [{ z: 1 }, 2]],
+    [{ type: 'object', properties: { p: { $ref: 'external#/definitions/d' } } }, { p: { x: { a: 'in', other: 1 }, y: 'y' } }]
+  ]
+  t.plan(cases.length + 2)
+  for (const [schema, input] of cases) {
+    const options = { schema: { external } }
+    t.assert.deepStrictEqual(
+      run(build(schema, { ...options, objectMechanism: 'native' }), input),
+      run(build(schema, options), input)
+    )
+  }
+  // the value under an empty $ref has no type: it is written as it is
+  t.assert.equal(build(cases[4][0], { schema: { external }, objectMechanism: 'native' })(cases[4][1]), '{"p":{"x":{"a":"in","other":1},"y":"y"}}')
+  // with a type next to it, the node is projected like any other
+  t.assert.ok(build(cases[2][0], { objectMechanism: 'native', mode: 'debug' }).code.includes('asStringValue'))
+})
+
 test('native mechanism: a $ref the projection does not cover keeps the default mechanism', t => {
   const leaf = { type: 'object', properties: { a: { type: 'string' }, b: { type: 'string' }, c: { type: 'string' } } }
   // 4 x 4 x 4 x 4 uses of a 4-node schema: more than 1000 nodes once expanded
