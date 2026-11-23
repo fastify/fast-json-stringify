@@ -759,7 +759,8 @@ The projection covers schemas made only of:
 
 - `object` with `properties` (no `patternProperties`, `dependencies` or
   combinators; `additionalProperties` absent or `false`), with at least one
-  property;
+  property and at most 127: with more, the `JSON.stringify` fast path of V8
+  is not available and the default mechanism is the faster one;
 - `string` (with any `format` except `unsafe`), `number`, `integer`, `boolean`,
   without `const` or combinators;
 - the two-element forms `['string', 'null']`, `['number', 'null']` and

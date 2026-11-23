@@ -597,6 +597,29 @@ test('native mechanism: a property named __proto__ is written as the default mec
   t.assert.equal(nat(inputs[0]), '{"a":"x","__proto__":"own","b":{"__proto__":5}}')
 })
 
+test('native mechanism: an object with more than 127 properties keeps the default mechanism', t => {
+  const wide = (count) => {
+    const properties = {}
+    const input = {}
+    for (let i = 0; i < count; i++) {
+      properties['key' + i] = i % 2 === 0 ? { type: 'string' } : { type: 'integer' }
+      input['key' + i] = i % 2 === 0 ? 'value ' + i : i
+    }
+    return { schema: { type: 'object', properties }, input }
+  }
+  const projected = (schema) => build(schema, { objectMechanism: 'native', mode: 'debug' }).code.includes('asStringValue')
+  t.plan(7)
+  t.assert.ok(projected(wide(127).schema))
+  t.assert.ok(!projected(wide(128).schema))
+  // also when the wide object is nested or is the item of an array
+  t.assert.ok(!projected({ type: 'object', properties: { a: { type: 'string' }, nested: wide(128).schema } }))
+  t.assert.ok(!projected({ type: 'array', items: wide(128).schema }))
+  for (const count of [127, 128, 300]) {
+    const { schema, input } = wide(count)
+    t.assert.equal(build(schema, { objectMechanism: 'native' })(input), build(schema)(input))
+  }
+})
+
 test('native mechanism works in standalone mode', t => {
   const schema = { type: 'object', properties: { a: { type: 'string' }, n: { type: 'number' } } }
   const code = build(schema, { objectMechanism: 'native', mode: 'standalone' })
