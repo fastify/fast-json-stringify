@@ -549,6 +549,54 @@ test('native mechanism: scratch does not leak state between calls', t => {
   t.assert.equal(nat({ nested: {} }), '{"nested":{}}')
 })
 
+test('native mechanism: a serializer shares nothing between calls', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      id: { type: 'integer' },
+      name: { type: 'string' },
+      child: { type: 'object', properties: { id: { type: 'integer' }, name: { type: 'string' } } },
+      list: { type: 'array', items: { type: 'object', properties: { id: { type: 'integer' } } } }
+    }
+  }
+  const nat = build(schema, { objectMechanism: 'native' })
+  const def = build(schema)
+  t.plan(6)
+
+  // a property missing in the second call is not left over from the first
+  t.assert.equal(nat({ id: 1, name: 'first', child: { id: 2, name: 'c' }, list: [{ id: 1 }, { id: 2 }, { id: 3 }] }), '{"id":1,"name":"first","child":{"id":2,"name":"c"},"list":[{"id":1},{"id":2},{"id":3}]}')
+  t.assert.equal(nat({ id: 2, child: {}, list: [{}] }), '{"id":2,"child":{},"list":[{}]}')
+  t.assert.equal(nat(null), '{}')
+
+  // a call made while another one is running, with a BigInt beyond the safe
+  // range in the outer call only, in the inner call only, and in both
+  const big = 2n ** 70n
+  const reentrant = (outerId, innerId) => (fn) => fn({
+    id: outerId,
+    get name () { return fn({ id: innerId, name: 'inner' }) },
+    child: { id: outerId, name: 'c' }
+  })
+  for (const [outerId, innerId] of [[big, 1], [1, big], [big, big]]) {
+    t.assert.equal(reentrant(outerId, innerId)(nat), reentrant(outerId, innerId)(def))
+  }
+})
+
+test('native mechanism: a property named __proto__ is written as the default mechanism does', t => {
+  // JSON.parse defines "__proto__" as an own property, both in the schema and in the input
+  const schema = JSON.parse('{"type":"object","properties":{"a":{"type":"string"},"__proto__":{"type":"string"},"b":{"type":"object","properties":{"__proto__":{"type":"integer"}}}}}')
+  const inputs = [
+    JSON.parse('{"a":"x","__proto__":"own","b":{"__proto__":5}}'),
+    JSON.parse('{"__proto__":"only"}'),
+    { a: 'x' },
+    { a: 'x', b: {} }
+  ]
+  const nat = build(schema, { objectMechanism: 'native' })
+  const def = build(schema)
+  t.plan(inputs.length + 1)
+  for (const input of inputs) t.assert.deepStrictEqual(run(nat, input), run(def, input))
+  t.assert.equal(nat(inputs[0]), '{"a":"x","__proto__":"own","b":{"__proto__":5}}')
+})
+
 test('native mechanism works in standalone mode', t => {
   const schema = { type: 'object', properties: { a: { type: 'string' }, n: { type: 'number' } } }
   const code = build(schema, { objectMechanism: 'native', mode: 'standalone' })
