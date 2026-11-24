@@ -37,9 +37,11 @@ const BAND = 4
 // of A/B in every round, and out of A/A and B/B every four rounds
 const ORDERS = [[0, 2, 3, 1], [2, 0, 1, 3], [1, 3, 2, 0], [3, 1, 0, 2]]
 
-const greenColor = '\x1b[32m'
-const redColor = '\x1b[31m'
-const resetColor = '\x1b[0m'
+// no colors when the output goes to a file, as in the benchmark workflow
+const tty = process.stdout.isTTY
+const greenColor = tty ? '\x1b[32m' : ''
+const redColor = tty ? '\x1b[31m' : ''
+const resetColor = tty ? '\x1b[0m' : ''
 
 if (isMainThread) {
   main().catch((error) => {
