@@ -422,8 +422,8 @@ test('anyOf with registered $ref branches validates directly against the ref tar
   }
 
   const code = build(schema, { mode: 'standalone', schema: externalSchema })
-  t.assert.ok(code.includes('validator.validate("Foo#"'), 'validates directly against the bare registered id')
-  t.assert.ok(code.includes('validator.validate("Bar#/definitions/Baz"'), 'validates directly against the registered sub-path ref')
+  t.assert.ok(code.includes('validator.getSchemaValidator("Foo#"'), 'validates directly against the bare registered id')
+  t.assert.ok(code.includes('validator.getSchemaValidator("Bar#/definitions/Baz"'), 'validates directly against the registered sub-path ref')
 
   const stringify = build(schema, { schema: externalSchema })
   t.assert.equal(stringify({ content: { b: 'yo' } }), '{"content":{"b":"yo"}}')
@@ -953,4 +953,25 @@ test('$defs entry named propertyNames is still converted (Date serialization)', 
     '{"data":"2026-01-01T00:00:00.000Z"}'
   )
   t.assert.equal(warnMock.mock.callCount(), 0)
+})
+
+test('property named $id inside anyOf compiles and serializes correctly (#918)', (t) => {
+  t.plan(2)
+
+  const stringify = build({
+    anyOf: [
+      {
+        type: 'object',
+        properties: {
+          $id: { type: 'string' }
+        }
+      },
+      {
+        type: 'number'
+      }
+    ]
+  })
+
+  t.assert.equal(stringify({ $id: 'x' }), '{"$id":"x"}')
+  t.assert.equal(stringify(42), '42')
 })

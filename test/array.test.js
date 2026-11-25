@@ -411,6 +411,35 @@ test('array items is a schema and additionalItems is false', (t) => {
   t.assert.equal(validate({ foo: ['foo', 'bar'] }), true)
 })
 
+test('array items is a list of schema with nullable items', (t) => {
+  t.plan(6)
+
+  const items = [
+    { type: 'integer', nullable: true },
+    { type: 'number', nullable: true },
+    { type: 'boolean', nullable: true },
+    { type: 'object', nullable: true, properties: { a: { type: 'string' } } },
+    { type: 'array', nullable: true, items: { type: 'string' } },
+    { type: 'string', nullable: true }
+  ]
+  const input = [null, null, null, null, null, null]
+  const expected = '[null,null,null,null,null,null]'
+
+  const inlined = build({ type: 'array', items })
+  t.assert.equal(inlined(input), expected)
+  t.assert.equal(inlined([1, 1.5, true, { a: 'x' }, ['y'], 'z']), '[1,1.5,true,{"a":"x"},["y"],"z"]')
+
+  const withId = build({ $id: 'nullable-tuple', type: 'array', items })
+  t.assert.equal(withId(input), expected)
+  t.assert.equal(withId([1, 1.5, true, { a: 'x' }, ['y'], 'z']), '[1,1.5,true,{"a":"x"},["y"],"z"]')
+
+  const notNullable = build({ type: 'array', items: [{ type: 'integer' }] })
+  t.assert.throws(() => notNullable([null]), /Item at 0 does not match schema definition/)
+
+  const ajv = new Ajv({ allErrors: true, strict: false })
+  t.assert.equal(ajv.validate({ type: 'array', items }, JSON.parse(inlined(input))), true)
+})
+
 test('array items is a list of schema and additionalItems is a schema', (t) => {
   t.plan(1)
 

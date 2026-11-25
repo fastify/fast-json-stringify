@@ -7,6 +7,8 @@ const { MergeError } = require('@fastify/merge-json-schemas')
 
 const Serializer = require('./lib/serializer')
 const Validator = require('./lib/validator')
+const { escapeRefForAjv } = Validator
+const { buildProjection } = require('./lib/projection')
 const Location = require('./lib/location')
 const validate = require('./lib/schema-validator')
 const mergeSchemas = require('./lib/merge-schemas')
@@ -41,6 +43,8 @@ const NAMED_FRAGMENT_REF = /^#[a-z_][-\w._]*$/i
 // TODO: drop the Node 20 tier (and this version check) once Node 20 is no
 // longer supported.
 const nodeMajor = Number.parseInt(process.versions.node, 10)
+// objectMechanism: 'native' relies on the V8 13.8 JSON.stringify fast path.
+const { HAS_FAST_JSON_STRINGIFY: PROJECTION_SUPPORTED } = require('./lib/v8')
 const PRIMITIVE_FAST_PATH_MIN_LENGTH = [{ integer: 3e5, number: 3e5, string: 128 }, { integer: 512, number: 128, string: 8 }][+(nodeMajor >= 22)]
 const STRING_ARRAY_FAST_PATH_MIN_LENGTH = PRIMITIVE_FAST_PATH_MIN_LENGTH.string
 const INTEGER_ARRAY_FAST_PATH = { condition: 'Number.isInteger(v)', minLength: PRIMITIVE_FAST_PATH_MIN_LENGTH.integer }
@@ -97,6 +101,11 @@ const validLargeArrayMechanisms = new Set([
   'json-stringify'
 ])
 
+const validObjectMechanisms = new Set([
+  'default',
+  'native'
+])
+
 // Keywords that do not change the output, so a $ref carrying only these
 // can still be dereferenced directly instead of merged with its target.
 const IGNORED_REF_SIBLING_KEYWORDS = new Set([
@@ -126,33 +135,33 @@ function schemaDepthError (maxDepth, name) {
 }
 
 function assertObjectDepth (schema, maxDepth, name) {
-  const stack = [{ value: schema, depth: 0, exit: false }]
-  const path = new WeakSet()
+  if (typeof schema !== 'object' || schema === null) return false
+
+  // Iterative depth-first walk. `values` and `depths` hold the pending nodes.
+  // `path[d]` is the ancestor at depth d of the current node, so a node that
+  // is already in `path` closes a cycle. The depth is limited to
+  // maxDepth * 2, so the linear scan of `path` stays cheap.
+  const values = [schema]
+  const depths = [0]
+  const path = []
   let hasRef = false
 
-  while (stack.length > 0) {
-    const entry = stack.pop()
-    const value = entry.value
-
-    if (typeof value !== 'object' || value === null) continue
+  while (values.length > 0) {
+    const value = values.pop()
+    const depth = depths.pop()
 
     // Schema maps and arrays add at most one container between schema nodes.
     // Keep dependency traversals within the same stack-safety envelope while
     // still allowing maxDepth schema nodes nested through `properties`.
-    if (entry.depth > maxDepth * 2) {
+    if (depth > maxDepth * 2) {
       throw schemaDepthError(maxDepth, name)
     }
 
-    if (entry.exit) {
-      path.delete(value)
-      continue
-    }
-
-    if (path.has(value)) {
+    path.length = depth
+    if (path.includes(value)) {
       throw new Error('schema contains a circular object reference; use $ref instead')
     }
-    path.add(value)
-    stack.push({ value, depth: entry.depth, exit: true })
+    path.push(value)
 
     for (const key in value) {
       const child = value[key]
@@ -160,9 +169,9 @@ function assertObjectDepth (schema, maxDepth, name) {
         hasRef = true
       }
       // Primitive values cannot contain cycles or contribute object depth.
-      // Avoid allocating stack entries that the next iteration would discard.
       if (typeof child === 'object' && child !== null) {
-        stack.push({ value: child, depth: entry.depth + 1, exit: false })
+        values.push(child)
+        depths.push(depth + 1)
       }
     }
   }
@@ -348,7 +357,7 @@ function getMergedLocation (context, mergedSchemaId) {
 }
 
 function getSchemaId (schema, rootSchemaId) {
-  if (schema.$id && schema.$id.charAt(0) !== '#') {
+  if (typeof schema.$id === 'string' && schema.$id.charAt(0) !== '#') {
     return schema.$id
   }
   return rootSchemaId
@@ -370,7 +379,29 @@ function getSafeSchemaRef (context, location) {
   return schemaRef
 }
 
+// The ref the generated code passes to validator.getSchemaValidator(). It is always a
+// literal JSON pointer (built from the actual keys, or a $ref whose literal
+// target exists), so it is escaped for Ajv here, once at build time, rather
+// than on every validate() call at serialization time.
 function getValidatorSchemaRef (context, location) {
+  return escapeRefForAjv(resolveValidatorSchemaRef(context, location))
+}
+
+// The expression that validates `input` against `schemaRef` in the generated
+// code. Looking a schema up by its ref is the expensive part of a validation
+// (Ajv normalizes the ref and walks its registries on every call), so each ref
+// gets one variable in the serializer scope that holds its validation function.
+// It is filled on first use: the schema is still compiled lazily, as before.
+function buildValidation (context, schemaRef, input) {
+  let name = context.validatorFunctions.get(schemaRef)
+  if (name === undefined) {
+    name = `validate_${context.validatorFunctions.size}`
+    context.validatorFunctions.set(schemaRef, name)
+  }
+  return `(${name} || (${name} = validator.getSchemaValidator(${JSON.stringify(schemaRef)})))(${input})`
+}
+
+function resolveValidatorSchemaRef (context, location) {
   let schemaRef = location.getSchemaRef()
   const schema = location.schema
 
@@ -434,6 +465,7 @@ function build (schema, options) {
     rootSchemaId: schema.$id || `__fjs_root_${schemaIdCounter++}`,
     validatorSchemasIds: new Set(),
     validatorSchemaRefs: new Set(),
+    validatorFunctions: new Map(),
     mergedSchemasIds: new Map(),
     mergedRefsIds: new Map(),
     maxDepth,
@@ -442,6 +474,7 @@ function build (schema, options) {
     buildingSet: new Set(),
     largeArraySize: 2e4,
     largeArrayMechanism: 'default',
+    objectMechanism: 'default',
     uid: 0
   }
 
@@ -479,6 +512,14 @@ function build (schema, options) {
     }
   }
 
+  if (options.objectMechanism) {
+    if (validObjectMechanisms.has(options.objectMechanism)) {
+      context.objectMechanism = options.objectMechanism
+    } else {
+      throw new Error(`Unsupported object mechanism ${options.objectMechanism}`)
+    }
+  }
+
   if (options.largeArraySize) {
     const largeArraySizeType = typeof options.largeArraySize
     let parsedNumber
@@ -500,7 +541,28 @@ function build (schema, options) {
   if (hasRef) {
     detectRecursiveSchemas(context, location)
   }
-  const code = buildValue(context, location, 'input')
+
+  // objectMechanism: 'native' projects the input into shape-stable scratch
+  // objects and delegates to the native JSON.stringify. Only whole schemas
+  // made of objects, arrays and primitives qualify; anything else falls back
+  // to the string codegen below, so output never changes for unsupported shapes.
+  // The projection only pays off where V8 has the side-effect-free
+  // JSON.stringify fast path (V8 13.8+, Node 25+): on older runtimes the
+  // string codegen is up to 2x faster, so the option is a no-op there.
+  let code = null
+  let projection = null
+  // `forceProjection` is an internal, undocumented escape hatch used by the
+  // test suite to exercise the projection on runtimes where it is gated off.
+  if (context.objectMechanism === 'native' && (options.forceProjection === true || PROJECTION_SUPPORTED)) {
+    projection = buildProjection(location, {
+      resolve: (location) => resolveRef(context, location),
+      pointer: (location) => getSafeSchemaRef(context, location),
+      ignoredSiblings: IGNORED_REF_SIBLING_KEYWORDS
+    })
+  }
+  if (projection === null) {
+    code = buildValue(context, location, 'input')
+  }
 
   let contextFunctionCode = `
     ${serializerFns}
@@ -515,6 +577,7 @@ function build (schema, options) {
     const JSON_STR_EMPTY_ARRAY = JSON_STR_BEGIN_ARRAY + JSON_STR_END_ARRAY
     const JSON_STR_EMPTY_STRING = JSON_STR_QUOTE + JSON_STR_QUOTE
     const JSON_STR_NULL = 'null'
+    ${[...context.validatorFunctions.values()].map((name) => `let ${name}`).join('\n    ')}
   `
 
   // If we have only the invocation of the 'anonymous0' function, we would
@@ -522,7 +585,9 @@ function build (schema, options) {
   // and the overhead of the intermediate variable 'json'. We can avoid the
   // wrapping and the unnecessary memory allocation by aliasing 'anonymous0' to
   // 'main'
-  if (code === 'json += anonymous0(input)') {
+  if (projection !== null) {
+    contextFunctionCode += projection
+  } else if (code === 'json += anonymous0(input)') {
     contextFunctionCode += `
     ${context.functions.join('\n')}
     const main = anonymous0
@@ -542,7 +607,7 @@ function build (schema, options) {
 
   const serializer = new Serializer(options)
   // Ajv construction dominates tiny build() cost. Only create a Validator when
-  // generated code needs validator.validate (anyOf/oneOf/if-then-else), or when
+  // generated code needs a schema validator (anyOf/oneOf/if-then-else), or when
   // debug mode exposes the instance. Standalone already emits `validator = null`
   // when validatorSchemasIds is empty.
   const needsValidator =
@@ -559,11 +624,11 @@ function build (schema, options) {
   if (validator !== null) {
     for (const schemaId of context.validatorSchemasIds) {
       const schema = context.refResolver.getSchema(schemaId)
-      validator.addSchema(schema, schemaId)
+      validator.addSchema(schema, schemaId, context.refResolver)
 
       const dependencies = getSchemaDependencies(context.refResolver, schemaId)
       for (const [schemaId, schema] of Object.entries(dependencies)) {
-        validator.addSchema(schema, schemaId)
+        validator.addSchema(schema, schemaId, context.refResolver)
       }
     }
 
@@ -651,13 +716,13 @@ function buildExtraObjectPropertiesSerializer (context, location, addComma, objV
 
   let code = `
     for (const key of Object.keys(${objVar})) {
-      if (
-        ${propertiesKeys.length > 0 ? propertiesKeys.map(k => `key === ${JSON.stringify(k)}`).join(' || ') + ' ||' : ''}
-        ${objVar}[key] === undefined ||
-        typeof ${objVar}[key] === 'function' ||
-        typeof ${objVar}[key] === 'symbol'
-      ) continue
+      ${propertiesKeys.length > 0 ? `if (${propertiesKeys.map(k => `key === ${JSON.stringify(k)}`).join(' || ')}) continue` : ''}
       const value = ${objVar}[key]
+      if (
+        value === undefined ||
+        typeof value === 'function' ||
+        typeof value === 'symbol'
+      ) continue
   `
 
   const patternPropertiesLocation = location.getPropertyLocation('patternProperties')
@@ -894,7 +959,7 @@ function cloneOriginSchema (context, schema, schemaId) {
   const clonedSchema = Array.isArray(schema) ? [] : {}
 
   if (
-    schema.$id !== undefined &&
+    typeof schema.$id === 'string' &&
     schema.$id.charAt(0) !== '#'
   ) {
     schemaId = schema.$id
@@ -1161,7 +1226,7 @@ function buildArray (context, location, input) {
         const tmpRes = buildValue(context, itemLocation, value)
         functionCode += `
         if (${i} < arrayLength) {
-          if (${buildArrayTypeCondition(item.type, value)}) {
+          if (${buildTupleItemCondition(item, value)}) {
             if (${i}) {
               json += JSON_STR_COMMA
             }
@@ -1255,7 +1320,7 @@ function buildArray (context, location, input) {
       const tmpRes = buildValue(context, itemLocation, value)
       inlinedCode += `
         if (${i} < arrayLength_${objVar}) {
-          if (${buildArrayTypeCondition(item.type, value)}) {
+          if (${buildTupleItemCondition(item, value)}) {
             !addComma_${localUid} && (addComma_${localUid} = true) || (json += JSON_STR_COMMA)
             ${tmpRes}
           } else {
@@ -1342,13 +1407,20 @@ function buildArrayTypeCondition (type, accessor) {
   return condition
 }
 
+// A nullable tuple item accepts null on top of its declared type(s);
+// buildValue() then serializes it as `null`.
+function buildTupleItemCondition (item, accessor) {
+  const condition = buildArrayTypeCondition(item.type, accessor)
+  return item.nullable === true ? `${accessor} === null || ${condition}` : condition
+}
+
 function generateFuncName (context) {
   return 'anonymous' + context.functionsCounter++
 }
 
 function buildMultiTypeSerializer (context, location, input) {
   const schema = location.schema
-  const types = schema.type.sort(t1 => t1 === 'null' ? -1 : 1)
+  const types = [...schema.type].sort(t1 => t1 === 'null' ? -1 : 1)
 
   let code = ''
 
@@ -1448,7 +1520,7 @@ function buildSingleTypeSerializer (context, location, input) {
           if (${input} === null) {
             json += JSON_STR_EMPTY_STRING
           } else if (${input} instanceof Date) {
-            json += JSON_STR_QUOTE + ${input}.toISOString() + JSON_STR_QUOTE
+            json += asDateTime(${input})
           } else if (${input} instanceof RegExp) {
             json += asString(${input}.source)
           } else {
@@ -1634,6 +1706,10 @@ function buildAllOf (context, location, input) {
   return buildValue(context, mergedLocation, input)
 }
 
+function isEmptyObjectSchema (schema) {
+  return Object.keys(schema).length === 0
+}
+
 function buildOneOf (context, location, input) {
   context.validatorSchemasIds.add(location.schemaId)
 
@@ -1648,6 +1724,11 @@ function buildOneOf (context, location, input) {
     location.jsonPointer
   )
   const oneOfsLocation = location.getPropertyLocation(type)
+  // When the anyOf/oneOf has no sibling keywords, a `$ref` option can be
+  // built directly. Merging it with an empty sibling schema would clone the
+  // target (often the root) and re-enter buildOneOf forever for multiple
+  // fields that each `$ref: '#'` (https://github.com/fastify/fast-json-stringify/issues/724).
+  const withoutIsEmpty = isEmptyObjectSchema(schemaWithoutAnyOf)
 
   let code = ''
 
@@ -1655,26 +1736,56 @@ function buildOneOf (context, location, input) {
     const optionLocation = oneOfsLocation.getPropertyLocation(index)
     const optionSchema = optionLocation.schema
 
-    let mergedSchemaId = context.mergedSchemasIds.get(optionSchema)
-    let mergedLocation = null
-    if (mergedSchemaId) {
-      mergedLocation = getMergedLocation(context, mergedSchemaId)
+    let nestedResult
+    if (typeof optionSchema.$ref === 'string') {
+      // resolveRef merges the option's own sibling keywords (memoized by
+      // content), so the location it returns is stable across clones.
+      const resolvedLocation = resolveRef(context, optionLocation)
+      let mergedLocation = resolvedLocation
+      if (!withoutIsEmpty) {
+        // Keyed by content, not by identity: the option is cloned on every
+        // merge of its target, so a recursive $ref would otherwise be merged
+        // again on each level (same as resolveRef for sibling keywords).
+        // The siblings are cloned first so that their relative $refs are made
+        // absolute: the same sibling text in two schemas must not share a key.
+        const siblingLocation = new Location(
+          cloneOriginSchema(context, schemaWithoutAnyOf, location.schemaId),
+          location.schemaId,
+          location.jsonPointer
+        )
+        const mergedSchemaKey = resolvedLocation.getSchemaRef() + JSON.stringify(siblingLocation.schema)
+        let mergedSchemaId = context.mergedRefsIds.get(mergedSchemaKey)
+        if (mergedSchemaId === undefined) {
+          mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
+          mergeLocations(context, mergedSchemaId, [siblingLocation, resolvedLocation])
+          context.mergedRefsIds.set(mergedSchemaKey, mergedSchemaId)
+        }
+        mergedLocation = getMergedLocation(context, mergedSchemaId)
+      }
+      nestedResult = buildValue(context, mergedLocation, input)
     } else {
-      mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
-      context.mergedSchemasIds.set(optionSchema, mergedSchemaId)
+      let mergedSchemaId = context.mergedSchemasIds.get(optionSchema)
+      let mergedLocation = null
+      if (mergedSchemaId) {
+        mergedLocation = getMergedLocation(context, mergedSchemaId)
+      } else {
+        mergedSchemaId = `__fjs_merged_${schemaIdCounter++}`
+        context.mergedSchemasIds.set(optionSchema, mergedSchemaId)
 
-      mergedLocation = mergeLocations(context, mergedSchemaId, [
-        locationWithoutOneOf,
-        optionLocation
-      ])
+        mergedLocation = mergeLocations(context, mergedSchemaId, [
+          locationWithoutOneOf,
+          optionLocation
+        ])
+      }
+
+      nestedResult = buildValue(context, mergedLocation, input)
     }
 
-    const nestedResult = buildValue(context, mergedLocation, input)
     const schemaRef = getValidatorSchemaRef(context, optionLocation)
     context.validatorSchemaRefs.add(schemaRef)
 
     code += `
-      ${index === 0 ? 'if' : 'else if'}(validator.validate(${JSON.stringify(schemaRef)}, ${input})) {
+      ${index === 0 ? 'if' : 'else if'}(${buildValidation(context, schemaRef, input)}) {
         ${nestedResult}
       }
     `
@@ -1728,7 +1839,7 @@ function buildIfThenElse (context, location, input) {
 
   if (!elseSchema) {
     return `
-      if (validator.validate(${JSON.stringify(ifSchemaRef)}, ${input})) {
+      if (${buildValidation(context, ifSchemaRef, input)}) {
         ${buildValue(context, thenMergedLocation, input)}
       } else {
         ${buildValue(context, rootLocation, input)}
@@ -1752,7 +1863,7 @@ function buildIfThenElse (context, location, input) {
   }
 
   return `
-    if (validator.validate(${JSON.stringify(ifSchemaRef)}, ${input})) {
+    if (${buildValidation(context, ifSchemaRef, input)}) {
       ${buildValue(context, thenMergedLocation, input)}
     } else {
       ${buildValue(context, elseMergedLocation, input)}
