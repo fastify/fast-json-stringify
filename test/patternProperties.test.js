@@ -190,3 +190,23 @@ test('required key not in properties + patternProperties produces valid JSON', (
   t.assert.equal(out, '{"s_x":"x"}')
   t.assert.deepStrictEqual(JSON.parse(out), { s_x: 'x' })
 })
+
+test('patternProperties - anchored and non-literal patterns', (t) => {
+  t.plan(1)
+  const stringify = build({
+    title: 'anchored and non-literal patterns',
+    type: 'object',
+    patternProperties: {
+      '^user_': {
+        type: 'string'
+      },
+      '[0-9]$': {
+        type: 'number'
+      }
+    },
+    additionalProperties: false
+  })
+
+  const obj = { user_name: 'a', my_user_x: 'b', user_1: 1, n2: '2', n2x: 3 }
+  t.assert.equal(stringify(obj), '{"user_name":"a","user_1":"1","n2":2}')
+})
