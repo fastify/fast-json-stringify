@@ -114,6 +114,45 @@ test('empty schema on array', (t) => {
   t.assert.equal(stringify([1, true, 'hello', [], { x: 1 }]), '[1,true,"hello",[],{"x":1}]')
 })
 
+test('empty schema on array writes null for values JSON cannot represent', (t) => {
+  t.plan(4)
+
+  const stringify = build({
+    type: 'array',
+    items: {}
+  })
+
+  t.assert.equal(stringify([1, undefined, 2]), '[1,null,2]')
+  t.assert.equal(stringify([() => {}, Symbol('s')]), '[null,null]')
+  t.assert.equal(stringify(new Array(2)), '[null,null]')
+  t.assert.equal(build({ type: 'array' })([undefined]), '[null]')
+})
+
+test('additionalItems true writes null for values JSON cannot represent', (t) => {
+  t.plan(1)
+
+  const stringify = build({
+    type: 'array',
+    items: [{ type: 'integer' }],
+    additionalItems: true
+  })
+
+  t.assert.equal(stringify([1, undefined, () => {}]), '[1,null,null]')
+})
+
+test('empty schema never writes undefined', (t) => {
+  t.plan(3)
+
+  t.assert.equal(build({})(undefined), 'null')
+  t.assert.equal(build(true)(() => {}), 'null')
+  t.assert.equal(build({
+    type: 'object',
+    properties: {
+      x: {}
+    }
+  })({ x: () => {} }), '{"x":null}')
+})
+
 test('empty schema on anyOf', (t) => {
   t.plan(4)
 

@@ -418,6 +418,18 @@ test('additionalProperties set to false without declared properties ignores unma
   t.assert.deepStrictEqual(JSON.parse(out), { str1: 'a' })
 })
 
+test('additionalProperties set to true writes null when toJSON returns undefined', (t) => {
+  t.plan(2)
+  const stringify = build({
+    type: 'object',
+    additionalProperties: true
+  })
+
+  const out = stringify({ x: { toJSON () { return undefined } }, y: 1 })
+  t.assert.equal(out, '{"x":null,"y":1}')
+  t.assert.deepStrictEqual(JSON.parse(out), { x: null, y: 1 })
+})
+
 test('extra properties skip undefined, function and symbol values and keep key order', (t) => {
   const input = { 2: 'two', id: 1, a: 'x', u: undefined, f () {}, s: Symbol('s'), n_1: 3, 1: 'one', z: null }
   const schemas = [
