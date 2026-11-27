@@ -197,7 +197,7 @@ are rejected before compilation.
 - `inlineValidators`: when using standalone mode, embed Ajv-generated validator functions in the output instead of compiling schemas at runtime. [More details](#standalone)
 - `largeArrayMechanism`: set the mechanism that should be used to handle large
 (by default `20000` or more items) arrays. [More details](#largearrays)
-- `objectMechanism`: set the mechanism used to serialize objects. `'native'` projects the input into schema-shaped scratch objects and delegates to the native `JSON.stringify`, which is much faster on Node.js 25+. [More details](#objectmechanism)
+- `objectMechanism`: set the mechanism used to serialize objects. `'native'` projects the input into new schema-shaped objects and delegates to the native `JSON.stringify`, which is much faster on Node.js 25+. [More details](#objectmechanism)
 - `compileValidators`: when `true`, the `ajv` validators used by `anyOf`, `oneOf` and `if/then/else` are compiled during `build()` instead of lazily, on the first serialization that reaches them. This makes `build()` slower but removes a potentially large one-off cost
 from the first `stringify()` call. Defaults to `false`.
 
@@ -744,10 +744,9 @@ building can match, but that fast path bails out as soon as the input carries a
 `Date`, a `toJSON`, a class prototype or any property that is not plain data.
 
 With `objectMechanism: 'native'`, `fast-json-stringify` instead *projects* the
-input into preallocated scratch objects whose keys are exactly the schema
-properties, in schema order, and hands the scratch to the native
-`JSON.stringify`. The scratch is plain by construction, so the fast path is
-always taken, whatever the input looks like, while the schema is still applied:
+input into new objects whose keys are exactly the schema properties, in schema
+order, and hands them to the native `JSON.stringify`. These objects are plain
+by construction, so the fast path is always taken, whatever the input looks like, while the schema is still applied:
 undeclared properties are dropped, `required` is enforced, `default` applied,
 types coerced and `format: date-time` / `date` / `time` rendered as before.
 The output is byte-identical to the default mechanism.
@@ -760,14 +759,14 @@ The projection covers schemas made only of:
 
 - `object` with `properties` (no `patternProperties`, `dependencies` or
   combinators; `additionalProperties` absent or `false`), with at least one
-  property;
+  property and at most 127: with more, the `JSON.stringify` fast path of V8
+  is not available and the default mechanism is the faster one;
 - `string` (with any `format` except `unsafe`), `number`, `integer`, `boolean`,
   without `const` or combinators;
 - the two-element forms `['string', 'null']`, `['number', 'null']` and
   `['boolean', 'null']` (in either order), with the same strict type dispatch
   as the default mechanism;
-- `array` whose `items` is one such schema (no tuples), nested to any depth;
-  every array element gets its own scratch objects.
+- `array` whose `items` is one such schema (no tuples), nested to any depth.
 
 Each of them can be `nullable: true` and can have an `enum`.
 
@@ -790,9 +789,8 @@ When each object carries three undeclared properties (a string, a `Date` and
 an object) it is also about 4x faster than `JSON.stringify` itself.
 (Node.js v26.13.0, fast-json-stringify 7.3.10, Apple Silicon.)
 
-The scratch objects are reused across calls; `JSON.stringify` is synchronous,
-so this is safe, and no reference to the last input is retained beyond the
-primitive values written into the scratch.
+The projected objects are created by each call and dropped when it returns, so
+a serializer keeps no data of the last input in memory.
 
 **When to use it**
 
