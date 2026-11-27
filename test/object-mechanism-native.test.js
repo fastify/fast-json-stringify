@@ -841,3 +841,22 @@ test('native mechanism: a serializer can be called again while it is serializing
   // after an error the serializer is not left in the "serializing" state
   t.assert.equal(nat({ a: '1', b: '2', c: '3', list: [{ x: '4' }] }), '{"a":"1","b":"2","c":"3","list":[{"x":"4"}]}')
 })
+
+test('native mechanism: array index property names keep the order of the default mechanism', t => {
+  // An object lists array index keys first, so a projected object cannot put
+  // them after the required properties as the default mechanism does
+  const schemas = [
+    { type: 'object', required: ['a'], properties: { a: { type: 'string' }, 2: { type: 'integer' } } },
+    { type: 'array', items: { type: 'object', required: ['a'], properties: { 0: { type: 'string' }, a: { type: 'string' } } } },
+    { type: 'object', required: ['1'], properties: { 1: { type: 'string' }, a: { type: 'string' } } }
+  ]
+  const inputs = [{ a: 'x', 0: 'y', 1: 'z', 2: 3 }, [{ a: 'x', 0: 'y' }, { a: 'z' }]]
+  t.plan(schemas.length * inputs.length + 1)
+  for (const schema of schemas) {
+    const nat = build(schema, { objectMechanism: 'native' })
+    const def = build(schema)
+    for (const input of inputs) t.assert.deepStrictEqual(run(nat, input), run(def, input), JSON.stringify(schema))
+  }
+  // the order is the same: the schema is still projected
+  t.assert.ok(build(schemas[2], { objectMechanism: 'native', mode: 'debug' }).code.includes('asStringValue'))
+})
