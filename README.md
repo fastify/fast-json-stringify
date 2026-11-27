@@ -778,8 +778,15 @@ annotations are fine). The same holds for a root schema that is itself a
 `$ref` with its `definitions` next to it.
 
 Any other schema silently uses the default mechanism, so the option is always
-safe to enable. The projection only pays off where V8 has the fast path, so on
-Node.js 24 and older the option is a no-op and the default mechanism is used.
+safe to enable. Where the projection is used also depends on the runtime:
+
+- Node.js 25+ (V8 has the `JSON.stringify` fast path): every schema listed above;
+- Node.js 22 and 24: only the schemas where at least half of the values are
+  strings. Without the fast path the projection is still faster on strings,
+  which the native `JSON.stringify` escapes faster than the generated code, and
+  slower on numbers and booleans;
+- older runtimes: never, the option is a no-op.
+
 On Node.js 25+ the projection serializes plain objects within 5-16% of a bare
 `JSON.stringify` (2-6% on the fixtures in `benchmark/`; the default mechanism
 is 25-45% behind it there). On a list of 50 eight-property objects it is
@@ -796,8 +803,8 @@ a serializer keeps no data of the last input in memory.
 
 Enable `objectMechanism: 'native'` when your application runs on Node.js 25+.
 Schemas the projection does not cover keep the default mechanism, the output
-is the same, and on older Node.js versions the option does nothing. It pays
-off most when:
+is the same, and on Node.js 22 and 24 only string-heavy schemas use the
+projection. It pays off most when:
 
 - the serialized objects are ORM entities or class instances, or carry columns
   that the schema does not declare (the usual case for a response schema).
@@ -812,8 +819,8 @@ off most when:
   v7.3.9 the default mechanism was the faster one here.
 
 Keep the default mechanism when a benchmark on your own payloads shows no
-gain, or on Node.js 24 and older, where the option has no effect. The two
-mechanisms are interchangeable at any time, since they produce the same output.
+gain. The two mechanisms are interchangeable at any time, since they produce
+the same output.
 
 With Fastify, pass the option through `serializerOpts`:
 
