@@ -4,6 +4,63 @@ const { test } = require('node:test')
 const clone = require('rfdc/default')
 const build = require('..')
 
+test('multi-type schemas should not change the input schema', t => {
+  t.plan(5)
+
+  const schema = {
+    type: ['object', 'null'],
+    properties: {
+      name: { type: ['string', 'null'] },
+      values: { type: 'array', items: { type: ['number', 'null'] } }
+    }
+  }
+  const clonedSchema = clone(schema)
+  const stringify = build(schema)
+
+  t.assert.deepStrictEqual(schema, clonedSchema)
+  t.assert.equal(stringify({ name: 'hello', values: [42, null] }), '{"name":"hello","values":[42,null]}')
+  t.assert.equal(stringify(null), 'null')
+
+  const stringifyAgain = build(schema)
+  t.assert.equal(stringifyAgain({ name: null, values: [] }), '{"name":null,"values":[]}')
+  t.assert.deepStrictEqual(schema, clonedSchema)
+})
+
+test('multi-type schemas should not change an external reference schema', t => {
+  t.plan(3)
+
+  const referenceSchema = {
+    $id: 'externalSchema',
+    type: ['string', 'null']
+  }
+  const clonedSchema = clone(referenceSchema)
+  const stringify = build({
+    type: 'object',
+    properties: { name: { $ref: 'externalSchema' } }
+  }, {
+    schema: { externalSchema: referenceSchema }
+  })
+
+  t.assert.equal(stringify({ name: 'hello' }), '{"name":"hello"}')
+  t.assert.equal(stringify({ name: null }), '{"name":null}')
+  t.assert.deepStrictEqual(referenceSchema, clonedSchema)
+})
+
+test('multi-type schemas should support frozen type arrays', t => {
+  t.plan(3)
+
+  const stringify = build({
+    type: Object.freeze(['object', 'null']),
+    properties: {
+      name: { type: Object.freeze(['string', 'null']) }
+    }
+  })
+
+  t.assert.equal(stringify({ name: 'hello' }), '{"name":"hello"}')
+  t.assert.equal(stringify({ name: null }), '{"name":null}')
+  t.assert.equal(stringify(null), 'null')
+})
+
 test('oneOf with $ref should not change the input schema', t => {
   t.plan(2)
 

@@ -417,3 +417,45 @@ test('additionalProperties set to false without declared properties ignores unma
   t.assert.equal(out, '{"str1":"a"}')
   t.assert.deepStrictEqual(JSON.parse(out), { str1: 'a' })
 })
+
+test('extra properties skip undefined, function and symbol values and keep key order', (t) => {
+  const input = { 2: 'two', id: 1, a: 'x', u: undefined, f () {}, s: Symbol('s'), n_1: 3, 1: 'one', z: null }
+  const schemas = [
+    [{ type: 'object', properties: { id: { type: 'integer' } }, additionalProperties: { type: 'string' } },
+      '{"id":1,"1":"one","2":"two","a":"x","n_1":"3","z":""}'],
+    [{ type: 'object', additionalProperties: { type: 'string' } },
+      '{"1":"one","2":"two","id":"1","a":"x","n_1":"3","z":""}'],
+    [{ type: 'object', properties: { id: { type: 'integer' } }, additionalProperties: true },
+      '{"id":1,"1":"one","2":"two","a":"x","n_1":3,"z":null}'],
+    [{ type: 'object', properties: { id: { type: 'integer' } }, patternProperties: { '^n_': { type: 'number' } }, additionalProperties: { type: 'string' } },
+      '{"id":1,"1":"one","2":"two","a":"x","n_1":3,"z":""}'],
+    [{ type: 'object', patternProperties: { '^n_': { type: 'number' } }, additionalProperties: false },
+      '{"n_1":3}']
+  ]
+  t.plan(schemas.length)
+
+  for (const [schema, expected] of schemas) {
+    t.assert.equal(build(schema)(input), expected)
+  }
+})
+
+test('extra properties read each value once', (t) => {
+  const schemas = [
+    { type: 'object', properties: { id: { type: 'integer' } }, additionalProperties: { type: 'string' } },
+    { type: 'object', additionalProperties: true },
+    { type: 'object', patternProperties: { '^g': { type: 'string' } } }
+  ]
+  t.plan(schemas.length * 2)
+
+  for (const schema of schemas) {
+    let reads = 0
+    const input = {
+      get g () {
+        reads++
+        return reads === 1 ? 'first' : () => {}
+      }
+    }
+    t.assert.equal(build(schema)(input), '{"g":"first"}')
+    t.assert.equal(reads, 1)
+  }
+})

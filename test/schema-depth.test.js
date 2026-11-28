@@ -110,11 +110,23 @@ test('rejects invalid maximum schema depths', (t) => {
 test('checks schema dependencies without treating property lists as schemas', (t) => {
   t.assert.doesNotThrow(() => build({
     type: 'object',
+    definitions: {
+      valueProp: { type: 'string' },
+      any: true
+    },
+    // Include a $ref so recursive-schema detection runs and walks dependency
+    // schema forms (property-list dependencies must still be ignored). Boolean
+    // schemas must also be visited so traverse's non-object early-return stays covered.
+    properties: {
+      link: { $ref: '#/definitions/valueProp' },
+      flag: { $ref: '#/definitions/any' },
+      open: true
+    },
     dependencies: {
-      enabled: { properties: { value: { type: 'string' } } },
+      enabled: { properties: { value: { $ref: '#/definitions/valueProp' } } },
       value: ['enabled']
     }
-  }, { maxDepth: 2 }))
+  }, { maxDepth: 3 }))
 })
 
 test('checks external schemas before validating them recursively', (t) => {
@@ -223,5 +235,36 @@ test('rejects circular object graphs before schema validation', (t) => {
   t.assert.throws(
     () => build(schema),
     { message: 'schema contains a circular object reference; use $ref instead' }
+  )
+})
+
+test('object walk accepts shared objects and rejects only cycles on the path', (t) => {
+  const shared = { type: 'string' }
+  const dag = {
+    type: 'object',
+    properties: { a: shared, b: shared, c: { anyOf: [shared, { not: shared }] } }
+  }
+  t.assert.equal(build(dag)({ a: 'x', b: 'y', c: 'z' }), '{"a":"x","b":"y","c":"z"}')
+
+  const viaArray = { type: 'object', properties: {} }
+  viaArray.properties.list = { type: 'array', items: [{ anyOf: [viaArray] }] }
+  t.assert.throws(
+    () => build({ type: 'string' }, { schema: { s: viaArray } }),
+    { message: 'schema contains a circular object reference; use $ref instead' }
+  )
+
+  t.assert.throws(
+    () => build({ type: 'string' }, { schema: { s: { a: { b: { c: {} } } } }, maxDepth: 1 }),
+    { message: '"s" schema exceeds maximum depth of 1' }
+  )
+
+  const fn = function () {}
+  fn.self = fn
+  fn.nested = { a: { b: {} } }
+  t.assert.throws(() => build(fn), { message: 'schema is invalid: data must be object,boolean' })
+  t.assert.throws(() => build(fn, { maxDepth: 0 }), { message: 'schema is invalid: data must be object,boolean' })
+  t.assert.throws(
+    () => build({ type: 'string' }, { schema: { s: fn } }),
+    { message: '"s" schema is invalid: data must be object,boolean' }
   )
 })

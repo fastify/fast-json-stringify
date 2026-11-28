@@ -749,3 +749,54 @@ test('do not crash with $ref prop', (t) => {
   })
   t.assert.equal(value, '{"outside":{"$ref":"true"}}')
 })
+
+test('allOf keeps property constraints when additional properties are disabled', (t) => {
+  const schema = {
+    additionalProperties: false,
+    allOf: [{
+      type: 'object',
+      properties: {
+        entries: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { enabled: { type: 'boolean' }, domain: { type: 'string' } },
+            required: ['domain']
+          }
+        }
+      }
+    }]
+  }
+  const stringify = build(schema)
+  t.assert.deepEqual(JSON.parse(stringify({ entries: [{ enabled: 1, domain: 'example.com' }], extra: true })),
+    { entries: [{ enabled: true, domain: 'example.com' }] })
+  t.assert.throws(() => stringify({ entries: [{ enabled: 1 }] }), /"domain" is required/)
+})
+
+test('allOf keeps root and referenced property constraints with additionalProperties false', (t) => {
+  const schema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: { name: { type: 'string' } },
+    required: ['name'],
+    allOf: [{ $ref: 'entry' }]
+  }
+  const stringify = build(schema, {
+    schema: { entry: { type: 'object', properties: { enabled: { type: 'boolean' } }, required: ['enabled'] } }
+  })
+  t.assert.deepEqual(JSON.parse(stringify({ name: 'one', enabled: 1, extra: 'drop' })), { name: 'one', enabled: true })
+  t.assert.throws(() => stringify({ name: 'one' }), /"enabled" is required/)
+  t.assert.throws(() => stringify({ enabled: true }), /"name" is required/)
+  t.assert.equal(schema.additionalProperties, false)
+})
+
+test('allOf preserves explicit additional property schemas', (t) => {
+  for (const additionalProperties of [true, { type: 'boolean' }]) {
+    const stringify = build({
+      type: 'object',
+      additionalProperties,
+      allOf: [{ type: 'object', properties: { enabled: { type: 'boolean' } } }]
+    })
+    t.assert.deepEqual(JSON.parse(stringify({ enabled: 1, extra: true })), { enabled: true, extra: true })
+  }
+})
