@@ -292,3 +292,57 @@ test('handle undefined in multi-type, tuple and const positions', (t) => {
   t.assert.equal('[null]', build({ type: 'array', items: [{ type: 'null' }] })([undefined]))
   t.assert.equal('["x",null]', build({ type: 'array', items: { type: ['string', 'null'], const: 'x' } })(['x', undefined]))
 })
+
+test('handle undefined in an array of strings of any length', (t) => {
+  // from 8 elements an array of strings takes the primitive array path
+  const stringify = build({ type: 'array', items: { type: 'string' } })
+  const lengths = [1, 4, 7, 8, 9, 40]
+  t.plan(lengths.length * 3)
+  for (const length of lengths) {
+    for (const position of [0, Math.floor(length / 2), length - 1]) {
+      const input = Array.from({ length }, (_, i) => i === position ? undefined : 'item ' + i)
+      const expected = JSON.stringify(input.map((item) => item === undefined ? '' : item))
+      t.assert.equal(stringify(input), expected, `length ${length}, undefined at ${position}`)
+    }
+  }
+})
+
+test("undefined gives the same output with objectMechanism 'native'", (t) => {
+  // forceProjection enables the projection on every Node.js version
+  const native = { objectMechanism: 'native', forceProjection: true }
+  const withUndefined = (first, more) => [first, undefined, ...Array.from({ length: 9 }, () => more), undefined]
+  const cases = [
+    [{ type: 'array', items: { type: 'string' } }, withUndefined('a', 'b'), '["a","","b","b","b","b","b","b","b","b","b",""]'],
+    [{ type: 'array', items: { type: 'string' } }, [undefined, 'a'], '["","a"]'],
+    [{ type: 'array', items: { type: 'number' } }, withUndefined(1.5, 2), '[1.5,0,2,2,2,2,2,2,2,2,2,0]'],
+    [{ type: 'array', items: { type: 'integer' } }, [1, undefined], '[1,0]'],
+    [{ type: 'array', items: { type: 'boolean' } }, [true, undefined], '[true,false]'],
+    [{ type: 'array', items: { type: 'string', format: 'date-time' } }, ['2026-01-02T03:04:05.000Z', undefined], '["2026-01-02T03:04:05.000Z",""]'],
+    [{ type: 'array', items: { type: 'string', format: 'date' } }, ['2026-01-02', undefined], '["2026-01-02",""]'],
+    [{ type: 'array', items: { type: 'string', format: 'time' } }, ['03:04:05', undefined], '["03:04:05",""]'],
+    [{ type: 'array', items: { type: 'string', nullable: true } }, ['a', undefined], '["a",null]'],
+    [{ type: 'array', items: { type: 'number', nullable: true } }, [1, undefined], '[1,null]'],
+    [{ type: 'array', items: { type: ['string', 'null'] } }, ['a', undefined], '["a",null]'],
+    [{ type: 'array', items: { type: ['null', 'number'] } }, [1, undefined], '[1,null]'],
+    [{ type: 'array', items: { type: ['boolean', 'null'] } }, [true, undefined], '[true,null]'],
+    [{ type: 'array', items: { type: 'object', properties: { a: { type: 'string' } } } }, [{ a: 'x' }, undefined], '[{"a":"x"},{}]'],
+    [{ type: 'array', items: { type: 'object', nullable: true, properties: { a: { type: 'string' } } } }, [{ a: 'x' }, undefined], '[{"a":"x"},null]'],
+    [{ type: 'array', items: { type: 'array', items: { type: 'string' } } }, [['x'], undefined], '[["x"],[]]'],
+    [{ type: 'array', items: { type: 'array', nullable: true, items: { type: 'string' } } }, [['x'], undefined], '[["x"],null]'],
+    [{ type: 'object', properties: { a: { type: 'string' } } }, undefined, '{}'],
+    [{ type: 'object', nullable: true, properties: { a: { type: 'string' } } }, undefined, 'null'],
+    [{ type: 'object', properties: { a: { type: 'string' } } }, { toJSON () { return undefined } }, '{}'],
+    [{ type: 'array', items: { type: 'string' } }, undefined, '[]'],
+    [{ type: 'array', nullable: true, items: { type: 'string' } }, undefined, 'null'],
+    // an undefined property is still skipped, and a required one still throws
+    [{ type: 'object', properties: { a: { type: 'string' }, b: { type: 'string' } } }, { a: undefined, b: 'x' }, '{"b":"x"}']
+  ]
+  t.plan(cases.length * 2 + 2)
+  for (const [schema, input, expected] of cases) {
+    t.assert.equal(build(schema)(input), expected, 'default: ' + JSON.stringify(schema))
+    t.assert.equal(build(schema, native)(input), expected, 'native: ' + JSON.stringify(schema))
+  }
+  const required = { type: 'object', required: ['a'], properties: { a: { type: 'string' } } }
+  t.assert.throws(() => build(required)({ a: undefined }), /"a" is required!/)
+  t.assert.throws(() => build(required, native)({ a: undefined }), /"a" is required!/)
+})

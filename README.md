@@ -666,6 +666,11 @@ Otherwise, instead of raising an error, null values will be coerced as follows:
 - `object` -> `{}`
 - `array` -> `[]`
 
+The same applies to `undefined` when it is an item of an array or the value
+passed to `stringify()`. A property of an object set to `undefined` is skipped
+instead, as described in <a href="#missingFields">Missing fields</a>, and a
+`required` one still throws.
+
 <a name="largearrays"></a>
 #### Large Arrays
 
