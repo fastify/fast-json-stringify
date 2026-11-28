@@ -784,6 +784,28 @@ test('string array coerces a non-string item', (t) => {
   )
 })
 
+test('string array passes items to JSON.stringify with largeArraySize 0', (t) => {
+  t.plan(3)
+
+  const schema = {
+    type: 'array',
+    items: { type: 'string' }
+  }
+  // largeArraySize: 0 marks every array as large, so non-conforming items
+  // are handed straight to JSON.stringify instead of being coerced.
+  const zero = build(schema, { largeArrayMechanism: 'json-stringify', largeArraySize: 0 })
+  t.assert.equal(zero([1, 2]), '[1,2]')
+
+  // The string form already worked and must keep working.
+  const zeroString = build(schema, { largeArrayMechanism: 'json-stringify', largeArraySize: '0' })
+  t.assert.equal(zeroString([1, 2]), '[1,2]')
+
+  // Omitting largeArraySize keeps the default (20000), so a small array
+  // is still below the threshold and items are coerced to strings.
+  const defaultSize = build(schema, { largeArrayMechanism: 'json-stringify' })
+  t.assert.equal(defaultSize([1, 2]), '["1","2"]')
+})
+
 // Large number/integer arrays are copied and handed to JSON.stringify. The
 // first element that is not already the right type switches to the per-item
 // loop from that index on. 3e5 elements is the largest fast-path cutoff on
